@@ -234,6 +234,19 @@ export const cardSubmissions = sqliteTable("card_submissions", {
   updatedAt: timestamp("updated_at"),
 }, (table) => [index("card_submissions_status_created_idx").on(table.status, table.createdAt)]);
 
+export const cardSubmissionAssets = sqliteTable("card_submission_assets", {
+  id: id(),
+  submissionId: text("submission_id").notNull().references(() => cardSubmissions.id, { onDelete: "cascade" }),
+  storageKey: text("storage_key").notNull(),
+  originalName: text("original_name").notNull(),
+  mimeType: text("mime_type").notNull(),
+  byteSize: integer("byte_size").notNull(),
+  createdAt: timestamp("created_at"),
+}, (table) => [
+  uniqueIndex("card_submission_asset_key_unique").on(table.storageKey),
+  index("card_submission_assets_submission_idx").on(table.submissionId),
+]);
+
 export const syncRuns = sqliteTable("sync_runs", {
   id: id(),
   source: text("source").notNull().default("EBAY"),
