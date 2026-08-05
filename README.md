@@ -33,6 +33,14 @@ procedure; there is no public role-changing form. Only confirmed email
 addresses in the allowlist are promoted, and existing admin roles are never
 automatically downgraded by removing an address.
 
+## eBay synchronization
+
+The eBay client is read-only at this stage. It uses the seller OAuth refresh
+token and the Sell Inventory API to read inventory items and their offers. No
+eBay listing is created, changed, or deleted by this code. The scheduled D1
+sync and product mapping will be added after the seller API credentials and
+the desired inventory field mapping have been confirmed.
+
 ## Included Shape
 
 - edit site code under `app/`
