@@ -41,6 +41,14 @@ eBay listing is created, changed, or deleted by this code. The scheduled D1
 sync and product mapping will be added after the seller API credentials and
 the desired inventory field mapping have been confirmed.
 
+The Worker also exposes a Cloudflare Scheduled Handler for the hourly eBay
+sync. The example configuration in `wrangler.toml.example` uses the cron
+expression `0 * * * *`. Before production deployment, create the actual
+Cloudflare Worker configuration, attach the D1/R2 bindings, add the eBay
+secrets, and configure the cron trigger in Cloudflare or Wrangler. The
+scheduled handler only queues the sync with `waitUntil`; its errors are logged
+without affecting the normal HTTP `fetch` handler.
+
 ## Included Shape
 
 - edit site code under `app/`

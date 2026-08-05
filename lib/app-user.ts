@@ -1,4 +1,4 @@
-import { and, eq, or } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { getDb } from "../db";
 import { users } from "../db/schema";
@@ -19,24 +19,30 @@ export async function findOrCreateAppUser(authUser: SupabaseUser): Promise<AppUs
   if (!authUser.email) throw new Error("Authenticated Supabase user has no email.");
   const db = getDb();
   const email = authUser.email.trim().toLowerCase();
+  const emailVerified = Boolean(authUser.email_confirmed_at);
+  const verifiedAt = emailVerified ? authUser.email_confirmed_at ?? null : null;
   const configuredAdmin = isConfiguredAdmin(authUser, email);
-  const existing = await db.query.users.findFirst({
-    where: or(
-      and(eq(users.authProvider, "supabase"), eq(users.authSubject, authUser.id)),
-      eq(users.email, email),
-    ),
-  });
+  const linked = await db.query.users.findFirst({ where: and(eq(users.authProvider, "supabase"), eq(users.authSubject, authUser.id)) });
+  if (linked && emailVerified && linked.email !== email) {
+    const emailOwner = await db.query.users.findFirst({ where: eq(users.email, email) });
+    if (emailOwner && emailOwner.id !== linked.id) throw new Error("Diese E-Mail-Adresse ist bereits einem anderen Konto zugeordnet.");
+  }
+  const existing = linked ?? (emailVerified ? await db.query.users.findFirst({ where: eq(users.email, email) }) : undefined);
+
+  if (!linked && !emailVerified) {
+    throw new Error("Die E-Mail-Adresse muss vor der Kontoerstellung bestätigt werden.");
+  }
 
   if (existing) {
     await db.update(users).set({
-      email,
+      email: emailVerified ? email : existing.email,
       authProvider: "supabase",
       authSubject: authUser.id,
-      emailVerifiedAt: authUser.email_confirmed_at ?? null,
+      emailVerifiedAt: emailVerified ? verifiedAt : existing.emailVerifiedAt,
       ...(configuredAdmin && existing.role === "CUSTOMER" ? { role: "ADMIN" as const } : {}),
       updatedAt: new Date().toISOString(),
     }).where(eq(users.id, existing.id));
-    return { ...existing, email, authProvider: "supabase", authSubject: authUser.id, emailVerifiedAt: authUser.email_confirmed_at ?? null, role: configuredAdmin && existing.role === "CUSTOMER" ? "ADMIN" as const : existing.role };
+    return { ...existing, email: emailVerified ? email : existing.email, authProvider: "supabase", authSubject: authUser.id, emailVerifiedAt: emailVerified ? verifiedAt : existing.emailVerifiedAt, role: configuredAdmin && existing.role === "CUSTOMER" ? "ADMIN" as const : existing.role };
   }
 
   const [created] = await db.insert(users).values({
@@ -44,7 +50,7 @@ export async function findOrCreateAppUser(authUser: SupabaseUser): Promise<AppUs
     role: configuredAdmin ? "ADMIN" : "CUSTOMER",
     authProvider: "supabase",
     authSubject: authUser.id,
-    emailVerifiedAt: authUser.email_confirmed_at ?? null,
+    emailVerifiedAt: verifiedAt,
   }).returning();
   if (!created) throw new Error("Could not create application user.");
   return created;

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { cardSubmissionAssets, cardSubmissions } from "../../../db/schema";
 import { getAssetBucket, getDb } from "../../../db";
 import { eq } from "drizzle-orm";
+import { enforcePublicRateLimit } from "../../../lib/rate-limit";
 import {
   formMetadata,
   jsonError,
@@ -17,6 +18,7 @@ import {
 
 export async function POST(request: Request) {
   try {
+    await enforcePublicRateLimit(request, "card-submissions", 3);
     if (request.headers.get("content-type")?.startsWith("multipart/form-data")) {
       return await handleMultipartSubmission(request);
     }
@@ -53,6 +55,8 @@ async function handleMultipartSubmission(request: Request) {
   const requestedAmount = optionalPrice({ price: typeof rawPrice === "string" ? rawPrice : undefined }, "price");
   const files = form.getAll("images").filter((value): value is File => value instanceof File);
   if (files.length > 5) throw new PublicFormError(400, "TOO_MANY_UPLOADS", "Maximal fünf Bilder sind erlaubt.");
+  const declaredFileBytes = files.reduce((total, file) => total + file.size, 0);
+  if (declaredFileBytes > 50_000_000) throw new PublicFormError(413, "UPLOAD_TOO_LARGE", "Die Bilder sind zusammen zu groÃŸ.");
   const uploads = await Promise.all(files.map(validateAndReadImage));
   if (uploads.reduce((total, upload) => total + upload.bytes.byteLength, 0) > 50_000_000) throw new PublicFormError(413, "UPLOAD_TOO_LARGE", "Die Bilder sind zusammen zu groß.");
   const db = getDb();
@@ -93,7 +97,8 @@ async function validateAndReadImage(file: File) {
       ? bytes.slice(0, 8).every((value, index) => value === [137, 80, 78, 71, 13, 10, 26, 10][index])
       : new TextDecoder().decode(bytes.slice(0, 12)).startsWith("RIFF") && new TextDecoder().decode(bytes.slice(8, 12)) === "WEBP";
   if (!valid) throw new PublicFormError(400, "INVALID_UPLOAD", "Der tatsächliche Bildtyp stimmt nicht mit der Dateiendung überein.");
-  return { bytes, mimeType, originalName: file.name.slice(0, 180) || "bild", extension: mimeType === "image/jpeg" ? "jpg" : mimeType.slice("image/".length) };
+  const originalName = file.name.split(/[\\/]/u).pop()?.replace(/[^a-zA-Z0-9._-]/gu, "_").slice(0, 180) || "bild";
+  return { bytes, mimeType, originalName, extension: mimeType === "image/jpeg" ? "jpg" : mimeType.slice("image/".length) };
 }
 
 function validateImageMetadata(value: unknown) {

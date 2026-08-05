@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { getDb } from "../db";
 import { products } from "../db/schema";
+import { RateLimitError } from "./rate-limit";
 
 export class PublicFormError extends Error {
   constructor(
@@ -137,6 +138,9 @@ export function formMetadata(title: string, message: string | null, extra: Recor
 }
 
 export function jsonError(error: unknown) {
+  if (error instanceof RateLimitError) {
+    return NextResponse.json({ ok: false, error: { code: error.code, message: error.message } }, { status: error.status, headers: { "retry-after": String(error.retryAfterSeconds) } });
+  }
   if (error instanceof PublicFormError) {
     return NextResponse.json({ ok: false, error: { code: error.code, message: error.message } }, { status: error.status });
   }

@@ -1,6 +1,7 @@
 /** Cloudflare Worker entry point for the vinext-starter template. */
 import { handleImageOptimization, DEFAULT_DEVICE_SIZES, DEFAULT_IMAGE_SIZES } from "vinext/server/image-optimization";
 import handler from "vinext/server/app-router-entry";
+import { runEbaySync } from "../lib/ebay-sync";
 
 interface Env {
   ASSETS: Fetcher;
@@ -17,6 +18,11 @@ interface Env {
 interface ExecutionContext {
   waitUntil(promise: Promise<unknown>): void;
   passThroughOnException(): void;
+}
+
+interface ScheduledController {
+  scheduledTime: number;
+  cron: string;
 }
 
 // Image security config. SVG sources with .svg extension auto-skip the
@@ -41,6 +47,15 @@ const worker = {
     }
 
     return handler.fetch(request, env, ctx);
+  },
+
+  scheduled(_controller: ScheduledController, _env: Env, ctx: ExecutionContext): void {
+    ctx.waitUntil(
+      runEbaySync().catch((error: unknown) => {
+        const message = error instanceof Error ? error.message : "Unbekannter Fehler";
+        console.error("[scheduled-ebay-sync] eBay-Synchronisierung fehlgeschlagen:", message);
+      }),
+    );
   },
 };
 

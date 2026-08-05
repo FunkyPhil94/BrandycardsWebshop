@@ -1,0 +1,9 @@
+# Copy to wrangler.toml only when deploying the Worker through Wrangler.
+# Keep production bindings and secrets outside this repository.
+name = "brandycards-webshop"
+main = "worker/index.ts"
+compatibility_date = "2026-08-05"
+compatibility_flags = ["nodejs_compat"]
+
+[triggers]
+crons = ["0 * * * *"]

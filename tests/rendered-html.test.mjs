@@ -12,7 +12,7 @@ test("build contains the BrandyCards storefront and API routes", async () => {
   assert.match(page, /Aktuelle Karten/);
   assert.match(page, /eBay synchronisiert/);
   assert.match(page, /Auktion auf eBay/);
-  assert.match(page, /Noch nicht im Verkauf/);
+  assert.match(page, /noch nicht im Verkauf/i);
   assert.match(page, /Karten anbieten/);
   assert.match(distIndex, /api\/inquiries/);
   assert.match(distIndex, /api\/price-offers/);
