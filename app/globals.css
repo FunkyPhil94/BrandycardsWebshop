@@ -54,3 +54,8 @@ footer { background:var(--ink); color:#fff; padding:52px max(48px,calc((100vw - 
 .account-session { display: grid; gap: .25rem; margin: 1.5rem 0; padding: 1rem; border-left: 2px solid #c9a96b; background: rgba(201,169,107,.08); color: #b7b0a1; }
 .account-session strong { color: #f5f1e8; overflow-wrap: anywhere; }
 .account-session button { justify-self: start; margin-top: .5rem; border: 0; padding: 0; background: transparent; color: #c9a96b; cursor: pointer; text-decoration: underline; }
+.admin-stats { display:grid; gap:10px; grid-template-columns:repeat(2,minmax(0,1fr)); margin:28px 0; }
+.admin-stats div { background:#25262b; padding:18px; }
+.admin-stats strong,.admin-stats span { display:block; }
+.admin-stats strong { color:#f5f1e8; font-size:30px; }
+.admin-stats span { color:#b7b0a1; font-family:'DM Mono'; font-size:9px; letter-spacing:.08em; margin-top:5px; text-transform:uppercase; }

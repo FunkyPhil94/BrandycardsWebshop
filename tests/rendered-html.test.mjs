@@ -18,6 +18,8 @@ test("build contains the BrandyCards storefront and API routes", async () => {
   assert.match(distIndex, /api\/price-offers/);
   assert.match(distIndex, /api\/card-submissions/);
   assert.match(distIndex, /api\/prelisted-interest/);
+  assert.match(distIndex, /api\/admin\/dashboard/);
+  assert.match(distIndex, /\/admin/);
 });
 
 test("starter preview infrastructure is removed", async () => {

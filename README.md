@@ -1,4 +1,4 @@
-# vinext-starter
+# BrandyCards Webshop
 
 A clean full-stack starter running on
 [vinext](https://github.com/cloudflare/vinext), with optional Cloudflare D1 and
@@ -16,7 +16,20 @@ npm run dev
 npm run build
 ```
 
-This starter does not use `wrangler.jsonc`.
+This project is a custom BrandyCards webshop. It does not use a shop builder.
+The public storefront is built with vinext and Cloudflare bindings are declared
+in `.openai/hosting.json`.
+
+## Authentication and administration
+
+Customer authentication uses Supabase email/password authentication. The
+application verifies the Supabase access token server-side and maintains its
+own `users` record in D1. New accounts always receive the `CUSTOMER` role.
+
+The `/admin` page and `/api/admin/dashboard` endpoint require both a valid
+Supabase session and the server-side `ADMIN` role. Admin users must be promoted
+through a controlled D1 migration or maintenance procedure; there is no public
+role-changing form.
 
 ## Included Shape
 
