@@ -7,6 +7,7 @@ import { getSupabaseBrowserClient } from "../../lib/supabase-browser";
 type Dashboard = {
   user: { email: string; role: string };
   counts: { products: number; inquiries: number; cardSubmissions: number; orders: number };
+  recentSubmissions: Array<{ id: string; email: string; name: string | null; title: string; status: string; createdAt: string; assets: Array<{ id: string; originalName: string; mimeType: string; byteSize: number }> }>;
 };
 
 export default function AdminPage() {
@@ -72,6 +73,10 @@ export default function AdminPage() {
           </div>
           <button className="button button-primary admin-sync-button" type="button" onClick={runEbaySync} disabled={syncBusy}>{syncBusy ? "eBay-Sync läuft …" : "eBay-Angebote synchronisieren"}</button>
           {syncMessage && <p className="form-feedback" role="status">{syncMessage}</p>}
+          <div className="admin-submissions">
+            <h2>Neue Kartenangebote</h2>
+            {dashboard.recentSubmissions.length === 0 ? <p className="form-feedback">Noch keine Angebote eingegangen.</p> : dashboard.recentSubmissions.map((submission) => <article key={submission.id} className="admin-submission"><div><strong>{submission.title}</strong><span>{submission.email}{submission.name ? ` · ${submission.name}` : ""}</span></div><div className="admin-submission-meta"><span>{submission.assets.length} Bild(er)</span><span>{submission.status}</span></div></article>)}
+          </div>
           <p className="form-feedback">Weitere Verwaltungsfunktionen werden als nächster Schritt ergänzt.</p>
         </> : <p className="form-feedback error" role="status">{message}</p>}
       </section>

@@ -60,3 +60,10 @@ footer { background:var(--ink); color:#fff; padding:52px max(48px,calc((100vw - 
 .admin-stats strong { color:#f5f1e8; font-size:30px; }
 .admin-stats span { color:#b7b0a1; font-family:'DM Mono'; font-size:9px; letter-spacing:.08em; margin-top:5px; text-transform:uppercase; }
 .admin-sync-button { margin-top:4px; width:100%; }
+.admin-submissions { margin-top:30px; }
+.admin-submissions h2 { color:#f5f1e8; font-size:18px; font-weight:500; margin:0 0 12px; }
+.admin-submission { align-items:center; border-top:1px solid rgba(201,169,107,.2); display:flex; gap:12px; justify-content:space-between; padding:14px 0; }
+.admin-submission strong,.admin-submission span { display:block; }
+.admin-submission strong { color:#f5f1e8; font-size:13px; }
+.admin-submission span { color:#b7b0a1; font-size:11px; margin-top:4px; overflow-wrap:anywhere; }
+.admin-submission-meta { flex:0 0 auto; text-align:right; }
