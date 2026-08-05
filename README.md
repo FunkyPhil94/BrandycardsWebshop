@@ -28,8 +28,10 @@ own `users` record in D1. New accounts always receive the `CUSTOMER` role.
 
 The `/admin` page and `/api/admin/dashboard` endpoint require both a valid
 Supabase session and the server-side `ADMIN` role. Admin users must be promoted
-through a controlled D1 migration or maintenance procedure; there is no public
-role-changing form.
+through the server-only `ADMIN_EMAILS` allowlist or a controlled D1 maintenance
+procedure; there is no public role-changing form. Only confirmed email
+addresses in the allowlist are promoted, and existing admin roles are never
+automatically downgraded by removing an address.
 
 ## Included Shape
 
