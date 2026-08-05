@@ -15,11 +15,25 @@ export default function AccountPage() {
   const [busy, setBusy] = useState(false);
   const [user, setUser] = useState<User | null>(null);
 
+  async function syncProfile(sessionUser: User | null, accessToken?: string) {
+    if (!sessionUser || !accessToken) return;
+    await fetch("/api/account/profile", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+  }
+
   useEffect(() => {
     try {
       const supabase = getSupabaseBrowserClient();
-      void supabase.auth.getUser().then(({ data }) => setUser(data.user));
-      const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => setUser(session?.user ?? null));
+      void supabase.auth.getSession().then(({ data }) => {
+        setUser(data.session?.user ?? null);
+        void syncProfile(data.session?.user ?? null, data.session?.access_token);
+      });
+      const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+        setUser(session?.user ?? null);
+        void syncProfile(session?.user ?? null, session?.access_token);
+      });
       return () => listener.subscription.unsubscribe();
     } catch {
       return undefined;
@@ -47,8 +61,9 @@ export default function AccountPage() {
         if (error) throw error;
         setMessage(data.session ? "Konto erstellt." : "Bitte bestätige deine E-Mail-Adresse.");
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
+        await syncProfile(data.user, data.session?.access_token);
         setMessage("Anmeldung erfolgreich.");
       }
     } catch (error) {
