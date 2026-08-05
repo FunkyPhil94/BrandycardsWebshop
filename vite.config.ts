@@ -39,6 +39,9 @@ export default defineConfig(async () => {
   process.env.WRANGLER_WRITE_LOGS ??= "false";
   process.env.WRANGLER_LOG_PATH ??= ".wrangler/logs";
   process.env.MINIFLARE_REGISTRY_PATH ??= ".wrangler/registry";
+  // Local development does not need Cloudflare's live Request.cf sample.
+  // Disabling the fetch keeps Windows/offline development deterministic.
+  process.env.CLOUDFLARE_CF_FETCH_ENABLED ??= "false";
 
   // Wrangler snapshots its log path while the Cloudflare plugin is imported.
   const { cloudflare } = await import("@cloudflare/vite-plugin");
