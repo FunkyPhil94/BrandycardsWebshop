@@ -1,7 +1,8 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
+import type { User } from "@supabase/supabase-js";
 import { getSupabaseBrowserClient } from "../../lib/supabase-browser";
 
 type Mode = "login" | "signup" | "reset";
@@ -12,6 +13,24 @@ export default function AccountPage() {
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    try {
+      const supabase = getSupabaseBrowserClient();
+      void supabase.auth.getUser().then(({ data }) => setUser(data.user));
+      const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => setUser(session?.user ?? null));
+      return () => listener.subscription.unsubscribe();
+    } catch {
+      return undefined;
+    }
+  }, []);
+
+  async function signOut() {
+    const supabase = getSupabaseBrowserClient();
+    await supabase.auth.signOut();
+    setMessage("Du wurdest abgemeldet.");
+  }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -44,6 +63,7 @@ export default function AccountPage() {
       <Link className="back-link" href="/">← Zurück zu BrandyCards</Link>
       <section className="account-card" aria-labelledby="account-title">
         <p className="eyebrow">BRANDYCARDS ACCOUNT</p>
+        {user && <div className="account-session"><span>Angemeldet als</span><strong>{user.email}</strong><button type="button" onClick={signOut}>Abmelden</button></div>}
         <h1 id="account-title">{mode === "login" ? "Willkommen zurück." : mode === "signup" ? "Konto erstellen." : "Passwort zurücksetzen."}</h1>
         <p>{mode === "signup" ? "Speichere Bestellungen und verwalte deine Anfragen." : mode === "reset" ? "Wir senden dir einen sicheren Link per E-Mail." : "Melde dich an, um deine Bestellungen und Anfragen zu sehen."}</p>
         <form onSubmit={submit}>
