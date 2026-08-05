@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { cardSubmissionAssets, cardSubmissions } from "../../../db/schema";
 import { getAssetBucket, getDb } from "../../../db";
+import { eq } from "drizzle-orm";
 import {
   formMetadata,
   jsonError,
@@ -8,6 +9,7 @@ import {
   optionalString,
   publicDb,
   PublicFormError,
+  assertSameOrigin,
   readJsonBody,
   requiredEmail,
   requiredString,
@@ -39,6 +41,7 @@ export async function POST(request: Request) {
 }
 
 async function handleMultipartSubmission(request: Request) {
+  assertSameOrigin(request);
   const contentLength = Number(request.headers.get("content-length") ?? 0);
   if (contentLength > 52_000_000) throw new PublicFormError(413, "UPLOAD_TOO_LARGE", "Die gesamte Upload-Anfrage ist zu groß.");
   const form = await request.formData();
@@ -51,6 +54,7 @@ async function handleMultipartSubmission(request: Request) {
   const files = form.getAll("images").filter((value): value is File => value instanceof File);
   if (files.length > 5) throw new PublicFormError(400, "TOO_MANY_UPLOADS", "Maximal fünf Bilder sind erlaubt.");
   const uploads = await Promise.all(files.map(validateAndReadImage));
+  if (uploads.reduce((total, upload) => total + upload.bytes.byteLength, 0) > 50_000_000) throw new PublicFormError(413, "UPLOAD_TOO_LARGE", "Die Bilder sind zusammen zu groß.");
   const db = getDb();
   const bucket = getAssetBucket();
   const [submission] = await db.insert(cardSubmissions).values({
@@ -60,14 +64,19 @@ async function handleMultipartSubmission(request: Request) {
     message: formMetadata(title, message),
   }).returning({ id: cardSubmissions.id });
   if (!submission) throw new PublicFormError(503, "SUBMISSION_FAILED", "Das Angebot konnte nicht gespeichert werden.");
+  const storedKeys: string[] = [];
   try {
     for (const upload of uploads) {
       const storageKey = `card-submissions/${submission.id}/${crypto.randomUUID()}.${upload.extension}`;
       await bucket.put(storageKey, upload.bytes, { httpMetadata: { contentType: upload.mimeType } });
+      storedKeys.push(storageKey);
       await db.insert(cardSubmissionAssets).values({ submissionId: submission.id, storageKey, originalName: upload.originalName, mimeType: upload.mimeType, byteSize: upload.bytes.byteLength });
     }
   } catch (error) {
     console.error("Card submission upload failed", error);
+    await Promise.allSettled(storedKeys.map((storageKey) => bucket.delete(storageKey)));
+    await db.delete(cardSubmissionAssets).where(eq(cardSubmissionAssets.submissionId, submission.id));
+    await db.delete(cardSubmissions).where(eq(cardSubmissions.id, submission.id));
     throw new PublicFormError(503, "UPLOAD_FAILED", "Die Bilder konnten nicht sicher gespeichert werden.");
   }
   return NextResponse.json({ ok: true, cardSubmissionId: submission.id, uploads: uploads.length }, { status: 201 });

@@ -24,17 +24,7 @@ export function publicDb() {
 }
 
 export async function readJsonBody(request: Request): Promise<UnknownRecord> {
-  const origin = request.headers.get("origin");
-  if (origin) {
-    try {
-      if (new URL(origin).origin !== new URL(request.url).origin) {
-        throw new PublicFormError(403, "ORIGIN_NOT_ALLOWED", "Die Anfragequelle ist nicht erlaubt.");
-      }
-    } catch (error) {
-      if (error instanceof PublicFormError) throw error;
-      throw new PublicFormError(403, "ORIGIN_NOT_ALLOWED", "Die Anfragequelle ist nicht erlaubt.");
-    }
-  }
+  assertSameOrigin(request);
   const contentType = request.headers.get("content-type")?.toLowerCase() ?? "";
   if (!contentType.startsWith("application/json")) {
     throw new PublicFormError(415, "UNSUPPORTED_MEDIA_TYPE", "Die Anfrage muss JSON verwenden.");
@@ -64,6 +54,17 @@ export async function readJsonBody(request: Request): Promise<UnknownRecord> {
     throw new PublicFormError(400, "INVALID_BODY", "Die Anfrage muss ein JSON-Objekt enthalten.");
   }
   return body as UnknownRecord;
+}
+
+export function assertSameOrigin(request: Request) {
+  const origin = request.headers.get("origin");
+  if (!origin) return;
+  try {
+    if (new URL(origin).origin !== new URL(request.url).origin) throw new PublicFormError(403, "ORIGIN_NOT_ALLOWED", "Die Anfragequelle ist nicht erlaubt.");
+  } catch (error) {
+    if (error instanceof PublicFormError) throw error;
+    throw new PublicFormError(403, "ORIGIN_NOT_ALLOWED", "Die Anfragequelle ist nicht erlaubt.");
+  }
 }
 
 export function requiredString(body: UnknownRecord, key: string, label: string, maxLength: number): string {
