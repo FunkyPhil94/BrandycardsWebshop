@@ -37,34 +37,8 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-- **Stand:** LÄUFT
-- **Datum:** 2026-08-06
-- **Ziel:** Kartendarstellung geradeziehen, Filter entfernen, Detailseite je Karte
-  mit Bild-Zoom und eBay-Artikelbeschreibung.
-- **Vom Nutzer gewünscht:** Bilder gerade statt gekippt, rund 20 % weniger Zoom,
-  Filterleiste weg (es gibt nur Festpreis, keine Auktionen), Titel klickbar,
-  Detailseite mit vergrößerbarem Bild und der HTML-Beschreibung aus eBay.
-- **Befund vorab:** `description_html` ist bei allen 296 aktiven Listings leer.
-  `GetMyeBaySelling` liefert keine Beschreibung; dafür braucht es `GetItem` mit
-  einem Aufruf **je Artikel**. 296 Aufrufe pro Sync wären zu teuer.
-- **Geplante Schritte:**
-  1. CSS: Rotation der Produktbilder entfernen, Zoom reduzieren
-  2. Filterleiste auf `/karten` entfernen, Suche bleibt
-  3. `GetItem`-Abruf im eBay-Client ergänzen
-  4. HTML-Sanitizer als eigenes Modul — eBay-Beschreibungen sind fremdes Markup
-     und enthalten regelmäßig Skripte, iframes und Event-Handler. Ungefiltert
-     eingebettet wäre das eine XSS-Lücke auf eigener Domain.
-  5. `/api/products/[id]` liefert Karte, Bilder und Beschreibung; fehlt die
-     Beschreibung, wird sie einmalig von eBay geholt und in `description_html`
-     gespeichert (danach aus der Datenbank)
-  6. Detailseite `/karten/[id]` mit Bildergalerie, Klick-Zoom und Beschreibung
-  7. Titel auf `/karten` verlinken
-- **Betroffen:** `app/globals.css`, `app/karten/page.tsx`, neue Detailseite und
-  API-Route, `lib/ebay-client.ts`, neues Sanitizer-Modul, Tests.
-- **Verifikation:** `npx tsc --noEmit`, `npm run lint`, `npm test`, Deploy und
-  Abruf einer echten Detailseite gegen Produktion.
-- **Achtung beim Deploy:** `.env.local` muss im Build-Verzeichnis liegen.
-- **Ergebnis:** _(wird nach dem Durchlauf eingetragen)_
+_Kein laufender Auftrag._ Vorlage: Stand, Datum, Ziel, geplante Schritte,
+betroffene Dateien, Verifikation, Ergebnis.
 
 ---
 
@@ -107,6 +81,38 @@ Kein Auftrag, sondern der Zustand, den die nächste Sitzung kennen muss.
 ---
 
 ## Historie
+
+### 2026-08-06 — Detailseite je Karte, eBay-Beschreibung, Bilder gerade
+
+- **Stand:** ABGESCHLOSSEN
+- **Ziel:** Bilder gerade und weniger gezoomt, Filterleiste weg, Titel klickbar,
+  Detailseite mit Bild-Zoom und eBay-Artikelbeschreibung.
+- **Ergebnis:** `/karten/[id]` samt `/api/products/[id]`. Titel und Bild im Raster
+  verlinken dorthin. Detailseite zeigt das Bild groß, per Klick als Lightbox
+  (Escape und Klick außerhalb schließen), Miniaturenleiste bei mehreren Bildern,
+  Preis, Bestand und Warenkorb. Produktbilder stehen jetzt gerade
+  (`object-fit: contain` mit Innenabstand statt gekippter `.card-art`-Optik).
+  Filterleiste entfernt, Suche bleibt. Commit `8522c44`, deployed `c8ce64d6`.
+- **Beschreibung:** `GetMyeBaySelling` liefert keine; `description_html` war bei
+  allen 296 Listings leer. Sie kommt jetzt aus `GetItem` — **ein Aufruf je
+  Artikel**, deshalb bewusst nicht im Sync (das wären ~300 Aufrufe pro Stunde),
+  sondern beim ersten Öffnen einer Detailseite, danach aus der Datenbank.
+  Live geprüft: 2299 Zeichen bereinigtes HTML, Zwischenspeicherung greift.
+- **Sicherheit:** eBay-Beschreibungen sind fremdes Markup und enthalten Skripte,
+  Zählpixel und Inline-Handler. `lib/sanitize-html.ts` filtert gegen eine
+  Allowlist, bevor irgendetwas in den Browser geht — 12 Tests, unter anderem
+  nicht geschlossene `<script>`-Tags, `java\tscript:`-Umgehung über
+  Steuerzeichen und in Kommentaren geschmuggeltes Markup. An echten Daten
+  gegengeprüft: keine gefährlichen Reste, nur erlaubte Tags.
+- **Nebenwirkung:** Der Sanitizer entfernt auch `style`-Attribute. Die
+  eBay-Vorlage verliert dadurch ihre Inline-Gestaltung; `.ebay-description` in
+  `globals.css` liefert stattdessen eine eigene Grundformatierung. Das ist
+  Absicht — `style` wieder zuzulassen öffnet CSS-basierte Angriffe.
+- **Verifikation:** 28/28 Tests, `tsc --noEmit` sauber, Lint 0 Fehler,
+  Detailseite in Produktion mit HTTP 200 abgerufen.
+- **Offen:** Nur die geöffnete Karte hat bisher eine zwischengespeicherte
+  Beschreibung. Die übrigen füllen sich beim ersten Aufruf. Wer das vorziehen
+  will, bräuchte einen Hintergrund-Backfill mit wenigen Artikeln je Sync-Lauf.
 
 ### 2026-08-06 — eBay-Bilder: fehlten fast überall, Rest war Miniatur
 
