@@ -80,8 +80,8 @@ export default function AdminPage() {
       const token = data.session?.access_token;
       if (!token) throw new Error("Bitte melde dich zuerst an.");
       const response = await fetch("/api/admin/ebay-sync", { method: "POST", headers: { Authorization: `Bearer ${token}` } });
-      const body = await response.json() as { error?: string; importedCount?: number; updatedCount?: number; skippedCount?: number };
-      if (!response.ok) throw new Error(body.error ?? "eBay-Synchronisierung fehlgeschlagen.");
+      const body = await response.json() as { error?: string; detail?: string; importedCount?: number; updatedCount?: number; skippedCount?: number };
+      if (!response.ok) throw new Error(body.detail ? `${body.error ?? "eBay-Synchronisierung fehlgeschlagen."} (${body.detail})` : body.error ?? "eBay-Synchronisierung fehlgeschlagen.");
       setSyncMessage(`Sync abgeschlossen: ${body.importedCount ?? 0} importiert, ${body.updatedCount ?? 0} aktualisiert, ${body.skippedCount ?? 0} übersprungen.`);
     } catch (error) {
       setSyncMessage(error instanceof Error ? error.message : "eBay-Synchronisierung fehlgeschlagen.");
