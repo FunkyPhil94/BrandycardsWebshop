@@ -58,12 +58,6 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 Kein Auftrag, sondern der Zustand, den die nächste Sitzung kennen muss.
 
-- **eBay-Sync einmal auslösen.** In Produktion stehen noch 3 Produkte ohne
-  Listing-Zeile auf `ACTIVE` (Titel „Topps 125 Jahre Barcelona … Lamine Yamal",
-  `ebay_item_id = NULL`, angelegt 14:41/14:54/15:04 durch fehlgeschlagene Läufe).
-  Der Waisen-Sweep aus Version `c6dfef06` räumt sie beim nächsten Lauf ab. Danach
-  muss die Admin-Kachel von 300 auf 297 fallen. Prüfen mit:
-  `npx wrangler d1 execute brandycards-production --remote --command "SELECT status, COUNT(*) FROM products GROUP BY status;"`
 - **eBay-Schreibpfad ist unterbrochen.** `mapActiveListing` setzt `ebayOfferId`
   fest auf `null`, weil `GetMyeBaySelling` nur eine ItemID liefert. Dadurch bleibt
   die `ebay_outbox` ohne Auftrag und ein bezahlter Webshop-Kauf beendet das
@@ -81,6 +75,18 @@ Kein Auftrag, sondern der Zustand, den die nächste Sitzung kennen muss.
 ---
 
 ## Historie
+
+### 2026-08-06 — Aufräumlauf bestätigt, Produktzahl stimmt
+
+- **Stand:** ABGESCHLOSSEN
+- **Ziel:** Prüfen, ob der Waisen-Sweep in Produktion gegriffen hat, und ob
+  lokaler Stand, GitHub und Deployment übereinstimmen.
+- **Ergebnis:** Lauf `2026-08-06 17:35:21` steht auf `SUCCEEDED` mit 297 Updates,
+  **3 Deaktivierungen** und 0 Fehlern — der Sweep hat die drei Waisen abgeräumt.
+  Produkte jetzt 297 `ACTIVE` und 245 `INACTIVE`; die 297 decken sich mit der
+  eBay-Aktivliste und mit dem, was `/api/products` ausliefert. Damit ist die
+  Kette aus SoldList-Import, D1-Parametergrenze und Waisen vollständig
+  geschlossen. Kein Code geändert, nur dieser Protokolleintrag.
 
 ### 2026-08-06 — Waisen-Produkte ohne Listing deaktivieren
 
