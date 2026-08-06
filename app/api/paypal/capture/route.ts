@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { getDb } from "../../../../db";
 import { orders, payments } from "../../../../db/schema";
@@ -56,16 +56,20 @@ export async function POST(request: Request) {
     }
     if (order.status !== "PENDING") return NextResponse.json({ error: "Bestellung kann nicht eingezogen werden." }, { status: 409 });
 
+    const lockResult = await db.batch([db.update(orders).set({ status: "PROCESSING", updatedAt: new Date().toISOString() }).where(and(eq(orders.id, order.id), eq(orders.status, "PENDING")))]);
+    if (lockResult[0].meta.changes !== 1) return NextResponse.json({ error: "Die Bestellung wird gerade verarbeitet oder ist abgelaufen." }, { status: 409 });
+
     const paypalCapture = await capturePayPalOrder(ids.paypalOrderId);
     const capture = paypalCapture.purchase_units?.[0]?.payments?.captures?.[0];
     const capturedAmount = capture?.amount;
     if (paypalCapture.status !== "COMPLETED" || capture?.status !== "COMPLETED" || !capture.id || !capturedAmount || capturedAmount.currency_code !== order.currency || capturedAmount.value !== centsToPayPalValue(order.totalAmountCents)) {
+      await db.update(orders).set({ status: "PENDING", updatedAt: new Date().toISOString() }).where(and(eq(orders.id, order.id), eq(orders.status, "PROCESSING")));
       return NextResponse.json({ error: "PayPal-Capture konnte nicht verifiziert werden." }, { status: 502 });
     }
 
     const now = new Date().toISOString();
     await db.update(payments).set({ providerCaptureId: capture.id, status: "CAPTURED", rawData: paypalCapture, updatedAt: now }).where(eq(payments.id, payment.id));
-    await db.update(orders).set({ status: "PAID", paidAt: now, updatedAt: now }).where(and(eq(orders.id, order.id), eq(orders.status, "PENDING")));
+    await db.update(orders).set({ status: "PAID", paidAt: now, updatedAt: now }).where(and(eq(orders.id, order.id), inArray(orders.status, ["PENDING", "PROCESSING"])));
     await settlePaidOrder(db, order.id, now);
     return NextResponse.json({ ok: true, idempotent: false, orderId: order.id, captureId: capture.id, status: "CAPTURED" });
   } catch (error) {
