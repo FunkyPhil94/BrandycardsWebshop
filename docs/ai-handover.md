@@ -37,8 +37,34 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-_Kein laufender Auftrag._ Vorlage: Stand, Datum, Ziel, geplante Schritte,
-betroffene Dateien, Verifikation, Ergebnis.
+- **Stand:** LÄUFT
+- **Datum:** 2026-08-06
+- **Ziel:** Kartendarstellung geradeziehen, Filter entfernen, Detailseite je Karte
+  mit Bild-Zoom und eBay-Artikelbeschreibung.
+- **Vom Nutzer gewünscht:** Bilder gerade statt gekippt, rund 20 % weniger Zoom,
+  Filterleiste weg (es gibt nur Festpreis, keine Auktionen), Titel klickbar,
+  Detailseite mit vergrößerbarem Bild und der HTML-Beschreibung aus eBay.
+- **Befund vorab:** `description_html` ist bei allen 296 aktiven Listings leer.
+  `GetMyeBaySelling` liefert keine Beschreibung; dafür braucht es `GetItem` mit
+  einem Aufruf **je Artikel**. 296 Aufrufe pro Sync wären zu teuer.
+- **Geplante Schritte:**
+  1. CSS: Rotation der Produktbilder entfernen, Zoom reduzieren
+  2. Filterleiste auf `/karten` entfernen, Suche bleibt
+  3. `GetItem`-Abruf im eBay-Client ergänzen
+  4. HTML-Sanitizer als eigenes Modul — eBay-Beschreibungen sind fremdes Markup
+     und enthalten regelmäßig Skripte, iframes und Event-Handler. Ungefiltert
+     eingebettet wäre das eine XSS-Lücke auf eigener Domain.
+  5. `/api/products/[id]` liefert Karte, Bilder und Beschreibung; fehlt die
+     Beschreibung, wird sie einmalig von eBay geholt und in `description_html`
+     gespeichert (danach aus der Datenbank)
+  6. Detailseite `/karten/[id]` mit Bildergalerie, Klick-Zoom und Beschreibung
+  7. Titel auf `/karten` verlinken
+- **Betroffen:** `app/globals.css`, `app/karten/page.tsx`, neue Detailseite und
+  API-Route, `lib/ebay-client.ts`, neues Sanitizer-Modul, Tests.
+- **Verifikation:** `npx tsc --noEmit`, `npm run lint`, `npm test`, Deploy und
+  Abruf einer echten Detailseite gegen Produktion.
+- **Achtung beim Deploy:** `.env.local` muss im Build-Verzeichnis liegen.
+- **Ergebnis:** _(wird nach dem Durchlauf eingetragen)_
 
 ---
 
