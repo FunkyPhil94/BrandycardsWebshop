@@ -50,19 +50,23 @@ function apiBase(environment: EbayEnvironment) {
 }
 
 async function getAccessToken(config: EbayConfig, scope = process.env.EBAY_OAUTH_SCOPE || "https://api.ebay.com/oauth/api_scope/sell.inventory.readonly") {
+  const form = new URLSearchParams({
+    grant_type: "refresh_token",
+    refresh_token: config.refreshToken,
+  });
+  if (scope && scope !== "https://api.ebay.com/oauth/api_scope/sell.inventory.readonly") form.set("scope", scope);
   const response = await fetch(`${apiBase(config.environment)}/identity/v1/oauth2/token`, {
     method: "POST",
     headers: {
       Authorization: `Basic ${btoa(`${config.clientId}:${config.clientSecret}`)}`,
       "Content-Type": "application/x-www-form-urlencoded",
     },
-    body: new URLSearchParams({
-      grant_type: "refresh_token",
-      refresh_token: config.refreshToken,
-      scope,
-    }),
+    body: form,
   });
-  if (!response.ok) throw new Error(`eBay OAuth fehlgeschlagen (${response.status}).`);
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`eBay OAuth fehlgeschlagen (${response.status}): ${body.slice(0, 240)}`);
+  }
   const body = await response.json() as { access_token?: string };
   if (!body.access_token) throw new Error("eBay OAuth hat kein Zugriffstoken geliefert.");
   return body.access_token;
