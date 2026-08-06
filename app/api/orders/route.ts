@@ -7,6 +7,12 @@ import { getAuthenticatedAppUser } from "../../../lib/app-user";
 const EU_COUNTRIES = new Set(["AT", "BE", "BG", "HR", "CY", "CZ", "DK", "EE", "ES", "FI", "FR", "GR", "HU", "IE", "IT", "LT", "LU", "LV", "MT", "NL", "PL", "PT", "RO", "SE", "SI", "SK"]);
 const RESERVATION_MINUTES = 15;
 
+class OrderIssue extends Error {
+  constructor(public readonly publicMessage: string) {
+    super(publicMessage);
+  }
+}
+
 type CartItem = { productId?: unknown; quantity?: unknown };
 type Address = { name?: unknown; street?: unknown; postalCode?: unknown; city?: unknown; country?: unknown };
 
@@ -47,10 +53,10 @@ export async function POST(request: Request) {
       const rows = await tx.select({ product: products, listing: ebayListings, stock: inventory }).from(products)
         .innerJoin(ebayListings, and(eq(ebayListings.productId, products.id), eq(ebayListings.status, "ACTIVE"), eq(ebayListings.listingType, "FIXED_PRICE")))
         .innerJoin(inventory, eq(inventory.productId, products.id)).where(and(inArray(products.id, ids), eq(products.status, "ACTIVE")));
-      if (rows.length !== ids.length) throw new Error("Ein Artikel ist nicht mehr verfügbar.");
+      if (rows.length !== ids.length) throw new OrderIssue("Ein Artikel ist nicht mehr verfügbar.");
       const lineItems = rows.map(({ product, listing, stock }) => {
         const quantity = requested.get(product.id) ?? 0;
-        if (!listing.priceAmountCents || listing.priceAmountCents < 1 || stock.availableQuantity < quantity || stock.status === "UNAVAILABLE" || stock.status === "SOLD") throw new Error(`Artikel nicht mehr verfügbar: ${product.title}`);
+        if (!listing.priceAmountCents || listing.priceAmountCents < 1 || stock.availableQuantity < quantity || stock.status === "UNAVAILABLE" || stock.status === "SOLD") throw new OrderIssue(`Artikel nicht mehr verfügbar: ${product.title}`);
         return { product, listing, stock, quantity, total: listing.priceAmountCents * quantity };
       });
       const subtotal = lineItems.reduce((sum, item) => sum + item.total, 0);
@@ -62,15 +68,15 @@ export async function POST(request: Request) {
       for (const item of lineItems) {
         await tx.insert(orderItems).values({ orderId: order.id, productId: item.product.id, titleSnapshot: item.product.title, skuSnapshot: item.listing.sku, quantity: item.quantity, unitAmountCents: item.listing.priceAmountCents!, totalAmountCents: item.total, productSnapshot: { title: item.product.title, listingId: item.listing.id } });
         const updated = await tx.update(inventory).set({ availableQuantity: item.stock.availableQuantity - item.quantity, reservedQuantity: item.stock.reservedQuantity + item.quantity, status: "RESERVED", version: item.stock.version + 1, updatedAt: new Date().toISOString() }).where(and(eq(inventory.id, item.stock.id), gte(inventory.availableQuantity, item.quantity))).returning();
-        if (!updated.length) throw new Error(`Bestand konnte nicht reserviert werden: ${item.product.title}`);
+        if (!updated.length) throw new OrderIssue(`Bestand konnte nicht reserviert werden: ${item.product.title}`);
         await tx.insert(reservations).values({ productId: item.product.id, inventoryId: item.stock.id, userId: appUser.id, quantity: item.quantity, status: "ACTIVE", expiresAt });
       }
       return { id: order.id, orderNumber: order.orderNumber, subtotal, shipping, total, expiresAt };
     });
     return NextResponse.json({ order: created }, { status: 201 });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Bestellung konnte nicht angelegt werden.";
+    const message = error instanceof OrderIssue ? error.publicMessage : "Bestellung konnte nicht angelegt werden.";
     console.error("Order creation failed", error);
-    return NextResponse.json({ error: message.includes("verfügbar") || message.includes("reserviert") ? message : "Bestellung konnte nicht angelegt werden." }, { status: 409 });
+    return NextResponse.json({ error: message }, { status: error instanceof OrderIssue ? 409 : 500 });
   }
 }
