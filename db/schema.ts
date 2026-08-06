@@ -73,6 +73,7 @@ export const ebayListings = sqliteTable("ebay_listings", {
   id: id(),
   productId: text("product_id").notNull().references(() => products.id, { onDelete: "cascade" }),
   ebayItemId: text("ebay_item_id").notNull(),
+  ebayOfferId: text("ebay_offer_id"),
   ebayListingId: text("ebay_listing_id"),
   sku: text("sku"),
   title: text("title").notNull(),

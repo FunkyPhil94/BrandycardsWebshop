@@ -27,6 +27,7 @@ function mapListing(item: EbayInventoryItem, offer: EbayOffer) {
   const listing = record(offer.listing);
   const title = text(product.title) ?? text(item.sku) ?? "eBay-Karte";
   const listingId = text(listing.listingId) ?? text((offer as Record<string, unknown>).listingId) ?? text(offer.offerId) ?? item.sku;
+  const offerId = text(offer.offerId);
   if (!listingId) throw new Error("eBay-Angebot ohne stabile ID.");
   const quantity = Number(nestedText(item.availability, "shipToLocationAvailability", "quantity"));
   const imageUrls = Array.isArray(product.imageUrls) ? product.imageUrls.filter((value): value is string => typeof value === "string") : [];
@@ -34,6 +35,7 @@ function mapListing(item: EbayInventoryItem, offer: EbayOffer) {
   const listingType = isAuction(offer) ? "AUCTION" : "FIXED_PRICE";
   return {
     ebayItemId: listingId,
+    ebayOfferId: offerId,
     sku: text(item.sku),
     title,
     description,
@@ -92,7 +94,7 @@ async function runEbaySyncInternal() {
         const existing = await db.query.ebayListings.findFirst({ where: eq(ebayListings.ebayItemId, mapped.ebayItemId) });
         let productId = existing?.productId;
         if (productId) {
-          await db.update(products).set({ title: mapped.title, description: mapped.description ?? null, status: "ACTIVE", updatedAt: new Date().toISOString() }).where(eq(products.id, productId));
+          await db.update(products).set({ title: mapped.title, description: mapped.description ?? null, status: mapped.quantity > 0 ? "ACTIVE" : "INACTIVE", updatedAt: new Date().toISOString() }).where(eq(products.id, productId));
           updatedCount++;
         } else {
           const [created] = await db.insert(products).values({ kind: "EBAY_SYNCED", status: "ACTIVE", title: mapped.title, description: mapped.description ?? null }).returning({ id: products.id });
@@ -100,9 +102,11 @@ async function runEbaySyncInternal() {
           productId = created.id;
           importedCount++;
         }
+        const listingStatus: "ACTIVE" | "ENDED" = mapped.quantity > 0 ? "ACTIVE" : "ENDED";
         const listingValues = {
           productId,
           ebayItemId: mapped.ebayItemId,
+          ebayOfferId: mapped.ebayOfferId,
           sku: mapped.sku,
           title: mapped.title,
           descriptionHtml: mapped.description,
@@ -112,7 +116,7 @@ async function runEbaySyncInternal() {
           listingType: mapped.listingType,
           listingUrl: mapped.listingUrl,
           rawData: mapped.rawData,
-          status: "ACTIVE" as const,
+          status: listingStatus,
           lastSyncedAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
