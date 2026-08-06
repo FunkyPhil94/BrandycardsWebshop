@@ -2,6 +2,8 @@
 import { handleImageOptimization, DEFAULT_DEVICE_SIZES, DEFAULT_IMAGE_SIZES } from "vinext/server/image-optimization";
 import handler from "vinext/server/app-router-entry";
 import { runEbaySync } from "../lib/ebay-sync";
+import { getDb } from "../db";
+import { releaseExpiredReservations } from "../lib/paypal/settle-order";
 
 interface Env {
   ASSETS: Fetcher;
@@ -50,8 +52,9 @@ const worker = {
   },
 
   scheduled(_controller: ScheduledController, _env: Env, ctx: ExecutionContext): void {
+    const now = new Date().toISOString();
     ctx.waitUntil(
-      runEbaySync().catch((error: unknown) => {
+      Promise.all([runEbaySync(), releaseExpiredReservations(getDb(), now)]).catch((error: unknown) => {
         const message = error instanceof Error ? error.message : "Unbekannter Fehler";
         console.error("[scheduled-ebay-sync] eBay-Synchronisierung fehlgeschlagen:", message);
       }),

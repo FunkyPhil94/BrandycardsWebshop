@@ -1,6 +1,17 @@
+"use client";
 import Link from "next/link";
+import { useEffect } from "react";
+import { getSupabaseBrowserClient } from "../../../../lib/supabase-browser";
 
 export default function PayPalCancelPage() {
+  useEffect(() => {
+    const orderId = sessionStorage.getItem("brandycards-pending-order");
+    void getSupabaseBrowserClient().auth.getSession().then(({ data }) => {
+      const token = data.session?.access_token;
+      if (orderId && token) void fetch("/api/orders/release", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ orderId }) });
+      sessionStorage.removeItem("brandycards-pending-order");
+    });
+  }, []);
   return (
     <main className="paypal-return-page" aria-labelledby="paypal-cancel-title">
       <div className="paypal-return-shell">

@@ -23,20 +23,22 @@ export async function POST(request: Request) {
     const calculatedTotal = calculatedSubtotal + order.shippingAmountCents;
     if (calculatedSubtotal !== order.subtotalAmountCents || calculatedTotal !== order.totalAmountCents) return NextResponse.json({ error: "Bestellbetrag konnte nicht verifiziert werden." }, { status: 409 });
     assertValidMoney(order.totalAmountCents, order.currency);
+    const existingPayment = await db.query.payments.findFirst({ where: and(eq(payments.orderId, order.id), eq(payments.provider, "PAYPAL")) });
+    if (existingPayment?.status === "CAPTURED") return NextResponse.json({ error: "Diese Bestellung wurde bereits bezahlt." }, { status: 409 });
+    if (existingPayment?.providerOrderId && ["CREATED", "APPROVED"].includes(existingPayment.status)) return NextResponse.json({ error: "Für diese Bestellung wurde bereits eine PayPal-Zahlung gestartet." }, { status: 409 });
 
     const origin = new URL(request.url).origin;
     const paypalOrder = await createPayPalOrder({ referenceId: order.id, amountCents: order.totalAmountCents, currency: order.currency, returnUrl: `${origin}/checkout/paypal/success`, cancelUrl: `${origin}/checkout/paypal/cancel` });
     if (!paypalOrder.id) throw new Error("PayPal lieferte keine Order-ID.");
     const now = new Date().toISOString();
-    const payment = await db.query.payments.findFirst({ where: and(eq(payments.orderId, order.id), eq(payments.provider, "PAYPAL")) });
-    if (payment) {
+    if (existingPayment) {
       await db.update(payments).set({
         providerOrderId: paypalOrder.id,
-        ...(payment.status === "CAPTURED" ? {} : { status: "CREATED" as const }),
+        status: "CREATED",
         amountCents: order.totalAmountCents,
         currency: order.currency,
         updatedAt: now,
-      }).where(eq(payments.id, payment.id));
+      }).where(eq(payments.id, existingPayment.id));
     } else {
       await db.insert(payments).values({
         orderId: order.id,

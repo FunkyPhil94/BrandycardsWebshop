@@ -4,7 +4,8 @@ import { getDb } from "../../../../db";
 import { orders, payments, webhookEvents } from "../../../../db/schema";
 import { getPayPalConfig } from "../../../../lib/paypal/config";
 import { verifyPayPalWebhookSignature } from "../../../../lib/paypal/client";
-import { settlePaidOrder } from "../../../../lib/paypal/settle-order";
+import { releaseOrderReservations, settlePaidOrder } from "../../../../lib/paypal/settle-order";
+import { centsToPayPalValue } from "../../../../lib/paypal/money";
 
 type PayPalWebhookEvent = {
   id?: unknown;
@@ -14,6 +15,7 @@ type PayPalWebhookEvent = {
     custom_id?: unknown;
     reference_id?: unknown;
     supplementary_data?: { related_ids?: { order_id?: unknown } };
+    amount?: { value?: unknown; currency_code?: unknown };
   };
 };
 
@@ -69,6 +71,12 @@ export async function POST(request: Request) {
     const now = new Date().toISOString();
     if (eventType === "PAYMENT.CAPTURE.COMPLETED") {
       if (!payment) throw new Error("Zugehörige PayPal-Zahlung wurde nicht gefunden.");
+      const order = await db.query.orders.findFirst({ where: eq(orders.id, payment.orderId) });
+      const webhookValue = stringValue(event.resource?.amount?.value);
+      const webhookCurrency = stringValue(event.resource?.amount?.currency_code);
+      if (!order || !webhookValue || !webhookCurrency || webhookValue !== centsToPayPalValue(order.totalAmountCents) || webhookCurrency !== order.currency || payment.amountCents !== order.totalAmountCents || payment.currency !== order.currency) {
+        throw new Error("PayPal-Webhook-Betrag oder Währung stimmt nicht mit der Bestellung überein.");
+      }
       const captureId = stringValue(event.resource?.id);
       await db.update(payments).set({
         status: "CAPTURED",
@@ -81,6 +89,7 @@ export async function POST(request: Request) {
     } else if (eventType === "PAYMENT.CAPTURE.DENIED" || eventType === "PAYMENT.CAPTURE.DECLINED") {
       if (!payment) throw new Error("Zugehörige PayPal-Zahlung wurde nicht gefunden.");
       await db.update(payments).set({ status: "FAILED", rawData: event, updatedAt: now }).where(eq(payments.id, payment.id));
+      await releaseOrderReservations(db, payment.orderId, now);
     } else if (eventType === "PAYMENT.CAPTURE.REFUNDED") {
       if (!payment) throw new Error("Zugehörige PayPal-Zahlung wurde nicht gefunden.");
       await db.update(payments).set({ status: "REFUNDED", rawData: event, updatedAt: now }).where(eq(payments.id, payment.id));
