@@ -6,6 +6,7 @@ type EbayConfig = {
   clientSecret: string;
   refreshToken: string;
   marketplaceId: string;
+  siteId: string;
 };
 
 export type EbayInventoryItem = {
@@ -42,6 +43,7 @@ function getConfig(): EbayConfig {
     clientSecret,
     refreshToken,
     marketplaceId: process.env.EBAY_MARKETPLACE_ID || "EBAY_DE",
+    siteId: process.env.EBAY_SITE_ID || "77",
   };
 }
 
@@ -88,19 +90,119 @@ async function ebayJson<T>(pathOrUrl: string): Promise<T> {
   return await response.json() as T;
 }
 
-export async function getAllInventoryItems() {
-  const items: EbayInventoryItem[] = [];
-  const limit = 100;
-  for (let offset = 0; ; offset += limit) {
-    const query = new URLSearchParams({ limit: String(limit), offset: String(offset) });
-    const body = await ebayJson<{ inventoryItems?: EbayInventoryItem[]; total?: number }>(`/sell/inventory/v1/inventory_item?${query}`);
-    items.push(...(body.inventoryItems ?? []));
-    if (items.length >= (body.total ?? items.length) || (body.inventoryItems ?? []).length < limit) break;
+function decodeXml(value: string) {
+  return value.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1")
+    .replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, "&").trim();
+}
+
+function xmlValues(xml: string, tag: string) {
+  const pattern = new RegExp(`<${tag}\\b[^>]*>([\\s\\S]*?)</${tag}>`, "gi");
+  return [...xml.matchAll(pattern)].map((match) => decodeXml(match[1] ?? ""));
+}
+
+function xmlValue(xml: string, tag: string) { return xmlValues(xml, tag)[0]; }
+
+function xmlAttribute(xml: string, tag: string, attribute: string) {
+  const match = xml.match(new RegExp(`<${tag}\\b([^>]*)>`, "i"));
+  return match?.[1]?.match(new RegExp(`${attribute}\\s*=\\s*["']([^"']*)["']`, "i"))?.[1];
+}
+
+function xmlBlocks(xml: string, tag: string) {
+  const pattern = new RegExp(`<${tag}\\b[^>]*>([\\s\\S]*?)</${tag}>`, "gi");
+  return [...xml.matchAll(pattern)].map((match) => match[0]);
+}
+
+export type EbayActiveListing = {
+  ebayItemId: string;
+  sku?: string;
+  title: string;
+  description?: string;
+  imageUrls: string[];
+  listingType: "FIXED_PRICE" | "AUCTION";
+  listingUrl: string;
+  priceAmountCents: number | null;
+  priceCurrency: string;
+  quantity: number;
+  rawData: Record<string, unknown>;
+};
+
+let activeListingCache: Map<string, EbayActiveListing> | null = null;
+
+function parseTradingResponse(xml: string, config: EbayConfig) {
+  if (xmlValue(xml, "Ack")?.toUpperCase() === "FAILURE") {
+    throw new Error(`eBay GetMyeBaySelling fehlgeschlagen: ${xmlValue(xml, "LongMessage") ?? "Unbekannter eBay-Fehler."}`);
   }
-  return items;
+  const items = xmlBlocks(xml, "Item").map((itemXml): EbayActiveListing | null => {
+    const ebayItemId = xmlValue(itemXml, "ItemID");
+    const title = xmlValue(itemXml, "Title");
+    if (!ebayItemId || !title) return null;
+    const listingType = (xmlValue(itemXml, "ListingType") ?? "").toUpperCase();
+    const price = Number(xmlValue(itemXml, "CurrentPrice") ?? xmlValue(itemXml, "ConvertedCurrentPrice"));
+    const quantity = Number(xmlValue(itemXml, "QuantityAvailable") ?? xmlValue(itemXml, "Quantity"));
+    return {
+      ebayItemId,
+      sku: xmlValue(itemXml, "SKU"),
+      title,
+      description: xmlValue(itemXml, "Description"),
+      imageUrls: xmlValues(itemXml, "PictureURL"),
+      listingType: listingType.includes("AUCTION") || listingType.includes("CHINESE") ? "AUCTION" : "FIXED_PRICE",
+      listingUrl: xmlValue(itemXml, "ViewItemURLForNaturalSearch") ?? xmlValue(itemXml, "ViewItemURL") ?? `https://www.ebay.de/itm/${ebayItemId}`,
+      priceAmountCents: Number.isFinite(price) ? Math.round(price * 100) : null,
+      priceCurrency: xmlAttribute(itemXml, "CurrentPrice", "currencyID") ?? "EUR",
+      quantity: Number.isFinite(quantity) && quantity >= 0 ? quantity : 0,
+      rawData: { source: "trading-api", marketplaceId: config.marketplaceId, itemId: ebayItemId },
+    };
+  }).filter((item): item is EbayActiveListing => Boolean(item));
+  return { items, totalPages: Number(xmlValue(xml, "TotalNumberOfPages") ?? "1") || 1 };
+}
+
+/** Returns the listings that are actually active in the seller account.
+ * Unlike Inventory API, this also includes listings created in the eBay UI.
+ */
+export async function getActiveEbayListings() {
+  const config = getConfig();
+  const accessToken = await getAccessToken(config);
+  const listings: EbayActiveListing[] = [];
+  let page = 1;
+  let totalPages = 1;
+  do {
+    const request = `<?xml version="1.0" encoding="utf-8"?><GetMyeBaySellingRequest xmlns="urn:ebay:apis:eBLBaseComponents"><ActiveList><Include>true</Include><Pagination><EntriesPerPage>200</EntriesPerPage><PageNumber>${page}</PageNumber></Pagination></ActiveList><DetailLevel>ReturnAll</DetailLevel></GetMyeBaySellingRequest>`;
+    const response = await fetch(`${apiBase(config.environment)}/ws/api.dll`, {
+      method: "POST",
+      headers: { "Content-Type": "text/xml", "X-EBAY-API-CALL-NAME": "GetMyeBaySelling", "X-EBAY-API-SITEID": config.siteId, "X-EBAY-API-COMPATIBILITY-LEVEL": "1231", "X-EBAY-API-IAF-TOKEN": accessToken },
+      body: request,
+    });
+    if (!response.ok) throw new Error(`eBay GetMyeBaySelling fehlgeschlagen (${response.status}).`);
+    const parsed = parseTradingResponse(await response.text(), config);
+    listings.push(...parsed.items);
+    totalPages = parsed.totalPages;
+    page++;
+  } while (page <= totalPages && page <= 50);
+  return listings;
+}
+
+export async function getAllInventoryItems() {
+  const activeListings = await getActiveEbayListings();
+  activeListingCache = new Map(activeListings.map((listing) => [listing.ebayItemId, listing]));
+  return activeListings.map((listing) => ({
+    sku: listing.ebayItemId,
+    product: { title: listing.title, description: listing.description, imageUrls: listing.imageUrls },
+    availability: { shipToLocationAvailability: { quantity: listing.quantity } },
+  }));
 }
 
 export async function getOffersForSku(sku: string) {
+  const activeListing = activeListingCache?.get(sku);
+  if (activeListing) {
+    return [{
+      offerId: `trading-${activeListing.ebayItemId}`,
+      sku,
+      listing: { listingId: activeListing.ebayItemId, listingStatus: "ACTIVE", listingType: activeListing.listingType === "AUCTION" ? "AUCTION" : "FIXED_PRICE", listingUrl: activeListing.listingUrl },
+      pricingSummary: { price: { value: (activeListing.priceAmountCents ?? 0) / 100 }, priceCurrency: activeListing.priceCurrency },
+      status: "PUBLISHED",
+    } satisfies EbayOffer];
+  }
   const config = getConfig();
   const query = new URLSearchParams({ sku, marketplace_id: config.marketplaceId, limit: "25" });
   const offers: EbayOffer[] = [];

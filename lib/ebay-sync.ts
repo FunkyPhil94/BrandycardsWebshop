@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import { env } from "cloudflare:workers";
 import { getDb } from "../db";
 import { ebayListings, inventory, productAssets, products, syncEvents, syncRuns } from "../db/schema";
-import { getAllInventoryItems, getOffersForSku, type EbayInventoryItem, type EbayOffer } from "./ebay-client";
+import { type EbayInventoryItem, type EbayOffer } from "./ebay-client";
 
 let localSyncLock: Promise<unknown> | null = null;
 
@@ -10,6 +10,7 @@ const record = (value: unknown): Record<string, unknown> => value && typeof valu
 const text = (value: unknown) => typeof value === "string" && value.trim() ? value.trim() : undefined;
 const nestedText = (value: unknown, ...keys: string[]) => keys.reduce<unknown>((current, key) => record(current)[key], value) as unknown;
 
+/* Legacy Inventory API mapping retained only for historical data compatibility. */
 function priceCents(offer: EbayOffer) {
   const price = record(offer.pricingSummary).price;
   const value = Number(record(price).value);
@@ -32,7 +33,7 @@ function isPublishedActiveOffer(offer: EbayOffer) {
   return offerStatus === "PUBLISHED" && listingStatus === "ACTIVE";
 }
 
-function mapListing(item: EbayInventoryItem, offer: EbayOffer) {
+function mapLegacyListing(item: EbayInventoryItem, offer: EbayOffer) {
   const product = record(item.product);
   const listing = record(offer.listing);
   const title = text(product.title) ?? text(item.sku) ?? "eBay-Karte";
