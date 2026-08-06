@@ -1,3 +1,5 @@
+import { maxResolutionImageUrl } from "./ebay-images.ts";
+
 type EbayEnvironment = "production" | "sandbox";
 
 type EbayConfig = {
@@ -132,7 +134,13 @@ function parseTradingResponse(xml: string, config: EbayConfig) {
       sku: xmlValue(itemXml, "SKU"),
       title,
       description: xmlValue(itemXml, "Description"),
-      imageUrls: xmlValues(itemXml, "PictureURL"),
+      // GetMyeBaySelling returns PictureURL for only a fraction of the items
+      // and GalleryURL for the rest, which is why 291 of 296 cards had no image
+      // at all. Take both, upgrade each to full resolution, then dedupe.
+      imageUrls: [...new Set([
+        ...xmlValues(itemXml, "PictureURL"),
+        ...xmlValues(itemXml, "GalleryURL"),
+      ].filter(Boolean).map(maxResolutionImageUrl))],
       listingType: isAuctionType ? "AUCTION" : "FIXED_PRICE",
       listingUrl: xmlValue(itemXml, "ViewItemURLForNaturalSearch") ?? xmlValue(itemXml, "ViewItemURL") ?? `https://www.ebay.de/itm/${ebayItemId}`,
       priceAmountCents: Number.isFinite(price) ? Math.round(price * 100) : null,

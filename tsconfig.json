@@ -9,6 +9,10 @@
     "esModuleInterop": true,
     "module": "esnext",
     "moduleResolution": "bundler",
+    // Node's test runner strips types but does not resolve extensionless
+    // imports, so lib modules that tests exercise import each other with the
+    // explicit .ts suffix. Safe here because the project never emits JS.
+    "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "react-jsx",

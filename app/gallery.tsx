@@ -80,6 +80,17 @@ export function Gallery() {
     return () => window.clearInterval(timer);
   }, [advance, paused, reducedMotion, total]);
 
+  // Full-resolution cards weigh a few hundred KB each. With a two second
+  // interval the first pass through would flash placeholders, so warm the
+  // browser cache for the active view up front.
+  useEffect(() => {
+    for (const card of cards) {
+      if (!card.imageUrl) continue;
+      const preload = new Image();
+      preload.src = card.imageUrl;
+    }
+  }, [cards]);
+
   function selectView(next: View) {
     setView(next);
     setIndex(0);
@@ -139,8 +150,16 @@ export function Gallery() {
         >
           <span className="gallery-frame">
             {current.imageUrl
+              /* The gallery is the showpiece: full resolution, eager, and
+               * never upscaled from a thumbnail. */
               // eslint-disable-next-line @next/next/no-img-element
-              ? <img src={current.imageUrl} alt={current.title} />
+              ? <img
+                  src={current.imageUrl}
+                  alt={current.title}
+                  width={900}
+                  height={1600}
+                  decoding="async"
+                />
               : <span className="gallery-fallback" aria-hidden="true">BC</span>}
           </span>
           <span className="gallery-badge">{current.category === "Auktion" ? "eBay Auktion" : "Sofort-Kaufen"}</span>

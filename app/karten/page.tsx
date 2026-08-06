@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { ebayImageVariant } from "../../lib/ebay-images.ts";
 import { Field, FormFeedback, PrivacyNotice, postJson, useFormSubmit } from "../forms";
 import { EBAY_SHOP_URL, SiteFooter, SiteHeader, formatPrice, useCart } from "../site-chrome";
 
@@ -92,8 +93,19 @@ export default function KartenPage() {
             <article className="product-card" key={product.id}>
               <div className="product-image">
                 {product.imageUrls?.[0]
+                  /* The grid never shows a card wider than ~430px, so the
+                   * 900x1600 original would be wasted bytes across 296 cards.
+                   * Lazy loading keeps the initial page light. */
                   // eslint-disable-next-line @next/next/no-img-element
-                  ? <img className="card-art product-photo" src={product.imageUrls[0]} alt="" />
+                  ? <img
+                      className="card-art product-photo"
+                      src={ebayImageVariant(product.imageUrls[0], 800)}
+                      alt={product.title}
+                      loading="lazy"
+                      decoding="async"
+                      width={450}
+                      height={800}
+                    />
                   : <div className="card-art card-art-gold" aria-hidden="true"><span className="art-mark">BC</span></div>}
                 <span className="product-badge">{badge(product.category)}</span>
               </div>

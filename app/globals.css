@@ -201,3 +201,8 @@ footer { background:var(--ink); color:#fff; padding:52px max(48px,calc((100vw - 
   .about-columns { gap:34px; padding:44px 22px 64px; }
   .cta-strip p { font-size:20px; text-align:center; }
 }
+
+/* --- Produktbilder --- */
+/* Ohne object-fit würde das 900x1600-Original in den 198x292-Rahmen gequetscht. */
+.product-photo { display:block; height:100%; object-fit:cover; width:100%; }
+.gallery-frame img { background:#dedbd3; }
