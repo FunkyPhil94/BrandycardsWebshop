@@ -82,6 +82,33 @@ Kein Auftrag, sondern der Zustand, den die nächste Sitzung kennen muss.
 
 ## Historie
 
+### 2026-08-06 — eBay-Bilder: fehlten fast überall, Rest war Miniatur
+
+- **Stand:** ABGESCHLOSSEN
+- **Ziel:** Produktbilder im Shop anzeigen, hochauflösend.
+- **Befund:** Zwei Fehler. Erstens las der Parser nur `PictureURL`, das
+  `GetMyeBaySelling` nur für einen Bruchteil der Artikel liefert — 291 von 296
+  Karten hatten gar keine Bildzeile. Zweitens war die gespeicherte Variante die
+  Miniatur: am Live-CDN gemessen liefert `$_1.JPG` **225x400 bei 26 KB**, obwohl
+  der Pfad `MTYwMFg5MDA=` (1600X900) behauptet. Das Base64-Segment nennt die
+  Originalmaße, nicht die ausgelieferte Größe.
+- **Gemessene Varianten:** `$_57.JPG` und `s-l1600.jpg` liefern beide
+  **900x1600 bei 364 KB**; `s-l2400` gibt identische Bytes zurück, 1600 ist also
+  die Obergrenze. Alles reine Pfad-Umschreibungen, kein zusätzlicher API-Aufruf.
+- **Umsetzung:** Sync liest jetzt zusätzlich `GalleryURL` und hebt jede URL auf
+  die größte Variante. Helfer in `lib/ebay-images.ts`, bewusst ohne
+  Abhängigkeiten, damit Client-Komponenten sie importieren können ohne den
+  eBay-Client samt Secret-Logik ins Browser-Bundle zu ziehen. Galerie zeigt das
+  Original und lädt ihre fünf Karten vor; das Raster mit 296 Karten holt
+  `s-l800` und lädt verzögert. `.product-photo` bekam eine `object-fit`-Regel —
+  vorher wäre das Hochformat in den 198x292-Rahmen gequetscht worden.
+- **Verifikation:** neuer `tests/ebay-images.test.mjs`, 16/16 Tests,
+  `tsc --noEmit` sauber, Lint 0 Fehler. Commit `fe87619`, deployed `475eac62`.
+- **Wirkt erst nach einem Sync-Lauf** — die alten Miniatur-URLs stehen noch in
+  `product_assets`. Der Sync ersetzt die Bilder je Produkt vollständig.
+- **Nebenbei:** `allowImportingTsExtensions` in der tsconfig, weil Nodes
+  Test-Runner Typen strippt, aber keine endungslosen Importe auflöst.
+
 ### 2026-08-06 — Startseite entschlackt, Galerie eingeführt
 
 - **Stand:** ABGESCHLOSSEN
