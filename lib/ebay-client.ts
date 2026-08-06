@@ -72,10 +72,11 @@ async function getAccessToken(config: EbayConfig, scope = process.env.EBAY_OAUTH
   return body.access_token;
 }
 
-async function ebayJson<T>(path: string): Promise<T> {
+async function ebayJson<T>(pathOrUrl: string): Promise<T> {
   const config = getConfig();
   const accessToken = await getAccessToken(config);
-  const response = await fetch(`${apiBase(config.environment)}${path}`, {
+  const url = pathOrUrl.startsWith("http") ? pathOrUrl : `${apiBase(config.environment)}${pathOrUrl}`;
+  const response = await fetch(url, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
       Accept: "application/json",
@@ -102,8 +103,16 @@ export async function getAllInventoryItems() {
 export async function getOffersForSku(sku: string) {
   const config = getConfig();
   const query = new URLSearchParams({ sku, marketplace_id: config.marketplaceId, limit: "25" });
-  const body = await ebayJson<{ offers?: EbayOffer[] }>(`/sell/inventory/v1/offer?${query}`);
-  return body.offers ?? [];
+  const offers: EbayOffer[] = [];
+  let nextUrl: string | undefined = `/sell/inventory/v1/offer?${query}`;
+  let pageCount = 0;
+  while (nextUrl && pageCount < 100) {
+    const body = await ebayJson<{ offers?: EbayOffer[]; next?: string }>(nextUrl);
+    offers.push(...(body.offers ?? []));
+    nextUrl = body.next;
+    pageCount++;
+  }
+  return offers;
 }
 
 export async function withdrawEbayOffer(offerId: string) {

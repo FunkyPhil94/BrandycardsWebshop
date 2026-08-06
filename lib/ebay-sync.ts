@@ -22,6 +22,16 @@ function isAuction(offer: EbayOffer) {
   return listingType.includes("AUCTION") || duration.startsWith("DAYS_");
 }
 
+/**
+ * Inventory items also contain unpublished offers created through the API.
+ * Only a published offer with an active eBay listing belongs in the shop.
+ */
+function isPublishedActiveOffer(offer: EbayOffer) {
+  const offerStatus = text(offer.status)?.toUpperCase();
+  const listingStatus = text(record(offer.listing).listingStatus)?.toUpperCase();
+  return offerStatus === "PUBLISHED" && listingStatus === "ACTIVE";
+}
+
 function mapListing(item: EbayInventoryItem, offer: EbayOffer) {
   const product = record(item.product);
   const listing = record(offer.listing);
@@ -84,10 +94,30 @@ async function runEbaySyncInternal() {
       if (!item.sku) { skippedCount++; continue; }
       const offers = await getOffersForSku(item.sku);
       for (const offer of offers) {
+        if (!isPublishedActiveOffer(offer)) {
+          skippedCount++;
+          await db.insert(syncEvents).values({
+            syncRunId: run.id,
+            ebayItemId: text(record(offer.listing).listingId) ?? text(offer.offerId),
+            status: "SKIPPED",
+            message: "Unveröffentlichtes oder nicht aktives eBay-Angebot nicht importiert.",
+          });
+          continue;
+        }
         let mapped;
         try { mapped = mapListing(item, offer); } catch (error) {
           skippedCount++;
           await db.insert(syncEvents).values({ syncRunId: run.id, status: "SKIPPED", message: error instanceof Error ? error.message : "Ungültiges eBay-Angebot." });
+          continue;
+        }
+        if (seenItemIds.has(mapped.ebayItemId)) {
+          skippedCount++;
+          await db.insert(syncEvents).values({
+            syncRunId: run.id,
+            ebayItemId: mapped.ebayItemId,
+            status: "SKIPPED",
+            message: "Doppeltes eBay-Listing innerhalb des Sync-Laufs nicht erneut importiert.",
+          });
           continue;
         }
         seenItemIds.add(mapped.ebayItemId);
