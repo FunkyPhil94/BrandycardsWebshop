@@ -1,5 +1,5 @@
-CREATE TABLE `audit_events` (
-	`id` text PRIMARY KEY DEFAULT lower(hex(randomblob(16))) NOT NULL,
+CREATE TABLE IF NOT EXISTS `audit_events` (
+	`id` text PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))) NOT NULL,
 	`actor_user_id` text,
 	`action` text NOT NULL,
 	`entity_type` text NOT NULL,
@@ -10,10 +10,10 @@ CREATE TABLE `audit_events` (
 	FOREIGN KEY (`actor_user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE set null
 );
 --> statement-breakpoint
-CREATE INDEX `audit_entity_idx` ON `audit_events` (`entity_type`,`entity_id`);--> statement-breakpoint
-CREATE INDEX `audit_actor_idx` ON `audit_events` (`actor_user_id`,`created_at`);--> statement-breakpoint
-CREATE TABLE `card_submissions` (
-	`id` text PRIMARY KEY DEFAULT lower(hex(randomblob(16))) NOT NULL,
+CREATE INDEX IF NOT EXISTS `audit_entity_idx` ON `audit_events` (`entity_type`,`entity_id`);--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `audit_actor_idx` ON `audit_events` (`actor_user_id`,`created_at`);--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS `card_submissions` (
+	`id` text PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))) NOT NULL,
 	`user_id` text,
 	`guest_email` text NOT NULL,
 	`name` text,
@@ -26,9 +26,9 @@ CREATE TABLE `card_submissions` (
 	FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE set null
 );
 --> statement-breakpoint
-CREATE INDEX `card_submissions_status_created_idx` ON `card_submissions` (`status`,`created_at`);--> statement-breakpoint
-CREATE TABLE `ebay_listings` (
-	`id` text PRIMARY KEY DEFAULT lower(hex(randomblob(16))) NOT NULL,
+CREATE INDEX IF NOT EXISTS `card_submissions_status_created_idx` ON `card_submissions` (`status`,`created_at`);--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS `ebay_listings` (
+	`id` text PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))) NOT NULL,
 	`product_id` text NOT NULL,
 	`ebay_item_id` text NOT NULL,
 	`ebay_listing_id` text,
@@ -56,12 +56,12 @@ CREATE TABLE `ebay_listings` (
 	CONSTRAINT "ebay_listing_quantity_check" CHECK("ebay_listings"."quantity" >= 0 AND "ebay_listings"."quantity_sold" >= 0)
 );
 --> statement-breakpoint
-CREATE UNIQUE INDEX `ebay_item_id_unique` ON `ebay_listings` (`ebay_item_id`);--> statement-breakpoint
-CREATE UNIQUE INDEX `ebay_product_unique` ON `ebay_listings` (`product_id`);--> statement-breakpoint
-CREATE INDEX `ebay_listing_status_idx` ON `ebay_listings` (`status`);--> statement-breakpoint
-CREATE INDEX `ebay_sku_idx` ON `ebay_listings` (`sku`);--> statement-breakpoint
-CREATE TABLE `inquiries` (
-	`id` text PRIMARY KEY DEFAULT lower(hex(randomblob(16))) NOT NULL,
+CREATE UNIQUE INDEX IF NOT EXISTS `ebay_item_id_unique` ON `ebay_listings` (`ebay_item_id`);--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS `ebay_product_unique` ON `ebay_listings` (`product_id`);--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `ebay_listing_status_idx` ON `ebay_listings` (`status`);--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `ebay_sku_idx` ON `ebay_listings` (`sku`);--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS `inquiries` (
+	`id` text PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))) NOT NULL,
 	`product_id` text,
 	`user_id` text,
 	`guest_email` text NOT NULL,
@@ -75,9 +75,9 @@ CREATE TABLE `inquiries` (
 	FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE set null
 );
 --> statement-breakpoint
-CREATE INDEX `inquiries_status_created_idx` ON `inquiries` (`status`,`created_at`);--> statement-breakpoint
-CREATE TABLE `inventory` (
-	`id` text PRIMARY KEY DEFAULT lower(hex(randomblob(16))) NOT NULL,
+CREATE INDEX IF NOT EXISTS `inquiries_status_created_idx` ON `inquiries` (`status`,`created_at`);--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS `inventory` (
+	`id` text PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))) NOT NULL,
 	`product_id` text NOT NULL,
 	`status` text DEFAULT 'AVAILABLE' NOT NULL,
 	`available_quantity` integer DEFAULT 1 NOT NULL,
@@ -89,9 +89,9 @@ CREATE TABLE `inventory` (
 	CONSTRAINT "inventory_quantities_check" CHECK("inventory"."available_quantity" >= 0 AND "inventory"."reserved_quantity" >= 0 AND "inventory"."sold_quantity" >= 0)
 );
 --> statement-breakpoint
-CREATE UNIQUE INDEX `inventory_product_unique` ON `inventory` (`product_id`);--> statement-breakpoint
-CREATE TABLE `order_items` (
-	`id` text PRIMARY KEY DEFAULT lower(hex(randomblob(16))) NOT NULL,
+CREATE UNIQUE INDEX IF NOT EXISTS `inventory_product_unique` ON `inventory` (`product_id`);--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS `order_items` (
+	`id` text PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))) NOT NULL,
 	`order_id` text NOT NULL,
 	`product_id` text,
 	`title_snapshot` text NOT NULL,
@@ -104,9 +104,9 @@ CREATE TABLE `order_items` (
 	FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON UPDATE no action ON DELETE set null
 );
 --> statement-breakpoint
-CREATE INDEX `order_items_order_idx` ON `order_items` (`order_id`);--> statement-breakpoint
-CREATE TABLE `orders` (
-	`id` text PRIMARY KEY DEFAULT lower(hex(randomblob(16))) NOT NULL,
+CREATE INDEX IF NOT EXISTS `order_items_order_idx` ON `order_items` (`order_id`);--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS `orders` (
+	`id` text PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))) NOT NULL,
 	`order_number` text NOT NULL,
 	`user_id` text,
 	`guest_email` text,
@@ -124,10 +124,10 @@ CREATE TABLE `orders` (
 	CONSTRAINT "orders_amounts_check" CHECK("orders"."subtotal_amount_cents" >= 0 AND "orders"."shipping_amount_cents" >= 0 AND "orders"."total_amount_cents" >= 0)
 );
 --> statement-breakpoint
-CREATE UNIQUE INDEX `orders_number_unique` ON `orders` (`order_number`);--> statement-breakpoint
-CREATE INDEX `orders_user_status_idx` ON `orders` (`user_id`,`status`);--> statement-breakpoint
-CREATE TABLE `payments` (
-	`id` text PRIMARY KEY DEFAULT lower(hex(randomblob(16))) NOT NULL,
+CREATE UNIQUE INDEX IF NOT EXISTS `orders_number_unique` ON `orders` (`order_number`);--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `orders_user_status_idx` ON `orders` (`user_id`,`status`);--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS `payments` (
+	`id` text PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))) NOT NULL,
 	`order_id` text NOT NULL,
 	`provider` text DEFAULT 'PAYPAL' NOT NULL,
 	`provider_order_id` text,
@@ -141,10 +141,10 @@ CREATE TABLE `payments` (
 	FOREIGN KEY (`order_id`) REFERENCES `orders`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
-CREATE UNIQUE INDEX `payments_provider_order_unique` ON `payments` (`provider`,`provider_order_id`);--> statement-breakpoint
-CREATE INDEX `payments_order_status_idx` ON `payments` (`order_id`,`status`);--> statement-breakpoint
-CREATE TABLE `price_offers` (
-	`id` text PRIMARY KEY DEFAULT lower(hex(randomblob(16))) NOT NULL,
+CREATE UNIQUE INDEX IF NOT EXISTS `payments_provider_order_unique` ON `payments` (`provider`,`provider_order_id`);--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `payments_order_status_idx` ON `payments` (`order_id`,`status`);--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS `price_offers` (
+	`id` text PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))) NOT NULL,
 	`product_id` text NOT NULL,
 	`user_id` text,
 	`guest_email` text NOT NULL,
@@ -159,9 +159,9 @@ CREATE TABLE `price_offers` (
 	FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE set null
 );
 --> statement-breakpoint
-CREATE INDEX `price_offers_product_status_idx` ON `price_offers` (`product_id`,`status`);--> statement-breakpoint
-CREATE TABLE `product_assets` (
-	`id` text PRIMARY KEY DEFAULT lower(hex(randomblob(16))) NOT NULL,
+CREATE INDEX IF NOT EXISTS `price_offers_product_status_idx` ON `price_offers` (`product_id`,`status`);--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS `product_assets` (
+	`id` text PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))) NOT NULL,
 	`product_id` text NOT NULL,
 	`storage_key` text NOT NULL,
 	`source_url` text,
@@ -173,10 +173,10 @@ CREATE TABLE `product_assets` (
 	FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
-CREATE UNIQUE INDEX `product_asset_storage_key_unique` ON `product_assets` (`storage_key`);--> statement-breakpoint
-CREATE INDEX `product_assets_product_idx` ON `product_assets` (`product_id`,`sort_order`);--> statement-breakpoint
-CREATE TABLE `products` (
-	`id` text PRIMARY KEY DEFAULT lower(hex(randomblob(16))) NOT NULL,
+CREATE UNIQUE INDEX IF NOT EXISTS `product_asset_storage_key_unique` ON `product_assets` (`storage_key`);--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `product_assets_product_idx` ON `product_assets` (`product_id`,`sort_order`);--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS `products` (
+	`id` text PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))) NOT NULL,
 	`kind` text NOT NULL,
 	`status` text DEFAULT 'ACTIVE' NOT NULL,
 	`title` text NOT NULL,
@@ -189,10 +189,10 @@ CREATE TABLE `products` (
 	CONSTRAINT "products_status_check" CHECK("products"."status" IN ('ACTIVE', 'INACTIVE', 'SOLD'))
 );
 --> statement-breakpoint
-CREATE INDEX `products_kind_status_idx` ON `products` (`kind`,`status`);--> statement-breakpoint
-CREATE INDEX `products_title_idx` ON `products` (`title`);--> statement-breakpoint
-CREATE TABLE `reservations` (
-	`id` text PRIMARY KEY DEFAULT lower(hex(randomblob(16))) NOT NULL,
+CREATE INDEX IF NOT EXISTS `products_kind_status_idx` ON `products` (`kind`,`status`);--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `products_title_idx` ON `products` (`title`);--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS `reservations` (
+	`id` text PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))) NOT NULL,
 	`product_id` text NOT NULL,
 	`inventory_id` text NOT NULL,
 	`user_id` text,
@@ -208,10 +208,10 @@ CREATE TABLE `reservations` (
 	CONSTRAINT "reservations_status_check" CHECK("reservations"."status" IN ('ACTIVE', 'RELEASED', 'CONVERTED', 'EXPIRED'))
 );
 --> statement-breakpoint
-CREATE INDEX `reservations_product_status_idx` ON `reservations` (`product_id`,`status`);--> statement-breakpoint
-CREATE INDEX `reservations_expiry_idx` ON `reservations` (`expires_at`);--> statement-breakpoint
-CREATE TABLE `sync_events` (
-	`id` text PRIMARY KEY DEFAULT lower(hex(randomblob(16))) NOT NULL,
+CREATE INDEX IF NOT EXISTS `reservations_product_status_idx` ON `reservations` (`product_id`,`status`);--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `reservations_expiry_idx` ON `reservations` (`expires_at`);--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS `sync_events` (
+	`id` text PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))) NOT NULL,
 	`sync_run_id` text NOT NULL,
 	`ebay_item_id` text,
 	`product_id` text,
@@ -223,10 +223,10 @@ CREATE TABLE `sync_events` (
 	FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON UPDATE no action ON DELETE set null
 );
 --> statement-breakpoint
-CREATE INDEX `sync_events_run_idx` ON `sync_events` (`sync_run_id`);--> statement-breakpoint
-CREATE INDEX `sync_events_item_idx` ON `sync_events` (`ebay_item_id`);--> statement-breakpoint
-CREATE TABLE `sync_runs` (
-	`id` text PRIMARY KEY DEFAULT lower(hex(randomblob(16))) NOT NULL,
+CREATE INDEX IF NOT EXISTS `sync_events_run_idx` ON `sync_events` (`sync_run_id`);--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `sync_events_item_idx` ON `sync_events` (`ebay_item_id`);--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS `sync_runs` (
+	`id` text PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))) NOT NULL,
 	`source` text DEFAULT 'EBAY' NOT NULL,
 	`status` text DEFAULT 'RUNNING' NOT NULL,
 	`started_at` text DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -238,9 +238,9 @@ CREATE TABLE `sync_runs` (
 	`error_message` text
 );
 --> statement-breakpoint
-CREATE INDEX `sync_runs_started_idx` ON `sync_runs` (`started_at`);--> statement-breakpoint
-CREATE TABLE `users` (
-	`id` text PRIMARY KEY DEFAULT lower(hex(randomblob(16))) NOT NULL,
+CREATE INDEX IF NOT EXISTS `sync_runs_started_idx` ON `sync_runs` (`started_at`);--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS `users` (
+	`id` text PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))) NOT NULL,
 	`role` text DEFAULT 'CUSTOMER' NOT NULL,
 	`email` text NOT NULL,
 	`email_verified_at` text,
@@ -252,11 +252,11 @@ CREATE TABLE `users` (
 	CONSTRAINT "users_role_check" CHECK("users"."role" IN ('CUSTOMER', 'ADMIN'))
 );
 --> statement-breakpoint
-CREATE UNIQUE INDEX `users_email_unique` ON `users` (`email`);--> statement-breakpoint
-CREATE UNIQUE INDEX `users_provider_subject_unique` ON `users` (`auth_provider`,`auth_subject`);--> statement-breakpoint
-CREATE INDEX `users_role_idx` ON `users` (`role`);--> statement-breakpoint
-CREATE TABLE `webhook_events` (
-	`id` text PRIMARY KEY DEFAULT lower(hex(randomblob(16))) NOT NULL,
+CREATE UNIQUE INDEX IF NOT EXISTS `users_email_unique` ON `users` (`email`);--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS `users_provider_subject_unique` ON `users` (`auth_provider`,`auth_subject`);--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `users_role_idx` ON `users` (`role`);--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS `webhook_events` (
+	`id` text PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))) NOT NULL,
 	`provider` text NOT NULL,
 	`external_event_id` text NOT NULL,
 	`event_type` text NOT NULL,
@@ -268,5 +268,5 @@ CREATE TABLE `webhook_events` (
 	CONSTRAINT "webhook_status_check" CHECK("webhook_events"."status" IN ('RECEIVED', 'PROCESSED', 'FAILED'))
 );
 --> statement-breakpoint
-CREATE UNIQUE INDEX `webhook_provider_event_unique` ON `webhook_events` (`provider`,`external_event_id`);--> statement-breakpoint
-CREATE INDEX `webhook_status_idx` ON `webhook_events` (`status`);
+CREATE UNIQUE INDEX IF NOT EXISTS `webhook_provider_event_unique` ON `webhook_events` (`provider`,`external_event_id`);--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `webhook_status_idx` ON `webhook_events` (`status`);

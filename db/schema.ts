@@ -11,7 +11,9 @@ import {
 // The application creates IDs and keeps them opaque. This SQLite default also
 // makes direct inserts safe during migrations and local development.
 const id = (name = "id") =>
-  text(name).primaryKey().notNull().default(sql`lower(hex(randomblob(16)))`);
+  // SQLite requires non-constant DEFAULT expressions to be parenthesized.
+  // This form is accepted by Cloudflare D1 as well as local SQLite.
+  text(name).primaryKey().notNull().default(sql`(lower(hex(randomblob(16))))`);
 const timestamp = (name: string) =>
   text(name).notNull().default(sql`CURRENT_TIMESTAMP`);
 const optionalTimestamp = (name: string) => text(name);

@@ -13,7 +13,7 @@
           "primaryKey": true,
           "notNull": true,
           "autoincrement": false,
-          "default": "lower(hex(randomblob(16)))"
+          "default": "(lower(hex(randomblob(16))))"
         },
         "actor_user_id": {
           "name": "actor_user_id",
@@ -112,7 +112,7 @@
           "primaryKey": true,
           "notNull": true,
           "autoincrement": false,
-          "default": "lower(hex(randomblob(16)))"
+          "default": "(lower(hex(randomblob(16))))"
         },
         "submission_id": {
           "name": "submission_id",
@@ -202,7 +202,7 @@
           "primaryKey": true,
           "notNull": true,
           "autoincrement": false,
-          "default": "lower(hex(randomblob(16)))"
+          "default": "(lower(hex(randomblob(16))))"
         },
         "user_id": {
           "name": "user_id",
@@ -310,7 +310,7 @@
           "primaryKey": true,
           "notNull": true,
           "autoincrement": false,
-          "default": "lower(hex(randomblob(16)))"
+          "default": "(lower(hex(randomblob(16))))"
         },
         "product_id": {
           "name": "product_id",
@@ -544,7 +544,7 @@
           "primaryKey": true,
           "notNull": true,
           "autoincrement": false,
-          "default": "lower(hex(randomblob(16)))"
+          "default": "(lower(hex(randomblob(16))))"
         },
         "product_id": {
           "name": "product_id",
@@ -664,7 +664,7 @@
           "primaryKey": true,
           "notNull": true,
           "autoincrement": false,
-          "default": "lower(hex(randomblob(16)))"
+          "default": "(lower(hex(randomblob(16))))"
         },
         "product_id": {
           "name": "product_id",
@@ -764,7 +764,7 @@
           "primaryKey": true,
           "notNull": true,
           "autoincrement": false,
-          "default": "lower(hex(randomblob(16)))"
+          "default": "(lower(hex(randomblob(16))))"
         },
         "order_id": {
           "name": "order_id",
@@ -874,7 +874,7 @@
           "primaryKey": true,
           "notNull": true,
           "autoincrement": false,
-          "default": "lower(hex(randomblob(16)))"
+          "default": "(lower(hex(randomblob(16))))"
         },
         "order_number": {
           "name": "order_number",
@@ -1023,7 +1023,7 @@
           "primaryKey": true,
           "notNull": true,
           "autoincrement": false,
-          "default": "lower(hex(randomblob(16)))"
+          "default": "(lower(hex(randomblob(16))))"
         },
         "order_id": {
           "name": "order_id",
@@ -1147,7 +1147,7 @@
           "primaryKey": true,
           "notNull": true,
           "autoincrement": false,
-          "default": "lower(hex(randomblob(16)))"
+          "default": "(lower(hex(randomblob(16))))"
         },
         "product_id": {
           "name": "product_id",
@@ -1275,7 +1275,7 @@
           "primaryKey": true,
           "notNull": true,
           "autoincrement": false,
-          "default": "lower(hex(randomblob(16)))"
+          "default": "(lower(hex(randomblob(16))))"
         },
         "product_id": {
           "name": "product_id",
@@ -1382,7 +1382,7 @@
           "primaryKey": true,
           "notNull": true,
           "autoincrement": false,
-          "default": "lower(hex(randomblob(16)))"
+          "default": "(lower(hex(randomblob(16))))"
         },
         "kind": {
           "name": "kind",
@@ -1491,7 +1491,7 @@
           "primaryKey": true,
           "notNull": true,
           "autoincrement": false,
-          "default": "lower(hex(randomblob(16)))"
+          "default": "(lower(hex(randomblob(16))))"
         },
         "product_id": {
           "name": "product_id",
@@ -1636,7 +1636,7 @@
           "primaryKey": true,
           "notNull": true,
           "autoincrement": false,
-          "default": "lower(hex(randomblob(16)))"
+          "default": "(lower(hex(randomblob(16))))"
         },
         "sync_run_id": {
           "name": "sync_run_id",
@@ -1746,7 +1746,7 @@
           "primaryKey": true,
           "notNull": true,
           "autoincrement": false,
-          "default": "lower(hex(randomblob(16)))"
+          "default": "(lower(hex(randomblob(16))))"
         },
         "source": {
           "name": "source",
@@ -1842,7 +1842,7 @@
           "primaryKey": true,
           "notNull": true,
           "autoincrement": false,
-          "default": "lower(hex(randomblob(16)))"
+          "default": "(lower(hex(randomblob(16))))"
         },
         "role": {
           "name": "role",
@@ -1947,7 +1947,7 @@
           "primaryKey": true,
           "notNull": true,
           "autoincrement": false,
-          "default": "lower(hex(randomblob(16)))"
+          "default": "(lower(hex(randomblob(16))))"
         },
         "provider": {
           "name": "provider",

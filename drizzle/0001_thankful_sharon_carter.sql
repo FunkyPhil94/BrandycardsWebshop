@@ -1,5 +1,5 @@
-CREATE TABLE `card_submission_assets` (
-	`id` text PRIMARY KEY DEFAULT lower(hex(randomblob(16))) NOT NULL,
+CREATE TABLE IF NOT EXISTS `card_submission_assets` (
+	`id` text PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))) NOT NULL,
 	`submission_id` text NOT NULL,
 	`storage_key` text NOT NULL,
 	`original_name` text NOT NULL,
@@ -9,5 +9,5 @@ CREATE TABLE `card_submission_assets` (
 	FOREIGN KEY (`submission_id`) REFERENCES `card_submissions`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
-CREATE UNIQUE INDEX `card_submission_asset_key_unique` ON `card_submission_assets` (`storage_key`);--> statement-breakpoint
-CREATE INDEX `card_submission_assets_submission_idx` ON `card_submission_assets` (`submission_id`);
+CREATE UNIQUE INDEX IF NOT EXISTS `card_submission_asset_key_unique` ON `card_submission_assets` (`storage_key`);--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `card_submission_assets_submission_idx` ON `card_submission_assets` (`submission_id`);
