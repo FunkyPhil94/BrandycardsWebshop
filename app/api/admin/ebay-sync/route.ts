@@ -11,6 +11,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, ...result });
   } catch (error) {
     console.error("eBay sync failed", error);
-    return NextResponse.json({ error: "eBay-Synchronisierung fehlgeschlagen." }, { status: 503 });
+    const message = error instanceof Error ? error.message : "Unbekannter eBay-Fehler.";
+    return NextResponse.json({
+      error: "eBay-Synchronisierung fehlgeschlagen.",
+      detail: message.slice(0, 300),
+    }, { status: 503 });
   }
 }
