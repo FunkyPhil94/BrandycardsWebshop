@@ -45,6 +45,7 @@ betroffene Dateien, Verifikation, Ergebnis.
 ## Offene Punkte
 
 Kein Auftrag, sondern der Zustand, den die nächste Sitzung kennen muss.
+Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
 
 - **Sync-Lauf nötig, damit „Neu dabei" echt wird.** `ebay_listings.start_at` ist
   noch überall NULL; der Mapper füllt es erst ab Version `a1cdd14f`. Solange

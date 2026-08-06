@@ -27,6 +27,17 @@ Die fachliche Begründung einer Lösung gehört zusätzlich in
 [docs/ai-agent-log.md](docs/ai-agent-log.md) — dort steht das *Warum*, im
 Übergabeprotokoll das *Was gerade läuft*.
 
+## Woran als Nächstes gearbeitet wird
+
+Der Arbeitsvorrat steht in [docs/ai-todo.md](docs/ai-todo.md), von oben nach
+unten sortiert. Fragt der Nutzer offen „was steht an?" oder bittet um den
+nächsten Schritt, ist das die Quelle. Jede Aufgabe ist selbsttragend
+beschrieben — Dateien, Begründung und Abnahmekriterien stehen dabei.
+
+**Am Ende jeder Sitzung** darf nichts unversioniert liegen bleiben:
+`git status --short` und `git log --oneline origin/agent/initial-brandycards..HEAD`
+müssen beide leer sein.
+
 ## Befehle
 
 ```bash

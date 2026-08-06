@@ -11,3 +11,6 @@ Durchlauf wird das Ergebnis nachgetragen — auch bei Fehlschlag oder Abbruch.
 
 So kann die nächste Sitzung eine unterbrochene Arbeit aufnehmen, etwa wenn das
 Token-Kontingent mitten im Auftrag aufgebraucht war.
+
+Der Arbeitsvorrat für kommende Sitzungen steht in
+[docs/ai-todo.md](docs/ai-todo.md).
