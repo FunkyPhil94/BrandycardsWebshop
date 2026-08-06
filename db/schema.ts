@@ -36,6 +36,7 @@ export const users = sqliteTable("users", {
   id: id(),
   role: text("role", { enum: userRoleValues }).notNull().default("CUSTOMER"),
   email: text("email").notNull(),
+  username: text("username"),
   emailVerifiedAt: optionalTimestamp("email_verified_at"),
   displayName: text("display_name"),
   authProvider: text("auth_provider"),
@@ -44,6 +45,7 @@ export const users = sqliteTable("users", {
   updatedAt: timestamp("updated_at"),
 }, (table) => [
   uniqueIndex("users_email_unique").on(table.email),
+  uniqueIndex("users_username_unique").on(table.username),
   uniqueIndex("users_provider_subject_unique").on(table.authProvider, table.authSubject),
   index("users_role_idx").on(table.role),
   check("users_role_check", sql`${table.role} IN ('CUSTOMER', 'ADMIN')`),

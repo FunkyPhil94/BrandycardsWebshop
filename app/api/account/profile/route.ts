@@ -9,8 +9,12 @@ export async function POST(request: Request) {
   }
 
   try {
-    const appUser = await findOrCreateAppUser(authUser);
-    return NextResponse.json({ ok: true, userId: appUser.id, role: appUser.role });
+    let requestedUsername: unknown;
+    if ((request.headers.get("content-type") ?? "").includes("application/json")) {
+      requestedUsername = (await request.json() as { username?: unknown }).username;
+    }
+    const appUser = await findOrCreateAppUser(authUser, requestedUsername);
+    return NextResponse.json({ ok: true, userId: appUser.id, role: appUser.role, username: appUser.username });
   } catch (error) {
     console.error("Account profile sync failed", error);
     return NextResponse.json({ error: "Profil konnte nicht synchronisiert werden." }, { status: 503 });
