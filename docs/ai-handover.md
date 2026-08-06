@@ -37,20 +37,29 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-- **Stand:** ABGESCHLOSSEN
+- **Stand:** LÄUFT
 - **Datum:** 2026-08-06
-- **Ziel:** Übergabeprotokoll für KI-Sitzungen einführen (diese Datei), damit ein
-  abgebrochener Auftrag für die nächste Sitzung nachvollziehbar bleibt.
+- **Ziel:** `main` auf den aktuellen Arbeitsstand bringen. `main` hängt 51 Commits
+  zurück und enthält nur das Ursprungsfundament; die gesamte Arbeit liegt im
+  Branch `agent/initial-brandycards` (PR #1, Draft).
+- **Ausgangslage:** PR #1 ist `MERGEABLE`, `mergeStateStatus: CLEAN`, `main` ist
+  nicht branch-protected. **GitHub Actions ist im Ausfall (`major_outage`)**, CI
+  kann diesen Merge also nicht prüfen. Der letzte grüne CI-Lauf liegt vor dem
+  Ausfall und deckt den heutigen Stand nicht ab.
 - **Geplante Schritte:**
-  1. `docs/ai-handover.md` mit Regeln und Vorlage anlegen
-  2. `CLAUDE.md` anlegen, das die Pflicht zur Nutzung verbindlich festhält
-  3. `AGENTS.md` als Verweis für Werkzeuge, die diese Konvention lesen
-  4. Offenen Punkt aus der laufenden Arbeit hier festhalten
-  5. Committen und nach GitHub pushen
-- **Betroffene Dateien:** `docs/ai-handover.md`, `CLAUDE.md`, `AGENTS.md`
-- **Verifikation:** Dateien vorhanden, Commit auf `agent/initial-brandycards`
-  gepusht, im Hauptverzeichnis per `git pull` verfügbar.
-- **Ergebnis:** Erledigt. Kein Code berührt, daher kein Build- oder Testlauf nötig.
+  1. Lokal vollständig verifizieren: `npx tsc --noEmit`, `npm run lint`, `npm test`
+  2. PR #1 aus dem Draft-Status holen (`gh pr ready 1`)
+  3. PR mit Merge-Commit nach `main` mergen (Historie der 51 Commits erhalten)
+  4. `main` lokal nachziehen und Gleichstand prüfen
+  5. Branch `agent/initial-brandycards` **nicht** löschen — das Hauptverzeichnis
+     steht darauf ausgecheckt
+- **Betroffen:** Branch `main` auf GitHub, PR #1. Kein Code, kein Deployment.
+- **Verifikation:** `main` und `agent/initial-brandycards` zeigen anschließend auf
+  denselben Baum; lokale Prüfungen vorher grün.
+- **Risiko:** Merge ohne CI-Bestätigung. Bewusst so entschieden, weil der Ausfall
+  auf GitHubs Seite liegt und die lokale Prüfung dieselben Schritte ausführt wie
+  der Workflow (`npm ci`, Lint, Build, Tests) plus die Typprüfung, die CI nicht hat.
+- **Ergebnis:** _(wird nach dem Durchlauf eingetragen)_
 
 ---
 
