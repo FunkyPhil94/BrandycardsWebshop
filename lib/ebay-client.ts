@@ -130,14 +130,18 @@ export type EbayActiveListing = {
 let activeListingCache: Map<string, EbayActiveListing> | null = null;
 
 function parseTradingResponse(xml: string, config: EbayConfig) {
-  if (xmlValue(xml, "Ack")?.toUpperCase() === "FAILURE") {
+  const ack = xmlValue(xml, "Ack")?.toUpperCase();
+  if (ack === "FAILURE" || ack === "PARTIAL_FAILURE") {
     throw new Error(`eBay GetMyeBaySelling fehlgeschlagen: ${xmlValue(xml, "LongMessage") ?? "Unbekannter eBay-Fehler."}`);
   }
   const items = xmlBlocks(xml, "Item").map((itemXml): EbayActiveListing | null => {
     const ebayItemId = xmlValue(itemXml, "ItemID");
     const title = xmlValue(itemXml, "Title");
     if (!ebayItemId || !title) return null;
-    const listingType = (xmlValue(itemXml, "ListingType") ?? "").toUpperCase();
+    const listingType = (xmlValue(itemXml, "ListingType") ?? "").toUpperCase().replace(/[^A-Z]/g, "");
+    const isAuctionType = ["AUCTION", "CHINESE", "DUTCH"].includes(listingType);
+    const isFixedPriceType = ["FIXEDPRICEITEM", "STOREFIXEDPRICE"].includes(listingType);
+    if (!isAuctionType && !isFixedPriceType) return null;
     const price = Number(xmlValue(itemXml, "CurrentPrice") ?? xmlValue(itemXml, "ConvertedCurrentPrice"));
     const quantity = Number(xmlValue(itemXml, "QuantityAvailable") ?? xmlValue(itemXml, "Quantity"));
     return {
@@ -146,7 +150,7 @@ function parseTradingResponse(xml: string, config: EbayConfig) {
       title,
       description: xmlValue(itemXml, "Description"),
       imageUrls: xmlValues(itemXml, "PictureURL"),
-      listingType: listingType.includes("AUCTION") || listingType.includes("CHINESE") ? "AUCTION" : "FIXED_PRICE",
+      listingType: isAuctionType ? "AUCTION" : "FIXED_PRICE",
       listingUrl: xmlValue(itemXml, "ViewItemURLForNaturalSearch") ?? xmlValue(itemXml, "ViewItemURL") ?? `https://www.ebay.de/itm/${ebayItemId}`,
       priceAmountCents: Number.isFinite(price) ? Math.round(price * 100) : null,
       priceCurrency: xmlAttribute(itemXml, "CurrentPrice", "currencyID") ?? "EUR",
