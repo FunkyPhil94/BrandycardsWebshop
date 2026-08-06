@@ -5,6 +5,7 @@ import { orders, payments } from "../../../../db/schema";
 import { getAuthenticatedAppUser } from "../../../../lib/app-user";
 import { capturePayPalOrder } from "../../../../lib/paypal/client";
 import { assertValidMoney, centsToPayPalValue } from "../../../../lib/paypal/money";
+import { settlePaidOrder } from "../../../../lib/paypal/settle-order";
 
 type CaptureRequest = { orderId?: unknown; paypalOrderId?: unknown };
 
@@ -47,6 +48,7 @@ export async function POST(request: Request) {
       if (order.status === "PENDING") {
         await db.update(orders).set({ status: "PAID", paidAt: order.paidAt ?? new Date().toISOString(), updatedAt: new Date().toISOString() }).where(and(eq(orders.id, order.id), eq(orders.status, "PENDING")));
       }
+      await settlePaidOrder(db, order.id, new Date().toISOString());
       return NextResponse.json({ ok: true, idempotent: true, orderId: order.id, ...captureDetails(payment) });
     }
     if (payment.status !== "CREATED" && payment.status !== "APPROVED") {
@@ -64,6 +66,7 @@ export async function POST(request: Request) {
     const now = new Date().toISOString();
     await db.update(payments).set({ providerCaptureId: capture.id, status: "CAPTURED", rawData: paypalCapture, updatedAt: now }).where(eq(payments.id, payment.id));
     await db.update(orders).set({ status: "PAID", paidAt: now, updatedAt: now }).where(and(eq(orders.id, order.id), eq(orders.status, "PENDING")));
+    await settlePaidOrder(db, order.id, now);
     return NextResponse.json({ ok: true, idempotent: false, orderId: order.id, captureId: capture.id, status: "CAPTURED" });
   } catch (error) {
     console.error("PayPal capture failed", error);

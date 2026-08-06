@@ -133,6 +133,7 @@ export const inventory = sqliteTable("inventory", {
 
 export const reservations = sqliteTable("reservations", {
   id: id(),
+  orderId: text("order_id").references(() => orders.id, { onDelete: "cascade" }),
   productId: text("product_id").notNull().references(() => products.id, { onDelete: "restrict" }),
   inventoryId: text("inventory_id").notNull().references(() => inventory.id, { onDelete: "restrict" }),
   userId: text("user_id").references(() => users.id, { onDelete: "set null" }),

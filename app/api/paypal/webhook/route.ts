@@ -4,6 +4,7 @@ import { getDb } from "../../../../db";
 import { orders, payments, webhookEvents } from "../../../../db/schema";
 import { getPayPalConfig } from "../../../../lib/paypal/config";
 import { verifyPayPalWebhookSignature } from "../../../../lib/paypal/client";
+import { settlePaidOrder } from "../../../../lib/paypal/settle-order";
 
 type PayPalWebhookEvent = {
   id?: unknown;
@@ -76,6 +77,7 @@ export async function POST(request: Request) {
         updatedAt: now,
       }).where(eq(payments.id, payment.id));
       await db.update(orders).set({ status: "PAID", paidAt: now, updatedAt: now }).where(eq(orders.id, payment.orderId));
+      await settlePaidOrder(db, payment.orderId, now);
     } else if (eventType === "PAYMENT.CAPTURE.DENIED" || eventType === "PAYMENT.CAPTURE.DECLINED") {
       if (!payment) throw new Error("Zugehörige PayPal-Zahlung wurde nicht gefunden.");
       await db.update(payments).set({ status: "FAILED", rawData: event, updatedAt: now }).where(eq(payments.id, payment.id));
