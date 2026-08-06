@@ -260,3 +260,21 @@ footer { background:var(--ink); color:#fff; padding:52px max(48px,calc((100vw - 
   .detail-description { padding:38px 22px 48px; }
   .lightbox { padding:16px; }
 }
+
+/* --- Artikelbeschreibung im Shop-Design --- */
+/* Die eBay-Vorlage wird nicht eingebettet, sondern strukturiert ausgelesen und
+   hier neu gesetzt. Siehe lib/ebay-description.ts. */
+.detail-description { display:grid; gap:38px; }
+.detail-description > h2 { grid-column:1/-1; }
+.spec-table h3,.detail-block h3 { font-size:13px; font-weight:800; letter-spacing:.1em; margin:0 0 16px; text-transform:uppercase; }
+.spec-table dl { border-top:1px solid var(--line); display:grid; margin:0; max-width:640px; }
+.spec-table dl > div { border-bottom:1px solid var(--line); display:grid; gap:16px; grid-template-columns:160px 1fr; padding:13px 0; }
+.spec-table dt { color:var(--muted); font-family:'DM Mono',monospace; font-size:10px; letter-spacing:.08em; text-transform:uppercase; }
+.spec-table dd { font-size:14px; margin:0; }
+.detail-block { max-width:780px; }
+.detail-prose { font-size:14px; line-height:1.8; }
+.detail-prose p { margin:0 0 12px; }
+.detail-prose p:last-child { margin-bottom:0; }
+.detail-prose strong { font-weight:700; }
+.detail-prose ul,.detail-prose ol { margin:0 0 12px; padding-left:20px; }
+.detail-prose li { margin-bottom:6px; }

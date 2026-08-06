@@ -5,11 +5,16 @@ import { use, useCallback, useEffect, useState } from "react";
 import { ebayImageVariant } from "../../../lib/ebay-images.ts";
 import { EBAY_SHOP_URL, SiteFooter, SiteHeader, formatPrice, useCart } from "../../site-chrome";
 
+type CardSpec = { label: string; value: string };
+type CardSection = { heading: string; html: string };
+
 type Detail = {
   id: string;
   title: string;
   description: string | null;
   descriptionHtml: string | null;
+  specs: CardSpec[];
+  sections: CardSection[];
   category: "Festpreis" | "Auktion";
   priceAmountCents: number | null;
   priceCurrency: string;
@@ -138,12 +143,29 @@ export default function KartenDetailPage({ params }: { params: Promise<{ id: str
 
       <section className="detail-description">
         <h2>Artikelbeschreibung</h2>
-        {card.descriptionHtml
-          /* Server-sanitised in /api/products/[id]; see lib/sanitize-html.ts. */
+        {card.specs.length > 0 && <div className="spec-table">
+          <h3>Kartendetails</h3>
+          <dl>
+            {card.specs.map((spec) => (
+              <div key={spec.label}><dt>{spec.label}</dt><dd>{spec.value}</dd></div>
+            ))}
+          </dl>
+        </div>}
+
+        {card.sections.map((section) => (
+          <article className="detail-block" key={section.heading}>
+            <h3>{section.heading}</h3>
+            {/* Sanitised server-side and re-rendered in the shop's own styling;
+                see lib/sanitize-html.ts and lib/ebay-description.ts. */}
+            <div className="detail-prose" dangerouslySetInnerHTML={{ __html: section.html }} />
+          </article>
+        ))}
+
+        {card.specs.length === 0 && card.sections.length === 0 && (card.descriptionHtml
           ? <div className="ebay-description" dangerouslySetInnerHTML={{ __html: card.descriptionHtml }} />
           : card.description
             ? <p>{card.description}</p>
-            : <p className="detail-empty">Für diese Karte liegt noch keine Beschreibung vor. Das Angebot bei eBay enthält alle Details.</p>}
+            : <p className="detail-empty">Für diese Karte liegt noch keine Beschreibung vor. Das Angebot bei eBay enthält alle Details.</p>)}
       </section>
 
       {zoomed && current && <div

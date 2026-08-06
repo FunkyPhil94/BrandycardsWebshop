@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { getDb } from "../../../../db";
 import { ebayListings, productAssets, products } from "../../../../db/schema";
 import { getEbayItemDescription } from "../../../../lib/ebay-client";
+import { parseEbayDescription } from "../../../../lib/ebay-description";
 import { sanitizeHtml } from "../../../../lib/sanitize-html";
 
 export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
@@ -49,8 +50,15 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
       id: row.product.id,
       title: row.product.title,
       description: row.product.description,
-      // Seller-authored markup: never handed to the browser unsanitised.
-      descriptionHtml: descriptionHtml ? sanitizeHtml(descriptionHtml) : null,
+      // Seller-authored markup: never handed to the browser unsanitised. The
+      // parsed form drives the shop's own layout; the sanitised HTML stays as a
+      // fallback for descriptions whose structure we do not recognise.
+      ...(() => {
+        const safe = descriptionHtml ? sanitizeHtml(descriptionHtml) : null;
+        const parsed = safe ? parseEbayDescription(safe) : null;
+        const structured = parsed && (parsed.specs.length || parsed.sections.length) ? parsed : null;
+        return { specs: structured?.specs ?? [], sections: structured?.sections ?? [], descriptionHtml: structured ? null : safe };
+      })(),
       category: row.listing.listingType === "AUCTION" ? "Auktion" : "Festpreis",
       priceAmountCents: row.listing.priceAmountCents,
       priceCurrency: row.listing.priceCurrency,
