@@ -14,6 +14,12 @@ export function normalizeUsername(value: unknown): string | null {
   return USERNAME_PATTERN.test(username) ? username : null;
 }
 
+export function normalizeDisplayName(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const displayName = value.trim();
+  return displayName.length >= 1 && displayName.length <= 120 ? displayName : null;
+}
+
 function isConfiguredAdmin(authUser: SupabaseUser, email: string) {
   if (!authUser.email_confirmed_at) return false;
   const configuredEmails = (process.env.ADMIN_EMAILS ?? "")
@@ -23,7 +29,7 @@ function isConfiguredAdmin(authUser: SupabaseUser, email: string) {
   return configuredEmails.includes(email);
 }
 
-export async function findOrCreateAppUser(authUser: SupabaseUser, requestedUsername?: unknown): Promise<AppUser> {
+export async function findOrCreateAppUser(authUser: SupabaseUser, requestedUsername?: unknown, requestedDisplayName?: unknown): Promise<AppUser> {
   if (!authUser.email) throw new Error("Authenticated Supabase user has no email.");
   const db = getDb();
   const email = authUser.email.trim().toLowerCase();
@@ -31,6 +37,7 @@ export async function findOrCreateAppUser(authUser: SupabaseUser, requestedUsern
   const verifiedAt = emailVerified ? authUser.email_confirmed_at ?? null : null;
   const configuredAdmin = isConfiguredAdmin(authUser, email);
   const username = normalizeUsername(requestedUsername ?? authUser.user_metadata?.username);
+  const displayName = normalizeDisplayName(requestedDisplayName ?? authUser.user_metadata?.displayName);
   const linked = await db.query.users.findFirst({ where: and(eq(users.authProvider, "supabase"), eq(users.authSubject, authUser.id)) });
   if (linked && emailVerified && linked.email !== email) {
     const emailOwner = await db.query.users.findFirst({ where: eq(users.email, email) });
@@ -46,18 +53,20 @@ export async function findOrCreateAppUser(authUser: SupabaseUser, requestedUsern
     await db.update(users).set({
       email: emailVerified ? email : existing.email,
       ...(username ? { username } : {}),
+      ...(displayName ? { displayName } : {}),
       authProvider: "supabase",
       authSubject: authUser.id,
       emailVerifiedAt: emailVerified ? verifiedAt : existing.emailVerifiedAt,
       ...(configuredAdmin && existing.role === "CUSTOMER" ? { role: "ADMIN" as const } : {}),
       updatedAt: new Date().toISOString(),
     }).where(eq(users.id, existing.id));
-    return { ...existing, email: emailVerified ? email : existing.email, username: username ?? existing.username, authProvider: "supabase", authSubject: authUser.id, emailVerifiedAt: emailVerified ? verifiedAt : existing.emailVerifiedAt, role: configuredAdmin && existing.role === "CUSTOMER" ? "ADMIN" as const : existing.role };
+    return { ...existing, email: emailVerified ? email : existing.email, username: username ?? existing.username, displayName: displayName ?? existing.displayName, authProvider: "supabase", authSubject: authUser.id, emailVerifiedAt: emailVerified ? verifiedAt : existing.emailVerifiedAt, role: configuredAdmin && existing.role === "CUSTOMER" ? "ADMIN" as const : existing.role };
   }
 
   const [created] = await db.insert(users).values({
     email,
     username,
+    displayName,
     role: configuredAdmin ? "ADMIN" : "CUSTOMER",
     authProvider: "supabase",
     authSubject: authUser.id,

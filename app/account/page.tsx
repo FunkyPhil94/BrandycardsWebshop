@@ -7,24 +7,45 @@ import { getSupabaseBrowserClient } from "../../lib/supabase-browser";
 
 type Mode = "login" | "signup" | "reset";
 
+function safeReturnPath() {
+  if (typeof window === "undefined") return "/";
+  const requested = new URLSearchParams(window.location.search).get("next");
+  if (requested && requested.startsWith("/") && !requested.startsWith("//")) return requested;
+  const referrer = document.referrer;
+  if (referrer) {
+    try {
+      const url = new URL(referrer);
+      if (url.origin === window.location.origin && url.pathname !== "/account") return `${url.pathname}${url.search}${url.hash}`;
+    } catch { /* Ignore malformed referrers. */ }
+  }
+  return "/";
+}
+
 export default function AccountPage() {
   const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
+  const [displayName, setDisplayName] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirmation, setPasswordConfirmation] = useState("");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [recovery, setRecovery] = useState(() => typeof window !== "undefined" && new URLSearchParams(window.location.hash.replace(/^#/, "")).get("type") === "recovery");
+  const [editingProfile, setEditingProfile] = useState(false);
 
-  async function syncProfile(sessionUser: User | null, accessToken?: string) {
+  async function syncProfile(sessionUser: User | null, accessToken?: string, profile?: { username?: string; displayName?: string }) {
     if (!sessionUser || !accessToken) return;
-    await fetch("/api/account/profile", {
+    const response = await fetch("/api/account/profile", {
       method: "POST",
       headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ username: sessionUser.user_metadata?.username }),
+      body: JSON.stringify({ username: profile?.username ?? sessionUser.user_metadata?.username, displayName: profile?.displayName ?? sessionUser.user_metadata?.displayName }),
     });
+    if (response.ok) {
+      const body = await response.json() as { username?: string | null; displayName?: string | null };
+      setUsername(body.username ?? profile?.username ?? sessionUser.user_metadata?.username ?? "");
+      setDisplayName(body.displayName ?? profile?.displayName ?? sessionUser.user_metadata?.displayName ?? "");
+    }
   }
 
   useEffect(() => {
@@ -51,6 +72,26 @@ export default function AccountPage() {
     setMessage("Du wurdest abgemeldet.");
   }
 
+  async function saveProfile(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!user) return;
+    setBusy(true);
+    setMessage("");
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const { data, error } = await supabase.auth.updateUser({ data: { username, displayName } });
+      if (error) throw error;
+      await syncProfile(data.user, (await supabase.auth.getSession()).data.session?.access_token, { username, displayName });
+      setUser(data.user);
+      setEditingProfile(false);
+      setMessage("Dein Profil wurde gespeichert.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Das Profil konnte nicht gespeichert werden.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setBusy(true);
@@ -66,7 +107,8 @@ export default function AccountPage() {
         setPasswordConfirmation("");
         setMessage("Dein Passwort wurde erfolgreich geändert. Das alte Passwort ist nicht mehr gültig.");
       } else if (mode === "reset") {
-        const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/account` });
+        const returnPath = safeReturnPath();
+        const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/account?next=${encodeURIComponent(returnPath)}` });
         if (error) throw error;
         setMessage("Wenn ein Konto existiert, wurde eine E-Mail zum Zurücksetzen versendet.");
       } else if (mode === "signup") {
@@ -80,15 +122,16 @@ export default function AccountPage() {
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
-          options: { data: { username }, emailRedirectTo: `${window.location.origin}/account` },
+          options: { data: { username }, emailRedirectTo: `${window.location.origin}/account?next=${encodeURIComponent(safeReturnPath())}` },
         });
         if (error) throw error;
-        setMessage(data.session ? "Konto erstellt." : "Bitte bestätige deine E-Mail-Adresse.");
+        if (data.session) window.location.assign(safeReturnPath());
+        else setMessage("Bitte bestätige deine E-Mail-Adresse.");
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         await syncProfile(data.user, data.session?.access_token);
-        setMessage("Anmeldung erfolgreich.");
+        window.location.assign(safeReturnPath());
       }
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Die Anmeldung konnte nicht verarbeitet werden.");
@@ -102,21 +145,34 @@ export default function AccountPage() {
       <Link className="back-link" href="/">← Zurück zu BrandyCards</Link>
       <section className="account-card" aria-labelledby="account-title">
         <p className="eyebrow">BRANDYCARDS ACCOUNT</p>
-        {user && <div className="account-session"><span>Angemeldet als</span><strong>{user.email}</strong><button type="button" onClick={signOut}>Abmelden</button></div>}
-        <h1 id="account-title">{recovery ? "Neues Passwort festlegen." : mode === "login" ? "Willkommen zurück." : mode === "signup" ? "Konto erstellen." : "Passwort zurücksetzen."}</h1>
-        <p>{recovery ? "Wähle ein neues Passwort und bestätige es." : mode === "signup" ? "Speichere Bestellungen und verwalte deine Anfragen." : mode === "reset" ? "Wir senden dir einen sicheren Link per E-Mail." : "Melde dich an, um deine Bestellungen und Anfragen zu sehen."}</p>
-        <form onSubmit={submit}>
-          {!recovery && <label className="form-field"><span>E-Mail-Adresse *</span><input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required autoComplete="email" /></label>}
-          {!recovery && mode === "signup" && <label className="form-field"><span>Benutzername *</span><input type="text" value={username} onChange={(event) => setUsername(event.target.value)} required minLength={3} maxLength={30} pattern="[A-Za-z0-9_]{3,30}" autoComplete="username" /></label>}
-          {(!recovery && mode === "reset") ? null : <label className="form-field"><span>{recovery ? "Neues Passwort *" : "Passwort *"}</span><input type="password" value={password} onChange={(event) => setPassword(event.target.value)} required minLength={8} autoComplete={mode === "signup" || recovery ? "new-password" : "current-password"} /></label>}
-          {(recovery || mode === "signup") && <label className="form-field"><span>Passwort bestätigen *</span><input type="password" value={passwordConfirmation} onChange={(event) => setPasswordConfirmation(event.target.value)} required minLength={8} autoComplete="new-password" /></label>}
-          <button className="button button-primary" type="submit" disabled={busy}>{busy ? "Bitte warten …" : recovery ? "Neues Passwort speichern" : mode === "login" ? "Anmelden" : mode === "signup" ? "Konto erstellen" : "Reset-Link senden"}</button>
-        </form>
+        {user && !recovery && <>
+          <div className="account-session"><span>Angemeldet als</span><strong>{user.email}</strong><button type="button" onClick={signOut}>Abmelden</button></div>
+          <section className="profile-panel" aria-labelledby="profile-title">
+            <h2 id="profile-title">Mein Profil</h2>
+            <form onSubmit={saveProfile}>
+              <label className="form-field"><span>E-Mail-Adresse</span><input type="email" value={user.email ?? ""} readOnly /></label>
+              <label className="form-field"><span>Benutzername *</span><input type="text" value={username} onChange={(event) => setUsername(event.target.value)} required minLength={3} maxLength={30} pattern="[A-Za-z0-9_]{3,30}" readOnly={!editingProfile} /></label>
+              <label className="form-field"><span>Anzeigename</span><input type="text" value={displayName} onChange={(event) => setDisplayName(event.target.value)} maxLength={120} readOnly={!editingProfile} /></label>
+              {editingProfile ? <button className="button button-primary" type="submit" disabled={busy}>{busy ? "Speichere …" : "Profil speichern"}</button> : <button className="button button-primary" type="button" onClick={() => setEditingProfile(true)}>Profil bearbeiten</button>}
+            </form>
+          </section>
+        </>}
+        {(!user || recovery) && <>
+          <h1 id="account-title">{recovery ? "Neues Passwort festlegen." : mode === "login" ? "Willkommen zurück." : mode === "signup" ? "Konto erstellen." : "Passwort zurücksetzen."}</h1>
+          <p>{recovery ? "Wähle ein neues Passwort und bestätige es." : mode === "signup" ? "Speichere Bestellungen und verwalte deine Anfragen." : mode === "reset" ? "Wir senden dir einen sicheren Link per E-Mail." : "Melde dich an, um deine Bestellungen und Anfragen zu sehen."}</p>
+          <form onSubmit={submit}>
+            {!recovery && <label className="form-field"><span>E-Mail-Adresse *</span><input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required autoComplete="email" /></label>}
+            {!recovery && mode === "signup" && <label className="form-field"><span>Benutzername *</span><input type="text" value={username} onChange={(event) => setUsername(event.target.value)} required minLength={3} maxLength={30} pattern="[A-Za-z0-9_]{3,30}" autoComplete="username" /></label>}
+            {(!recovery && mode === "reset") ? null : <label className="form-field"><span>{recovery ? "Neues Passwort *" : "Passwort *"}</span><input type="password" value={password} onChange={(event) => setPassword(event.target.value)} required minLength={8} autoComplete={mode === "signup" || recovery ? "new-password" : "current-password"} /></label>}
+            {(recovery || mode === "signup") && <label className="form-field"><span>Passwort bestätigen *</span><input type="password" value={passwordConfirmation} onChange={(event) => setPasswordConfirmation(event.target.value)} required minLength={8} autoComplete="new-password" /></label>}
+            <button className="button button-primary" type="submit" disabled={busy}>{busy ? "Bitte warten …" : recovery ? "Neues Passwort speichern" : mode === "login" ? "Anmelden" : mode === "signup" ? "Konto erstellen" : "Reset-Link senden"}</button>
+          </form>
+        </>}
         {message && <p className="form-feedback" role="status">{message}</p>}
-        <div className="account-links">
+        {(!user || recovery) && <div className="account-links">
           {!recovery && mode === "login" && <><button type="button" onClick={() => setMode("signup")}>Neues Konto erstellen</button><button type="button" onClick={() => setMode("reset")}>Passwort vergessen?</button></>}
           {!recovery && mode !== "login" && <button type="button" onClick={() => setMode("login")}>Zur Anmeldung</button>}
-        </div>
+        </div>}
       </section>
     </main>
   );
