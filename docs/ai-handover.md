@@ -82,6 +82,41 @@ Kein Auftrag, sondern der Zustand, den die nächste Sitzung kennen muss.
 
 ## Historie
 
+### 2026-08-06 — Preisverhandlung statt Gutscheincodes, echte Versandkosten
+
+- **Stand:** ABGESCHLOSSEN
+- **Versand:** Der Checkout rechnet seit jeher 3,45 € (DE) und 14,49 € (EU),
+  serverseitig wie clientseitig. Eine Versandkostenfrei-Logik gibt es **nirgends** —
+  das Banner auf jeder Seite und die Kartenfakten warben trotzdem damit. Beides
+  korrigiert, Zeile „Verpackung" entfernt. Commit im selben Lauf.
+- **Verhandlung:** Kunden schlagen auf Festpreis-Karten einen Preis vor, ihr
+  entscheidet im Admin, der angenommene Betrag gilt 48 Stunden für diesen Kunden.
+  Nur angemeldet, drei Versuche je Karte. Commit `a0d4367`, deployed `0b922bf6`.
+- **Warum keine Gutscheincodes:** Ein Code ist ein Inhaber-Token — weitergebbar,
+  teilbar — und müsste ohnehin an Nutzer, Produkt und Betrag gebunden werden.
+  Dann ist er nichts anderes als das angenommene Angebot, nur mit einem
+  zusätzlichen verlierbaren Zwischenschritt. `price_offers` trug all das bereits.
+- **Sicherheitskern:** Der Preis kommt **nie** aus dem Browser. Der Checkout
+  erhält ausschließlich Produkt-IDs und löst den Betrag serverseitig aus
+  angenommenen, unverfallenen Angeboten auf (`acceptedOfferPrices`). PayPal wird
+  aus unserer eigenen Rechnung belastet. `unitAmountCents` in der Bestellposition
+  hält jetzt den ausgehandelten statt des Listenpreises — sonst wäre PayPals
+  eigene Zwischensummenprüfung fehlgeschlagen.
+- **Testbar gemacht:** `pickAcceptedPrices` ist von der Abfrage getrennt und
+  direkt getestet — fehlendes Ablaufdatum, exakt abgelaufenes Fenster, negative
+  und gebrochene Beträge müssen alle **fail closed** sein. 45/45 Tests.
+- **Bewusst kein Bestandsblock bei Annahme:** Die Karte bleibt hier und auf eBay
+  verkäuflich. Reservieren würde mit dem parallelen eBay-Angebot kollidieren.
+- **Ablauf:** `expireLapsedOffers` läuft im stündlichen Worker mit.
+- **Offen / Risiko:** Ein verhandelter Verkauf erhöht das Doppelverkaufsrisiko,
+  weil die Karte parallel bei eBay steht und der eBay-Schreibpfad weiterhin
+  unterbrochen ist (`ebayOfferId` null, siehe offene Punkte). Vor größerer
+  Bewerbung der Funktion sollte das gelöst sein.
+- **Noch nicht gebaut:** Der Checkout zeigt vor dem Anlegen der Bestellung
+  weiterhin den Listenpreis; der Rabatt erscheint erst in der Serverantwort und
+  bei PayPal. Kunden zahlen also nie zu viel, sehen den Vorteil aber spät.
+  Ebenso fehlt eine Benachrichtigung per E-Mail bei Annahme oder Ablehnung.
+
 ### 2026-08-06 — eBay-Beschreibung im Shop-Design statt eingebettet
 
 - **Stand:** ABGESCHLOSSEN
