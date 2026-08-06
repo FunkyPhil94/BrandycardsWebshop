@@ -37,37 +37,8 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-- **Stand:** LÄUFT
-- **Datum:** 2026-08-06
-- **Ziel:** Startseite entschlacken. Bisher liegt der gesamte Shop-Inhalt auf
-  `/`. Künftig trägt die Landingpage nur Hero, eine Galerie mit genau 5 Karten,
-  Verweise auf Unterseiten und den Footer.
-- **Vom Nutzer entschieden:**
-  - „Neueste" soll auf dem echten eBay-Einstelldatum beruhen, nicht auf dem
-    Importdatum. Grund: alle 297 Karten wurden am selben Tag importiert,
-    `start_at` ist durchgehend NULL — „neueste" wäre sonst willkürlich.
-  - Aufteilung in `/karten`, `/anfragen`, `/verkaufen`, `/ueber-uns`.
-  - Galerie: Klick auf die Bildfläche blättert weiter; Titel und ein Button
-    darunter führen zum Angebot.
-- **Geplante Schritte:**
-  1. Sync-Mapper um `ListingDetails/StartTime` erweitern, `start_at` füllen
-     (Spalte existiert bereits, keine Migration nötig)
-  2. `/api/products/highlights` liefert 5 neueste (nach `start_at`) und
-     5 teuerste (nach `price_amount_cents`)
-  3. Geteilte `SiteHeader`/`SiteFooter` samt Warenkorb-Hook auslagern
-  4. Neue Seiten `/karten`, `/anfragen`, `/verkaufen`, `/ueber-uns`
-  5. Landingpage auf Hero + Galerie + Verweise + Footer reduzieren
-  6. Galerie: 2-Sekunden-Takt, Pause bei Hover/Fokus, `prefers-reduced-motion`
-     respektieren, Umschalter „Neu" / „Beliebt"
-  7. CSS ergänzen, Tests, lokale Prüfung, Deploy
-- **Betroffen:** `app/page.tsx`, neue Seiten unter `app/`, `app/globals.css`,
-  `lib/ebay-client.ts`, `lib/ebay-sync.ts`, neue API-Route, Tests.
-- **Verifikation:** `npx tsc --noEmit`, `npm run lint`, `npm test`, danach Deploy
-  und Sichtprüfung der neuen Seiten.
-- **Achtung beim Deploy:** `.env.local` muss im Build-Verzeichnis liegen.
-- **Nach dem Deploy nötig:** ein Sync-Lauf, damit `start_at` befüllt wird.
-  Vorher zeigt die Ansicht „Neu" nichts bzw. fällt auf das Importdatum zurück.
-- **Ergebnis:** _(wird nach dem Durchlauf eingetragen)_
+_Kein laufender Auftrag._ Vorlage: Stand, Datum, Ziel, geplante Schritte,
+betroffene Dateien, Verifikation, Ergebnis.
 
 ---
 
@@ -75,6 +46,16 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 Kein Auftrag, sondern der Zustand, den die nächste Sitzung kennen muss.
 
+- **Sync-Lauf nötig, damit „Neu dabei" echt wird.** `ebay_listings.start_at` ist
+  noch überall NULL; der Mapper füllt es erst ab Version `a1cdd14f`. Solange
+  liefert `/api/products/highlights` für „neueste" bewusst die Importreihenfolge
+  (`startAtAvailable: false`) statt fünf willkürlicher Karten. Nach einem
+  Sync-Lauf prüfen: `curl -s https://shop.brandycards.de/api/products/highlights`
+  muss `"startAtAvailable": true` melden.
+- **Preisvorschlag hat keine Oberfläche mehr.** `/api/price-offers` verlangt eine
+  `PRELISTED`-Produkt-ID, aber alle 297 Produkte sind `EBAY_SYNCED`. Entweder
+  Prelisted-Produkte pflegbar machen (Admin-Oberfläche fehlt) oder die Route für
+  aktive Listings öffnen. Bis dahin gibt es dafür bewusst kein Formular.
 - **CI hat den aktuellen `main` nie geprüft.** Der Merge lief während des
   GitHub-Actions-Ausfalls vom 2026-08-06 und wurde nur lokal verifiziert. Sobald
   Actions wieder `operational` meldet, einmal den Workflow über `main` laufen
@@ -100,6 +81,30 @@ Kein Auftrag, sondern der Zustand, den die nächste Sitzung kennen muss.
 ---
 
 ## Historie
+
+### 2026-08-06 — Startseite entschlackt, Galerie eingeführt
+
+- **Stand:** ABGESCHLOSSEN
+- **Ziel:** Shop-Inhalt von `/` auf Unterseiten verlagern, Landingpage auf Hero,
+  Galerie, Verweise und Footer reduzieren.
+- **Ergebnis:** Neue Seiten `/karten`, `/anfragen`, `/verkaufen`, `/ueber-uns`,
+  geteilte `SiteHeader`/`SiteFooter` in `app/site-chrome.tsx`, Formularbausteine
+  in `app/forms.tsx`. Galerie in `app/gallery.tsx` mit genau fünf Karten,
+  2-Sekunden-Takt, Pause bei Hover und Fokus, `prefers-reduced-motion`, Umschalter
+  „Neu dabei" / „Beliebt" (= teuerste). Neue Route
+  `/api/products/highlights`. Der Warenkorb läuft jetzt über
+  `useSyncExternalStore`, damit die Zahl im Header über alle Seiten mitläuft.
+  Nebenbei behoben: „Vormerken" und Preisvorschlag waren fest auf eine
+  Demo-Fehlermeldung verdrahtet; Vormerken ruft jetzt echt `/api/prelisted-interest`.
+  Commit `bd0a69c`, deployed als `a1cdd14f`. Alle Seiten antworten mit HTTP 200,
+  `npm test` 11/11, `tsc --noEmit` sauber, Lint 0 Fehler.
+- **Beobachtung beim Deploy:** `/karten` lieferte unmittelbar nach dem Deploy
+  einmalig 404 und kurz darauf 200 — Propagierungsverzögerung, kein Routingfehler.
+  Bei künftigen Deploys nicht sofort urteilen, sondern nachfassen.
+- **Bewusst weggelassen:** Das frühere Preisvorschlag-Formular. `/api/price-offers`
+  verlangt eine `PRELISTED`-Produkt-ID, und es existiert derzeit kein einziges
+  `PRELISTED`-Produkt — ein freies Formular würde ausnahmslos mit
+  „Die angegebene Karte ist nicht verfügbar" scheitern. Siehe offene Punkte.
 
 ### 2026-08-06 — `main` auf den Arbeitsstand gebracht
 
