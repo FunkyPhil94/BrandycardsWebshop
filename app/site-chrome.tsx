@@ -69,7 +69,7 @@ const NAV = [
 export function SiteHeader({ active }: { active?: string }) {
   const { count } = useCart();
   return <>
-    <div className="announcement"><span>✦</span> Versandkostenfrei ab 75 € innerhalb Deutschlands <span>→</span></div>
+    <div className="announcement"><span>✦</span> Versand innerhalb Deutschlands 3,45 € · EU 14,49 € <span>→</span></div>
     <header className="site-header">
       <Link className="brand" href="/" aria-label="BrandyCards Startseite">
         {/* eslint-disable-next-line @next/next/no-img-element */}

@@ -134,9 +134,8 @@ export default function KartenDetailPage({ params }: { params: Promise<{ id: str
           </div>
 
           <dl className="detail-facts">
-            <div><dt>Versand</dt><dd>Versandkostenfrei ab 75 € innerhalb Deutschlands</dd></div>
+            <div><dt>Versand</dt><dd>Deutschland 3,45 € · EU 14,49 €</dd></div>
             <div><dt>Zustand</dt><dd>Siehe Artikelbeschreibung</dd></div>
-            <div><dt>Verpackung</dt><dd>Bruch- und feuchtigkeitssicher</dd></div>
           </dl>
         </div>
       </section>
