@@ -4,6 +4,10 @@ import { env } from "cloudflare:workers";
 import { getDb } from "../db";
 import { ebayListings, inventory, productAssets, products, syncEvents, syncRuns } from "../db/schema";
 import { getActiveEbayListings, type EbayActiveListing } from "./ebay-client";
+import { D1_SAFE_ID_LIST, maxInsertRows } from "./d1-limits";
+
+/** syncRunId, ebayItemId, productId, status, message, createdAt */
+const SYNC_EVENT_INSERT_COLUMNS = 6;
 
 let localSyncLock: Promise<unknown> | null = null;
 const newEntityId = () => crypto.randomUUID().replaceAll("-", "");
@@ -144,18 +148,28 @@ async function runEbaySyncInternal() {
     `).bind("ACTIVE").all<{ id: string; ebayItemId: string; productId: string }>();
     // A corrected import can retire a large backlog at once. Row-by-row writes
     // would be four round trips per listing, so deactivation runs in batches.
+    // Chunk sizes come from the D1 parameter ceiling, see lib/d1-limits.ts.
+    const DEACTIVATE_CHUNK = D1_SAFE_ID_LIST;
+    const EVENT_CHUNK = maxInsertRows(SYNC_EVENT_INSERT_COLUMNS);
     const stale = activeListingResult.results.filter((listing) => !seenItemIds.has(listing.ebayItemId));
-    for (let offset = 0; offset < stale.length; offset += 50) {
-      const chunk = stale.slice(offset, offset + 50);
+    for (let offset = 0; offset < stale.length; offset += DEACTIVATE_CHUNK) {
+      const chunk = stale.slice(offset, offset + DEACTIVATE_CHUNK);
       const now = new Date().toISOString();
       const listingIds = chunk.map((listing) => listing.id);
       const productIds = chunk.map((listing) => listing.productId);
+      const eventInserts: BatchItem<"sqlite">[] = [];
+      for (let eventOffset = 0; eventOffset < chunk.length; eventOffset += EVENT_CHUNK) {
+        eventInserts.push(db.insert(syncEvents).values(chunk.slice(eventOffset, eventOffset + EVENT_CHUNK).map((listing) => ({
+          syncRunId: run.id, ebayItemId: listing.ebayItemId, productId: listing.productId,
+          status: "DEACTIVATED" as const, message: "Angebot nicht mehr in eBay-Aktivliste vorhanden.", createdAt: now,
+        }))));
+      }
       await db.batch([
         db.update(ebayListings).set({ status: "ENDED", updatedAt: now }).where(inArray(ebayListings.id, listingIds)),
         db.update(products).set({ status: "INACTIVE", updatedAt: now }).where(inArray(products.id, productIds)),
         db.update(inventory).set({ status: "UNAVAILABLE", availableQuantity: 0, updatedAt: now }).where(inArray(inventory.productId, productIds)),
-        db.insert(syncEvents).values(chunk.map((listing) => ({ syncRunId: run.id, ebayItemId: listing.ebayItemId, productId: listing.productId, status: "DEACTIVATED" as const, message: "Angebot nicht mehr in eBay-Aktivliste vorhanden.", createdAt: now }))),
-      ]);
+        ...eventInserts,
+      ] as [BatchItem<"sqlite">, ...BatchItem<"sqlite">[]]);
       deactivatedCount += chunk.length;
     }
     await finalizeRun({ status: skippedCount ? "PARTIAL" : "SUCCEEDED", importedCount, updatedCount, deactivatedCount, failedCount, finishedAt: new Date().toISOString(), errorMessage: null });

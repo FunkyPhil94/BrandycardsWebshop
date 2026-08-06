@@ -138,6 +138,26 @@ Dieses Protokoll hält fest, welche spezialisierten Agents im Projekt eingesetzt
   Client-Konfiguration braucht. Startseite und `/api/products` waren durchgehend
   gesund und haetten den Fehler nie gezeigt.
 
+## 2026-08-06 - D1-Parametergrenze in der Batch-Deaktivierung
+
+- Ausloeser: Der Admin-Sync brach ab mit
+  `D1_ERROR: too many SQL variables at offset 1070: SQLITE_ERROR`.
+- Ursache: Selbst eingebaut. Die Umstellung der Deaktivierung auf Bloecke zu 50 erzeugte
+  ein Sammel-`INSERT` in `sync_events` mit 50 Zeilen x 6 Spalten = 300 gebundenen
+  Parametern. D1 begrenzt die Parameter pro *Statement*; die drei `inArray`-Updates
+  lagen mit rund 42 harmlos darunter, der Insert nicht.
+- Umsetzung: Die Blockgroessen kommen jetzt aus `lib/d1-limits.ts` statt aus einer
+  Schaetzung. Die Id-Listen bleiben bei 40, das Event-Insert wird innerhalb desselben
+  Batches in Teilstuecke zu 15 Zeilen zerlegt (90 Parameter).
+- Verifikation: `tests/d1-limits.test.mjs` misst die von Drizzle *tatsaechlich* erzeugten
+  SQL-Parameter statt sie zu zaehlen, und enthaelt den kaputten 50-Zeilen-Fall als
+  Fixture, der die Grenze nachweislich reisst. Gemessen: 15 Zeilen -> 90 Parameter,
+  40 Ids -> 42 Parameter, vorher 50 Zeilen -> 300 Parameter.
+- Wichtiger Nebenbefund: Der fehlgeschlagene Lauf belegt, dass der Importfix greift.
+  Er verarbeitete 294 Updates plus 3 Neuimporte, also 297 Angebote - gegenueber 530 in
+  allen Laeufen davor. Der Parserfix ist damit gegen die echte eBay-API bestaetigt,
+  nicht nur gegen den Stub. Es fehlt nur noch ein Lauf, der die Deaktivierung ausfuehrt.
+
 ## Arbeitsweise
 
 Agents erhalten klar abgegrenzte Prüf- oder Implementierungsaufträge. Ihre Ergebnisse werden vor Übernahme geprüft. Änderungen werden anschließend lokal getestet, committed und nach GitHub gepusht.
