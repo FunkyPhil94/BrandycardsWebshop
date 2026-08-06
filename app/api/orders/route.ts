@@ -48,31 +48,34 @@ export async function POST(request: Request) {
       requested.set(productId, (requested.get(productId) ?? 0) + quantity);
     }
     const db = getDb();
-    const created = await db.transaction(async (tx) => {
-      const ids = Array.from(requested.keys());
-      const rows = await tx.select({ product: products, listing: ebayListings, stock: inventory }).from(products)
+    const ids = Array.from(requested.keys());
+    const rows = await db.select({ product: products, listing: ebayListings, stock: inventory }).from(products)
         .innerJoin(ebayListings, and(eq(ebayListings.productId, products.id), eq(ebayListings.status, "ACTIVE"), eq(ebayListings.listingType, "FIXED_PRICE")))
         .innerJoin(inventory, eq(inventory.productId, products.id)).where(and(inArray(products.id, ids), eq(products.status, "ACTIVE")));
-      if (rows.length !== ids.length) throw new OrderIssue("Ein Artikel ist nicht mehr verfügbar.");
-      const lineItems = rows.map(({ product, listing, stock }) => {
+    if (rows.length !== ids.length) throw new OrderIssue("Ein Artikel ist nicht mehr verfügbar.");
+    const lineItems = rows.map(({ product, listing, stock }) => {
         const quantity = requested.get(product.id) ?? 0;
         if (!listing.priceAmountCents || listing.priceAmountCents < 1 || stock.availableQuantity < quantity || stock.status === "UNAVAILABLE" || stock.status === "SOLD") throw new OrderIssue(`Artikel nicht mehr verfügbar: ${product.title}`);
         return { product, listing, stock, quantity, total: listing.priceAmountCents * quantity };
-      });
-      const subtotal = lineItems.reduce((sum, item) => sum + item.total, 0);
-      const shipping = shippingAddress.country === "DE" ? 345 : 1449;
-      const total = subtotal + shipping;
-      const [order] = await tx.insert(orders).values({ orderNumber: orderNumber(), userId: appUser.id, status: "PENDING", currency: "EUR", subtotalAmountCents: subtotal, shippingAmountCents: shipping, totalAmountCents: total, shippingAddress, billingAddress: shippingAddress }).returning();
-      if (!order) throw new Error("Bestellung konnte nicht angelegt werden.");
-      const expiresAt = new Date(Date.now() + RESERVATION_MINUTES * 60_000).toISOString();
-      for (const item of lineItems) {
-        await tx.insert(orderItems).values({ orderId: order.id, productId: item.product.id, titleSnapshot: item.product.title, skuSnapshot: item.listing.sku, quantity: item.quantity, unitAmountCents: item.listing.priceAmountCents!, totalAmountCents: item.total, productSnapshot: { title: item.product.title, listingId: item.listing.id } });
-        const updated = await tx.update(inventory).set({ availableQuantity: item.stock.availableQuantity - item.quantity, reservedQuantity: item.stock.reservedQuantity + item.quantity, status: "RESERVED", version: item.stock.version + 1, updatedAt: new Date().toISOString() }).where(and(eq(inventory.id, item.stock.id), gte(inventory.availableQuantity, item.quantity))).returning();
-        if (!updated.length) throw new OrderIssue(`Bestand konnte nicht reserviert werden: ${item.product.title}`);
-        await tx.insert(reservations).values({ productId: item.product.id, inventoryId: item.stock.id, userId: appUser.id, quantity: item.quantity, status: "ACTIVE", expiresAt });
-      }
-      return { id: order.id, orderNumber: order.orderNumber, subtotal, shipping, total, expiresAt };
     });
+    const subtotal = lineItems.reduce((sum, item) => sum + item.total, 0);
+    const shipping = shippingAddress.country === "DE" ? 345 : 1449;
+    const total = subtotal + shipping;
+    const id = crypto.randomUUID();
+    const number = orderNumber();
+    const expiresAt = new Date(Date.now() + RESERVATION_MINUTES * 60_000).toISOString();
+
+    // Cloudflare D1 rejects SQL BEGIN/COMMIT statements. Drizzle's generic
+    // transaction helper emits those statements, so use D1's native batch API.
+    // D1 executes the batch atomically while keeping all writes on one request.
+    const writes = [
+      db.insert(orders).values({ id, orderNumber: number, userId: appUser.id, status: "PENDING", currency: "EUR", subtotalAmountCents: subtotal, shippingAmountCents: shipping, totalAmountCents: total, shippingAddress, billingAddress: shippingAddress }),
+      ...lineItems.map((item) => db.insert(orderItems).values({ orderId: id, productId: item.product.id, titleSnapshot: item.product.title, skuSnapshot: item.listing.sku, quantity: item.quantity, unitAmountCents: item.listing.priceAmountCents!, totalAmountCents: item.total, productSnapshot: { title: item.product.title, listingId: item.listing.id } })),
+      ...lineItems.map((item) => db.update(inventory).set({ availableQuantity: item.stock.availableQuantity - item.quantity, reservedQuantity: item.stock.reservedQuantity + item.quantity, status: "RESERVED", version: item.stock.version + 1, updatedAt: new Date().toISOString() }).where(and(eq(inventory.id, item.stock.id), gte(inventory.availableQuantity, item.quantity)))),
+      ...lineItems.map((item) => db.insert(reservations).values({ productId: item.product.id, inventoryId: item.stock.id, userId: appUser.id, quantity: item.quantity, status: "ACTIVE", expiresAt })),
+    ] as const;
+    await db.batch(writes);
+    const created = { id, orderNumber: number, subtotal, shipping, total, expiresAt };
     return NextResponse.json({ order: created }, { status: 201 });
   } catch (error) {
     const message = error instanceof OrderIssue ? error.publicMessage : "Bestellung konnte nicht angelegt werden.";
