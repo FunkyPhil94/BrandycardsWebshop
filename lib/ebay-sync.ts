@@ -106,7 +106,7 @@ async function runEbaySyncInternal() {
           continue;
         }
         let mapped;
-        try { mapped = mapListing(item, offer); } catch (error) {
+        try { mapped = mapLegacyListing(item, offer); } catch (error) {
           skippedCount++;
           await db.insert(syncEvents).values({ syncRunId: run.id, status: "SKIPPED", message: error instanceof Error ? error.message : "Ungültiges eBay-Angebot." });
           continue;
