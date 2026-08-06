@@ -6,6 +6,13 @@ main = "worker/index.ts"
 compatibility_date = "2026-08-05"
 compatibility_flags = ["nodejs_compat"]
 
+[vars]
+EBAY_ENVIRONMENT = "production"
+EBAY_MARKETPLACE_ID = "EBAY_DE"
+EBAY_OAUTH_SCOPE = "https://api.ebay.com/oauth/api_scope/sell.inventory.readonly"
+EBAY_WRITE_OAUTH_SCOPE = "https://api.ebay.com/oauth/api_scope/sell.inventory"
+EBAY_WRITE_ENABLED = "false"
+
 [triggers]
 crons = ["0 * * * *"]
 
