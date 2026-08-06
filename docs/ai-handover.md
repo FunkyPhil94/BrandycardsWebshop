@@ -37,8 +37,37 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-_Kein laufender Auftrag._ Vorlage: Stand, Datum, Ziel, geplante Schritte,
-betroffene Dateien, Verifikation, Ergebnis.
+- **Stand:** LÄUFT
+- **Datum:** 2026-08-06
+- **Ziel:** Startseite entschlacken. Bisher liegt der gesamte Shop-Inhalt auf
+  `/`. Künftig trägt die Landingpage nur Hero, eine Galerie mit genau 5 Karten,
+  Verweise auf Unterseiten und den Footer.
+- **Vom Nutzer entschieden:**
+  - „Neueste" soll auf dem echten eBay-Einstelldatum beruhen, nicht auf dem
+    Importdatum. Grund: alle 297 Karten wurden am selben Tag importiert,
+    `start_at` ist durchgehend NULL — „neueste" wäre sonst willkürlich.
+  - Aufteilung in `/karten`, `/anfragen`, `/verkaufen`, `/ueber-uns`.
+  - Galerie: Klick auf die Bildfläche blättert weiter; Titel und ein Button
+    darunter führen zum Angebot.
+- **Geplante Schritte:**
+  1. Sync-Mapper um `ListingDetails/StartTime` erweitern, `start_at` füllen
+     (Spalte existiert bereits, keine Migration nötig)
+  2. `/api/products/highlights` liefert 5 neueste (nach `start_at`) und
+     5 teuerste (nach `price_amount_cents`)
+  3. Geteilte `SiteHeader`/`SiteFooter` samt Warenkorb-Hook auslagern
+  4. Neue Seiten `/karten`, `/anfragen`, `/verkaufen`, `/ueber-uns`
+  5. Landingpage auf Hero + Galerie + Verweise + Footer reduzieren
+  6. Galerie: 2-Sekunden-Takt, Pause bei Hover/Fokus, `prefers-reduced-motion`
+     respektieren, Umschalter „Neu" / „Beliebt"
+  7. CSS ergänzen, Tests, lokale Prüfung, Deploy
+- **Betroffen:** `app/page.tsx`, neue Seiten unter `app/`, `app/globals.css`,
+  `lib/ebay-client.ts`, `lib/ebay-sync.ts`, neue API-Route, Tests.
+- **Verifikation:** `npx tsc --noEmit`, `npm run lint`, `npm test`, danach Deploy
+  und Sichtprüfung der neuen Seiten.
+- **Achtung beim Deploy:** `.env.local` muss im Build-Verzeichnis liegen.
+- **Nach dem Deploy nötig:** ein Sync-Lauf, damit `start_at` befüllt wird.
+  Vorher zeigt die Ansicht „Neu" nichts bzw. fällt auf das Importdatum zurück.
+- **Ergebnis:** _(wird nach dem Durchlauf eingetragen)_
 
 ---
 
