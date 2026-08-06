@@ -15,7 +15,11 @@ const ACTIVE_ITEM = (id, title) => `
     <QuantityAvailable>1</QuantityAvailable>
     <SellingStatus><CurrentPrice currencyID="EUR">12.50</CurrentPrice></SellingStatus>
     <PictureDetails><PictureURL>https://img.ebay.com/${id}.jpg</PictureURL></PictureDetails>
-    <ListingDetails><ViewItemURL>https://www.ebay.de/itm/${id}</ViewItemURL></ListingDetails>
+    <ListingDetails>
+      <ViewItemURL>https://www.ebay.de/itm/${id}</ViewItemURL>
+      <StartTime>2026-08-01T09:30:00.000Z</StartTime>
+      <EndTime>2026-09-01T09:30:00.000Z</EndTime>
+    </ListingDetails>
   </Item>`;
 
 function buildResponse({ activeItems, soldItems, totalPages, totalEntries }) {
@@ -76,6 +80,35 @@ test("only ActiveList items are imported, SoldList is ignored", async () => {
   assert.deepEqual(listings.map((listing) => listing.ebayItemId).sort(), ["398173913889", "398200679813"]);
   assert.equal(listings.length, 2, "sold items must not be imported");
   assert.match(calls[0], /<SoldList><Include>false<\/Include><\/SoldList>/);
+
+  // The listing start time drives the "newest cards" gallery view. Without it
+  // "newest" would fall back to the bulk import timestamp, which is identical
+  // for every card and therefore meaningless.
+  assert.equal(listings[0].startAt, "2026-08-01T09:30:00.000Z");
+  assert.equal(listings[0].endAt, "2026-09-01T09:30:00.000Z");
+});
+
+test("a missing or malformed listing date does not break the import", async () => {
+  process.env.EBAY_CLIENT_ID = "id";
+  process.env.EBAY_CLIENT_SECRET = "secret";
+  process.env.EBAY_REFRESH_TOKEN = "refresh";
+
+  installFetchStub([`<?xml version="1.0" encoding="utf-8"?>
+<GetMyeBaySellingResponse xmlns="urn:ebay:apis:eBLBaseComponents">
+  <Ack>Success</Ack>
+  <ActiveList><ItemArray><Item>
+    <ItemID>2001</ItemID><Title>Ohne Datum</Title>
+    <ListingType>FixedPriceItem</ListingType><QuantityAvailable>1</QuantityAvailable>
+    <ListingDetails><StartTime>nicht-eine-zeit</StartTime></ListingDetails>
+  </Item></ItemArray>
+  <PaginationResult><TotalNumberOfPages>1</TotalNumberOfPages><TotalNumberOfEntries>1</TotalNumberOfEntries></PaginationResult>
+  </ActiveList>
+</GetMyeBaySellingResponse>`]);
+
+  const { getActiveEbayListings } = await import("../lib/ebay-client.ts");
+  const listings = await getActiveEbayListings();
+  assert.equal(listings.length, 1);
+  assert.equal(listings[0].startAt, null, "an unparsable date must become null, not Invalid Date");
 });
 
 test("pagination follows the ActiveList total, not another container", async () => {

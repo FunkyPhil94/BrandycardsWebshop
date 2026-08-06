@@ -28,6 +28,8 @@ function mapActiveListing(listing: EbayActiveListing) {
     priceAmountCents: listing.priceAmountCents,
     priceCurrency: listing.priceCurrency,
     quantity: listing.quantity,
+    startAt: listing.startAt,
+    endAt: listing.endAt,
     rawData: listing.rawData,
   };
 }
@@ -109,6 +111,8 @@ async function runEbaySyncInternal() {
           quantity: mapped.quantity,
           listingType: mapped.listingType,
           listingUrl: mapped.listingUrl,
+          startAt: mapped.startAt,
+          endAt: mapped.endAt,
           rawData: mapped.rawData,
           status: listingStatus,
           lastSyncedAt: now,

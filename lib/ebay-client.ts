@@ -90,8 +90,18 @@ export type EbayActiveListing = {
   priceAmountCents: number | null;
   priceCurrency: string;
   quantity: number;
+  /** eBay listing start time (ISO). Drives the "newest cards" view. */
+  startAt: string | null;
+  endAt: string | null;
   rawData: Record<string, unknown>;
 };
+
+/** eBay returns ISO timestamps; guard against malformed values. */
+function parseEbayDate(value: string | undefined) {
+  if (!value) return null;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
+}
 
 function parseTradingResponse(xml: string, config: EbayConfig) {
   const ack = xmlValue(xml, "Ack")?.toUpperCase();
@@ -128,6 +138,8 @@ function parseTradingResponse(xml: string, config: EbayConfig) {
       priceAmountCents: Number.isFinite(price) ? Math.round(price * 100) : null,
       priceCurrency: xmlAttribute(itemXml, "CurrentPrice", "currencyID") ?? "EUR",
       quantity: Number.isFinite(quantity) && quantity >= 0 ? quantity : 0,
+      startAt: parseEbayDate(xmlValue(itemXml, "StartTime")),
+      endAt: parseEbayDate(xmlValue(itemXml, "EndTime")),
       rawData: { source: "trading-api", marketplaceId: config.marketplaceId, itemId: ebayItemId },
     };
   }).filter((item): item is EbayActiveListing => Boolean(item));
