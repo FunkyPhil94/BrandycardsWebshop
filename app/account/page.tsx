@@ -151,7 +151,7 @@ export default function AccountPage() {
             <h2 id="profile-title">Mein Profil</h2>
             <form onSubmit={saveProfile}>
               <label className="form-field"><span>E-Mail-Adresse</span><input type="email" value={user.email ?? ""} readOnly /></label>
-              <label className="form-field"><span>Benutzername *</span><input type="text" value={username} onChange={(event) => setUsername(event.target.value)} required minLength={3} maxLength={30} pattern="[A-Za-z0-9_]{3,30}" readOnly={!editingProfile} /></label>
+              <label className="form-field"><span>Benutzername *</span><input type="text" value={username} onChange={(event) => setUsername(event.target.value)} required minLength={3} maxLength={30} pattern="[A-Za-z0-9_]{3,30}" readOnly={!editingProfile} /><small>3–30 Zeichen: nur Buchstaben, Zahlen und Unterstrich (_).</small></label>
               <label className="form-field"><span>Anzeigename</span><input type="text" value={displayName} onChange={(event) => setDisplayName(event.target.value)} maxLength={120} readOnly={!editingProfile} /></label>
               {editingProfile ? <button className="button button-primary" type="submit" disabled={busy}>{busy ? "Speichere …" : "Profil speichern"}</button> : <button className="button button-primary" type="button" onClick={() => setEditingProfile(true)}>Profil bearbeiten</button>}
             </form>
@@ -162,7 +162,7 @@ export default function AccountPage() {
           <p>{recovery ? "Wähle ein neues Passwort und bestätige es." : mode === "signup" ? "Speichere Bestellungen und verwalte deine Anfragen." : mode === "reset" ? "Wir senden dir einen sicheren Link per E-Mail." : "Melde dich an, um deine Bestellungen und Anfragen zu sehen."}</p>
           <form onSubmit={submit}>
             {!recovery && <label className="form-field"><span>E-Mail-Adresse *</span><input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required autoComplete="email" /></label>}
-            {!recovery && mode === "signup" && <label className="form-field"><span>Benutzername *</span><input type="text" value={username} onChange={(event) => setUsername(event.target.value)} required minLength={3} maxLength={30} pattern="[A-Za-z0-9_]{3,30}" autoComplete="username" /></label>}
+            {!recovery && mode === "signup" && <label className="form-field"><span>Benutzername *</span><input type="text" value={username} onChange={(event) => setUsername(event.target.value)} required minLength={3} maxLength={30} pattern="[A-Za-z0-9_]{3,30}" autoComplete="username" /><small>3–30 Zeichen: nur Buchstaben, Zahlen und Unterstrich (_).</small></label>}
             {(!recovery && mode === "reset") ? null : <label className="form-field"><span>{recovery ? "Neues Passwort *" : "Passwort *"}</span><input type="password" value={password} onChange={(event) => setPassword(event.target.value)} required minLength={8} autoComplete={mode === "signup" || recovery ? "new-password" : "current-password"} /></label>}
             {(recovery || mode === "signup") && <label className="form-field"><span>Passwort bestätigen *</span><input type="password" value={passwordConfirmation} onChange={(event) => setPasswordConfirmation(event.target.value)} required minLength={8} autoComplete="new-password" /></label>}
             <button className="button button-primary" type="submit" disabled={busy}>{busy ? "Bitte warten …" : recovery ? "Neues Passwort speichern" : mode === "login" ? "Anmelden" : mode === "signup" ? "Konto erstellen" : "Reset-Link senden"}</button>
