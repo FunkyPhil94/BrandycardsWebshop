@@ -37,8 +37,28 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-_Kein laufender Auftrag._ Vorlage: Stand, Datum, Ziel, geplante Schritte,
-betroffene Dateien, Verifikation, Ergebnis.
+- **Stand:** LÄUFT
+- **Datum:** 2026-08-06
+- **Ziel:** eBay-Beschreibung nicht mehr einbetten, sondern strukturiert auslesen
+  und im Shop-Design neu rendern.
+- **Warum:** Der Sanitizer entfernt `style`, wodurch die schwarz-goldene
+  eBay-Vorlage als unformatierter Textblock erschien — Logo auf schwarzem Kasten
+  in heller Seite, Tabelle ohne Rahmen. Styles wieder zuzulassen wäre die falsche
+  Antwort: fremdes Design gehört nicht in die Seite, und `style` öffnet
+  CSS-basierte Angriffe.
+- **Geplante Schritte:**
+  1. `lib/ebay-description.ts`: sanitiertes HTML in Struktur überführen
+     (Kartendetails als Label/Wert-Paare, übrige Abschnitte als Überschrift +
+     Inhalt), Kopfbereich mit Logo und Fußzeile verwerfen
+  2. Tests mit der echten Vorlage als Fixture
+  3. Detailseite rendert Spezifikationen als eigene Tabelle und Abschnitte in
+     Shop-Typografie; Rückfall auf das bisherige Verhalten, wenn die Struktur
+     nicht erkannt wird
+- **Betroffen:** neues Parser-Modul, `app/api/products/[id]/route.ts`,
+  `app/karten/[id]/page.tsx`, `app/globals.css`, Tests.
+- **Verifikation:** `tsc --noEmit`, Lint, `npm test`, Abruf einer echten
+  Detailseite gegen Produktion.
+- **Ergebnis:** _(wird nach dem Durchlauf eingetragen)_
 
 ---
 
