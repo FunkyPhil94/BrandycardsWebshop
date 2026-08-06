@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { getDb } from "../../../db";
 import { ebayListings, inventory, orderItems, orders, products, reservations } from "../../../db/schema";
 import { getAuthenticatedAppUser } from "../../../lib/app-user";
+import { acceptedOfferPrices } from "../../../lib/price-offers";
 
 const EU_COUNTRIES = new Set(["AT", "BE", "BG", "HR", "CY", "CZ", "DK", "EE", "ES", "FI", "FR", "GR", "HU", "IE", "IT", "LT", "LU", "LV", "MT", "NL", "PL", "PT", "RO", "SE", "SI", "SK"]);
 const RESERVATION_MINUTES = 15;
@@ -53,10 +54,18 @@ export async function POST(request: Request) {
         .innerJoin(ebayListings, and(eq(ebayListings.productId, products.id), eq(ebayListings.status, "ACTIVE"), eq(ebayListings.listingType, "FIXED_PRICE")))
         .innerJoin(inventory, eq(inventory.productId, products.id)).where(and(inArray(products.id, ids), eq(products.status, "ACTIVE")));
     if (rows.length !== ids.length) throw new OrderIssue("Ein Artikel ist nicht mehr verfügbar.");
+    // Negotiated prices are resolved here, never taken from the request. The
+    // browser only names product ids; what each one costs for this customer is
+    // decided server-side from their accepted, unexpired offers.
+    const negotiated = await acceptedOfferPrices(db, appUser.id, ids);
     const lineItems = rows.map(({ product, listing, stock }) => {
         const quantity = requested.get(product.id) ?? 0;
         if (!listing.priceAmountCents || listing.priceAmountCents < 1 || stock.availableQuantity < quantity || stock.status === "UNAVAILABLE" || stock.status === "SOLD") throw new OrderIssue(`Artikel nicht mehr verfügbar: ${product.title}`);
-        return { product, listing, stock, quantity, total: listing.priceAmountCents * quantity };
+        // An accepted offer only ever lowers the price; should the list price
+        // have dropped below it in the meantime, the customer pays the lower one.
+        const agreed = negotiated.get(product.id);
+        const unitPrice = agreed !== undefined ? Math.min(agreed, listing.priceAmountCents) : listing.priceAmountCents;
+        return { product, listing, stock, quantity, unitPrice, total: unitPrice * quantity };
     });
     const subtotal = lineItems.reduce((sum, item) => sum + item.total, 0);
     const shipping = shippingAddress.country === "DE" ? 345 : 1449;
@@ -79,7 +88,7 @@ export async function POST(request: Request) {
     }
     const writes = [
       db.insert(orders).values({ id, orderNumber: number, userId: appUser.id, status: "PENDING", currency: "EUR", subtotalAmountCents: subtotal, shippingAmountCents: shipping, totalAmountCents: total, shippingAddress, billingAddress: shippingAddress }),
-      ...lineItems.map((item) => db.insert(orderItems).values({ orderId: id, productId: item.product.id, titleSnapshot: item.product.title, skuSnapshot: item.listing.sku, quantity: item.quantity, unitAmountCents: item.listing.priceAmountCents!, totalAmountCents: item.total, productSnapshot: { title: item.product.title, listingId: item.listing.id } })),
+      ...lineItems.map((item) => db.insert(orderItems).values({ orderId: id, productId: item.product.id, titleSnapshot: item.product.title, skuSnapshot: item.listing.sku, quantity: item.quantity, unitAmountCents: item.unitPrice, totalAmountCents: item.total, productSnapshot: { title: item.product.title, listingId: item.listing.id } })),
       ...lineItems.map((item) => db.insert(reservations).values({ orderId: id, productId: item.product.id, inventoryId: item.stock.id, userId: appUser.id, quantity: item.quantity, status: "ACTIVE", expiresAt })),
     ] as const;
     await db.batch(writes);

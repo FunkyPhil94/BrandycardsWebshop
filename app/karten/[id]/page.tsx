@@ -4,6 +4,7 @@ import Link from "next/link";
 import { use, useCallback, useEffect, useState } from "react";
 import { ebayImageVariant } from "../../../lib/ebay-images.ts";
 import { EBAY_SHOP_URL, SiteFooter, SiteHeader, formatPrice, useCart } from "../../site-chrome";
+import { OfferForm } from "./offer-form";
 
 type CardSpec = { label: string; value: string };
 type CardSection = { heading: string; html: string };
@@ -132,6 +133,9 @@ export default function KartenDetailPage({ params }: { params: Promise<{ id: str
                 </button>}
             {card.listingUrl && <a className="text-link" href={card.listingUrl} target="_blank" rel="noreferrer">Angebot bei eBay <span>↗</span></a>}
           </div>
+
+          {card.category === "Festpreis" && card.quantity > 0 &&
+            <OfferForm productId={card.id} listPriceCents={card.priceAmountCents} currency={card.priceCurrency} />}
 
           <dl className="detail-facts">
             <div><dt>Versand</dt><dd>Deutschland 3,45 € · EU 14,49 €</dd></div>

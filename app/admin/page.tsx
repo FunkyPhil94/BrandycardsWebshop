@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { OffersPanel } from "./offers-panel";
 import Link from "next/link";
 import { getSupabaseBrowserClient } from "../../lib/supabase-browser";
 
@@ -126,6 +127,7 @@ export default function AdminPage() {
           <button className="button button-primary admin-sync-button" type="button" onClick={runEbaySync} disabled={syncBusy}>{syncBusy ? "eBay-Sync läuft …" : "eBay-Angebote synchronisieren"}</button>
           <button className="button button-outline admin-sync-button" type="button" onClick={connectEbay} disabled={oauthBusy}>{oauthBusy ? "eBay OAuth wird gestartet …" : "eBay OAuth verbinden / Refresh-Token erstellen"}</button>
           {syncMessage && <p className="form-feedback" role="status">{syncMessage}</p>}
+          <OffersPanel />
           <div className="admin-submissions">
             <h2>Neue Kartenangebote</h2>
             {dashboard.recentSubmissions.length === 0 ? <p className="form-feedback">Noch keine Angebote eingegangen.</p> : dashboard.recentSubmissions.map((submission) => <article key={submission.id} className="admin-submission"><div><strong>{submission.title}</strong><span>{submission.email}{submission.name ? ` · ${submission.name}` : ""}</span><div className="admin-submission-images">{submission.assets.map((asset) => assetUrls[asset.id] ? <img key={asset.id} src={assetUrls[asset.id]} alt={`Eingesendetes Bild zu ${submission.title}`} loading="lazy" /> : null)}</div></div><div className="admin-submission-meta"><span>{submission.assets.length} Bild(er)</span><span>{submission.status}</span><button type="button" onClick={() => void deleteSubmission(submission.id)} disabled={deletingSubmission === submission.id}>{deletingSubmission === submission.id ? "Löschen …" : "Angebot löschen"}</button></div></article>)}

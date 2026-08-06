@@ -278,3 +278,24 @@ footer { background:var(--ink); color:#fff; padding:52px max(48px,calc((100vw - 
 .detail-prose strong { font-weight:700; }
 .detail-prose ul,.detail-prose ol { margin:0 0 12px; padding-left:20px; }
 .detail-prose li { margin-bottom:6px; }
+
+/* --- Preisverhandlung --- */
+.offer-box { background:#ebe8e1; margin:0 0 34px; padding:26px 24px; }
+.offer-box h3 { font-size:13px; font-weight:800; letter-spacing:.1em; margin:0 0 12px; text-transform:uppercase; }
+.offer-box > p { color:#4d4a45; font-size:13px; line-height:1.7; margin:0 0 16px; }
+.offer-box form { display:grid; gap:14px; margin-top:4px; }
+.offer-box .button { justify-self:start; }
+.offer-meta { color:var(--muted); font-family:'DM Mono',monospace; font-size:9px; letter-spacing:.08em; margin:14px 0 0; text-transform:uppercase; }
+.offer-accepted { background:#dcebdc; }
+.offer-accepted h3 { color:#245b2d; }
+.admin-offers { display:grid; gap:12px; margin-top:14px; }
+.admin-offer { background:#1e1f21; display:grid; gap:10px; padding:16px 18px; }
+.admin-offer strong { font-size:13px; }
+.admin-offer .offer-row { align-items:center; display:flex; flex-wrap:wrap; gap:14px; justify-content:space-between; }
+.admin-offer .offer-actions { display:flex; gap:10px; }
+.admin-offer button { border:0; font-size:10px; font-weight:800; letter-spacing:.08em; padding:9px 16px; text-transform:uppercase; }
+.admin-offer .accept { background:#2f7d3b; color:#fff; }
+.admin-offer .reject { background:#3a3b3e; color:#e8e6e2; }
+.admin-section { margin-top:30px; }
+.admin-section h2 { font-size:15px; letter-spacing:-.02em; margin:0 0 12px; }
+.offer-message { color:#b6b3ad; font-size:12px; font-style:italic; margin:0; }
