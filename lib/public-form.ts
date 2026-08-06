@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { getDb } from "../db";
 import { products } from "../db/schema";
+import { RateLimitError } from "./rate-limit";
 
 export class PublicFormError extends Error {
   constructor(
@@ -24,17 +25,7 @@ export function publicDb() {
 }
 
 export async function readJsonBody(request: Request): Promise<UnknownRecord> {
-  const origin = request.headers.get("origin");
-  if (origin) {
-    try {
-      if (new URL(origin).origin !== new URL(request.url).origin) {
-        throw new PublicFormError(403, "ORIGIN_NOT_ALLOWED", "Die Anfragequelle ist nicht erlaubt.");
-      }
-    } catch (error) {
-      if (error instanceof PublicFormError) throw error;
-      throw new PublicFormError(403, "ORIGIN_NOT_ALLOWED", "Die Anfragequelle ist nicht erlaubt.");
-    }
-  }
+  assertSameOrigin(request);
   const contentType = request.headers.get("content-type")?.toLowerCase() ?? "";
   if (!contentType.startsWith("application/json")) {
     throw new PublicFormError(415, "UNSUPPORTED_MEDIA_TYPE", "Die Anfrage muss JSON verwenden.");
@@ -64,6 +55,17 @@ export async function readJsonBody(request: Request): Promise<UnknownRecord> {
     throw new PublicFormError(400, "INVALID_BODY", "Die Anfrage muss ein JSON-Objekt enthalten.");
   }
   return body as UnknownRecord;
+}
+
+export function assertSameOrigin(request: Request) {
+  const origin = request.headers.get("origin");
+  if (!origin) return;
+  try {
+    if (new URL(origin).origin !== new URL(request.url).origin) throw new PublicFormError(403, "ORIGIN_NOT_ALLOWED", "Die Anfragequelle ist nicht erlaubt.");
+  } catch (error) {
+    if (error instanceof PublicFormError) throw error;
+    throw new PublicFormError(403, "ORIGIN_NOT_ALLOWED", "Die Anfragequelle ist nicht erlaubt.");
+  }
 }
 
 export function requiredString(body: UnknownRecord, key: string, label: string, maxLength: number): string {
@@ -136,6 +138,9 @@ export function formMetadata(title: string, message: string | null, extra: Recor
 }
 
 export function jsonError(error: unknown) {
+  if (error instanceof RateLimitError) {
+    return NextResponse.json({ ok: false, error: { code: error.code, message: error.message } }, { status: error.status, headers: { "retry-after": String(error.retryAfterSeconds) } });
+  }
   if (error instanceof PublicFormError) {
     return NextResponse.json({ ok: false, error: { code: error.code, message: error.message } }, { status: error.status });
   }

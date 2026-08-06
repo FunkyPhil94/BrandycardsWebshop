@@ -11,9 +11,11 @@ import {
   requiredEmail,
   requiredString,
 } from "../../../lib/public-form";
+import { enforcePublicRateLimit } from "../../../lib/rate-limit";
 
 export async function POST(request: Request) {
   try {
+    await enforcePublicRateLimit(request, "price-offers");
     const body = await readJsonBody(request);
     const email = requiredEmail(body);
     const productId = requiredString(body, "productId", "Produktreferenz", 64);

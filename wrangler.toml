@@ -1,0 +1,40 @@
+"$schema" = "./node_modules/wrangler/config-schema.json"
+
+name = "brandycards-webshop"
+account_id = "7d38e966a0bd1a5ed4843ab57f07324e"
+main = "worker/index.ts"
+compatibility_date = "2026-08-05"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = false
+preview_urls = false
+
+routes = [
+  { pattern = "shop.brandycards.de", zone_name = "brandycards.de", custom_domain = true, enabled = true, previews_enabled = false }
+]
+
+[vars]
+EBAY_ENVIRONMENT = "production"
+EBAY_MARKETPLACE_ID = "EBAY_DE"
+EBAY_OAUTH_SCOPE = "https://api.ebay.com/oauth/api_scope/sell.inventory.readonly"
+EBAY_WRITE_OAUTH_SCOPE = "https://api.ebay.com/oauth/api_scope/sell.inventory"
+EBAY_WRITE_ENABLED = "false"
+EBAY_RUNAME = "BrandyCards_GbR-BrandyCa-Brandy-cqibopjv"
+EBAY_OAUTH_CALLBACK_URL = "https://shop.brandycards.de/api/admin/ebay/oauth/callback"
+
+[triggers]
+crons = ["0 * * * *"]
+
+[assets]
+binding = "ASSETS"
+
+[images]
+binding = "IMAGES"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "brandycards-production"
+database_id = "23ef186e-fca1-419e-97c2-e5f8f4bf38e6"
+
+[[r2_buckets]]
+binding = "UPLOADS"
+bucket_name = "brandycards-uploads"

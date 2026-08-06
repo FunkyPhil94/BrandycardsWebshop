@@ -10,9 +10,11 @@ import {
   requiredEmail,
   requiredString,
 } from "../../../lib/public-form";
+import { enforcePublicRateLimit } from "../../../lib/rate-limit";
 
 export async function POST(request: Request) {
   try {
+    await enforcePublicRateLimit(request, "inquiries");
     const body = await readJsonBody(request);
     const email = requiredEmail(body);
     const title = requiredString(body, "title", "Kartentitel", 240);

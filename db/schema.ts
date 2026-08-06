@@ -11,7 +11,9 @@ import {
 // The application creates IDs and keeps them opaque. This SQLite default also
 // makes direct inserts safe during migrations and local development.
 const id = (name = "id") =>
-  text(name).primaryKey().notNull().default(sql`lower(hex(randomblob(16)))`);
+  // SQLite requires non-constant DEFAULT expressions to be parenthesized.
+  // This form is accepted by Cloudflare D1 as well as local SQLite.
+  text(name).primaryKey().notNull().default(sql`(lower(hex(randomblob(16))))`);
 const timestamp = (name: string) =>
   text(name).notNull().default(sql`CURRENT_TIMESTAMP`);
 const optionalTimestamp = (name: string) => text(name);
@@ -29,11 +31,13 @@ export const offerStatusValues = ["NEW", "IN_REVIEW", "ACCEPTED", "REJECTED", "E
 export const submissionStatusValues = ["NEW", "IN_REVIEW", "NEEDS_INFO", "ACCEPTED", "REJECTED", "CLOSED"] as const;
 export const syncRunStatusValues = ["RUNNING", "SUCCEEDED", "PARTIAL", "FAILED"] as const;
 export const syncEventStatusValues = ["IMPORTED", "UPDATED", "DEACTIVATED", "SKIPPED", "FAILED"] as const;
+export const ebayOutboxStatusValues = ["PENDING", "PROCESSING", "RETRY_WAIT", "SUCCEEDED", "FAILED", "CANCELLED"] as const;
 
 export const users = sqliteTable("users", {
   id: id(),
   role: text("role", { enum: userRoleValues }).notNull().default("CUSTOMER"),
   email: text("email").notNull(),
+  username: text("username"),
   emailVerifiedAt: optionalTimestamp("email_verified_at"),
   displayName: text("display_name"),
   authProvider: text("auth_provider"),
@@ -42,6 +46,7 @@ export const users = sqliteTable("users", {
   updatedAt: timestamp("updated_at"),
 }, (table) => [
   uniqueIndex("users_email_unique").on(table.email),
+  uniqueIndex("users_username_unique").on(table.username),
   uniqueIndex("users_provider_subject_unique").on(table.authProvider, table.authSubject),
   index("users_role_idx").on(table.role),
   check("users_role_check", sql`${table.role} IN ('CUSTOMER', 'ADMIN')`),
@@ -69,6 +74,7 @@ export const ebayListings = sqliteTable("ebay_listings", {
   id: id(),
   productId: text("product_id").notNull().references(() => products.id, { onDelete: "cascade" }),
   ebayItemId: text("ebay_item_id").notNull(),
+  ebayOfferId: text("ebay_offer_id"),
   ebayListingId: text("ebay_listing_id"),
   sku: text("sku"),
   title: text("title").notNull(),
@@ -129,6 +135,7 @@ export const inventory = sqliteTable("inventory", {
 
 export const reservations = sqliteTable("reservations", {
   id: id(),
+  orderId: text("order_id").references(() => orders.id, { onDelete: "cascade" }),
   productId: text("product_id").notNull().references(() => products.id, { onDelete: "restrict" }),
   inventoryId: text("inventory_id").notNull().references(() => inventory.id, { onDelete: "restrict" }),
   userId: text("user_id").references(() => users.id, { onDelete: "set null" }),
@@ -234,6 +241,19 @@ export const cardSubmissions = sqliteTable("card_submissions", {
   updatedAt: timestamp("updated_at"),
 }, (table) => [index("card_submissions_status_created_idx").on(table.status, table.createdAt)]);
 
+export const cardSubmissionAssets = sqliteTable("card_submission_assets", {
+  id: id(),
+  submissionId: text("submission_id").notNull().references(() => cardSubmissions.id, { onDelete: "cascade" }),
+  storageKey: text("storage_key").notNull(),
+  originalName: text("original_name").notNull(),
+  mimeType: text("mime_type").notNull(),
+  byteSize: integer("byte_size").notNull(),
+  createdAt: timestamp("created_at"),
+}, (table) => [
+  uniqueIndex("card_submission_asset_key_unique").on(table.storageKey),
+  index("card_submission_assets_submission_idx").on(table.submissionId),
+]);
+
 export const syncRuns = sqliteTable("sync_runs", {
   id: id(),
   source: text("source").notNull().default("EBAY"),
@@ -272,6 +292,34 @@ export const webhookEvents = sqliteTable("webhook_events", {
   uniqueIndex("webhook_provider_event_unique").on(table.provider, table.externalEventId),
   index("webhook_status_idx").on(table.status),
   check("webhook_status_check", sql`${table.status} IN ('RECEIVED', 'PROCESSED', 'FAILED')`),
+]);
+
+// The outbox contains absolute eBay target states. It decouples the local
+// checkout transaction from eBay availability and makes retries safe.
+export const ebayOutbox = sqliteTable("ebay_outbox", {
+  id: id(),
+  aggregateType: text("aggregate_type").notNull().default("LISTING"),
+  aggregateId: text("aggregate_id").notNull(),
+  ebayItemId: text("ebay_item_id"),
+  ebayOfferId: text("ebay_offer_id"),
+  operation: text("operation").notNull(),
+  payload: json("payload").notNull(),
+  dedupeKey: text("dedupe_key").notNull(),
+  status: text("status", { enum: ebayOutboxStatusValues }).notNull().default("PENDING"),
+  attemptCount: integer("attempt_count").notNull().default(0),
+  availableAt: timestamp("available_at"),
+  lockedAt: optionalTimestamp("locked_at"),
+  lastAttemptAt: optionalTimestamp("last_attempt_at"),
+  succeededAt: optionalTimestamp("succeeded_at"),
+  lastError: text("last_error"),
+  createdAt: timestamp("created_at"),
+  updatedAt: timestamp("updated_at"),
+}, (table) => [
+  uniqueIndex("ebay_outbox_dedupe_unique").on(table.dedupeKey),
+  index("ebay_outbox_available_idx").on(table.status, table.availableAt),
+  index("ebay_outbox_lock_idx").on(table.status, table.lockedAt),
+  index("ebay_outbox_listing_idx").on(table.ebayItemId, table.operation, table.status),
+  check("ebay_outbox_status_check", sql`${table.status} IN ('PENDING', 'PROCESSING', 'RETRY_WAIT', 'SUCCEEDED', 'FAILED', 'CANCELLED')`),
 ]);
 
 export const auditEvents = sqliteTable("audit_events", {
