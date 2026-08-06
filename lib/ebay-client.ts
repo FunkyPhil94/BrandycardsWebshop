@@ -9,26 +9,6 @@ type EbayConfig = {
   siteId: string;
 };
 
-export type EbayInventoryItem = {
-  sku?: string;
-  product?: Record<string, unknown>;
-  condition?: string;
-  conditionDescription?: string;
-  availability?: Record<string, unknown>;
-};
-
-export type EbayOffer = {
-  offerId?: string;
-  sku?: string;
-  marketplaceId?: string;
-  listing?: Record<string, unknown>;
-  pricingSummary?: Record<string, unknown>;
-  status?: string;
-  listingDuration?: string;
-  listingStartDate?: string;
-  listingEndDate?: string;
-};
-
 function getConfig(): EbayConfig {
   const environment = process.env.EBAY_ENVIRONMENT === "sandbox" ? "sandbox" : "production";
   const clientId = process.env.EBAY_CLIENT_ID;
@@ -74,22 +54,6 @@ async function getAccessToken(config: EbayConfig, scope = process.env.EBAY_OAUTH
   return body.access_token;
 }
 
-async function ebayJson<T>(pathOrUrl: string): Promise<T> {
-  const config = getConfig();
-  const accessToken = await getAccessToken(config);
-  const url = pathOrUrl.startsWith("http") ? pathOrUrl : `${apiBase(config.environment)}${pathOrUrl}`;
-  const response = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      Accept: "application/json",
-      "Content-Language": "de-DE",
-      "X-EBAY-C-MARKETPLACE-ID": config.marketplaceId,
-    },
-  });
-  if (!response.ok) throw new Error(`eBay API fehlgeschlagen (${response.status}).`);
-  return await response.json() as T;
-}
-
 function decodeXml(value: string) {
   return value.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1")
     .replace(/&lt;/g, "<").replace(/&gt;/g, ">")
@@ -126,8 +90,6 @@ export type EbayActiveListing = {
   quantity: number;
   rawData: Record<string, unknown>;
 };
-
-let activeListingCache: Map<string, EbayActiveListing> | null = null;
 
 function parseTradingResponse(xml: string, config: EbayConfig) {
   const ack = xmlValue(xml, "Ack")?.toUpperCase();
@@ -190,48 +152,21 @@ export async function getActiveEbayListings() {
     page++;
   } while (page <= totalPages && page <= 50);
   if (totalPages > 50 || listings.length < totalEntries) {
-    throw new Error(`eBay-Aktivliste unvollstÃ¤ndig: ${listings.length} von ${totalEntries} Angeboten geladen.`);
+    throw new Error(`eBay-Aktivliste unvollständig: ${listings.length} von ${totalEntries} Angeboten geladen.`);
   }
   // eBay can repeat an item at a page boundary. The item ID is the stable
   // identity; returning it once prevents duplicate products downstream.
   return [...new Map(listings.map((listing) => [listing.ebayItemId, listing])).values()];
 }
 
-export async function getAllInventoryItems() {
-  const activeListings = await getActiveEbayListings();
-  activeListingCache = new Map(activeListings.map((listing) => [listing.ebayItemId, listing]));
-  return activeListings.map((listing) => ({
-    sku: listing.ebayItemId,
-    product: { title: listing.title, description: listing.description, imageUrls: listing.imageUrls },
-    availability: { shipToLocationAvailability: { quantity: listing.quantity } },
-  }));
-}
-
-export async function getOffersForSku(sku: string) {
-  const activeListing = activeListingCache?.get(sku);
-  if (activeListing) {
-    return [{
-      offerId: `trading-${activeListing.ebayItemId}`,
-      sku,
-      listing: { listingId: activeListing.ebayItemId, listingStatus: "ACTIVE", listingType: activeListing.listingType === "AUCTION" ? "AUCTION" : "FIXED_PRICE", listingUrl: activeListing.listingUrl },
-      pricingSummary: { price: { value: (activeListing.priceAmountCents ?? 0) / 100 }, priceCurrency: activeListing.priceCurrency },
-      status: "PUBLISHED",
-    } satisfies EbayOffer];
-  }
-  const config = getConfig();
-  const query = new URLSearchParams({ sku, marketplace_id: config.marketplaceId, limit: "25" });
-  const offers: EbayOffer[] = [];
-  let nextUrl: string | undefined = `/sell/inventory/v1/offer?${query}`;
-  let pageCount = 0;
-  while (nextUrl && pageCount < 100) {
-    const responseBody: { offers?: EbayOffer[]; next?: string } = await ebayJson<{ offers?: EbayOffer[]; next?: string }>(nextUrl);
-    offers.push(...(responseBody.offers ?? []));
-    nextUrl = responseBody.next;
-    pageCount++;
-  }
-  return offers;
-}
-
+/** Withdraws an Inventory API offer.
+ *
+ * NOTE: this only works for offers created through the Sell Inventory API.
+ * The read sync now imports via the Trading API (`GetMyeBaySelling`), which
+ * yields an ItemID rather than an offerId, so `ebay_listings.ebay_offer_id`
+ * stays NULL for those listings and no withdraw job is ever enqueued. Ending
+ * a Trading API listing requires `EndItem` / `EndFixedPriceItem` instead.
+ */
 export async function withdrawEbayOffer(offerId: string) {
   const config = getConfig();
   const accessToken = await getAccessToken(config, process.env.EBAY_WRITE_OAUTH_SCOPE || "https://api.ebay.com/oauth/api_scope/sell.inventory");

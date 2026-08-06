@@ -56,7 +56,7 @@ async function handleMultipartSubmission(request: Request) {
   const files = form.getAll("images").filter((value): value is File => value instanceof File);
   if (files.length > 5) throw new PublicFormError(400, "TOO_MANY_UPLOADS", "Maximal fünf Bilder sind erlaubt.");
   const declaredFileBytes = files.reduce((total, file) => total + file.size, 0);
-  if (declaredFileBytes > 50_000_000) throw new PublicFormError(413, "UPLOAD_TOO_LARGE", "Die Bilder sind zusammen zu groÃŸ.");
+  if (declaredFileBytes > 50_000_000) throw new PublicFormError(413, "UPLOAD_TOO_LARGE", "Die Bilder sind zusammen zu groß.");
   const uploads = await Promise.all(files.map(validateAndReadImage));
   if (uploads.reduce((total, upload) => total + upload.bytes.byteLength, 0) > 50_000_000) throw new PublicFormError(413, "UPLOAD_TOO_LARGE", "Die Bilder sind zusammen zu groß.");
   const db = getDb();

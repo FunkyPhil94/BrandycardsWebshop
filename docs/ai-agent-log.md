@@ -47,4 +47,37 @@ Dieses Protokoll hält fest, welche spezialisierten Agents im Projekt eingesetzt
 - Verifikation: `npm test` erfolgreich (2/2); `npm run lint` ohne Fehler, nur die bekannten `img`-Optimierungswarnungen.
 - Agententransparenz: Die spezialisierten Agent-Slots waren weiterhin belegt. Deshalb wurde die Umsetzung direkt vorgenommen; es wurde kein nicht ausgefuehrter Agentenlauf behauptet.
 
+## 2026-08-06 - Bestandsaufnahme: Schreibpfad durch API-Wechsel unterbrochen
+
+- Ausloeser: Bestandsaufnahme des Gesamtstands nach der Serie von eBay-Sync-Korrekturen.
+- Befund (offen, nicht behoben): Der Wechsel von der Inventory-API auf die Trading-API
+  (`GetMyeBaySelling`) hat den zuvor gebauten Schreibpfad stillgelegt. `mapActiveListing`
+  setzt `ebayOfferId` fest auf `null`, weil `GetMyeBaySelling` nur eine ItemID liefert.
+  Dadurch ist `ebay_listings.ebay_offer_id` fuer alle importierten Angebote NULL,
+  `enqueueEbayWithdraw` bricht sofort ab, und die komplette `ebay_outbox` samt
+  Lease, Backoff und Dedupe-Key erhaelt nie einen Auftrag. Folge: Eine im Webshop
+  bezahlte Bestellung beendet das eBay-Angebot nicht - Doppelverkaufsrisiko.
+- Naechster Schritt: Der Schreibpfad muss auf die Trading-API umgestellt werden
+  (`EndItem` / `EndFixedPriceItem` ueber die ItemID) statt auf den Inventory-API-Aufruf
+  `offer/{offerId}/withdraw`. Alternativ muessten Angebote wieder ueber die Inventory-API
+  gefuehrt werden - das war aber genau der Grund fuer den Wechsel, weil dort nur 10 statt
+  294 Artikel sichtbar waren. Die Outbox-Mechanik selbst bleibt unveraendert nutzbar;
+  nur Operation und Identifikator aendern sich.
+- In diesem Lauf behoben: Zwei kaputte Umlaut-Encodings in Nutzerfehlermeldungen
+  (`lib/ebay-client.ts`, `app/api/card-submissions/route.ts`), fehlendes `all()` in der
+  handgeschriebenen `D1PreparedStatement`-Deklaration (`tsc --noEmit` war rot, CI prueft
+  keine Typen), Entfernung der toten Inventory-API-Reste `getAllInventoryItems`,
+  `getOffersForSku`, `ebayJson` und `activeListingCache` - `getOffersForSku` erzeugte
+  gefaelschte Offer-IDs der Form `trading-<itemId>`, die beim spaeteren Verdrahten
+  falsche Withdraw-Calls ausgeloest haetten. Zusaetzlich protokolliert
+  `enqueueEbayWithdraw` den fehlenden Offer-Bezug jetzt, statt still `false` zurueckzugeben.
+- Ebenfalls offen: `drizzle/meta/_journal.json` endet bei `0002_add_usernames`, waehrend
+  `0003`-`0005` handgeschrieben dazukamen. `npm run db:generate` wuerde gegen den veralteten
+  Snapshot diffen und diese Migrationen erneut erzeugen. Vor dem naechsten Schema-Schritt
+  muss der Journal-/Snapshot-Stand nachgezogen werden.
+- Verifikation: `npm run lint` (0 Fehler, 4 bekannte `img`-Warnungen), `npm test` (2/2),
+  `npx tsc --noEmit` jetzt fehlerfrei.
+
+## Arbeitsweise
+
 Agents erhalten klar abgegrenzte Prüf- oder Implementierungsaufträge. Ihre Ergebnisse werden vor Übernahme geprüft. Änderungen werden anschließend lokal getestet, committed und nach GitHub gepusht.

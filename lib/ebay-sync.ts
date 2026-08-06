@@ -11,6 +11,9 @@ const newEntityId = () => crypto.randomUUID().replaceAll("-", "");
 function mapActiveListing(listing: EbayActiveListing) {
   return {
     ebayItemId: listing.ebayItemId,
+    // GetMyeBaySelling returns no Inventory API offerId. Until the write path
+    // switches to the Trading API `EndItem`, this stays NULL and the eBay
+    // withdraw outbox never receives a job. See docs/ai-agent-log.md.
     ebayOfferId: null,
     sku: listing.sku,
     title: listing.title,

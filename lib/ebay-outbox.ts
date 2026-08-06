@@ -7,7 +7,13 @@ type Db = ReturnType<typeof getDb>;
 
 export async function enqueueEbayWithdraw(db: Db, listingId: string, reason: string) {
   const listing = await db.query.ebayListings.findFirst({ where: eq(ebayListings.id, listingId) });
-  if (!listing?.ebayOfferId) return false;
+  // Trading API imports carry no Inventory API offerId, so no withdraw job can
+  // be queued. The listing then stays live on eBay after a paid webshop order,
+  // which risks a double sale. Log it so the gap is visible in production.
+  if (!listing?.ebayOfferId) {
+    console.warn("[ebay-outbox] Kein ebayOfferId vorhanden; eBay-Angebot wird nicht beendet.", { listingId, ebayItemId: listing?.ebayItemId ?? null, reason });
+    return false;
+  }
 
   const now = new Date().toISOString();
   const dedupeKey = `listing:${listing.id}:withdraw:${listing.ebayOfferId}`;
