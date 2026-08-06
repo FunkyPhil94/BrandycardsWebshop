@@ -17,6 +17,20 @@ export type PayPalOrderResponse = {
   links?: Array<{ href: string; rel: string; method?: string }>;
 };
 
+export type PayPalCaptureResponse = {
+  id?: string;
+  status?: string;
+  purchase_units?: Array<{
+    payments?: {
+      captures?: Array<{
+        id?: string;
+        status?: string;
+        amount?: { currency_code?: string; value?: string };
+      }>;
+    };
+  }>;
+};
+
 async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit): Promise<Response> {
   return fetch(input, { ...init, signal: AbortSignal.timeout(10_000) });
 }
@@ -61,6 +75,23 @@ export async function createPayPalOrder(input: PayPalOrderRequest): Promise<PayP
   });
   if (!response.ok) throw new Error("PayPal-Order konnte nicht erstellt werden.");
   return await response.json() as PayPalOrderResponse;
+}
+
+export async function capturePayPalOrder(paypalOrderId: string): Promise<PayPalCaptureResponse> {
+  const config = getPayPalConfig();
+  const token = await getAccessToken();
+  const response = await fetchWithTimeout(`${getPayPalApiBaseUrl(config.environment)}/v2/checkout/orders/${encodeURIComponent(paypalOrderId)}/capture`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      Prefer: "return=representation",
+      "PayPal-Request-Id": `capture-${paypalOrderId}`,
+    },
+    body: "{}",
+  });
+  if (!response.ok) throw new Error("PayPal-Order konnte nicht eingezogen werden.");
+  return await response.json() as PayPalCaptureResponse;
 }
 
 export async function verifyPayPalWebhookSignature(input: {

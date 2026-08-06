@@ -1,0 +1,1 @@
+export default function PayPalCancelPage() { return <main className="legal-page"><h1>Zahlung abgebrochen</h1><p>Deine Bestellung wurde nicht bezahlt. Die Reservierung wird automatisch freigegeben.</p><a className="button button-primary" href="/checkout">Zurück zum Checkout</a></main>; }

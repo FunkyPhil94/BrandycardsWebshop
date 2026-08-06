@@ -1,7 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { getDb } from "../../../../db";
-import { orderItems, orders } from "../../../../db/schema";
+import { orderItems, orders, payments } from "../../../../db/schema";
 import { getAuthenticatedAppUser } from "../../../../lib/app-user";
 import { createPayPalOrder } from "../../../../lib/paypal/client";
 import { assertValidMoney } from "../../../../lib/paypal/money";
@@ -26,6 +26,29 @@ export async function POST(request: Request) {
 
     const origin = new URL(request.url).origin;
     const paypalOrder = await createPayPalOrder({ referenceId: order.id, amountCents: order.totalAmountCents, currency: order.currency, returnUrl: `${origin}/checkout/paypal/success`, cancelUrl: `${origin}/checkout/paypal/cancel` });
+    if (!paypalOrder.id) throw new Error("PayPal lieferte keine Order-ID.");
+    const now = new Date().toISOString();
+    const payment = await db.query.payments.findFirst({ where: and(eq(payments.orderId, order.id), eq(payments.provider, "PAYPAL")) });
+    if (payment) {
+      await db.update(payments).set({
+        providerOrderId: paypalOrder.id,
+        ...(payment.status === "CAPTURED" ? {} : { status: "CREATED" as const }),
+        amountCents: order.totalAmountCents,
+        currency: order.currency,
+        updatedAt: now,
+      }).where(eq(payments.id, payment.id));
+    } else {
+      await db.insert(payments).values({
+        orderId: order.id,
+        provider: "PAYPAL",
+        providerOrderId: paypalOrder.id,
+        status: "CREATED",
+        amountCents: order.totalAmountCents,
+        currency: order.currency,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
     return NextResponse.json({ id: paypalOrder.id, status: paypalOrder.status, links: paypalOrder.links ?? [] });
   } catch (error) {
     console.error("PayPal order creation failed", error);

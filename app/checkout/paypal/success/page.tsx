@@ -1,0 +1,6 @@
+"use client";
+/* eslint-disable @next/next/no-html-link-for-pages */
+import { useEffect, useState } from "react";
+import { getSupabaseBrowserClient } from "../../../../lib/supabase-browser";
+const supabase = { auth: { getSession: () => getSupabaseBrowserClient().auth.getSession() } };
+export default function PayPalSuccessPage() { const [message, setMessage] = useState("Zahlung wird bestätigt …"); useEffect(() => { const run = async () => { const params = new URLSearchParams(window.location.search); const paypalOrderId = params.get("token"); const session = (await supabase.auth.getSession()).data.session; const orderId = sessionStorage.getItem("brandycards-pending-order"); if (!paypalOrderId || !session || !orderId) { setMessage("Die Zahlung konnte nicht eindeutig zugeordnet werden."); return; } const response = await fetch("/api/paypal/capture", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` }, body: JSON.stringify({ orderId, paypalOrderId }) }); const data = await response.json(); setMessage(response.ok ? "Zahlung erfolgreich. Vielen Dank für deine Bestellung!" : (data.error ?? "Zahlung konnte nicht bestätigt werden.")); }; void run(); }, []); return <main className="legal-page"><h1>{message}</h1><a className="button button-primary" href="/">Zum Shop</a></main>; }

@@ -1,0 +1,76 @@
+import { and, eq, gte, inArray } from "drizzle-orm";
+import { NextResponse } from "next/server";
+import { getDb } from "../../../db";
+import { ebayListings, inventory, orderItems, orders, products, reservations } from "../../../db/schema";
+import { getAuthenticatedAppUser } from "../../../lib/app-user";
+
+const EU_COUNTRIES = new Set(["AT", "BE", "BG", "HR", "CY", "CZ", "DK", "EE", "ES", "FI", "FR", "GR", "HU", "IE", "IT", "LT", "LU", "LV", "MT", "NL", "PL", "PT", "RO", "SE", "SI", "SK"]);
+const RESERVATION_MINUTES = 15;
+
+type CartItem = { productId?: unknown; quantity?: unknown };
+type Address = { name?: unknown; street?: unknown; postalCode?: unknown; city?: unknown; country?: unknown };
+
+function cleanAddress(value: unknown) {
+  if (!value || typeof value !== "object") return null;
+  const address = value as Address;
+  const name = typeof address.name === "string" ? address.name.trim() : "";
+  const street = typeof address.street === "string" ? address.street.trim() : "";
+  const postalCode = typeof address.postalCode === "string" ? address.postalCode.trim() : "";
+  const city = typeof address.city === "string" ? address.city.trim() : "";
+  const country = typeof address.country === "string" ? address.country.trim().toUpperCase() : "";
+  if (!name || !street || !postalCode || !city || (country !== "DE" && !EU_COUNTRIES.has(country))) return null;
+  return { name, street, postalCode, city, country };
+}
+
+function orderNumber() {
+  return `BC-${new Date().toISOString().slice(0, 10).replaceAll("-", "")}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
+}
+
+export async function POST(request: Request) {
+  try {
+    const appUser = await getAuthenticatedAppUser(request);
+    if (!appUser) return NextResponse.json({ error: "Bitte melde dich für den Checkout an." }, { status: 401 });
+    const body = await request.json() as { items?: unknown; shippingAddress?: unknown };
+    if (!Array.isArray(body.items) || body.items.length < 1 || body.items.length > 50) return NextResponse.json({ error: "Der Warenkorb ist leer." }, { status: 400 });
+    const shippingAddress = cleanAddress(body.shippingAddress);
+    if (!shippingAddress) return NextResponse.json({ error: "Bitte vervollständige die Lieferadresse für Deutschland oder die EU." }, { status: 400 });
+    const requested = new Map<string, number>();
+    for (const item of body.items as CartItem[]) {
+      const productId = typeof item.productId === "string" ? item.productId.trim() : "";
+      const quantity = typeof item.quantity === "number" && Number.isInteger(item.quantity) ? item.quantity : 0;
+      if (!productId || quantity < 1 || quantity > 20) return NextResponse.json({ error: "Ungültige Warenkorbposition." }, { status: 400 });
+      requested.set(productId, (requested.get(productId) ?? 0) + quantity);
+    }
+    const db = getDb();
+    const created = await db.transaction(async (tx) => {
+      const ids = Array.from(requested.keys());
+      const rows = await tx.select({ product: products, listing: ebayListings, stock: inventory }).from(products)
+        .innerJoin(ebayListings, and(eq(ebayListings.productId, products.id), eq(ebayListings.status, "ACTIVE"), eq(ebayListings.listingType, "FIXED_PRICE")))
+        .innerJoin(inventory, eq(inventory.productId, products.id)).where(and(inArray(products.id, ids), eq(products.status, "ACTIVE")));
+      if (rows.length !== ids.length) throw new Error("Ein Artikel ist nicht mehr verfügbar.");
+      const lineItems = rows.map(({ product, listing, stock }) => {
+        const quantity = requested.get(product.id) ?? 0;
+        if (!listing.priceAmountCents || listing.priceAmountCents < 1 || stock.availableQuantity < quantity || stock.status === "UNAVAILABLE" || stock.status === "SOLD") throw new Error(`Artikel nicht mehr verfügbar: ${product.title}`);
+        return { product, listing, stock, quantity, total: listing.priceAmountCents * quantity };
+      });
+      const subtotal = lineItems.reduce((sum, item) => sum + item.total, 0);
+      const shipping = shippingAddress.country === "DE" ? 345 : 1449;
+      const total = subtotal + shipping;
+      const [order] = await tx.insert(orders).values({ orderNumber: orderNumber(), userId: appUser.id, status: "PENDING", currency: "EUR", subtotalAmountCents: subtotal, shippingAmountCents: shipping, totalAmountCents: total, shippingAddress, billingAddress: shippingAddress }).returning();
+      if (!order) throw new Error("Bestellung konnte nicht angelegt werden.");
+      const expiresAt = new Date(Date.now() + RESERVATION_MINUTES * 60_000).toISOString();
+      for (const item of lineItems) {
+        await tx.insert(orderItems).values({ orderId: order.id, productId: item.product.id, titleSnapshot: item.product.title, skuSnapshot: item.listing.sku, quantity: item.quantity, unitAmountCents: item.listing.priceAmountCents!, totalAmountCents: item.total, productSnapshot: { title: item.product.title, listingId: item.listing.id } });
+        const updated = await tx.update(inventory).set({ availableQuantity: item.stock.availableQuantity - item.quantity, reservedQuantity: item.stock.reservedQuantity + item.quantity, status: "RESERVED", version: item.stock.version + 1, updatedAt: new Date().toISOString() }).where(and(eq(inventory.id, item.stock.id), gte(inventory.availableQuantity, item.quantity))).returning();
+        if (!updated.length) throw new Error(`Bestand konnte nicht reserviert werden: ${item.product.title}`);
+        await tx.insert(reservations).values({ productId: item.product.id, inventoryId: item.stock.id, userId: appUser.id, quantity: item.quantity, status: "ACTIVE", expiresAt });
+      }
+      return { id: order.id, orderNumber: order.orderNumber, subtotal, shipping, total, expiresAt };
+    });
+    return NextResponse.json({ order: created }, { status: 201 });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Bestellung konnte nicht angelegt werden.";
+    console.error("Order creation failed", error);
+    return NextResponse.json({ error: message.includes("verfügbar") || message.includes("reserviert") ? message : "Bestellung konnte nicht angelegt werden." }, { status: 409 });
+  }
+}

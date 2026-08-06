@@ -57,7 +57,22 @@ export default function Home() {
   const [loading, setLoading] = useState<string | null>(null);
   const [imageMetadata, setImageMetadata] = useState<Array<{ name: string; mimeType: string; size: number }>>([]);
   const [catalog, setCatalog] = useState<Product[]>(products);
-  const [cartCount, setCartCount] = useState(0);
+  const [cart, setCart] = useState<Record<string, number>>({});
+  const [, setLegacyCartCount] = useState(0);
+  const setCartCount = setLegacyCartCount;
+  const cartCount = Object.values(cart).reduce((sum, quantity) => sum + quantity, 0);
+
+  useEffect(() => {
+    try { setCart(JSON.parse(sessionStorage.getItem("brandycards-cart") ?? "{}")); } catch { setCart({}); }
+  }, []);
+
+  function addToCart(productId: string) {
+    setCart((current) => {
+      const next = { ...current, [productId]: (current[productId] ?? 0) + 1 };
+      sessionStorage.setItem("brandycards-cart", JSON.stringify(next));
+      return next;
+    });
+  }
 
   useEffect(() => {
     fetch("/api/products")
@@ -92,7 +107,29 @@ export default function Home() {
     setImageMetadata(files.map((file) => ({ name: file.name, mimeType: file.type, size: file.size })));
   }
 
+  useEffect(() => {
+    const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>(".product-card .product-cta"));
+    const cleanups: Array<() => void> = [];
+    filteredProducts.forEach((product, index) => {
+      const button = buttons[index];
+      if (!button || product.category !== "Festpreis" || !product.id) return;
+      const handler = () => addToCart(product.id!);
+      button.addEventListener("click", handler, true);
+      cleanups.push(() => button.removeEventListener("click", handler, true));
+    });
+    return () => cleanups.forEach((cleanup) => cleanup());
+  }, [filteredProducts]);
+
+  useEffect(() => {
+    const button = document.querySelector<HTMLButtonElement>(".cart-button");
+    if (!button) return;
+    const handler = () => window.location.assign("/checkout");
+    button.addEventListener("click", handler);
+    return () => button.removeEventListener("click", handler);
+  }, []);
+
   return <main>
+    <a className="button button-outline checkout-shortcut" href="/checkout">Warenkorb öffnen ({cartCount})</a>
     <div className="announcement"><span>✦</span> Versandkostenfrei ab 75 € innerhalb Deutschlands <span>→</span></div>
     <header className="site-header"><a className="brand" href="#top" aria-label="BrandyCards Startseite"><img className="brand-logo" src="/BrandyCards_Logo_transparent.png" alt="BrandyCards" /><span className="sr-only">BrandyCards</span></a><nav className="main-nav" aria-label="Hauptnavigation"><a href="#shop">Shop</a><a href="#coming-soon">Demnächst</a><a href="#about">Über uns</a></nav><div className="header-actions"><button className="icon-button" aria-label="Suche" onClick={() => document.getElementById("search")?.focus()}>⌕</button><a className="account-link" href="/account">Konto <span>↗</span></a><button className="cart-button" aria-label="Warenkorb">Warenkorb <b>{cartCount}</b></button></div></header>
     <section className="hero" id="top"><div className="hero-copy"><p className="eyebrow">THE HOME OF FOOTBALL CARDS</p><h1>Cards with<br /><em>character.</em></h1><p className="hero-text">Ausgewählte Fußballkarten für Sammler. Persönlich ausgesucht, sicher verpackt und mit Liebe zum Detail.</p><div className="hero-actions"><a className="button button-primary" href="#shop">Kollektion entdecken <span>↘</span></a><a className="text-link" href="#about">Mehr über BrandyCards <span>→</span></a></div></div><div className="hero-art" aria-label="Abstrakte Darstellung einer Premium-Sammelkarte"><div className="hero-card hero-card-back"><span>BRANDY<br />CARDS</span></div><div className="hero-card hero-card-front"><div className="hero-card-top">BRANDYCARDS <span>01 / 01</span></div><div className="hero-player">BC</div><div className="hero-card-bottom"><strong>THE<br />COLLECTOR&apos;S<br />CHOICE</strong><span>LEVERKUSEN<br />GERMANY</span></div></div><span className="hero-stamp">EST.<br /><strong>2024</strong></span></div></section>
