@@ -10,16 +10,16 @@ export async function settlePaidOrder(db: ReturnType<typeof getDb>, orderId: str
 
   if (!rows.length) return;
 
-  const writes = [
-    ...rows.map(({ reservation }) => db.update(reservations).set({ status: "CONVERTED", releasedAt: now }).where(and(eq(reservations.id, reservation.id), eq(reservations.status, "ACTIVE")))),
-    ...rows.map(({ reservation }) => db.update(inventory).set({
+  for (const { reservation } of rows) {
+    const reservationResult = await db.batch([db.update(reservations).set({ status: "CONVERTED", releasedAt: now }).where(and(eq(reservations.id, reservation.id), eq(reservations.status, "ACTIVE")))]);
+    if (reservationResult[0].meta.changes !== 1) continue;
+    await db.batch([db.update(inventory).set({
       reservedQuantity: sql`${inventory.reservedQuantity} - ${reservation.quantity}`,
       soldQuantity: sql`${inventory.soldQuantity} + ${reservation.quantity}`,
       status: sql`CASE WHEN ${inventory.availableQuantity} = 0 THEN 'SOLD' ELSE 'AVAILABLE' END`,
       updatedAt: now,
-    }).where(and(eq(inventory.id, reservation.inventoryId), gte(inventory.reservedQuantity, reservation.quantity)))),
-  ];
-  await db.batch(writes as unknown as Parameters<typeof db.batch>[0]);
+    }).where(and(eq(inventory.id, reservation.inventoryId), gte(inventory.reservedQuantity, reservation.quantity)))]);
+  }
 }
 
 export async function releaseOrderReservations(db: ReturnType<typeof getDb>, orderId: string, now: string, status: "RELEASED" | "EXPIRED" = "RELEASED") {

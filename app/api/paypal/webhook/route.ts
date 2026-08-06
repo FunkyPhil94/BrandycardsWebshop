@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { getDb } from "../../../../db";
 import { orders, payments, webhookEvents } from "../../../../db/schema";
@@ -23,7 +23,7 @@ function stringValue(value: unknown): string | null {
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
-async function findPayment(db: ReturnType<typeof getDb>, event: PayPalWebhookEvent) {
+async function findPayment(db: ReturnType<typeof getDb>, event: PayPalWebhookEvent, strictProviderOrder = false) {
   const resource = event.resource;
   const paypalOrderId = stringValue(resource?.supplementary_data?.related_ids?.order_id);
   const customId = stringValue(resource?.custom_id);
@@ -31,7 +31,7 @@ async function findPayment(db: ReturnType<typeof getDb>, event: PayPalWebhookEve
   const providerOrderIds = [paypalOrderId, customId, referenceId].filter((value): value is string => Boolean(value));
   const appOrderIds = [customId, referenceId].filter((value): value is string => Boolean(value));
 
-  for (const providerOrderId of providerOrderIds) {
+  for (const providerOrderId of strictProviderOrder ? (paypalOrderId ? [paypalOrderId] : []) : providerOrderIds) {
     const payment = await db.query.payments.findFirst({
       where: and(eq(payments.provider, "PAYPAL"), eq(payments.providerOrderId, providerOrderId)),
     });
@@ -64,10 +64,15 @@ export async function POST(request: Request) {
 
     db = getDb();
     const existing = await db.query.webhookEvents.findFirst({ where: and(eq(webhookEvents.provider, "PAYPAL"), eq(webhookEvents.externalEventId, eventId)) });
-    if (existing) return NextResponse.json({ ok: true, duplicate: true });
-    await db.insert(webhookEvents).values({ provider: "PAYPAL", externalEventId: eventId, eventType, status: "RECEIVED", payload: event, receivedAt: new Date().toISOString() });
+    if (existing?.status === "PROCESSED" || existing?.status === "RECEIVED") return NextResponse.json({ ok: true, duplicate: true });
+    if (existing?.status === "FAILED") {
+      await db.update(webhookEvents).set({ status: "RECEIVED", eventType, payload: event, receivedAt: new Date().toISOString(), processedAt: null, errorMessage: null }).where(eq(webhookEvents.id, existing.id));
+    } else {
+      await db.insert(webhookEvents).values({ provider: "PAYPAL", externalEventId: eventId, eventType, status: "RECEIVED", payload: event, receivedAt: new Date().toISOString() });
+    }
 
-    const payment = await findPayment(db, event);
+    const strictPaymentEvent = eventType.startsWith("PAYMENT.CAPTURE.");
+    const payment = await findPayment(db, event, strictPaymentEvent);
     const now = new Date().toISOString();
     if (eventType === "PAYMENT.CAPTURE.COMPLETED") {
       if (!payment) throw new Error("Zugehörige PayPal-Zahlung wurde nicht gefunden.");
@@ -78,6 +83,8 @@ export async function POST(request: Request) {
         throw new Error("PayPal-Webhook-Betrag oder Währung stimmt nicht mit der Bestellung überein.");
       }
       const captureId = stringValue(event.resource?.id);
+      if (payment.status === "CAPTURED") return NextResponse.json({ ok: true, duplicate: true });
+      if (payment.status === "REFUNDED") throw new Error("Eine erstattete Zahlung kann nicht erneut als bezahlt markiert werden.");
       await db.update(payments).set({
         status: "CAPTURED",
         ...(captureId ? { providerCaptureId: captureId } : {}),
@@ -88,12 +95,12 @@ export async function POST(request: Request) {
       await settlePaidOrder(db, payment.orderId, now);
     } else if (eventType === "PAYMENT.CAPTURE.DENIED" || eventType === "PAYMENT.CAPTURE.DECLINED") {
       if (!payment) throw new Error("Zugehörige PayPal-Zahlung wurde nicht gefunden.");
-      await db.update(payments).set({ status: "FAILED", rawData: event, updatedAt: now }).where(eq(payments.id, payment.id));
+      await db.update(payments).set({ status: "FAILED", rawData: event, updatedAt: now }).where(and(eq(payments.id, payment.id), inArray(payments.status, ["CREATED", "APPROVED"])));
       await releaseOrderReservations(db, payment.orderId, now);
     } else if (eventType === "PAYMENT.CAPTURE.REFUNDED") {
       if (!payment) throw new Error("Zugehörige PayPal-Zahlung wurde nicht gefunden.");
-      await db.update(payments).set({ status: "REFUNDED", rawData: event, updatedAt: now }).where(eq(payments.id, payment.id));
-      await db.update(orders).set({ status: "REFUNDED", updatedAt: now }).where(eq(orders.id, payment.orderId));
+      await db.update(payments).set({ status: "REFUNDED", rawData: event, updatedAt: now }).where(and(eq(payments.id, payment.id), inArray(payments.status, ["CAPTURED", "REFUNDED"])));
+      await db.update(orders).set({ status: "REFUNDED", updatedAt: now }).where(and(eq(orders.id, payment.orderId), inArray(orders.status, ["PAID", "REFUNDED"])));
     }
 
     await db.update(webhookEvents).set({ status: "PROCESSED", processedAt: now }).where(and(eq(webhookEvents.provider, "PAYPAL"), eq(webhookEvents.externalEventId, eventId)));

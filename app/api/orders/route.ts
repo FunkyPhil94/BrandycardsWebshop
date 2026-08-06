@@ -68,10 +68,18 @@ export async function POST(request: Request) {
     // Cloudflare D1 rejects SQL BEGIN/COMMIT statements. Drizzle's generic
     // transaction helper emits those statements, so use D1's native batch API.
     // D1 executes the batch atomically while keeping all writes on one request.
+    const stockWrites = lineItems.map((item) => db.update(inventory).set({ availableQuantity: item.stock.availableQuantity - item.quantity, reservedQuantity: item.stock.reservedQuantity + item.quantity, status: "RESERVED", version: item.stock.version + 1, updatedAt: new Date().toISOString() }).where(and(eq(inventory.id, item.stock.id), gte(inventory.availableQuantity, item.quantity))));
+    const stockResults = await db.batch(stockWrites as unknown as Parameters<typeof db.batch>[0]);
+    if (stockResults.some((result) => result.meta.changes !== 1)) {
+      const rollbackWrites = lineItems.map((item, index) => stockResults[index].meta.changes === 1
+        ? db.update(inventory).set({ availableQuantity: item.stock.availableQuantity, reservedQuantity: item.stock.reservedQuantity, status: item.stock.status, version: item.stock.version, updatedAt: new Date().toISOString() }).where(eq(inventory.id, item.stock.id))
+        : null).filter((write): write is NonNullable<typeof write> => write !== null);
+      if (rollbackWrites.length) await db.batch(rollbackWrites as unknown as Parameters<typeof db.batch>[0]);
+      throw new OrderIssue("Ein Artikel wurde gerade von einem anderen Kunden reserviert.");
+    }
     const writes = [
       db.insert(orders).values({ id, orderNumber: number, userId: appUser.id, status: "PENDING", currency: "EUR", subtotalAmountCents: subtotal, shippingAmountCents: shipping, totalAmountCents: total, shippingAddress, billingAddress: shippingAddress }),
       ...lineItems.map((item) => db.insert(orderItems).values({ orderId: id, productId: item.product.id, titleSnapshot: item.product.title, skuSnapshot: item.listing.sku, quantity: item.quantity, unitAmountCents: item.listing.priceAmountCents!, totalAmountCents: item.total, productSnapshot: { title: item.product.title, listingId: item.listing.id } })),
-      ...lineItems.map((item) => db.update(inventory).set({ availableQuantity: item.stock.availableQuantity - item.quantity, reservedQuantity: item.stock.reservedQuantity + item.quantity, status: "RESERVED", version: item.stock.version + 1, updatedAt: new Date().toISOString() }).where(and(eq(inventory.id, item.stock.id), gte(inventory.availableQuantity, item.quantity)))),
       ...lineItems.map((item) => db.insert(reservations).values({ orderId: id, productId: item.product.id, inventoryId: item.stock.id, userId: appUser.id, quantity: item.quantity, status: "ACTIVE", expiresAt })),
     ] as const;
     await db.batch(writes);
