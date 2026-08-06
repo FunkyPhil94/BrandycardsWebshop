@@ -198,6 +198,40 @@ export async function getActiveEbayListings() {
   return [...new Map(listings.map((listing) => [listing.ebayItemId, listing])).values()];
 }
 
+/** Fetches the seller-authored HTML description of a single listing.
+ *
+ * GetMyeBaySelling does not carry descriptions, so they can only come from
+ * GetItem — one call per item. With ~300 listings that is far too much for the
+ * hourly sync, hence this is called lazily when a card's detail page is opened
+ * for the first time and then cached in `ebay_listings.description_html`.
+ *
+ * Returns null when eBay has nothing; the caller decides on the fallback.
+ */
+export async function getEbayItemDescription(ebayItemId: string): Promise<string | null> {
+  const config = getConfig();
+  const accessToken = await getAccessToken(config);
+  const request = `<?xml version="1.0" encoding="utf-8"?><GetItemRequest xmlns="urn:ebay:apis:eBLBaseComponents"><ItemID>${ebayItemId.replace(/[^0-9]/g, "")}</ItemID><DetailLevel>ReturnAll</DetailLevel><IncludeItemSpecifics>false</IncludeItemSpecifics></GetItemRequest>`;
+  const response = await fetch(`${apiBase(config.environment)}/ws/api.dll`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "text/xml",
+      "X-EBAY-API-CALL-NAME": "GetItem",
+      "X-EBAY-API-SITEID": config.siteId,
+      "X-EBAY-API-COMPATIBILITY-LEVEL": "1231",
+      "X-EBAY-API-IAF-TOKEN": accessToken,
+    },
+    body: request,
+  });
+  if (!response.ok) throw new Error(`eBay GetItem fehlgeschlagen (${response.status}).`);
+  const xml = await response.text();
+  const ack = xmlValue(xml, "Ack")?.toUpperCase();
+  if (ack === "FAILURE") {
+    throw new Error(`eBay GetItem fehlgeschlagen: ${xmlValue(xml, "LongMessage") ?? "Unbekannter eBay-Fehler."}`);
+  }
+  const description = xmlValue(xml, "Description");
+  return description && description.trim() ? description : null;
+}
+
 /** Withdraws an Inventory API offer.
  *
  * NOTE: this only works for offers created through the Sell Inventory API.

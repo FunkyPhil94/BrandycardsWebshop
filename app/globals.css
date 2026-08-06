@@ -206,3 +206,57 @@ footer { background:var(--ink); color:#fff; padding:52px max(48px,calc((100vw - 
 /* Ohne object-fit würde das 900x1600-Original in den 198x292-Rahmen gequetscht. */
 .product-photo { display:block; height:100%; object-fit:cover; width:100%; }
 .gallery-frame img { background:#dedbd3; }
+
+/* --- Produktbilder: gerade und weniger herangezoomt --- */
+/* Die gekippte .card-art-Optik stammt aus der Demo-Phase mit Platzhaltern.
+   Echte Fotos sollen gerade stehen. `contain` statt `cover` zeigt die ganze
+   Karte, das Inset nimmt zusätzlich Zoom heraus. */
+.product-image .product-photo {
+  height:100%; inset:0; left:0; object-fit:contain; padding:22px;
+  position:absolute; top:0; transform:none; width:100%;
+}
+.product-image:has(.product-photo) { background:#e9e5dd; }
+.gallery-frame img { object-fit:contain; padding:18px; }
+
+/* --- Kartendetailseite --- */
+.detail-back { margin:auto; max-width:1304px; padding:34px 48px 0; }
+.detail-layout { display:grid; gap:56px; grid-template-columns:minmax(0,1fr) minmax(0,1fr); margin:auto; max-width:1304px; padding:34px 48px 60px; }
+.detail-media { position:sticky; top:24px; align-self:start; }
+.detail-image { background:#ebe8e1; border:0; cursor:zoom-in; display:block; padding:0; position:relative; width:100%; }
+.detail-image img { display:block; height:auto; max-height:74vh; object-fit:contain; width:100%; }
+.detail-zoom-hint { background:#111112cc; bottom:14px; color:#fff; font-family:'DM Mono',monospace; font-size:9px; letter-spacing:.1em; padding:8px 12px; position:absolute; right:14px; text-transform:uppercase; }
+.detail-thumbs { display:flex; flex-wrap:wrap; gap:10px; margin-top:14px; }
+.detail-thumbs button { background:#ebe8e1; border:1px solid transparent; cursor:pointer; height:74px; padding:0; width:74px; }
+.detail-thumbs button.active { border-color:var(--red); }
+.detail-thumbs img { height:100%; object-fit:contain; width:100%; }
+.detail-info h1 { font-size:clamp(28px,3.4vw,46px); letter-spacing:-.05em; line-height:1.05; margin:0 0 22px; }
+.detail-price { font-size:32px; font-weight:700; margin:0 0 8px; }
+.detail-stock { color:var(--muted); font-family:'DM Mono',monospace; font-size:10px; letter-spacing:.1em; margin:0 0 30px; text-transform:uppercase; }
+.detail-actions { align-items:center; display:flex; flex-wrap:wrap; gap:24px; margin-bottom:40px; }
+.detail-facts { border-top:1px solid var(--line); display:grid; gap:0; margin:0; }
+.detail-facts > div { border-bottom:1px solid var(--line); display:grid; gap:16px; grid-template-columns:130px 1fr; padding:15px 0; }
+.detail-facts dt { color:var(--muted); font-family:'DM Mono',monospace; font-size:9px; letter-spacing:.1em; text-transform:uppercase; }
+.detail-facts dd { font-size:13px; margin:0; }
+.detail-description { background:#ebe8e1; margin:auto; max-width:1304px; padding:52px 48px 60px; }
+.detail-description h2 { font-size:26px; letter-spacing:-.04em; margin:0 0 24px; }
+.detail-empty { color:var(--muted); font-size:13px; }
+/* Fremdes eBay-Markup: eingerahmt, damit es das Seitenlayout nicht sprengt. */
+.ebay-description { font-size:14px; line-height:1.75; max-width:900px; overflow-wrap:anywhere; }
+.ebay-description img { height:auto; max-width:100%; }
+.ebay-description table { border-collapse:collapse; display:block; max-width:100%; overflow-x:auto; }
+.ebay-description td,.ebay-description th { border:1px solid var(--line); padding:8px 10px; text-align:left; }
+.ebay-description a { color:var(--red); text-decoration:underline; }
+.ebay-description h1,.ebay-description h2,.ebay-description h3 { font-size:19px; letter-spacing:-.02em; margin:26px 0 10px; }
+.ebay-description ul,.ebay-description ol { padding-left:22px; }
+.lightbox { align-items:center; background:#0f0f10f2; cursor:zoom-out; display:flex; inset:0; justify-content:center; padding:40px; position:fixed; z-index:60; }
+.lightbox img { cursor:default; max-height:92vh; max-width:min(1100px,94vw); object-fit:contain; }
+.lightbox-close { background:transparent; border:1px solid #ffffff5c; color:#fff; font-size:17px; height:44px; position:absolute; right:26px; top:26px; width:44px; }
+.lightbox-close:hover { background:#ffffff1f; }
+
+@media (max-width:850px) {
+  .detail-back { padding:22px 22px 0; }
+  .detail-layout { gap:32px; grid-template-columns:1fr; padding:22px 22px 44px; }
+  .detail-media { position:static; }
+  .detail-description { padding:38px 22px 48px; }
+  .lightbox { padding:16px; }
+}

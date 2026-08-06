@@ -18,8 +18,6 @@ type Product = {
   imageUrls: string[];
 };
 
-const FILTERS = ["Alle Angebote", "Festpreis", "Auktion", "Vormerkliste"] as const;
-
 function meta(category: Product["category"]) {
   if (category === "Auktion") return "Auktion auf eBay · Kauf direkt bei eBay";
   if (category === "Vormerkliste") return "Noch nicht im Verkauf · Interesse vormerken";
@@ -35,7 +33,6 @@ function badge(category: Product["category"]) {
 export default function KartenPage() {
   const [catalog, setCatalog] = useState<Product[]>([]);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
-  const [activeFilter, setActiveFilter] = useState<string>("Alle Angebote");
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Product | null>(null);
   const { addToCart } = useCart();
@@ -56,10 +53,8 @@ export default function KartenPage() {
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    return catalog.filter((product) =>
-      (activeFilter === "Alle Angebote" || product.category === activeFilter) &&
-      (!needle || product.title.toLowerCase().includes(needle)));
-  }, [activeFilter, catalog, query]);
+    return catalog.filter((product) => !needle || product.title.toLowerCase().includes(needle));
+  }, [catalog, query]);
 
   return <main>
     <SiteHeader active="/karten" />
@@ -67,16 +62,11 @@ export default function KartenPage() {
     <section className="page-intro">
       <p className="eyebrow">DER BESTAND</p>
       <h1>Alle Karten.</h1>
-      <p>Aktuelle Festpreisangebote, laufende eBay-Auktionen und Karten, die noch nicht im Verkauf sind.</p>
+      <p>Unser gesamter Bestand — jede Karte einzeln geprüft, beschrieben und sicher verpackt.</p>
     </section>
 
     <section className="shop-section" id="shop">
       <div className="shop-toolbar">
-        <div className="filter-tabs">
-          {FILTERS.map((filter) => (
-            <button key={filter} type="button" className={activeFilter === filter ? "active" : ""} onClick={() => setActiveFilter(filter)}>{filter}</button>
-          ))}
-        </div>
         <label className="search-field" htmlFor="search">
           <span aria-hidden="true">⌕</span>
           <input id="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Spieler, Set oder Kartennummer" aria-label="Karten durchsuchen" />
@@ -92,26 +82,28 @@ export default function KartenPage() {
           {filtered.map((product) => (
             <article className="product-card" key={product.id}>
               <div className="product-image">
-                {product.imageUrls?.[0]
-                  /* The grid never shows a card wider than ~430px, so the
-                   * 900x1600 original would be wasted bytes across 296 cards.
-                   * Lazy loading keeps the initial page light. */
-                  // eslint-disable-next-line @next/next/no-img-element
-                  ? <img
-                      className="card-art product-photo"
-                      src={ebayImageVariant(product.imageUrls[0], 800)}
-                      alt={product.title}
-                      loading="lazy"
-                      decoding="async"
-                      width={450}
-                      height={800}
-                    />
-                  : <div className="card-art card-art-gold" aria-hidden="true"><span className="art-mark">BC</span></div>}
+                <Link href={`/karten/${product.id}`} className="product-image-link" aria-label={product.title}>
+                  {product.imageUrls?.[0]
+                    /* The grid never shows a card wider than ~430px, so the
+                     * 900x1600 original would be wasted bytes across 296 cards.
+                     * Lazy loading keeps the initial page light. */
+                    // eslint-disable-next-line @next/next/no-img-element
+                    ? <img
+                        className="card-art product-photo"
+                        src={ebayImageVariant(product.imageUrls[0], 800)}
+                        alt={product.title}
+                        loading="lazy"
+                        decoding="async"
+                        width={450}
+                        height={800}
+                      />
+                    : <div className="card-art card-art-gold" aria-hidden="true"><span className="art-mark">BC</span></div>}
+                </Link>
                 <span className="product-badge">{badge(product.category)}</span>
               </div>
               <div className="product-info">
                 <p className="product-meta">{meta(product.category)}</p>
-                <h2>{product.title}</h2>
+                <h2><Link href={`/karten/${product.id}`}>{product.title}</Link></h2>
                 {product.description && <p className="product-description">{product.description}</p>}
                 <div className="product-footer">
                   {formatPrice(product.priceAmountCents, product.priceCurrency)
