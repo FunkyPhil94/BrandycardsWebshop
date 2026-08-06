@@ -8,7 +8,7 @@ declare type D1PreparedStatement = {
   bind(...args: unknown[]): D1PreparedStatement;
   first<T = unknown>(): Promise<T | null>;
   all<T = unknown>(): Promise<{ results: T[]; success: boolean }>;
-  run(): Promise<unknown>;
+  run(): Promise<{ success: boolean; meta: { changes: number } }>;
 };
 declare type D1Database = {
   prepare(...args: unknown[]): D1PreparedStatement;

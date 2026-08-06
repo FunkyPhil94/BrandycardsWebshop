@@ -172,6 +172,29 @@ async function runEbaySyncInternal() {
       ] as [BatchItem<"sqlite">, ...BatchItem<"sqlite">[]]);
       deactivatedCount += chunk.length;
     }
+
+    // The sweep above is driven by ebay_listings, so it cannot see a product
+    // that has no listing row at all. Those orphans appear when a run writes
+    // the product but not the listing - which happened during earlier failed
+    // runs, before both writes shared one batch. They stay invisible to the
+    // storefront but keep counting as active stock, so retire them here.
+    const orphanNow = new Date().toISOString();
+    const orphanResult = await env.DB.prepare(`
+      UPDATE products SET status = 'INACTIVE', updated_at = ?
+      WHERE kind = 'EBAY_SYNCED' AND status = 'ACTIVE'
+        AND id NOT IN (SELECT product_id FROM ebay_listings WHERE status = 'ACTIVE')
+    `).bind(orphanNow).run();
+    const orphanCount = orphanResult.meta.changes ?? 0;
+    if (orphanCount > 0) {
+      await env.DB.prepare(`
+        UPDATE inventory SET status = 'UNAVAILABLE', available_quantity = 0, updated_at = ?
+        WHERE product_id IN (SELECT id FROM products WHERE kind = 'EBAY_SYNCED' AND status = 'INACTIVE')
+          AND status <> 'UNAVAILABLE'
+      `).bind(orphanNow).run();
+      console.warn("[ebay-sync] Produkte ohne aktives Listing deaktiviert.", { orphanCount });
+      deactivatedCount += orphanCount;
+    }
+
     await finalizeRun({ status: skippedCount ? "PARTIAL" : "SUCCEEDED", importedCount, updatedCount, deactivatedCount, failedCount, finishedAt: new Date().toISOString(), errorMessage: null });
     return { runId: run.id, importedCount, updatedCount, deactivatedCount, skippedCount };
   } catch (error) {
