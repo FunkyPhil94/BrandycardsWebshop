@@ -37,28 +37,8 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-- **Stand:** LÄUFT
-- **Datum:** 2026-08-06
-- **Ziel:** eBay-Beschreibung nicht mehr einbetten, sondern strukturiert auslesen
-  und im Shop-Design neu rendern.
-- **Warum:** Der Sanitizer entfernt `style`, wodurch die schwarz-goldene
-  eBay-Vorlage als unformatierter Textblock erschien — Logo auf schwarzem Kasten
-  in heller Seite, Tabelle ohne Rahmen. Styles wieder zuzulassen wäre die falsche
-  Antwort: fremdes Design gehört nicht in die Seite, und `style` öffnet
-  CSS-basierte Angriffe.
-- **Geplante Schritte:**
-  1. `lib/ebay-description.ts`: sanitiertes HTML in Struktur überführen
-     (Kartendetails als Label/Wert-Paare, übrige Abschnitte als Überschrift +
-     Inhalt), Kopfbereich mit Logo und Fußzeile verwerfen
-  2. Tests mit der echten Vorlage als Fixture
-  3. Detailseite rendert Spezifikationen als eigene Tabelle und Abschnitte in
-     Shop-Typografie; Rückfall auf das bisherige Verhalten, wenn die Struktur
-     nicht erkannt wird
-- **Betroffen:** neues Parser-Modul, `app/api/products/[id]/route.ts`,
-  `app/karten/[id]/page.tsx`, `app/globals.css`, Tests.
-- **Verifikation:** `tsc --noEmit`, Lint, `npm test`, Abruf einer echten
-  Detailseite gegen Produktion.
-- **Ergebnis:** _(wird nach dem Durchlauf eingetragen)_
+_Kein laufender Auftrag._ Vorlage: Stand, Datum, Ziel, geplante Schritte,
+betroffene Dateien, Verifikation, Ergebnis.
 
 ---
 
@@ -101,6 +81,34 @@ Kein Auftrag, sondern der Zustand, den die nächste Sitzung kennen muss.
 ---
 
 ## Historie
+
+### 2026-08-06 — eBay-Beschreibung im Shop-Design statt eingebettet
+
+- **Stand:** ABGESCHLOSSEN
+- **Ziel:** Die eBay-Beschreibung sah unbrauchbar aus — Logo auf schwarzem Kasten
+  in heller Seite, Tabelle ohne Rahmen, loser Text.
+- **Ursache:** Falsche Grundentscheidung meinerseits. Ich hatte eBays Markup
+  **eingebettet**, statt es zu **übernehmen**. Die Vorlage ist für eBays Seite
+  gebaut (schwarz-gold, eigener Kopf, eigener Fuß) und lebt von `style` — das
+  der Sanitizer zu Recht entfernt. `style` wieder zuzulassen wäre doppelt falsch
+  gewesen: fremdes Design in der Seite und CSS-basierte Angriffe.
+- **Umsetzung:** `lib/ebay-description.ts` liest die Struktur aus dem bereits
+  sanitierten HTML. Die zweispaltige Tabelle wird zu Label/Wert-Paaren, jede
+  Überschrift zu einem Abschnitt; Kopfbereich mit Logo, wiederholter
+  `<h1>`-Titelblock und die Fußzeile fallen weg. Der Shop rendert alles in
+  eigener Typografie (`.spec-table`, `.detail-block`, `.detail-prose`).
+- **Robustheit:** Bewusst strukturell statt auf deutsche Überschriften verdrahtet
+  — jede `<h1>`–`<h6>` beginnt einen Abschnitt, jede zweispaltige Tabelle wird zu
+  Spezifikationen. Erkennt der Parser nichts, liefert die API weiterhin das
+  sanitierte HTML, und die Seite zeigt es wie zuvor.
+- **Verifikation:** 36/36 Tests, `tsc --noEmit` sauber, Lint 0 Fehler. An echten
+  Produktionsdaten geprüft: 6 Detailzeilen, drei Abschnitte (Beschreibung,
+  Zustand & Hinweise, Versand & Verpackung), kein Logo, keine Fußzeile, kein
+  doppelter Titel. Commit `8cfb727`, deployed `1bde3a4d`.
+- **Hinweis für später:** Der Parser stützt sich auf Überschriften und eine
+  zweispaltige Tabelle. Ändert ihr die eBay-Vorlage grundlegend, greift der
+  Rückfall auf das sanitierte HTML — es geht nichts verloren, sieht dann aber
+  wieder schlichter aus.
 
 ### 2026-08-06 — Detailseite je Karte, eBay-Beschreibung, Bilder gerade
 
