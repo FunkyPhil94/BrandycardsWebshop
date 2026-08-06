@@ -1,16 +1,18 @@
 import { and, eq, gte, lte, sql } from "drizzle-orm";
 import { getDb } from "../../db";
-import { inventory, orders, reservations } from "../../db/schema";
+import { ebayListings, inventory, orders, reservations } from "../../db/schema";
+import { enqueueEbayWithdraw } from "../ebay-outbox";
 
 export async function settlePaidOrder(db: ReturnType<typeof getDb>, orderId: string, now: string) {
-  const rows = await db.select({ reservation: reservations, stock: inventory })
+  const rows = await db.select({ reservation: reservations, stock: inventory, listing: ebayListings })
     .from(reservations)
     .innerJoin(inventory, eq(inventory.id, reservations.inventoryId))
+    .leftJoin(ebayListings, eq(ebayListings.productId, reservations.productId))
     .where(and(eq(reservations.orderId, orderId), eq(reservations.status, "ACTIVE")));
 
   if (!rows.length) return;
 
-  for (const { reservation } of rows) {
+  for (const { reservation, listing } of rows) {
     const reservationResult = await db.batch([db.update(reservations).set({ status: "CONVERTED", releasedAt: now }).where(and(eq(reservations.id, reservation.id), eq(reservations.status, "ACTIVE")))]);
     if (reservationResult[0].meta.changes !== 1) continue;
     const inventoryResult = await db.batch([db.update(inventory).set({
@@ -21,7 +23,9 @@ export async function settlePaidOrder(db: ReturnType<typeof getDb>, orderId: str
     }).where(and(eq(inventory.id, reservation.inventoryId), gte(inventory.reservedQuantity, reservation.quantity)))]);
     if (inventoryResult[0].meta.changes !== 1) {
       await db.batch([db.update(reservations).set({ status: "ACTIVE", releasedAt: null }).where(and(eq(reservations.id, reservation.id), eq(reservations.status, "CONVERTED")))]);
+      continue;
     }
+    if (listing) await enqueueEbayWithdraw(db, listing.id, "Webshop-Bestellung bezahlt");
   }
 }
 

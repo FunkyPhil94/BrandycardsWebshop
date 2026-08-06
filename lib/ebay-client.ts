@@ -49,7 +49,7 @@ function apiBase(environment: EbayEnvironment) {
   return environment === "sandbox" ? "https://api.sandbox.ebay.com" : "https://api.ebay.com";
 }
 
-async function getAccessToken(config: EbayConfig) {
+async function getAccessToken(config: EbayConfig, scope = process.env.EBAY_OAUTH_SCOPE || "https://api.ebay.com/oauth/api_scope/sell.inventory.readonly") {
   const response = await fetch(`${apiBase(config.environment)}/identity/v1/oauth2/token`, {
     method: "POST",
     headers: {
@@ -59,7 +59,7 @@ async function getAccessToken(config: EbayConfig) {
     body: new URLSearchParams({
       grant_type: "refresh_token",
       refresh_token: config.refreshToken,
-      scope: process.env.EBAY_OAUTH_SCOPE || "https://api.ebay.com/oauth/api_scope/sell.inventory.readonly",
+      scope,
     }),
   });
   if (!response.ok) throw new Error(`eBay OAuth fehlgeschlagen (${response.status}).`);
@@ -100,4 +100,23 @@ export async function getOffersForSku(sku: string) {
   const query = new URLSearchParams({ sku, marketplace_id: config.marketplaceId, limit: "25" });
   const body = await ebayJson<{ offers?: EbayOffer[] }>(`/sell/inventory/v1/offer?${query}`);
   return body.offers ?? [];
+}
+
+export async function withdrawEbayOffer(offerId: string) {
+  const config = getConfig();
+  const accessToken = await getAccessToken(config, process.env.EBAY_WRITE_OAUTH_SCOPE || "https://api.ebay.com/oauth/api_scope/sell.inventory");
+  const response = await fetch(`${apiBase(config.environment)}/sell/inventory/v1/offer/${encodeURIComponent(offerId)}/withdraw`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      "Content-Language": "de-DE",
+      "X-EBAY-C-MARKETPLACE-ID": config.marketplaceId,
+    },
+  });
+  if (!response.ok && response.status !== 404) {
+    const body = await response.text();
+    throw new Error(`eBay-Angebot konnte nicht beendet werden (${response.status}): ${body.slice(0, 240)}`);
+  }
 }

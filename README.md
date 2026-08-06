@@ -35,11 +35,19 @@ automatically downgraded by removing an address.
 
 ## eBay synchronization
 
-The eBay client is read-only at this stage. It uses the seller OAuth refresh
-token and the Sell Inventory API to read inventory items and their offers. No
-eBay listing is created, changed, or deleted by this code. The scheduled D1
-sync and product mapping will be added after the seller API credentials and
-the desired inventory field mapping have been confirmed.
+The hourly sync reads seller inventory and offers through the Sell Inventory
+API. After a paid webshop order, the local settlement records an idempotent
+outbox job to withdraw the corresponding eBay offer. The job is processed by
+the scheduled Worker with a lease, exponential retry delay, and a permanent
+failure state for manual review. The write path is deliberately disabled by
+default; set `EBAY_WRITE_ENABLED=true` only after the eBay OAuth refresh token
+has the `sell.inventory` write scope and the withdrawal flow has been tested.
+
+This is intentionally asynchronous: checkout and local inventory reservation
+do not fail merely because eBay is temporarily unavailable. The hourly read
+sync remains the safety net. eBay Notification API integration for seller-side
+order events is a separate next step and must use eBay's signed notification
+payloads before it can change local stock.
 
 The Worker also exposes a Cloudflare Scheduled Handler for the hourly eBay
 sync. The versioned `wrangler.toml` contains the non-secret production
@@ -53,8 +61,9 @@ Before the first production deployment:
 1. Run `npm run build` so the client assets exist in `dist/client`.
 2. Log in with `npx wrangler login` using an account that can deploy Workers
    and access the configured D1/R2 resources.
-3. Apply the committed D1 migrations with `npx wrangler d1 migrations apply
-   brandycards-production --remote`.
+3. Apply the committed D1 migrations in order. For this repository, use
+   `npx wrangler d1 execute brandycards-production --remote --file=drizzle/0005_add_ebay_outbox.sql`
+   for the current outbox migration.
 4. Add the server-only eBay, Supabase, admin, and PayPal values with
    `npx wrangler secret put NAME`. Never put those values in `wrangler.toml`,
    `.env.example`, GitHub, or the frontend.

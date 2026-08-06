@@ -31,6 +31,7 @@ export const offerStatusValues = ["NEW", "IN_REVIEW", "ACCEPTED", "REJECTED", "E
 export const submissionStatusValues = ["NEW", "IN_REVIEW", "NEEDS_INFO", "ACCEPTED", "REJECTED", "CLOSED"] as const;
 export const syncRunStatusValues = ["RUNNING", "SUCCEEDED", "PARTIAL", "FAILED"] as const;
 export const syncEventStatusValues = ["IMPORTED", "UPDATED", "DEACTIVATED", "SKIPPED", "FAILED"] as const;
+export const ebayOutboxStatusValues = ["PENDING", "PROCESSING", "RETRY_WAIT", "SUCCEEDED", "FAILED", "CANCELLED"] as const;
 
 export const users = sqliteTable("users", {
   id: id(),
@@ -291,6 +292,34 @@ export const webhookEvents = sqliteTable("webhook_events", {
   uniqueIndex("webhook_provider_event_unique").on(table.provider, table.externalEventId),
   index("webhook_status_idx").on(table.status),
   check("webhook_status_check", sql`${table.status} IN ('RECEIVED', 'PROCESSED', 'FAILED')`),
+]);
+
+// The outbox contains absolute eBay target states. It decouples the local
+// checkout transaction from eBay availability and makes retries safe.
+export const ebayOutbox = sqliteTable("ebay_outbox", {
+  id: id(),
+  aggregateType: text("aggregate_type").notNull().default("LISTING"),
+  aggregateId: text("aggregate_id").notNull(),
+  ebayItemId: text("ebay_item_id"),
+  ebayOfferId: text("ebay_offer_id"),
+  operation: text("operation").notNull(),
+  payload: json("payload").notNull(),
+  dedupeKey: text("dedupe_key").notNull(),
+  status: text("status", { enum: ebayOutboxStatusValues }).notNull().default("PENDING"),
+  attemptCount: integer("attempt_count").notNull().default(0),
+  availableAt: timestamp("available_at"),
+  lockedAt: optionalTimestamp("locked_at"),
+  lastAttemptAt: optionalTimestamp("last_attempt_at"),
+  succeededAt: optionalTimestamp("succeeded_at"),
+  lastError: text("last_error"),
+  createdAt: timestamp("created_at"),
+  updatedAt: timestamp("updated_at"),
+}, (table) => [
+  uniqueIndex("ebay_outbox_dedupe_unique").on(table.dedupeKey),
+  index("ebay_outbox_available_idx").on(table.status, table.availableAt),
+  index("ebay_outbox_lock_idx").on(table.status, table.lockedAt),
+  index("ebay_outbox_listing_idx").on(table.ebayItemId, table.operation, table.status),
+  check("ebay_outbox_status_check", sql`${table.status} IN ('PENDING', 'PROCESSING', 'RETRY_WAIT', 'SUCCEEDED', 'FAILED', 'CANCELLED')`),
 ]);
 
 export const auditEvents = sqliteTable("audit_events", {
