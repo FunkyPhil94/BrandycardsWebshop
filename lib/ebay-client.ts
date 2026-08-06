@@ -154,7 +154,11 @@ function parseTradingResponse(xml: string, config: EbayConfig) {
       rawData: { source: "trading-api", marketplaceId: config.marketplaceId, itemId: ebayItemId },
     };
   }).filter((item): item is EbayActiveListing => Boolean(item));
-  return { items, totalPages: Number(xmlValue(xml, "TotalNumberOfPages") ?? "1") || 1 };
+  return {
+    items,
+    totalPages: Number(xmlValue(xml, "TotalNumberOfPages") ?? "1") || 1,
+    totalEntries: Number(xmlValue(xml, "TotalNumberOfEntries") ?? String(items.length)) || items.length,
+  };
 }
 
 /** Returns the listings that are actually active in the seller account.
@@ -166,6 +170,7 @@ export async function getActiveEbayListings() {
   const listings: EbayActiveListing[] = [];
   let page = 1;
   let totalPages = 1;
+  let totalEntries = 0;
   do {
     const request = `<?xml version="1.0" encoding="utf-8"?><GetMyeBaySellingRequest xmlns="urn:ebay:apis:eBLBaseComponents"><ActiveList><Include>true</Include><Pagination><EntriesPerPage>200</EntriesPerPage><PageNumber>${page}</PageNumber></Pagination></ActiveList><DetailLevel>ReturnAll</DetailLevel></GetMyeBaySellingRequest>`;
     const response = await fetch(`${apiBase(config.environment)}/ws/api.dll`, {
@@ -177,9 +182,15 @@ export async function getActiveEbayListings() {
     const parsed = parseTradingResponse(await response.text(), config);
     listings.push(...parsed.items);
     totalPages = parsed.totalPages;
+    totalEntries = Math.max(totalEntries, parsed.totalEntries);
     page++;
   } while (page <= totalPages && page <= 50);
-  return listings;
+  if (totalPages > 50 || listings.length < totalEntries) {
+    throw new Error(`eBay-Aktivliste unvollstÃ¤ndig: ${listings.length} von ${totalEntries} Angeboten geladen.`);
+  }
+  // eBay can repeat an item at a page boundary. The item ID is the stable
+  // identity; returning it once prevents duplicate products downstream.
+  return [...new Map(listings.map((listing) => [listing.ebayItemId, listing])).values()];
 }
 
 export async function getAllInventoryItems() {
@@ -209,9 +220,9 @@ export async function getOffersForSku(sku: string) {
   let nextUrl: string | undefined = `/sell/inventory/v1/offer?${query}`;
   let pageCount = 0;
   while (nextUrl && pageCount < 100) {
-    const body = await ebayJson<{ offers?: EbayOffer[]; next?: string }>(nextUrl);
-    offers.push(...(body.offers ?? []));
-    nextUrl = body.next;
+    const responseBody: { offers?: EbayOffer[]; next?: string } = await ebayJson<{ offers?: EbayOffer[]; next?: string }>(nextUrl);
+    offers.push(...(responseBody.offers ?? []));
+    nextUrl = responseBody.next;
     pageCount++;
   }
   return offers;

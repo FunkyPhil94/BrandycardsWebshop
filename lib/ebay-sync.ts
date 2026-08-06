@@ -1,4 +1,5 @@
 import { eq } from "drizzle-orm";
+import type { BatchItem } from "drizzle-orm/batch";
 import { env } from "cloudflare:workers";
 import { getDb } from "../db";
 import { ebayListings, inventory, productAssets, products, syncEvents, syncRuns } from "../db/schema";
@@ -9,6 +10,7 @@ let localSyncLock: Promise<unknown> | null = null;
 const record = (value: unknown): Record<string, unknown> => value && typeof value === "object" ? value as Record<string, unknown> : {};
 const text = (value: unknown) => typeof value === "string" && value.trim() ? value.trim() : undefined;
 const nestedText = (value: unknown, ...keys: string[]) => keys.reduce<unknown>((current, key) => record(current)[key], value) as unknown;
+const newEntityId = () => crypto.randomUUID().replaceAll("-", "");
 
 /* Legacy Inventory API mapping retained only for historical data compatibility. */
 function priceCents(offer: EbayOffer) {
@@ -89,6 +91,16 @@ async function runEbaySyncInternal() {
   let skippedCount = 0;
   const seenItemIds = new Set<string>();
 
+  const finalizeRun = async (values: Partial<typeof syncRuns.$inferInsert>) => {
+    try {
+      await db.update(syncRuns).set(values).where(eq(syncRuns.id, run.id));
+    } catch (finalizeError) {
+      // Do not replace the actual eBay/DB error with a secondary status-write
+      // error. The run can be inspected and repaired independently.
+      console.error("eBay sync run finalization failed", finalizeError);
+    }
+  };
+
   try {
     const items = await getAllInventoryItems();
     for (const item of items) {
@@ -122,23 +134,15 @@ async function runEbaySyncInternal() {
           continue;
         }
         seenItemIds.add(mapped.ebayItemId);
-        let createdProductId: string | undefined;
         try {
           // Re-read immediately before writing. This also makes a repeated or
           // concurrent sync harmless when the same eBay item is encountered.
           const existing = await db.query.ebayListings.findFirst({ where: eq(ebayListings.ebayItemId, mapped.ebayItemId) });
-          let productId = existing?.productId;
-          if (productId) {
-            await db.update(products).set({ title: mapped.title, description: mapped.description ?? null, status: mapped.quantity > 0 ? "ACTIVE" : "INACTIVE", updatedAt: new Date().toISOString() }).where(eq(products.id, productId));
-            updatedCount++;
-          } else {
-            const [created] = await db.insert(products).values({ kind: "EBAY_SYNCED", status: "ACTIVE", title: mapped.title, description: mapped.description ?? null }).returning({ id: products.id });
-            if (!created) throw new Error("Produkt konnte nicht angelegt werden.");
-            productId = created.id;
-            createdProductId = productId;
-            importedCount++;
-          }
+          const isNewProduct = !existing?.productId;
+          const productId = existing?.productId ?? newEntityId();
+          if (isNewProduct && !/^[a-f0-9]{32}$/i.test(productId)) throw new Error("eBay-Produkt-ID konnte nicht sicher bestimmt werden.");
           const listingStatus: "ACTIVE" | "ENDED" = mapped.quantity > 0 ? "ACTIVE" : "ENDED";
+          const now = new Date().toISOString();
           const listingValues = {
             productId,
             ebayItemId: mapped.ebayItemId,
@@ -153,38 +157,31 @@ async function runEbaySyncInternal() {
             listingUrl: mapped.listingUrl,
             rawData: mapped.rawData,
             status: listingStatus,
-            lastSyncedAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
+            lastSyncedAt: now,
+            updatedAt: now,
           };
-          if (existing) await db.update(ebayListings).set(listingValues).where(eq(ebayListings.id, existing.id));
-          else await db.insert(ebayListings).values(listingValues);
-          await db.delete(productAssets).where(eq(productAssets.productId, productId));
-          if (mapped.imageUrls.length) {
-            await db.insert(productAssets).values(mapped.imageUrls.map((sourceUrl, sortOrder) => ({
-              productId,
-              storageKey: `ebay/${mapped.ebayItemId}/${sortOrder}`,
-              sourceUrl,
-              mimeType: "image/*",
-              sortOrder,
-              isPublic: true,
-            })));
-          }
+          const statements: BatchItem<"sqlite">[] = [];
+          if (isNewProduct) statements.push(db.insert(products).values({ id: productId, kind: "EBAY_SYNCED", status: "ACTIVE", title: mapped.title, description: mapped.description ?? null, createdAt: now, updatedAt: now }));
+          else statements.push(db.update(products).set({ title: mapped.title, description: mapped.description ?? null, status: mapped.quantity > 0 ? "ACTIVE" : "INACTIVE", updatedAt: now }).where(eq(products.id, productId)));
+          if (existing) statements.push(db.update(ebayListings).set(listingValues).where(eq(ebayListings.id, existing.id)));
+          else statements.push(db.insert(ebayListings).values(listingValues));
+          statements.push(db.delete(productAssets).where(eq(productAssets.productId, productId)));
+          if (mapped.imageUrls.length) statements.push(db.insert(productAssets).values(mapped.imageUrls.map((sourceUrl, sortOrder) => ({ productId, storageKey: `ebay/${mapped.ebayItemId}/${sortOrder}`, sourceUrl, mimeType: "image/*", sortOrder, isPublic: true }))));
           const existingInventory = await db.query.inventory.findFirst({ where: eq(inventory.productId, productId) });
-          if (existingInventory) await db.update(inventory).set({ status: mapped.quantity > 0 ? "AVAILABLE" : "UNAVAILABLE", availableQuantity: mapped.quantity, updatedAt: new Date().toISOString() }).where(eq(inventory.id, existingInventory.id));
-          else await db.insert(inventory).values({ productId, status: mapped.quantity > 0 ? "AVAILABLE" : "UNAVAILABLE", availableQuantity: mapped.quantity });
-          await db.insert(syncEvents).values({ syncRunId: run.id, ebayItemId: mapped.ebayItemId, productId, status: existing ? "UPDATED" : "IMPORTED" });
+          if (existingInventory) statements.push(db.update(inventory).set({ status: mapped.quantity > 0 ? "AVAILABLE" : "UNAVAILABLE", availableQuantity: mapped.quantity, updatedAt: now }).where(eq(inventory.id, existingInventory.id)));
+          else statements.push(db.insert(inventory).values({ productId, status: mapped.quantity > 0 ? "AVAILABLE" : "UNAVAILABLE", availableQuantity: mapped.quantity, updatedAt: now }));
+          statements.push(db.insert(syncEvents).values({ syncRunId: run.id, ebayItemId: mapped.ebayItemId, productId, status: existing ? "UPDATED" : "IMPORTED", createdAt: now }));
+          await db.batch(statements as [BatchItem<"sqlite">, ...BatchItem<"sqlite">[]]);
+          if (isNewProduct) importedCount++; else updatedCount++;
         } catch (error) {
-          // A malformed/duplicate row must not discard the other hundreds of
-          // valid listings. Remove only a product created by this item when
-          // its listing could not be written, then continue with the run.
-          if (createdProductId) await db.delete(products).where(eq(products.id, createdProductId));
+          // The item writes are one atomic D1 batch. Never issue a
+          // compensating product DELETE that can mask the original error.
           skippedCount++;
-          await db.insert(syncEvents).values({
-            syncRunId: run.id,
-            ebayItemId: mapped.ebayItemId,
-            status: "SKIPPED",
-            message: error instanceof Error ? error.message : "eBay-Angebot konnte nicht gespeichert werden.",
-          });
+          try {
+            await db.insert(syncEvents).values({ syncRunId: run.id, ebayItemId: mapped.ebayItemId, status: "SKIPPED", message: error instanceof Error ? error.message : "eBay-Angebot konnte nicht gespeichert werden." });
+          } catch (eventError) {
+            console.error("eBay sync event recording failed", eventError);
+          }
         }
       }
     }
@@ -197,10 +194,10 @@ async function runEbaySyncInternal() {
       await db.insert(syncEvents).values({ syncRunId: run.id, ebayItemId: listing.ebayItemId, productId: listing.productId, status: "DEACTIVATED", message: "Angebot nicht mehr in eBay-Inventar vorhanden." });
       deactivatedCount++;
     }
-    await db.update(syncRuns).set({ status: skippedCount ? "PARTIAL" : "SUCCEEDED", importedCount, updatedCount, deactivatedCount, failedCount: skippedCount, finishedAt: new Date().toISOString() }).where(eq(syncRuns.id, run.id));
+    await finalizeRun({ status: skippedCount ? "PARTIAL" : "SUCCEEDED", importedCount, updatedCount, deactivatedCount, failedCount: skippedCount, finishedAt: new Date().toISOString(), errorMessage: null });
     return { runId: run.id, importedCount, updatedCount, deactivatedCount, skippedCount };
   } catch (error) {
-    await db.update(syncRuns).set({ status: "FAILED", importedCount, updatedCount, failedCount: skippedCount + 1, errorMessage: error instanceof Error ? error.message : "Unbekannter eBay-Fehler.", finishedAt: new Date().toISOString() }).where(eq(syncRuns.id, run.id));
+    await finalizeRun({ status: "FAILED", importedCount, updatedCount, failedCount: skippedCount + 1, errorMessage: error instanceof Error ? error.message : "Unbekannter eBay-Fehler.", finishedAt: new Date().toISOString() });
     throw error;
   }
 }
