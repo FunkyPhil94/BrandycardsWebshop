@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import { env } from "cloudflare:workers";
 import { getDb } from "../db";
 import { ebayListings, inventory, productAssets, products, syncEvents, syncRuns } from "../db/schema";
-import { type EbayInventoryItem, type EbayOffer } from "./ebay-client";
+import { getAllInventoryItems, type EbayInventoryItem, type EbayOffer } from "./ebay-client";
 
 let localSyncLock: Promise<unknown> | null = null;
 
