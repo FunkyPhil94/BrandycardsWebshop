@@ -78,6 +78,42 @@ Dieses Protokoll hält fest, welche spezialisierten Agents im Projekt eingesetzt
 - Verifikation: `npm run lint` (0 Fehler, 4 bekannte `img`-Warnungen), `npm test` (2/2),
   `npx tsc --noEmit` jetzt fehlerfrei.
 
+## 2026-08-06 - 539 statt 294 Produkte: SoldList wurde mitimportiert
+
+- Ausloeser: Das Admin-Dashboard zeigte 539 Produkte, obwohl im eBay-Konto nur
+  294 aktive Angebote existieren.
+- Datenbefund (Produktions-D1, nur lesend abgefragt): 533 Produkte `ACTIVE`, 6 `INACTIVE`.
+  In `ebay_listings` 530 aktive Zeilen mit 530 *verschiedenen* ItemIDs, aber nur
+  333 verschiedenen Titeln. Die doppelten Titel verteilten sich auf getrennte
+  Nummernkreise (`39801…` gegenueber `39817…`/`3982…`) - typisch fuer Karten, die
+  verkauft und anschliessend neu eingestellt wurden.
+- Ausschluss Deaktivierung: Die beiden letzten Laeufe standen auf `SUCCEEDED` mit
+  `failed_count = 0` und `deactivated_count = 0`, verarbeiteten aber 530 Listings.
+  Die Deaktivierung wurde also nicht uebersprungen - eBay lieferte der Anwendung
+  tatsaechlich 530 Eintraege.
+- Ursache: `DetailLevel` ist ein Request-Feld von `GetMyeBaySelling`. Mit `ReturnAll`
+  und ohne ausdruecklichen Opt-out liefert eBay zusaetzlich `SoldList`, `UnsoldList`,
+  `ScheduledList` und `BidList`. `parseTradingResponse` suchte `<Item>`-Bloecke im
+  *gesamten* Dokument und sammelte damit auch verkaufte und unverkaufte Artikel ein.
+  Eine verkaufte und neu eingestellte Karte erschien dadurch zweimal: einmal unter
+  der alten, verkauften ItemID aus der SoldList und einmal unter der neuen aktiven.
+  Auch `TotalNumberOfPages`/`TotalNumberOfEntries` wurden aus dem ganzen Dokument
+  gelesen und konnten zu einem fremden Container gehoeren.
+- Umsetzung: Das Parsen ist jetzt auf den `<ActiveList>`-Container begrenzt, die
+  Pagination wird aus dessen `<PaginationResult>` gelesen, und die uebrigen Container
+  werden im Request ausdruecklich mit `<Include>false</Include>` abgewaehlt. Die
+  Deaktivierung laeuft in Bloecken zu 50 statt vier Einzelqueries pro Listing, weil
+  der naechste Lauf den aufgelaufenen Rueckstand auf einmal abraeumen muss.
+  Die Produktkachel im Admin-Dashboard zaehlt nur noch `ACTIVE`-Produkte; deaktivierte
+  Zeilen bleiben als Historie bestehen und haetten die Zahl sonst weiter verfaelscht.
+- Verifikation: Neuer Regressionstest `tests/ebay-active-list.test.mjs` mit gestubbtem
+  eBay-Antwortdokument (ActiveList plus SoldList mit gleichen Titeln unter aelteren IDs).
+  Der Test wurde gegen den alten Parserstand gegengeprueft und schlaegt dort fehl.
+  `npm test` 4/4, `npm run lint` ohne Fehler, `npx tsc --noEmit` sauber.
+- Offen: Die rund 236 veralteten Zeilen stehen noch auf `ACTIVE`. Der naechste
+  Sync-Lauf setzt sie ueber die Deaktivierung auf `ENDED`/`INACTIVE`. Bis dahin zeigt
+  der Shop sie weiterhin an.
+
 ## Arbeitsweise
 
 Agents erhalten klar abgegrenzte Prüf- oder Implementierungsaufträge. Ihre Ergebnisse werden vor Übernahme geprüft. Änderungen werden anschließend lokal getestet, committed und nach GitHub gepusht.

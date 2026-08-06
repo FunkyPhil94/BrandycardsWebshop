@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import type { BatchItem } from "drizzle-orm/batch";
 import { env } from "cloudflare:workers";
 import { getDb } from "../db";
@@ -142,14 +142,21 @@ async function runEbaySyncInternal() {
       FROM ebay_listings
       WHERE status = ?
     `).bind("ACTIVE").all<{ id: string; ebayItemId: string; productId: string }>();
-    for (const listing of activeListingResult.results) {
-      if (seenItemIds.has(listing.ebayItemId)) continue;
+    // A corrected import can retire a large backlog at once. Row-by-row writes
+    // would be four round trips per listing, so deactivation runs in batches.
+    const stale = activeListingResult.results.filter((listing) => !seenItemIds.has(listing.ebayItemId));
+    for (let offset = 0; offset < stale.length; offset += 50) {
+      const chunk = stale.slice(offset, offset + 50);
       const now = new Date().toISOString();
-      await db.update(ebayListings).set({ status: "ENDED", updatedAt: now }).where(eq(ebayListings.id, listing.id));
-      await db.update(products).set({ status: "INACTIVE", updatedAt: now }).where(eq(products.id, listing.productId));
-      await db.update(inventory).set({ status: "UNAVAILABLE", availableQuantity: 0, updatedAt: now }).where(eq(inventory.productId, listing.productId));
-      await db.insert(syncEvents).values({ syncRunId: run.id, ebayItemId: listing.ebayItemId, productId: listing.productId, status: "DEACTIVATED", message: "Angebot nicht mehr in eBay-Aktivliste vorhanden." });
-      deactivatedCount++;
+      const listingIds = chunk.map((listing) => listing.id);
+      const productIds = chunk.map((listing) => listing.productId);
+      await db.batch([
+        db.update(ebayListings).set({ status: "ENDED", updatedAt: now }).where(inArray(ebayListings.id, listingIds)),
+        db.update(products).set({ status: "INACTIVE", updatedAt: now }).where(inArray(products.id, productIds)),
+        db.update(inventory).set({ status: "UNAVAILABLE", availableQuantity: 0, updatedAt: now }).where(inArray(inventory.productId, productIds)),
+        db.insert(syncEvents).values(chunk.map((listing) => ({ syncRunId: run.id, ebayItemId: listing.ebayItemId, productId: listing.productId, status: "DEACTIVATED" as const, message: "Angebot nicht mehr in eBay-Aktivliste vorhanden.", createdAt: now }))),
+      ]);
+      deactivatedCount += chunk.length;
     }
     await finalizeRun({ status: skippedCount ? "PARTIAL" : "SUCCEEDED", importedCount, updatedCount, deactivatedCount, failedCount, finishedAt: new Date().toISOString(), errorMessage: null });
     return { runId: run.id, importedCount, updatedCount, deactivatedCount, skippedCount };

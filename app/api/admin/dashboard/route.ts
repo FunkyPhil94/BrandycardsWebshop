@@ -12,7 +12,9 @@ export async function GET(request: Request) {
 
     const db = getDb();
     const [[productCount], [inquiryCount], [submissionCount], [orderCount]] = await Promise.all([
-      db.select({ count: count() }).from(products),
+      // Deactivated products stay in the table as history. The tile is meant to
+      // mirror the live eBay listing count, so it counts active products only.
+      db.select({ count: count() }).from(products).where(eq(products.status, "ACTIVE")),
       db.select({ count: count() }).from(inquiries),
       db.select({ count: count() }).from(cardSubmissions),
       db.select({ count: count() }).from(orders),

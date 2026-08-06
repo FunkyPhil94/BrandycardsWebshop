@@ -77,6 +77,8 @@ function xmlBlocks(xml: string, tag: string) {
   return [...xml.matchAll(pattern)].map((match) => match[0]);
 }
 
+function xmlBlock(xml: string, tag: string) { return xmlBlocks(xml, tag)[0]; }
+
 export type EbayActiveListing = {
   ebayItemId: string;
   sku?: string;
@@ -96,7 +98,16 @@ function parseTradingResponse(xml: string, config: EbayConfig) {
   if (ack === "FAILURE" || ack === "PARTIAL_FAILURE") {
     throw new Error(`eBay GetMyeBaySelling fehlgeschlagen: ${xmlValue(xml, "LongMessage") ?? "Unbekannter eBay-Fehler."}`);
   }
-  const items = xmlBlocks(xml, "Item").map((itemXml): EbayActiveListing | null => {
+  // GetMyeBaySelling answers with one container per requested list. Scanning the
+  // whole document would also harvest <Item> blocks from SoldList/UnsoldList/
+  // ScheduledList, which is how sold-and-relisted cards ended up in the shop
+  // twice: once under their old, sold ItemID and once under the new active one.
+  // Everything below therefore reads from the ActiveList container only.
+  const activeList = xmlBlock(xml, "ActiveList");
+  if (!activeList) {
+    return { items: [], totalPages: 1, totalEntries: 0 };
+  }
+  const items = xmlBlocks(activeList, "Item").map((itemXml): EbayActiveListing | null => {
     const ebayItemId = xmlValue(itemXml, "ItemID");
     const title = xmlValue(itemXml, "Title");
     if (!ebayItemId || !title) return null;
@@ -120,10 +131,14 @@ function parseTradingResponse(xml: string, config: EbayConfig) {
       rawData: { source: "trading-api", marketplaceId: config.marketplaceId, itemId: ebayItemId },
     };
   }).filter((item): item is EbayActiveListing => Boolean(item));
+  // The pagination result must come from ActiveList too. Read from the whole
+  // document it could belong to a different container and drive the page loop
+  // against the wrong total.
+  const pagination = xmlBlock(activeList, "PaginationResult") ?? activeList;
   return {
     items,
-    totalPages: Number(xmlValue(xml, "TotalNumberOfPages") ?? "1") || 1,
-    totalEntries: Number(xmlValue(xml, "TotalNumberOfEntries") ?? String(items.length)) || items.length,
+    totalPages: Number(xmlValue(pagination, "TotalNumberOfPages") ?? "1") || 1,
+    totalEntries: Number(xmlValue(pagination, "TotalNumberOfEntries") ?? String(items.length)) || items.length,
   };
 }
 
@@ -138,7 +153,11 @@ export async function getActiveEbayListings() {
   let totalPages = 1;
   let totalEntries = 0;
   do {
-    const request = `<?xml version="1.0" encoding="utf-8"?><GetMyeBaySellingRequest xmlns="urn:ebay:apis:eBLBaseComponents"><ActiveList><Include>true</Include><Pagination><EntriesPerPage>200</EntriesPerPage><PageNumber>${page}</PageNumber></Pagination></ActiveList><DetailLevel>ReturnAll</DetailLevel></GetMyeBaySellingRequest>`;
+    // `DetailLevel` is a request-level field: with ReturnAll and no explicit
+    // opt-out eBay also returns SoldList, UnsoldList, ScheduledList and BidList.
+    // Those containers must stay off - they cost response size and previously
+    // leaked sold items into the shop.
+    const request = `<?xml version="1.0" encoding="utf-8"?><GetMyeBaySellingRequest xmlns="urn:ebay:apis:eBLBaseComponents"><ActiveList><Include>true</Include><Pagination><EntriesPerPage>200</EntriesPerPage><PageNumber>${page}</PageNumber></Pagination></ActiveList><SoldList><Include>false</Include></SoldList><UnsoldList><Include>false</Include></UnsoldList><ScheduledList><Include>false</Include></ScheduledList><BidList><Include>false</Include></BidList><DeletedFromSoldList><Include>false</Include></DeletedFromSoldList><DeletedFromUnsoldList><Include>false</Include></DeletedFromUnsoldList><DetailLevel>ReturnAll</DetailLevel></GetMyeBaySellingRequest>`;
     const response = await fetch(`${apiBase(config.environment)}/ws/api.dll`, {
       method: "POST",
       headers: { "Content-Type": "text/xml", "X-EBAY-API-CALL-NAME": "GetMyeBaySelling", "X-EBAY-API-SITEID": config.siteId, "X-EBAY-API-COMPATIBILITY-LEVEL": "1231", "X-EBAY-API-IAF-TOKEN": accessToken },
