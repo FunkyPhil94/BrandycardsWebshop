@@ -66,6 +66,15 @@ later in Cloudflare without changing this file.
 Before the first production deployment:
 
 1. Run `npm run build` so the client assets exist in `dist/client`.
+   **`.env.local` must be present in the directory you build from.** The
+   `NEXT_PUBLIC_SUPABASE_*` values are inlined into the client bundle at build
+   time, not read at runtime. Building without them produces a bundle that
+   fails with "Supabase ist noch nicht konfiguriert" on every page that needs a
+   session — `/account` and `/admin` — while the rest of the site looks healthy.
+   Setting the values as Cloudflare secrets does not help; only the build sees
+   them. This bites especially in a git worktree, which does not inherit the
+   ignored `.env.local` from the main checkout. Verify after building:
+   `grep -rl "supabase.co" dist/client/assets` must return the Supabase chunk.
 2. Log in with `npx wrangler login` using an account that can deploy Workers
    and access the configured D1/R2 resources.
 3. Apply the committed D1 migrations in order. For this repository, use

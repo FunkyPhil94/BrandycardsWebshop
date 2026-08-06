@@ -114,6 +114,30 @@ Dieses Protokoll hält fest, welche spezialisierten Agents im Projekt eingesetzt
   Sync-Lauf setzt sie ueber die Deaktivierung auf `ENDED`/`INACTIVE`. Bis dahin zeigt
   der Shop sie weiterhin an.
 
+## 2026-08-06 - Deploy-Fehler: Client-Bundle ohne Supabase-Konfiguration
+
+- Ausloeser: Nach dem Deploy des eBay-Importfixes zeigte `/admin` nur noch
+  "Supabase ist noch nicht konfiguriert. Bitte .env.local anlegen." Vorher lief die Seite.
+- Ursache: Der Build lief aus einem Git-Worktree. Worktrees uebernehmen ignorierte
+  Dateien nicht, also fehlte dort `.env.local`. `NEXT_PUBLIC_SUPABASE_URL` und
+  `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` werden zur *Buildzeit* ins Client-Bundle
+  inlined - nicht zur Laufzeit gelesen. Ohne sie faellt `getSupabaseBrowserClient()`
+  in den Fehlerzweig. Die Cloudflare-Secrets helfen hier nicht, sie erreichen nur den
+  Worker zur Laufzeit, nicht den Client-Build.
+- Umsetzung: `.env.local` in das Build-Verzeichnis kopiert, sauber neu gebaut und
+  erneut deployed (Version `baba72cb`). Der Deploy-Abschnitt im README benennt die
+  Bedingung jetzt ausdruecklich, inklusive Worktree-Falle und Pruefkommando.
+- Verifikation: Vor dem Deploy wurde das Client-Bundle geprueft - beide
+  `NEXT_PUBLIC_`-Werte enthalten, und kein Server-Secret enthalten
+  (`EBAY_CLIENT_SECRET`, `EBAY_REFRESH_TOKEN`, `EBAY_CLIENT_ID`, `ADMIN_EMAILS`).
+  `EBAY_ENVIRONMENT` schlug zunaechst an, ist aber woertlich "production", ein
+  generisches Wort, das ohnehin offen in `wrangler.toml` steht - falsch positiv.
+  Nach dem Deploy im live ausgelieferten Chunk gegengeprueft: beide Werte vorhanden,
+  Fehlerzweig wegoptimiert, `/admin` antwortet mit HTTP 200.
+- Lehre: Ein Deploy ist erst verifiziert, wenn eine Seite geprueft wurde, die
+  Client-Konfiguration braucht. Startseite und `/api/products` waren durchgehend
+  gesund und haetten den Fehler nie gezeigt.
+
 ## Arbeitsweise
 
 Agents erhalten klar abgegrenzte Prüf- oder Implementierungsaufträge. Ihre Ergebnisse werden vor Übernahme geprüft. Änderungen werden anschließend lokal getestet, committed und nach GitHub gepusht.
