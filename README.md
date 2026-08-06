@@ -42,18 +42,39 @@ sync and product mapping will be added after the seller API credentials and
 the desired inventory field mapping have been confirmed.
 
 The Worker also exposes a Cloudflare Scheduled Handler for the hourly eBay
-sync. The example configuration in `wrangler.toml.example` uses the cron
-expression `0 * * * *`. Before production deployment, create the actual
-Cloudflare Worker configuration, attach the D1/R2 bindings, add the eBay
-secrets, and configure the cron trigger in Cloudflare or Wrangler. The
-scheduled handler only queues the sync with `waitUntil`; its errors are logged
+sync. The versioned `wrangler.toml` contains the non-secret production
+bindings for the Cloudflare account, D1 database, R2 bucket, Images binding,
+static Assets binding, and the cron expression `0 * * * *`. It intentionally
+contains no domain routes and no secrets. The custom domain can be attached
+later in Cloudflare without changing this file.
+
+Before the first production deployment:
+
+1. Run `npm run build` so the client assets exist in `dist/client`.
+2. Log in with `npx wrangler login` using an account that can deploy Workers
+   and access the configured D1/R2 resources.
+3. Apply the committed D1 migrations with `npx wrangler d1 migrations apply
+   brandycards-production --remote`.
+4. Add the server-only eBay, Supabase, admin, and PayPal values with
+   `npx wrangler secret put NAME`. Never put those values in `wrangler.toml`,
+   `.env.example`, GitHub, or the frontend.
+5. Deploy with `npx wrangler deploy`.
+6. Attach the custom domain in Cloudflare under the Worker’s **Domains &
+   Routes** settings. Do not add a route until the Worker deployment exists.
+7. Confirm that the cron trigger appears under the Worker’s **Triggers** and
+   inspect the first scheduled execution in the Worker logs.
+
+For another Cloudflare account, copy `wrangler.toml.example` to
+`wrangler.toml` and replace only its account/database placeholders. The
+scheduled handler queues the sync with `waitUntil`; its errors are logged
 without affecting the normal HTTP `fetch` handler.
 
 ## Included Shape
 
 - edit site code under `app/`
-- `.openai/hosting.json` declares optional Sites D1 and R2 bindings
-- `vite.config.ts` simulates declared bindings for local development
+- `.openai/hosting.json` declares the Sites binding names for compatible previews
+- `wrangler.toml` is the deployable source for the Worker’s D1, R2, Assets, and
+  Images bindings
 - `db/schema.ts` starts intentionally empty
 - `examples/d1/` contains an optional D1 example surface
 - `drizzle.config.ts` supports local migration generation when needed

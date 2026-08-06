@@ -1,10 +1,7 @@
-# Copy to wrangler.toml only when deploying the Worker through Wrangler.
-# This file is a safe template: it contains no secrets and no domain routes.
-# Replace the account and resource IDs before using it for another account.
 "$schema" = "./node_modules/wrangler/config-schema.json"
 
 name = "brandycards-webshop"
-account_id = "REPLACE_WITH_CLOUDFLARE_ACCOUNT_ID"
+account_id = "7d38e966a0bd1a5ed4843ab57f07324e"
 main = "worker/index.ts"
 compatibility_date = "2026-08-05"
 compatibility_flags = ["nodejs_compat"]
@@ -21,7 +18,7 @@ binding = "IMAGES"
 [[d1_databases]]
 binding = "DB"
 database_name = "brandycards-production"
-database_id = "REPLACE_WITH_D1_DATABASE_ID"
+database_id = "23ef186e-fca1-419e-97c2-e5f8f4bf38e6"
 
 [[r2_buckets]]
 binding = "UPLOADS"
