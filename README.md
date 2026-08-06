@@ -35,6 +35,13 @@ automatically downgraded by removing an address.
 
 ## eBay synchronization
 
+To create the production refresh token, set the eBay app's OAuth accepted URL to
+`https://shop.brandycards.de/api/admin/ebay/oauth/callback`, then use the admin
+button **eBay OAuth verbinden / Refresh-Token erstellen**. The callback exchanges
+the one-time authorization code for a refresh token; the API Explorer token is
+not suitable for `EBAY_REFRESH_TOKEN`. Store the displayed refresh token only as
+the Cloudflare secret `EBAY_REFRESH_TOKEN` and never commit or paste it into chat.
+
 The hourly sync reads seller inventory and offers through the Sell Inventory
 API. After a paid webshop order, the local settlement records an idempotent
 outbox job to withdraw the corresponding eBay offer. The job is processed by

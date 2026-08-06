@@ -15,6 +15,7 @@ export default function AdminPage() {
   const [message, setMessage] = useState("Lade Administrationsbereich …");
   const [syncBusy, setSyncBusy] = useState(false);
   const [syncMessage, setSyncMessage] = useState("");
+  const [oauthBusy, setOauthBusy] = useState(false);
   const [assetUrls, setAssetUrls] = useState<Record<string, string>>({});
   const [deletingSubmission, setDeletingSubmission] = useState<string | null>(null);
 
@@ -90,6 +91,24 @@ export default function AdminPage() {
     }
   }
 
+  async function connectEbay() {
+    setOauthBusy(true);
+    setSyncMessage("");
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) throw new Error("Bitte melde dich zuerst an.");
+      const response = await fetch("/api/admin/ebay/oauth/start", { headers: { Authorization: `Bearer ${token}` } });
+      const body = await response.json() as { url?: string; error?: string };
+      if (!response.ok || !body.url) throw new Error(body.error ?? "eBay OAuth konnte nicht gestartet werden.");
+      window.location.assign(body.url);
+    } catch (error) {
+      setSyncMessage(error instanceof Error ? error.message : "eBay OAuth konnte nicht gestartet werden.");
+      setOauthBusy(false);
+    }
+  }
+
   return (
     <main className="account-page">
       <Link className="back-link" href="/">← Zurück zu BrandyCards</Link>
@@ -105,6 +124,7 @@ export default function AdminPage() {
             <div><strong>{dashboard.counts.orders}</strong><span>Bestellungen</span></div>
           </div>
           <button className="button button-primary admin-sync-button" type="button" onClick={runEbaySync} disabled={syncBusy}>{syncBusy ? "eBay-Sync läuft …" : "eBay-Angebote synchronisieren"}</button>
+          <button className="button button-outline admin-sync-button" type="button" onClick={connectEbay} disabled={oauthBusy}>{oauthBusy ? "eBay OAuth wird gestartet …" : "eBay OAuth verbinden / Refresh-Token erstellen"}</button>
           {syncMessage && <p className="form-feedback" role="status">{syncMessage}</p>}
           <div className="admin-submissions">
             <h2>Neue Kartenangebote</h2>
