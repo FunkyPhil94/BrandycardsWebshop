@@ -37,8 +37,42 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-_Kein laufender Auftrag._ Vorlage: Stand, Datum, Ziel, geplante Schritte,
-betroffene Dateien, Verifikation, Ergebnis.
+**Stand:** LÄUFT · **Datum:** 2026-08-07
+
+**Ziel:** Zwei Fehler beheben, die der Betreiber beim Durchklicken gefunden hat.
+
+**Fehler 1 — Passwort-Zurücksetzen führt auf `localhost:3000`. Ernst.**
+Der Link aus der Reset-Mail zeigt auf `http://localhost:3000/#access_token=…`.
+Entscheidend ist die **Form** der URL: Wurzelpfad, kein `/account`, kein
+`?next=`. Der Code setzt aber `redirectTo: ${origin}/account?next=…`
+([app/account/page.tsx](../app/account/page.tsx)). Supabase hat das `redirectTo`
+also **verworfen** und ist auf die **Site URL** zurückgefallen — und die steht
+offenbar auf `http://localhost:3000`.
+
+Folge: **Passwort-Zurücksetzen und E-Mail-Bestätigung sind für echte Kunden
+kaputt**, weil `emailRedirectTo` beim `signUp` derselben Allowlist unterliegt.
+Kein Einbruch, aber eine unbrauchbare Kontowiederherstellung. Zu beheben im
+Supabase-Dashboard, nicht im Code — **das kann nur der Betreiber.**
+
+**Fehler 2 — Profilfelder nicht bearbeitbar, Gestaltung passt nicht.**
+`.form-field input` ist global `background:#fff` — gedacht für die hellen
+Formularkarten, nicht für die dunkle Kontokarte. Dazu sind die Felder
+`readOnly`, solange nicht „Profil bearbeiten" geklickt wurde: Sie sehen
+bearbeitbar aus, nehmen den Fokus an und verweigern dann die Eingabe.
+
+**Geplante Schritte:**
+1. Befund SEC-18 (Supabase-URL-Konfiguration) im Bericht aufnehmen, mit der
+   genauen Anleitung für das Dashboard.
+2. `app/account/page.tsx`: die `readOnly`-Umschaltung entfernen, Felder immer
+   bearbeitbar, ein Knopf „Profil speichern".
+3. `app/globals.css`: Formularfelder und Beschriftungen innerhalb von
+   `.account-card` an die dunkle Fläche anpassen, `.profile-panel` gestalten.
+4. `npx tsc --noEmit`, `npm run lint`, `npm test`, lokal im Browser ansehen.
+
+**Deploy:** **nicht** ohne erneute Freigabe. Die Zustimmung vom letzten Mal galt
+diesem einen Deploy.
+
+**Ergebnis:** _(offen — wird nach dem Durchlauf nachgetragen)_
 
 ---
 
