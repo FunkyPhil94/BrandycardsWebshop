@@ -47,6 +47,16 @@ betroffene Dateien, Verifikation, Ergebnis.
 Kein Auftrag, sondern der Zustand, den die nächste Sitzung kennen muss.
 Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
 
+- **Auf schmalen Geräten gibt es keine Hauptnavigation.** `.main-nav` steht im
+  850-px-Block auf `display:none`; im Kopf stehen dort nur Logo, „Konto" und
+  Warenkorb. **Karten, Anfragen, Verkaufen und Über uns sind ausschließlich
+  über den Seitenfuß erreichbar** — also erst nach dem Scrollen über die ganze
+  Seite. Für einen Shop, dessen wichtigster Weg „zum Kartenbestand" heißt, ist
+  das die unangenehmere Hälfte des Problems; der fehlende Kontolink war am
+  2026-08-07 nur der Teil, der zuerst aufgefallen ist.
+  Die Lösung ist ein Menü (Schaltfläche plus ausklappende Liste) und damit eine
+  Gestaltungsentscheidung, keine Zeile CSS — deshalb bewusst nicht nebenbei
+  erfunden. Betrifft `app/site-chrome.tsx` und `app/globals.css`.
 - **Dauerfreigabe für Deploys, am 2026-08-07 noch einmal bekräftigt:** „Immer
   deployen, nicht fragen." Ein `npx wrangler deploy` nach grüner Prüfkette
   (`tsc`, Lint, `npm test`, Bundle-Probe) braucht **keine** Einzelrücksprache
@@ -91,7 +101,8 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
   Tests abbrach — **hier Node 24, in CI Node 22**. Ein Deploy ging auf grüner
   lokaler Kette raus, obwohl CI seit Stunden rot war. `gh run list --limit 3`
   kostet nichts und hätte es gezeigt.
-- **Produktion ist aktuell; zuletzt deployed ist `21bd0667`** (CI-Korrektur und
+- **Produktion ist aktuell; zuletzt deployed ist `161c74e4`** (Kontolink im
+  mobilen Kopf). Davor `21bd0667` (CI-Korrektur und
   schlankere Kopfleiste, 126 px statt 164 px). Davor `783402f9` (Warenkorb-
   grenze und Oberflächenkorrekturen). Weiter davor am 2026-08-07
   ging mehrfach hintereinander etwas raus: `1cfd52f1` (alle
@@ -222,6 +233,54 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
 ---
 
 ## Historie
+
+### 2026-08-07 — Kontolink im mobilen Kopf (161c74e4)
+
+- **Stand:** ABGESCHLOSSEN
+- **Datum:** 2026-08-07
+- **Ziel:** Auf schmalen Geräten fehlt in der Kopfleiste der Zugang zum Konto.
+  Er soll dort erscheinen.
+- **Befund:** Im 850-px-Block stehen **`.main-nav` *und* `.account-link` auf
+  `display:none`**. Auf dem Handy bleibt damit nur Logo und Warenkorb — nicht
+  nur „Konto" fehlt, sondern **die gesamte Navigation**. Karten, Anfragen,
+  Verkaufen und Über uns sind ausschließlich über den Seitenfuß erreichbar,
+  also nach dem Scrollen über die ganze Seite.
+- **Umfang dieses Durchlaufs:** Nur der Kontolink, wie beauftragt. Die fehlende
+  Hauptnavigation ist der größere Punkt, aber ein eigener — sie braucht ein
+  Menü und damit eine Gestaltungsentscheidung, keine Zeile CSS. Wird als
+  offener Punkt hinterlegt statt nebenbei erfunden.
+- **Geplante Schritte:** `.account-link` im 850-px-Block wieder einblenden und
+  unter 500 px so verkleinern, dass Logo, Konto und Warenkorb nebeneinander
+  passen, ohne die Leiste zu verbreitern oder umzubrechen.
+- **Betroffen:** `app/globals.css`. Kein Datenmodell, keine API, kein eBay.
+- **Verifikation:** Bei 375 px und 768 px im Browser messen: Kontolink
+  sichtbar, kein waagerechter Überlauf, Leistenhöhe unverändert 92 px bzw.
+  126 px (sonst stimmt `--header-h` nicht mehr). Dann Prüfkette und Deploy.
+- **Ergebnis: ABGESCHLOSSEN**, deployed als Version `161c74e4`.
+  `tsc` sauber, Lint 0 Fehler, `npm test` 130/130.
+  Live auf `shop.brandycards.de` bei 375 px nachgemessen: „Konto ↗" sichtbar,
+  Ziel `/account`, auf einer Höhe mit dem Warenkorb, Leiste unverändert 92 px,
+  kein waagerechter Überlauf. Bei 768 px ebenso, Leiste 126 px.
+- **Nebenbefund bei 320 px:** Dort passt die Leiste die Sache selbst an — das
+  Logo schrumpft als Flex-Element **proportional** mit (94×63 statt 112×75,
+  Seitenverhältnis unverändert), die Leiste wird 80 px statt 92 px. Gewollt:
+  lieber ein etwas kleineres Logo als eine umbrechende Kopfzeile. `--header-h`
+  ist damit unterhalb von ~340 px eine **Obergrenze**; folgenlos, weil unter
+  850 px nur `scroll-padding-top` den Wert nutzt und ein zu großer Wert dort
+  bloß etwas mehr Luft über dem Sprungziel lässt. Steht als Kommentar im CSS.
+- **Dabei mitkorrigiert:** Der Kommentar an `--header-h` nannte noch die alten
+  Höhen 164/150/116 px — beim Verschlanken der Leiste hatte ich die Werte in
+  den Deklarationen geändert, den Kommentar daneben aber nicht. Jetzt 126/92.
+- **Zwei Fallen, in die ich gelaufen bin und die Zeit gekostet haben:**
+  1. Der Browser zeigte nach dem Deploy hartnäckig die **alte** Kopfzeile. Nicht
+     der Deploy war schuld, sondern eine gecachte Seite, die noch auf das alte
+     Stylesheet zeigte. Wer prüfen will, ob ein Deploy wirklich durch ist,
+     fragt mit `curl` nach dem referenzierten Dateinamen — das umgeht jeden
+     Browser-Cache:
+     `curl -s https://shop.brandycards.de/ | grep -o 'assets/index-[A-Za-z0-9_-]*\.css'`
+  2. Die Meldung `Total Upload: 2428.22 KiB` ist bei zwei Deploys **identisch**,
+     obwohl sich CSS geändert hat. Sie taugt **nicht** als Beleg dafür, dass
+     etwas Neues hochgeladen wurde.
 
 ### 2026-08-07 — main auf den Arbeitsstand vorgespult (53 Commits)
 

@@ -3,9 +3,17 @@
 
 :root { --ink:#111112; --paper:#f2f0eb; --muted:#77736c; --line:#d8d4cc; --red:#c9362d; --gold:#c99d58; --night:#18191a; --header-h:126px; }
 /* --header-h ist die Höhe der klebenden Kopfleiste. Am 2026-08-07 im Browser
-   gemessen, nicht geschätzt: 164px / 150px / 116px an den drei Breakpoints.
+   gemessen, nicht geschätzt: **126px** ab 501px Breite, **92px** darunter
+   (Logo 109px bzw. 75px plus 2×8px Innenabstand und 1px Trennlinie).
    Wer Logo oder Innenabstand der Kopfzeile ändert, misst neu — davon hängen
-   der Sticky-Versatz der Detailseite und das Ankerziel ab. */
+   der Sticky-Versatz der Detailseite und das Ankerziel ab.
+
+   Unterhalb von etwa 340px ist der Wert eine **Obergrenze**: Dort schrumpft das
+   Logo als Flex-Element proportional mit (bei 320px auf 94×63, Leiste 80px),
+   damit Logo, Konto und Warenkorb nebeneinander passen statt umzubrechen. Das
+   ist gewollt. Folgenlos, weil unterhalb von 850px einzig `scroll-padding-top`
+   den Wert nutzt — `.detail-media` steht dort ohnehin statisch — und ein zu
+   großer Wert dort nur etwas mehr Luft über dem Sprungziel lässt. */
 * { box-sizing:border-box; }
 /* Die Kopfleiste klebt oben; ohne diesen Abstand verschwindet das Sprungziel
    eines Ankers darunter. */
@@ -63,12 +71,21 @@ footer { background:var(--ink); color:#fff; padding:52px max(48px,calc((100vw - 
 .legal-nav a { color:inherit; text-decoration:underline; }
 .form-card .button,.compact-form .button { justify-self:start; }.form-feedback { font-size:12px; line-height:1.5; margin:0; padding:12px 14px; }.form-feedback.success { background:#dcebdc; color:#245b2d; }.form-feedback.error { background:#f7deda; color:#8e2923; }
 .product-cta:disabled { color:#8d8982; cursor:not-allowed; }.product-cta { padding:4px 0; }
-@media (max-width:850px) { :root { --header-h:126px; }.site-header { padding:8px 22px; }.main-nav { display:none; }.account-link { display:none; }.hero { min-height:670px; padding:62px 22px; }.hero-art { bottom:-6px; height:360px; margin:0; position:absolute; right:-40px; transform:scale(.8); width:460px; }.shop-section { padding:75px 22px; }.section-heading { align-items:flex-start; flex-direction:column; gap:24px; }.shop-toolbar { align-items:flex-start; flex-direction:column-reverse; gap:20px; padding:18px 0; }.filter-tabs { flex-wrap:wrap; gap:8px 18px; }.filter-tabs button { padding:10px 0; }.search-field { width:100%; }.product-grid { grid-template-columns:repeat(2,1fr); }.product-image { height:300px; }.card-art { height:235px; top:33px; width:160px; }.art-mark { font-size:65px; left:32px; }.split-section,.service-section,.forms-section { grid-template-columns:1fr; }.split-copy { padding:75px 22px; }.split-panel { min-height:430px; }.service-card,.service-card-dark { padding:70px 22px; }.forms-section,.offer-section,.form-section { padding:70px 22px; }.form-card { padding:30px 22px; }.footer-top { flex-wrap:wrap; gap:35px; }.footer-top p { order:3; width:100%; }.footer-bottom { flex-wrap:wrap; gap:12px; line-height:1.5; } }
+@media (max-width:850px) { :root { --header-h:126px; }.site-header { padding:8px 22px; }.main-nav { display:none; }
+  /* Der Kontolink bleibt sichtbar. Er stand hier früher mit auf `display:none`,
+     und weil die Hauptnavigation auf schmalen Geräten ohnehin verschwindet,
+     blieb vom Kopf nur Logo und Warenkorb übrig — an sein Konto kam man nur
+     über den Seitenfuß, also nach dem Scrollen über die ganze Seite. */
+  .account-link { display:inline; white-space:nowrap; }.hero { min-height:670px; padding:62px 22px; }.hero-art { bottom:-6px; height:360px; margin:0; position:absolute; right:-40px; transform:scale(.8); width:460px; }.shop-section { padding:75px 22px; }.section-heading { align-items:flex-start; flex-direction:column; gap:24px; }.shop-toolbar { align-items:flex-start; flex-direction:column-reverse; gap:20px; padding:18px 0; }.filter-tabs { flex-wrap:wrap; gap:8px 18px; }.filter-tabs button { padding:10px 0; }.search-field { width:100%; }.product-grid { grid-template-columns:repeat(2,1fr); }.product-image { height:300px; }.card-art { height:235px; top:33px; width:160px; }.art-mark { font-size:65px; left:32px; }.split-section,.service-section,.forms-section { grid-template-columns:1fr; }.split-copy { padding:75px 22px; }.split-panel { min-height:430px; }.service-card,.service-card-dark { padding:70px 22px; }.forms-section,.offer-section,.form-section { padding:70px 22px; }.form-card { padding:30px 22px; }.footer-top { flex-wrap:wrap; gap:35px; }.footer-top p { order:3; width:100%; }.footer-bottom { flex-wrap:wrap; gap:12px; line-height:1.5; } }
 @media (max-width:500px) { :root { --header-h:92px; }.announcement { font-size:8px; gap:8px; }.ticker { font-size:8px; gap:6px 16px; letter-spacing:.08em; min-height:46px; padding:12px 14px; }
   /* Auf dieser Breite bricht die Leiste auf zwei Zeilen um, und der Trenner
      rutscht dabei an den Anfang der zweiten — ein ✦ ohne Bezug davor. Die
      Rauten entfallen deshalb schmal, der Abstand trennt allein. */
-  .ticker i { display:none; }.header-actions { gap:8px; }.cart-button { font-size:8px; padding:11px 9px; }.brand { font-size:13px; }.brand-logo { width:112px; }.brand-mark { height:34px; width:29px; }.hero h1 { font-size:60px; }.hero-actions { align-items:flex-start; flex-direction:column; gap:20px; }.product-grid { gap:34px 12px; }.product-image { height:230px; }.card-art { height:178px; top:27px; width:122px; }.art-mark { font-size:46px; left:26px; }.art-label { bottom:12px; font-size:5px; left:11px; }.art-number { font-size:6px; left:11px; top:13px; }.product-info h3 { font-size:11px; }.product-description { display:none; }.product-footer { align-items:flex-start; flex-direction:column; gap:9px; }.product-cta { padding:0; }.hero-art { right:-88px; transform:scale(.68); transform-origin:bottom right; } }
+  .ticker i { display:none; }.header-actions { gap:10px; }.cart-button { font-size:8px; padding:11px 9px; }
+  /* Auf dieser Breite müssen Logo, Konto und Warenkorb nebeneinander passen,
+     ohne die Leiste umbrechen zu lassen — sonst wächst sie über die 92px,
+     mit denen --header-h rechnet. */
+  .account-link { font-size:9px; letter-spacing:.06em; }.brand { font-size:13px; }.brand-logo { width:112px; }.brand-mark { height:34px; width:29px; }.hero h1 { font-size:60px; }.hero-actions { align-items:flex-start; flex-direction:column; gap:20px; }.product-grid { gap:34px 12px; }.product-image { height:230px; }.card-art { height:178px; top:27px; width:122px; }.art-mark { font-size:46px; left:26px; }.art-label { bottom:12px; font-size:5px; left:11px; }.art-number { font-size:6px; left:11px; top:13px; }.product-info h3 { font-size:11px; }.product-description { display:none; }.product-footer { align-items:flex-start; flex-direction:column; gap:9px; }.product-cta { padding:0; }.hero-art { right:-88px; transform:scale(.68); transform-origin:bottom right; } }
 /* Account surface.
    Diese Flaeche stammte aus der Starter-Vorlage: dunkler Grund, Georgia-
    Ueberschriften, Goldraender. Sie sah aus wie eine andere Website. Jetzt
