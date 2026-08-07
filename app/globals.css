@@ -280,6 +280,31 @@ footer { background:var(--ink); color:#fff; padding:52px max(48px,calc((100vw - 
 .page-intro h1 em { color:var(--gold); font-family:'Playfair Display',Georgia,serif; font-weight:500; }
 .page-intro > p:not(.eyebrow) { color:var(--muted); font-size:14px; line-height:1.8; max-width:560px; }
 .result-count { color:var(--muted); font-family:'DM Mono',monospace; font-size:10px; letter-spacing:.1em; margin:0 0 22px; text-transform:uppercase; }
+/* Seitengroesse und Blaetterleiste. Die Leiste nimmt die Formensprache der
+   Filterreiter auf: flach, kantig, das Rot nur fuer die aktive Seite. */
+.page-size { align-items:center; color:#88837b; display:flex; font-size:10px; font-weight:700; gap:10px; letter-spacing:.08em; text-transform:uppercase; }
+.page-size select { background:transparent; border:0; border-bottom:1px solid #aaa; color:var(--ink); font-family:'DM Mono',monospace; font-size:11px; padding:5px 2px; }
+.pager { align-items:center; border-top:1px solid var(--line); display:flex; flex-wrap:wrap; gap:14px; justify-content:space-between; margin-top:52px; padding-top:26px; }
+.pager-pages { display:flex; flex-wrap:wrap; gap:4px; justify-content:center; }
+.pager-step,.pager-page { background:none; border:1px solid transparent; color:var(--ink); font-size:10px; font-weight:800; letter-spacing:.08em; padding:9px 12px; text-transform:uppercase; }
+.pager-step { border-color:var(--line); }
+.pager-step:hover:not(:disabled),.pager-page:hover:not(.aktiv) { background:var(--ink); color:#fff; }
+.pager-step:disabled { color:#bdb8b0; cursor:not-allowed; }
+.pager-page { font-family:'DM Mono',monospace; min-width:36px; }
+.pager-page.aktiv { background:var(--red); color:#fff; cursor:default; }
+.pager-gap { color:#bdb8b0; padding:0 2px; }
+.pager-step:focus-visible,.pager-page:focus-visible,.page-size select:focus-visible { outline:3px solid #e0a83d; outline-offset:3px; }
+/* Auf schmalen Geraeten wird mit dem Daumen getroffen, nicht mit dem Zeiger:
+   gemessene 36x35 px sind dafuer zu klein. Die Leiste bricht ohnehin um, die
+   zusaetzliche Hoehe kostet also nichts an Breite. */
+@media (max-width:850px) {
+  .pager { gap:10px; justify-content:center; }
+  .pager-step,.pager-page { padding:13px 14px; }
+  .pager-page { min-width:44px; }
+}
+/* Entfernen ist kein Kauf — dieselbe Groesse, aber ohne das werbende Rot. */
+.product-cta.entfernen { color:var(--muted); }
+.product-cta.entfernen span { color:var(--muted); }
 .forms-section.single { grid-template-columns:minmax(0,720px); justify-content:center; }
 .form-row { align-items:center; display:flex; gap:22px; }
 .form-row .text-link { background:none; border:0; border-bottom:1px solid currentColor; color:var(--muted); padding-bottom:4px; }

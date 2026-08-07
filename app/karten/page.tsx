@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { cartButtonState } from "../../lib/cart.ts";
 import { ebayImageVariant } from "../../lib/ebay-images.ts";
+import { DEFAULT_PAGE_SIZE, PAGE_SIZES, PageSize, clampPage, pageNumbers, pageSlice, toPageSize } from "../../lib/pagination.ts";
 import { BotGuardFields, Field, FormFeedback, PrivacyNotice, botGuardPayload, postJson, useFormSubmit } from "../forms";
-import { EBAY_SHOP_URL, SiteFooter, SiteHeader, cartButtonState, formatPrice, useCart } from "../site-chrome";
+import { EBAY_SHOP_URL, SiteFooter, SiteHeader, formatPrice, useCart } from "../site-chrome";
 
 type Product = {
   id: string;
@@ -35,7 +37,9 @@ export default function KartenPage() {
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Product | null>(null);
-  const { cart, addToCart } = useCart();
+  const [pageSize, setPageSize] = useState<PageSize>(DEFAULT_PAGE_SIZE);
+  const [page, setPage] = useState(1);
+  const { cart, addToCart, removeFromCart } = useCart();
   const interest = useFormSubmit();
 
   useEffect(() => {
@@ -45,6 +49,14 @@ export default function KartenPage() {
       .then((data: { products?: Product[] }) => {
         if (cancelled) return;
         setCatalog(data.products ?? []);
+        // Seitengröße und Seitenzahl stehen in der URL. Gelesen wird sie erst
+        // hier, wenn der Bestand da ist: `window` gibt es beim Rendern auf dem
+        // Server nicht, und vor dem ersten Treffer gäbe es ohnehin nichts zu
+        // blättern. Beides in einem Zug gesetzt, damit kein Zwischenzustand
+        // mit falscher Seite sichtbar wird.
+        const params = new URLSearchParams(window.location.search);
+        setPageSize(toPageSize(params.get("pro")));
+        setPage(clampPage(params.get("seite"), (data.products ?? []).length, toPageSize(params.get("pro"))));
         setStatus("ready");
       })
       .catch(() => { if (!cancelled) setStatus("error"); });
@@ -55,6 +67,35 @@ export default function KartenPage() {
     const needle = query.trim().toLowerCase();
     return catalog.filter((product) => !needle || product.title.toLowerCase().includes(needle));
   }, [catalog, query]);
+
+  const view = useMemo(() => pageSlice(filtered, page, pageSize), [filtered, page, pageSize]);
+
+  // Beachte: Angezeigt wird durchgehend `view.page`, nicht `page`. Schrumpft
+  // die Trefferliste, klemmt `pageSlice` die Seite selbst auf einen gültigen
+  // Wert; `page` darf dabei stehen bleiben. Das ist nicht nur bequemer als ein
+  // Zurückschreiben im Effekt (das erzeugt eine zweite Renderrunde), es ist
+  // auch das freundlichere Verhalten: Wer eine Suche wieder löscht, landet auf
+  // der Seite, auf der er vorher war.
+
+  // Zurück in die URL, damit ein Sprung in eine Karte und zurück nicht auf
+  // Seite 1 landet. `replaceState`, nicht `pushState`: Sonst müsste man sich
+  // durch jede besuchte Seite zurückklicken, um wieder aus dem Bestand
+  // herauszukommen.
+  useEffect(() => {
+    if (status !== "ready") return;
+    const params = new URLSearchParams(window.location.search);
+    if (pageSize === DEFAULT_PAGE_SIZE) params.delete("pro"); else params.set("pro", String(pageSize));
+    if (view.page <= 1) params.delete("seite"); else params.set("seite", String(view.page));
+    const query = params.toString();
+    window.history.replaceState(null, "", `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`);
+  }, [status, pageSize, view.page]);
+
+  /** Blättern soll den Anfang des Rasters zeigen. Ohne das steht man nach dem
+   *  Klick auf „Weiter" am Fuß der neuen Seite und sieht die letzten Karten. */
+  function goToPage(ziel: number) {
+    setPage(clampPage(ziel, filtered.length, pageSize));
+    document.getElementById("shop")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
 
   return <main>
     <SiteHeader active="/karten" />
@@ -67,9 +108,21 @@ export default function KartenPage() {
 
     <section className="shop-section" id="shop">
       <div className="shop-toolbar">
+        <label className="page-size" htmlFor="page-size">
+          Karten je Seite
+          <select
+            id="page-size"
+            value={pageSize}
+            onChange={(event) => { setPageSize(toPageSize(event.target.value)); setPage(1); }}
+          >
+            {PAGE_SIZES.map((size) => <option key={size} value={size}>{size}</option>)}
+          </select>
+        </label>
         <label className="search-field" htmlFor="search">
           <span aria-hidden="true">⌕</span>
-          <input id="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Spieler, Set oder Kartennummer" aria-label="Karten durchsuchen" />
+          {/* Jede Sucheingabe setzt auf Seite 1 zurück — sonst sucht man von
+              Seite 7 aus und bekommt eine leere Ansicht zu sehen. */}
+          <input id="search" value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }} placeholder="Spieler, Set oder Kartennummer" aria-label="Karten durchsuchen" />
         </label>
       </div>
 
@@ -77,9 +130,13 @@ export default function KartenPage() {
       {status === "error" && <div className="empty-state">Die Karten konnten gerade nicht geladen werden. Bitte lade die Seite neu.</div>}
 
       {status === "ready" && <>
-        <p className="result-count" role="status">{filtered.length} von {catalog.length} Karten</p>
+        <p className="result-count" role="status">
+          {view.total === catalog.length
+            ? <>Karte {view.first}–{view.last} von {view.total}</>
+            : <>Karte {view.first}–{view.last} von {view.total} Treffern · {catalog.length} Karten im Bestand</>}
+        </p>
         <div className="product-grid">
-          {filtered.map((product) => (
+          {view.items.map((product) => (
             <article className="product-card" key={product.id}>
               <div className="product-image">
                 <Link href={`/karten/${product.id}`} className="product-image-link" aria-label={product.title}>
@@ -115,7 +172,13 @@ export default function KartenPage() {
                       ? <button className="product-cta" type="button" onClick={() => { interest.setFeedback(null); setSelected(product); }}>Vormerken <span>→</span></button>
                       : (() => {
                           const state = cartButtonState(product.quantity, cart[product.id] ?? 0);
-                          return <button className="product-cta" type="button" disabled={state.disabled} onClick={() => addToCart(product.id, product.quantity)} title={state.label}>{state.label} <span>+</span></button>;
+                          return <button
+                            className={state.action === "remove" ? "product-cta entfernen" : "product-cta"}
+                            type="button"
+                            disabled={state.disabled}
+                            onClick={() => state.action === "remove" ? removeFromCart(product.id) : addToCart(product.id, product.quantity)}
+                            title={state.label}
+                          >{state.label}{state.action && <span>{state.action === "remove" ? "×" : "+"}</span>}</button>;
                         })()}
                 </div>
               </div>
@@ -123,6 +186,23 @@ export default function KartenPage() {
           ))}
         </div>
         {filtered.length === 0 && <div className="empty-state">Keine Karten für diese Suche gefunden.</div>}
+
+        {view.pages > 1 && <nav className="pager" aria-label="Seiten">
+          <button type="button" className="pager-step" onClick={() => goToPage(view.page - 1)} disabled={view.page <= 1}>← Zurück</button>
+          <div className="pager-pages">
+            {pageNumbers(view.page, view.pages).map((nummer, index) => nummer === null
+              ? <span key={`luecke-${index}`} className="pager-gap" aria-hidden="true">…</span>
+              : <button
+                  key={nummer}
+                  type="button"
+                  className={nummer === view.page ? "pager-page aktiv" : "pager-page"}
+                  onClick={() => goToPage(nummer)}
+                  aria-label={`Seite ${nummer}`}
+                  aria-current={nummer === view.page ? "page" : undefined}
+                >{nummer}</button>)}
+          </div>
+          <button type="button" className="pager-step" onClick={() => goToPage(view.page + 1)} disabled={view.page >= view.pages}>Weiter →</button>
+        </nav>}
       </>}
 
       <div className="center-action">

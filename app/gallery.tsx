@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { EBAY_SHOP_URL, cartButtonState, formatPrice, useCart } from "./site-chrome";
+import { cartButtonState } from "../lib/cart.ts";
+import { EBAY_SHOP_URL, formatPrice, useCart } from "./site-chrome";
 
 const ROTATE_MS = 2000;
 export const GALLERY_SIZE = 5;
@@ -49,7 +50,7 @@ export function Gallery() {
   const [paused, setPaused] = useState(false);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const reducedMotion = usePrefersReducedMotion();
-  const { cart, addToCart } = useCart();
+  const { cart, addToCart, removeFromCart } = useCart();
   const regionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -182,8 +183,13 @@ export function Gallery() {
               ? <a className="button button-primary" href={current.listingUrl || EBAY_SHOP_URL} target="_blank" rel="noreferrer">Auf eBay ansehen <span>↗</span></a>
               : (() => {
                   const state = cartButtonState(current.quantity, cart[current.id] ?? 0);
-                  return <button className="button button-primary" type="button" disabled={state.disabled} onClick={() => addToCart(current.id, current.quantity)}>
-                    {state.label} <span>+</span>
+                  return <button
+                    className={state.action === "remove" ? "button button-outline" : "button button-primary"}
+                    type="button"
+                    disabled={state.disabled}
+                    onClick={() => state.action === "remove" ? removeFromCart(current.id) : addToCart(current.id, current.quantity)}
+                  >
+                    {state.label}{state.action && <span>{state.action === "remove" ? "×" : "+"}</span>}
                   </button>;
                 })()}
           </div>

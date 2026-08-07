@@ -37,49 +37,8 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-- **Stand:** LÄUFT
-- **Datum:** 2026-08-07
-- **Ziel:** Zwei Punkte aus einer Sichtprüfung des Betreibers.
-  1. **Eine Karte lässt sich nicht wieder aus dem Warenkorb nehmen.** Auf
-     `/karten` steht der Knopf nach dem Hinzufügen auf „Bereits im Warenkorb"
-     und ist **deaktiviert** — eine Sackgasse. Der einzige Weg hinaus führt
-     über den Checkout, wo es einen „Entfernen"-Knopf gibt. Das ist umständlich.
-  2. **`/karten` listet alle 294 Angebote auf einer Seite.** Gewünscht ist
-     Blättern mit 10, 20, 50 oder 100 Karten je Seite.
-- **Befund zum ersten Punkt, beim Lesen dazugekommen:** Der „Entfernen"-Knopf
-  im Checkout schreibt zwar den `sessionStorage`, löst aber **kein**
-  `brandycards-cart-changed` aus. Die Zahl im Warenkorbsymbol der Kopfleiste
-  hängt an genau diesem Ereignis und bleibt daher stehen, bis die Seite neu
-  geladen wird. Das gehört mit repariert, sonst zeigt der Kopf nach dem
-  Entfernen eine falsche Zahl.
-- **Geplante Umsetzung:**
-  - `useCart` bekommt `removeFromCart`. Der Knopf wird vom deaktivierten
-    Hinweis zu einem **Umschalter**: „In den Warenkorb" ↔ „Aus dem Warenkorb".
-  - `cartButtonState` entscheidet künftig auch die Aktion (`add` / `remove` /
-    keine). **Wichtig:** Liegt eine Karte im Warenkorb und ist inzwischen
-    ausverkauft, muss „Entfernen" trotzdem möglich sein — sonst klemmt sie
-    dauerhaft fest. Deshalb wird „im Warenkorb" **vor** „nicht verfügbar"
-    geprüft.
-  - `cartButtonState` und die Blätter-Rechnung wandern nach `lib/` und
-    bekommen Tests. Beides ist reine Entscheidungslogik und ohne Browser
-    prüfbar — dieselbe Bewegung wie bei `lib/ebay-stock-check.ts`.
-  - Seitengröße und Seitenzahl stehen in der URL (`?pro=50&seite=3`), gelesen
-    über `window.location` im Mount-Effekt, geschrieben mit `replaceState`.
-    **Grund:** Wer von Seite 7 in eine Karte klickt und zurückgeht, landet
-    sonst wieder auf Seite 1. Kein `useSearchParams`, weil das eine
-    Suspense-Grenze verlangt; kein Lesen von `window` beim ersten Rendern,
-    das bräche die Hydration.
-- **Betroffen:** `lib/cart.ts` (neu), `lib/pagination.ts` (neu),
-  `tests/cart-and-pagination.test.mjs` (neu, in `npm test` aufnehmen),
-  `app/site-chrome.tsx`, `app/karten/page.tsx`, `app/karten/[id]/page.tsx`,
-  `app/gallery.tsx`, `app/checkout/page.tsx`, `app/globals.css`.
-  **Keine Datenbank, keine Migration, kein eBay-Aufruf.**
-- **Verifikation:** `npx tsc --noEmit`, `npm run lint`, `npm test`; dazu im
-  laufenden Browser messen statt nur im Markup suchen — Hinzufügen und
-  Entfernen samt Zahl in der Kopfleiste, Blättern bei allen vier Seitengrößen,
-  Rücksprung aus einer Kartendetailseite auf dieselbe Seite, Verhalten bei
-  aktiver Suche. Danach Prüfkette und Deploy (Dauerfreigabe).
-- **Angekündigt:** Danach folgen noch inhaltliche Textänderungen.
+_Kein laufender Auftrag._ Vorlage: Stand, Datum, Ziel, geplante Schritte,
+betroffene Dateien, Verifikation, Ergebnis.
 
 ---
 
@@ -109,10 +68,12 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
   `esbuild` bleiben dadurch unvollständig, und `npm run dev` stirbt beim Start
   mit „The Workers runtime crashed unexpectedly". Behelf:
   `npm install-scripts approve workerd esbuild sharp unrs-resolver && npm rebuild`.
-  Das schreibt `allowScripts` in die `package.json`. **Bewusst nicht
-  eingecheckt** — es erlaubt Installationsskripten dauerhaft die Ausführung.
-  Ob dieses Feld ins Repository gehört, ist eine Entscheidung des Betreibers;
-  bis dahin muss es jeder lokal ausführen.
+  **Erledigt und überholt:** Das Feld `allowScripts` steht seit Commit
+  `c4abc9c` in der `package.json`, der Betreiber hat die Freigabe also
+  eingecheckt. Ein frisches `npm ci` bringt `workerd` seitdem vollständig mit;
+  am 2026-08-07 in einem leeren Worktree nachgeprüft — `npm install-scripts
+  approve` meldete „Nothing to approve", und `npm run dev` startete. **Diese
+  Stelle behauptete bis dahin das Gegenteil.**
 - **Der GitHub-Deploy-Workflow liegt bereit, ist aber bewusst nicht scharf.**
   [.github/workflows/deploy.yml](../.github/workflows/deploy.yml) ist fertig;
   der Betreiber hat am 2026-08-07 entschieden, die drei Secrets **vorerst
@@ -272,6 +233,110 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
 ---
 
 ## Historie
+
+### 2026-08-07 — Warenkorb-Umschalter und Blättern im Bestand
+
+- **Stand:** ABGESCHLOSSEN
+- **Datum:** 2026-08-07
+- **Ziel:** Zwei Punkte aus einer Sichtprüfung des Betreibers.
+  1. **Eine Karte lässt sich nicht wieder aus dem Warenkorb nehmen.** Auf
+     `/karten` steht der Knopf nach dem Hinzufügen auf „Bereits im Warenkorb"
+     und ist **deaktiviert** — eine Sackgasse. Der einzige Weg hinaus führt
+     über den Checkout, wo es einen „Entfernen"-Knopf gibt. Das ist umständlich.
+  2. **`/karten` listet alle 294 Angebote auf einer Seite.** Gewünscht ist
+     Blättern mit 10, 20, 50 oder 100 Karten je Seite.
+- **Befund zum ersten Punkt, beim Lesen dazugekommen:** Der „Entfernen"-Knopf
+  im Checkout schreibt zwar den `sessionStorage`, löst aber **kein**
+  `brandycards-cart-changed` aus. Nachgezogen, weil `useCart` genau an diesem
+  Ereignis hängt.
+  **Meine Begründung dafür war beim Planen falsch, und die Messung hat sie
+  widerlegt:** Ich hatte geschrieben, die Zahl im Warenkorbsymbol der
+  Kopfleiste bleibe dadurch stehen. Der Checkout rendert aber **gar keine
+  Kopfleiste** (`document.querySelector('.site-header-bar')` → `null`), es gibt
+  dort also keinen Abnehmer des Ereignisses. Der Fehler ist heute **folgenlos**.
+  Die Zeile bleibt trotzdem drin: Sie kostet nichts, und der Tag, an dem der
+  Checkout eine Kopfleiste bekommt, wäre sonst der Tag mit der falschen Zahl.
+  **Als Fehler gemeldet hätte ich ihn nicht dürfen, ohne ihn gesehen zu haben.**
+- **Geplante Umsetzung:**
+  - `useCart` bekommt `removeFromCart`. Der Knopf wird vom deaktivierten
+    Hinweis zu einem **Umschalter**: „In den Warenkorb" ↔ „Aus dem Warenkorb".
+  - `cartButtonState` entscheidet künftig auch die Aktion (`add` / `remove` /
+    keine). **Wichtig:** Liegt eine Karte im Warenkorb und ist inzwischen
+    ausverkauft, muss „Entfernen" trotzdem möglich sein — sonst klemmt sie
+    dauerhaft fest. Deshalb wird „im Warenkorb" **vor** „nicht verfügbar"
+    geprüft.
+  - `cartButtonState` und die Blätter-Rechnung wandern nach `lib/` und
+    bekommen Tests. Beides ist reine Entscheidungslogik und ohne Browser
+    prüfbar — dieselbe Bewegung wie bei `lib/ebay-stock-check.ts`.
+  - Seitengröße und Seitenzahl stehen in der URL (`?pro=50&seite=3`), gelesen
+    über `window.location` im Mount-Effekt, geschrieben mit `replaceState`.
+    **Grund:** Wer von Seite 7 in eine Karte klickt und zurückgeht, landet
+    sonst wieder auf Seite 1. Kein `useSearchParams`, weil das eine
+    Suspense-Grenze verlangt; kein Lesen von `window` beim ersten Rendern,
+    das bräche die Hydration.
+- **Betroffen:** `lib/cart.ts` (neu), `lib/pagination.ts` (neu),
+  `tests/cart-and-pagination.test.mjs` (neu, in `npm test` aufnehmen),
+  `app/site-chrome.tsx`, `app/karten/page.tsx`, `app/karten/[id]/page.tsx`,
+  `app/gallery.tsx`, `app/checkout/page.tsx`, `app/globals.css`.
+  **Keine Datenbank, keine Migration, kein eBay-Aufruf.**
+- **Verifikation:** `npx tsc --noEmit`, `npm run lint`, `npm test`; dazu im
+  laufenden Browser messen statt nur im Markup suchen — Hinzufügen und
+  Entfernen samt Zahl in der Kopfleiste, Blättern bei allen vier Seitengrößen,
+  Rücksprung aus einer Kartendetailseite auf dieselbe Seite, Verhalten bei
+  aktiver Suche. Danach Prüfkette und Deploy (Dauerfreigabe).
+- **Angekündigt:** Danach folgen noch inhaltliche Textänderungen.
+- **Ergebnis: ABGESCHLOSSEN.** Prüfkette grün: `tsc` sauber, Lint 0 Fehler (die
+  bekannte `img`-Warnung), `npm test` **149/149** — 19 neue Tests in
+  `tests/cart-and-pagination.test.mjs`.
+- **Im laufenden Browser gemessen, mit 137 Testkarten in der lokalen D1**
+  (Produktionsdaten unberührt):
+  - **Warenkorb:** Klick → „Aus dem Warenkorb ×", Kopfzahl 0 → 1,
+    `sessionStorage` `{id:1}`. Zweiter Klick → „In den Warenkorb +",
+    Kopfzahl zurück auf 0, Warenkorb `{}`.
+  - **Der Randfall, der die Prüfreihenfolge begründet:** Eine Karte mit
+    Bestand 0, die im Warenkorb liegt, zeigt „Aus dem Warenkorb" und ist
+    **klickbar**. Nach dem Entfernen steht sie auf „Nicht verfügbar" und ist
+    gesperrt. Genau so soll es sein — ohne die Reihenfolge klemmte sie fest.
+  - **Blättern:** 137 Karten → 7 Seiten zu 20, 3 zu 50, 14 zu 10. Letzte Seite
+    korrekt unvollständig (`Karte 101–137 von 137`, 37 Karten), „Weiter"
+    gesperrt, „Zurück" nicht.
+  - **URL:** Seite 1 mit Vorgabegröße lässt die URL leer, sonst
+    `?pro=50&seite=3`. Direktaufruf dieser URL stellt Größe **und** Seite
+    wieder her.
+  - **Der eigentliche Zweck der URL, durchgespielt:** Von `?pro=50&seite=3` in
+    eine Karte geklickt, dann zurück — die Übersicht steht wieder auf Seite 3
+    mit 50 je Seite.
+  - **Suche:** Von Seite 6 aus „Griezmann" getippt → 19 Treffer, Seite 1,
+    Blätterleiste verschwindet, URL leer. Ohne das Zurücksetzen wäre eine leere
+    Ansicht erschienen.
+  - **375 px:** kein waagerechter Überlauf, Leiste bricht auf 331 px um.
+- **Zwei Dinge, die erst die Messung gezeigt hat:**
+  1. **„Nicht verfügbar +"** — der gesperrte Knopf trug weiter das Pluszeichen
+     und versprach damit etwas, das nicht geht. Das Zeichen hängt jetzt an der
+     Aktion, nicht am Knopf.
+  2. **Tippziele von 36×35 px** auf dem Handy. Unter 850 px jetzt 44×43 px; die
+     Leiste bricht dort ohnehin um, die Höhe kostet also keine Breite.
+- **Eine Erwartung im Test war falsch, nicht der Code:** Ich hatte
+  `pageNumbers(1, 5)` als `[1,2,3,…,5]` erwartet, geliefert wurde `[1,2,…,5]`.
+  Der Code hatte recht — aber die Leiste war zu geizig: Sie versteckte zwei
+  Seiten hinter einem Zeichen derselben Breite. Das Fenster steht deshalb jetzt
+  auf 2 statt 1. Bis sieben Seiten stehen damit vollständig da, bei 30 Seiten
+  bleiben es höchstens neun Schaltflächen — beides durch Tests festgehalten.
+- **Nebenbefund, nicht behoben, betrifft das Aussehen des ganzen Shops:**
+  `app/globals.css:1` lädt DM Mono, Manrope und Playfair Display per `@import`
+  von `fonts.googleapis.com`. Die CSP erlaubt aber nur
+  `style-src 'self' 'unsafe-inline'` — der Browser **blockt den Import**.
+  Nachgeprüft, dass das nicht nur lokal gilt: Die ausgelieferte
+  `assets/index-DxBX5tCZ.css` in Produktion trägt den `@import`, und der
+  `content-security-policy`-Kopf dort nennt dieselbe Regel. **Der Shop läuft
+  damit in Produktion auf Ersatzschriften.** Nicht angefasst, weil die
+  Behebung eine Entscheidung verlangt: Schriften selbst ausliefern (dann bleibt
+  die CSP eng und es entfällt ein Fremddienst) oder `fonts.googleapis.com` und
+  `fonts.gstatic.com` in die Regel aufnehmen. Gehört dem Betreiber vorgelegt.
+- **Nebenbefund zur Doku:** Der offene Punkt „`allowScripts` ist bewusst nicht
+  eingecheckt" stimmt nicht mehr — das Feld steht seit Commit `c4abc9c`
+  („Checke die Freigabe der Installationsskripte ein") in der `package.json`.
+  Der Punkt ist entsprechend korrigiert.
 
 ### 2026-08-07 — „Neu dabei" ist echt, und die Dauerfreigabe wächst
 

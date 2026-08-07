@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { use, useCallback, useEffect, useState } from "react";
 import { ebayImageVariant } from "../../../lib/ebay-images.ts";
-import { EBAY_SHOP_URL, SiteFooter, SiteHeader, cartButtonState, formatPrice, useCart } from "../../site-chrome";
+import { cartButtonState } from "../../../lib/cart.ts";
+import { EBAY_SHOP_URL, SiteFooter, SiteHeader, formatPrice, useCart } from "../../site-chrome";
 import { OfferForm } from "./offer-form";
 
 type CardSpec = { label: string; value: string };
@@ -30,7 +31,7 @@ export default function KartenDetailPage({ params }: { params: Promise<{ id: str
   const [loaded, setLoaded] = useState<Loaded>({ id, status: "loading", card: null });
   const [active, setActive] = useState(0);
   const [zoomed, setZoomed] = useState(false);
-  const { cart, addToCart } = useCart();
+  const { cart, addToCart, removeFromCart } = useCart();
 
   // Deriving the pending state from the requested id keeps the effect free of a
   // reset call: a new id simply reads as loading until its response lands.
@@ -130,8 +131,13 @@ export default function KartenDetailPage({ params }: { params: Promise<{ id: str
               ? <a className="button button-primary" href={card.listingUrl || EBAY_SHOP_URL} target="_blank" rel="noreferrer">Auf eBay bieten <span>↗</span></a>
               : (() => {
                   const state = cartButtonState(card.quantity, cart[card.id] ?? 0);
-                  return <button className="button button-primary" type="button" disabled={state.disabled} onClick={() => addToCart(card.id, card.quantity)}>
-                    {state.label} <span>+</span>
+                  return <button
+                    className={state.action === "remove" ? "button button-outline" : "button button-primary"}
+                    type="button"
+                    disabled={state.disabled}
+                    onClick={() => state.action === "remove" ? removeFromCart(card.id) : addToCart(card.id, card.quantity)}
+                  >
+                    {state.label}{state.action && <span>{state.action === "remove" ? "×" : "+"}</span>}
                   </button>;
                 })()}
             {card.listingUrl && <a className="text-link" href={card.listingUrl} target="_blank" rel="noreferrer">Angebot bei eBay <span>↗</span></a>}

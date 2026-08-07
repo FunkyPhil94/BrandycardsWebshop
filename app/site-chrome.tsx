@@ -70,16 +70,25 @@ export function useCart() {
     return true;
   }, []);
 
-  const count = Object.values(cart).reduce((sum, quantity) => sum + quantity, 0);
-  return { cart, count, addToCart };
-}
+  /** Nimmt eine Karte wieder heraus — vollständig, nicht um eins verringert.
+   *
+   * Fast jede Karte ist ein Einzelstück; „Menge um eins senken" und „entfernen"
+   * fallen dort zusammen. Vorher gab es diesen Weg nur im Checkout, der Knopf
+   * in der Übersicht stand deaktiviert auf „Bereits im Warenkorb" — eine
+   * Sackgasse.
+   */
+  const removeFromCart = useCallback((productId: string) => {
+    const current = cartSnapshot();
+    if (!(productId in current)) return false;
+    const next = { ...current };
+    delete next[productId];
+    sessionStorage.setItem(CART_KEY, JSON.stringify(next));
+    window.dispatchEvent(new Event(CART_EVENT));
+    return true;
+  }, []);
 
-/** Beschriftung und Zustand des Kaufknopfes an einer Stelle, damit Galerie,
- *  Übersicht und Detailseite nicht auseinanderlaufen. */
-export function cartButtonState(available: number, inCart: number) {
-  if (available < 1) return { disabled: true, label: "Nicht verfügbar" };
-  if (inCart >= available) return { disabled: true, label: "Bereits im Warenkorb" };
-  return { disabled: false, label: "In den Warenkorb" };
+  const count = Object.values(cart).reduce((sum, quantity) => sum + quantity, 0);
+  return { cart, count, addToCart, removeFromCart };
 }
 
 const NAV = [

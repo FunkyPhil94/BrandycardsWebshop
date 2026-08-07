@@ -58,6 +58,10 @@ export default function CheckoutPage() {
     if (quantity < 1) delete next[id]; else next[id] = quantity;
     setCart(next);
     sessionStorage.setItem("brandycards-cart", JSON.stringify(next));
+    // Die Zahl im Warenkorbsymbol der Kopfleiste hängt an diesem Ereignis
+    // (`useCart` in `app/site-chrome.tsx`). Ohne den Aufruf blieb sie nach dem
+    // Entfernen stehen, bis die Seite neu geladen wurde.
+    window.dispatchEvent(new Event("brandycards-cart-changed"));
   }
 
   async function startPayPal(event: FormEvent) {
