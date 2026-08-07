@@ -37,36 +37,8 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-- **Stand:** LÄUFT
-- **Datum:** 2026-08-07
-- **Ziel:** Textänderungen aus einer Sichtprüfung des Betreibers.
-  1. **Gedankenstriche raus.** Sie durchziehen die Werbetexte („Der komplette
-     Bestand mit Suche und Filter — Festpreis, Auktion und Vormerkliste."). Die
-     Sätze werden dabei umgebaut, nicht nur der Strich durch ein Komma ersetzt.
-  2. **„Preisvorschlag" auf der Verkaufen-Kachel der Startseite** ist das
-     falsche Wort: Dort nennt der Kunde *uns* seinen Preis.
-- **Befund zu Punkt 2, der die Sache entscheidet:** „Preisvorschlag" ist im
-  Shop bereits **belegt** — so heißt die Verhandlung auf der Käuferseite
-  (`lib/price-offers.ts`, `app/karten/[id]/offer-form.tsx`). Die Seite
-  `/verkaufen`, auf die die Kachel zeigt, sagt dagegen schon
-  **„Preisvorstellung"** und **„Wunschpreis"**. Die Kachel ist also nicht nur
-  schief formuliert, sie **widerspricht ihrem eigenen Ziel und belegt ein Wort
-  doppelt**. Sie wird an die Seite angeglichen, nicht neu erfunden.
-- **Umfang:** Alle zwölf Gedankenstriche in sichtbarem Text, auch die vier, die
-  der Betreiber nicht abgebildet hat (`/anfragen` zweiter Absatz, Vormerk-
-  Formular auf `/karten`, zwei Stellen im Angebotsformular). Ein halb
-  bereinigter Shop wäre schlechter als gar keiner.
-- **Bewusst ausgenommen:** die beiden `<title>`-Angaben
-  („BrandyCards — Football Collectibles", „Über uns — BrandyCards"). Das ist
-  Registerkartentext, kein Fließtext; dort ist der Strich ein üblicher Trenner
-  und hat keine Alternative, die nicht schlechter aussieht. Wird dem Betreiber
-  genannt.
-- **Betroffen:** `app/page.tsx`, `app/karten/page.tsx`, `app/anfragen/page.tsx`,
-  `app/ueber-uns/page.tsx`, `app/karten/[id]/offer-form.tsx`. **Nur Text —
-  kein Verhalten, keine Datenbank, keine API, kein eBay-Aufruf.**
-- **Verifikation:** `grep` auf `—` in sichtbarem Text muss leer sein; Prüfkette;
-  die geänderten Seiten im Browser ansehen, damit kein Satz umbricht oder
-  seine Kachel sprengt.
+_Kein laufender Auftrag._ Vorlage: Stand, Datum, Ziel, geplante Schritte,
+betroffene Dateien, Verifikation, Ergebnis.
 
 ---
 
@@ -281,6 +253,69 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
 ---
 
 ## Historie
+
+### 2026-08-07 — Gedankenstriche raus, Verkaufen-Kachel korrigiert
+
+- **Stand:** ABGESCHLOSSEN
+- **Datum:** 2026-08-07
+- **Ziel:** Textänderungen aus einer Sichtprüfung des Betreibers.
+  1. **Gedankenstriche raus.** Sie durchziehen die Werbetexte („Der komplette
+     Bestand mit Suche und Filter — Festpreis, Auktion und Vormerkliste."). Die
+     Sätze werden dabei umgebaut, nicht nur der Strich durch ein Komma ersetzt.
+  2. **„Preisvorschlag" auf der Verkaufen-Kachel der Startseite** ist das
+     falsche Wort: Dort nennt der Kunde *uns* seinen Preis.
+- **Befund zu Punkt 2, der die Sache entscheidet:** „Preisvorschlag" ist im
+  Shop bereits **belegt** — so heißt die Verhandlung auf der Käuferseite
+  (`lib/price-offers.ts`, `app/karten/[id]/offer-form.tsx`). Die Seite
+  `/verkaufen`, auf die die Kachel zeigt, sagt dagegen schon
+  **„Preisvorstellung"** und **„Wunschpreis"**. Die Kachel ist also nicht nur
+  schief formuliert, sie **widerspricht ihrem eigenen Ziel und belegt ein Wort
+  doppelt**. Sie wird an die Seite angeglichen, nicht neu erfunden.
+- **Umfang:** Alle zwölf Gedankenstriche in sichtbarem Text, auch die vier, die
+  der Betreiber nicht abgebildet hat (`/anfragen` zweiter Absatz, Vormerk-
+  Formular auf `/karten`, zwei Stellen im Angebotsformular). Ein halb
+  bereinigter Shop wäre schlechter als gar keiner.
+- **Bewusst ausgenommen:** die beiden `<title>`-Angaben
+  („BrandyCards — Football Collectibles", „Über uns — BrandyCards"). Das ist
+  Registerkartentext, kein Fließtext; dort ist der Strich ein üblicher Trenner
+  und hat keine Alternative, die nicht schlechter aussieht. Wird dem Betreiber
+  genannt.
+- **Betroffen:** `app/page.tsx`, `app/karten/page.tsx`, `app/anfragen/page.tsx`,
+  `app/ueber-uns/page.tsx`, `app/karten/[id]/offer-form.tsx`. **Nur Text —
+  kein Verhalten, keine Datenbank, keine API, kein eBay-Aufruf.**
+- **Verifikation:** `grep` auf `—` in sichtbarem Text muss leer sein; Prüfkette;
+  die geänderten Seiten im Browser ansehen, damit kein Satz umbricht oder
+  seine Kachel sprengt.
+- **Ergebnis: ABGESCHLOSSEN.** Zwölf Stellen umformuliert. Prüfkette grün
+  (`tsc`, Lint 0 Fehler, 149/149).
+- **Im Browser nachgemessen, nicht nur im Quelltext ersetzt:** Startseite,
+  `/karten`, `/anfragen`, `/ueber-uns` und `/verkaufen` enthalten im
+  ausgelieferten Text **null** Gedankenstriche. Die vier Kacheln auf der
+  Startseite stehen weiter auf gleicher Höhe (je 278 px), kein Text läuft über
+  seinen Kasten hinaus, und bei 375 px gibt es keinen waagerechten Überlauf.
+- **Die geänderten Sätze:**
+  - „… mit Suche und Filter**.** Festpreis, Auktion und Vormerkliste."
+  - „… Schreib uns**,** auch ohne Kundenkonto."
+  - „Unser gesamter Bestand**.** Jede Karte einzeln geprüft …"
+  - „Hinterlasse deine E-Mail-Adresse**.** Wir melden uns …"
+  - „Schreib uns, wonach du suchst**.** Ein Kundenkonto brauchst du dafür
+    nicht …"
+  - „… desto schneller finden wir sie**.** Set, Spieler und Kartennummer …"
+  - „Verhandeln geht nur mit Kundenkonto**.** So wissen wir …"
+  - Platzhalter: „Optional**,** zum Beispiel wenn du mehrere Karten möchtest"
+  - „… Begeisterung für Fußballkarten**.** Ehrlich, persönlich und …"
+  - „… zu groß für zwei Ordner war**. Daraus wurde** BrandyCards."
+  - „… zeigt denselben Bestand**. Beides ist** synchronisiert, damit …"
+- **Zur Verkaufen-Kachel:** aus „Karten anbieten oder einen **Preisvorschlag**
+  machen" wurde „Karten anbieten und deinen **Wunschpreis** nennen. Bilder
+  kannst du direkt mitschicken." Damit spricht die Kachel dieselbe Sprache wie
+  die Seite, auf die sie zeigt, und das Wort „Preisvorschlag" bleibt der
+  Käuferverhandlung vorbehalten. Der Grund steht als Kommentar an der Stelle,
+  damit ihn niemand versehentlich zurückdreht.
+- **Ausgenommen geblieben:** die beiden `<title>`-Angaben (`app/layout.tsx:5`,
+  `app/ueber-uns/page.tsx:6`). Registerkartentext, kein Fließtext. Wird dem
+  Betreiber genannt; ein Wechsel auf `·` oder `|` wäre jederzeit möglich.
+
 
 ### 2026-08-07 — Banner: Grafik und Überschrift nicht mehr markierbar
 

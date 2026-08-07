@@ -103,7 +103,7 @@ export default function KartenPage() {
     <section className="page-intro">
       <p className="eyebrow">DER BESTAND</p>
       <h1>Alle Karten.</h1>
-      <p>Unser gesamter Bestand — jede Karte einzeln geprüft, beschrieben und sicher verpackt.</p>
+      <p>Unser gesamter Bestand. Jede Karte einzeln geprüft, beschrieben und sicher verpackt.</p>
     </section>
 
     <section className="shop-section" id="shop">
@@ -214,7 +214,7 @@ export default function KartenPage() {
       <div className="form-heading">
         <p className="eyebrow">VORMERKEN</p>
         <h2 id="interest-title">{selected.title}</h2>
-        <p>Hinterlasse deine E-Mail-Adresse — wir melden uns, sobald die Karte in den Verkauf geht.</p>
+        <p>Hinterlasse deine E-Mail-Adresse. Wir melden uns, sobald die Karte in den Verkauf geht.</p>
       </div>
       <form onSubmit={(event) => interest.run(event, async (form) => postJson("/api/prelisted-interest", {
         ...botGuardPayload(form),

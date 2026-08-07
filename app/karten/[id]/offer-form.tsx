@@ -89,7 +89,7 @@ export function OfferForm({ productId, listPriceCents, currency }: { productId: 
   if (!state.signedIn) {
     return <div className="offer-box">
       <h3>Preis vorschlagen</h3>
-      <p>Verhandeln geht nur mit Kundenkonto — so wissen wir, für wen der Preis gilt.</p>
+      <p>Verhandeln geht nur mit Kundenkonto. So wissen wir, für wen der Preis gilt.</p>
       <Link className="button button-outline" href="/account">Anmelden oder registrieren <span>→</span></Link>
     </div>;
   }
@@ -124,7 +124,7 @@ export function OfferForm({ productId, listPriceCents, currency }: { productId: 
               </label>
               <label className="form-field">
                 <span>Nachricht</span>
-                <textarea name="message" rows={3} maxLength={1000} placeholder="Optional — zum Beispiel, wenn du mehrere Karten möchtest" />
+                <textarea name="message" rows={3} maxLength={1000} placeholder="Optional, zum Beispiel wenn du mehrere Karten möchtest" />
               </label>
               <button className="button button-primary" type="submit" disabled={pending}>
                 {pending ? "Wird gesendet …" : "Vorschlag senden"}

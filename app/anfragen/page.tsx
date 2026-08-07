@@ -13,14 +13,14 @@ export default function AnfragenPage() {
     <section className="page-intro">
       <p className="eyebrow">DU SUCHST ETWAS BESTIMMTES?</p>
       <h1>Wir helfen<br /><em>beim Finden.</em></h1>
-      <p>Manche Karten liegen schon in unserer Sammlung, aber noch nicht im Shop. Schreib uns, wonach du suchst — ein Kundenkonto brauchst du dafür nicht, deine E-Mail-Adresse genügt.</p>
+      <p>Manche Karten liegen schon in unserer Sammlung, aber noch nicht im Shop. Schreib uns, wonach du suchst. Ein Kundenkonto brauchst du dafür nicht, deine E-Mail-Adresse genügt.</p>
     </section>
 
     <section className="forms-section single">
       <div className="form-card">
         <p className="eyebrow">KONTAKT</p>
         <h2>Karte anfragen</h2>
-        <p>Je genauer der Titel, desto schneller finden wir sie — Set, Spieler und Kartennummer helfen uns am meisten.</p>
+        <p>Je genauer der Titel, desto schneller finden wir sie. Set, Spieler und Kartennummer helfen uns am meisten.</p>
         <form onSubmit={(event) => inquiry.run(event, async (form) => {
           const data = new FormData(form);
           return postJson("/api/inquiries", {

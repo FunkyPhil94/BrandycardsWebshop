@@ -14,13 +14,13 @@ export default function UeberUnsPage() {
     <section className="page-intro">
       <p className="eyebrow">FROM LEVERKUSEN, WITH PASSION</p>
       <h1>Für Karten, die<br /><em>mehr erzählen.</em></h1>
-      <p>BrandyCards ist ein Familienprojekt von zwei Brüdern. Wir sammeln, handeln und teilen die Begeisterung für Fußballkarten — ehrlich, persönlich und mit einem Auge fürs Detail.</p>
+      <p>BrandyCards ist ein Familienprojekt von zwei Brüdern. Wir sammeln, handeln und teilen die Begeisterung für Fußballkarten. Ehrlich, persönlich und mit einem Auge fürs Detail.</p>
     </section>
 
     <section className="about-columns">
       <article>
         <h2>Wie alles anfing</h2>
-        <p>Angefangen hat es mit Päckchen auf dem Küchentisch und der Frage, wer die bessere Karte gezogen hat. Aus der Sammelleidenschaft wurde mit der Zeit ein Bestand, der zu groß für zwei Ordner war — und daraus BrandyCards.</p>
+        <p>Angefangen hat es mit Päckchen auf dem Küchentisch und der Frage, wer die bessere Karte gezogen hat. Aus der Sammelleidenschaft wurde mit der Zeit ein Bestand, der zu groß für zwei Ordner war. Daraus wurde BrandyCards.</p>
       </article>
       <article>
         <h2>Wie wir arbeiten</h2>
@@ -28,7 +28,7 @@ export default function UeberUnsPage() {
       </article>
       <article>
         <h2>Warum auch eBay</h2>
-        <p>Ein Teil unseres Bestands läuft weiter über eBay, weil dort viele Sammler zu Hause sind. Der Shop hier zeigt denselben Bestand — synchronisiert, damit dir nichts doppelt oder gar nicht angeboten wird.</p>
+        <p>Ein Teil unseres Bestands läuft weiter über eBay, weil dort viele Sammler zu Hause sind. Der Shop hier zeigt denselben Bestand. Beides ist synchronisiert, damit dir nichts doppelt oder gar nicht angeboten wird.</p>
       </article>
     </section>
 

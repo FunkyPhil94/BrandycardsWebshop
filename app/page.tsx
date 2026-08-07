@@ -7,21 +7,25 @@ const DESTINATIONS = [
     href: "/karten",
     eyebrow: "DER BESTAND",
     title: "Alle Karten",
-    text: "Der komplette Bestand mit Suche und Filter — Festpreis, Auktion und Vormerkliste.",
+    text: "Der komplette Bestand mit Suche und Filter. Festpreis, Auktion und Vormerkliste.",
     cta: "Zum Kartenbestand",
   },
   {
     href: "/anfragen",
     eyebrow: "DU SUCHST ETWAS BESTIMMTES?",
     title: "Karte anfragen",
-    text: "Nicht gefunden, wonach du suchst? Schreib uns — auch ohne Kundenkonto.",
+    text: "Nicht gefunden, wonach du suchst? Schreib uns, auch ohne Kundenkonto.",
     cta: "Anfrage stellen",
   },
   {
     href: "/verkaufen",
     eyebrow: "DEINE KARTEN. DEINE CHANCE.",
     title: "An uns verkaufen",
-    text: "Karten anbieten oder einen Preisvorschlag machen. Bilder direkt mitschicken.",
+    // „Preisvorschlag" ist im Shop die Verhandlung auf der Käuferseite
+    // (lib/price-offers.ts). Hier bietet der Kunde uns seine Karten an und
+    // nennt seinen Preis. /verkaufen sagt dazu bereits „Preisvorstellung"
+    // und „Wunschpreis". Die Kachel ist jetzt an ihr Ziel angeglichen.
+    text: "Karten anbieten und deinen Wunschpreis nennen. Bilder kannst du direkt mitschicken.",
     cta: "Karten anbieten",
   },
   {
