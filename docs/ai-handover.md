@@ -37,8 +37,49 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-_Kein laufender Auftrag._ Vorlage: Stand, Datum, Ziel, geplante Schritte,
-betroffene Dateien, Verifikation, Ergebnis.
+**Stand:** LÄUFT · **Datum:** 2026-08-07
+
+**Ziel:** Punkt 1 und Punkt 3 aus [ai-todo.md](ai-todo.md) — die beiden
+billigen Maßnahmen gegen Doppelverkäufe, bevor der erste echte Verkauf läuft.
+Die eine bisherige Bestellung war ein Test des Betreibers.
+
+**Punkt 1 — Sync alle 10 Minuten.** `crons = ["0 * * * *"]` → `["*/10 * * * *"]`.
+Verkürzt das Fenster „auf eBay verkauft, Shop weiß es nicht" von bis zu 60 auf
+bis zu 10 Minuten. Kostenrechnung: ein Lauf macht **drei** eBay-Aufrufe (ein
+Token, zwei Seiten à 200 Angebote bei 296 Karten). Stündlich 72/Tag, alle
+10 Minuten 432/Tag — unkritisch gegen das Standardkontingent von 5 000.
+Nebenwirkung: `releaseExpiredReservations` läuft dann ebenfalls alle 10 Minuten,
+was SEC-03 zusätzlich entschärft (Sperrdauer 15–25 statt 15–75 Minuten).
+
+**Punkt 3 — Bestand live prüfen, bevor Geld fließt.** `GetItem` je Karte der
+Bestellung, Prüfung auf verfügbare Menge.
+
+**Entwurfsentscheidungen, die ich treffe:**
+- Geprüft wird an **zwei** Stellen: in `app/api/paypal/orders/route.ts` vor dem
+  Anlegen (dann scheitert es, bevor der Kunde überhaupt zu PayPal geht) und in
+  `app/api/paypal/capture/route.ts` unmittelbar vor dem Einzug (die letzte
+  Stelle vor dem Geld). Der Todo-Punkt lässt beides zu; die erste ist die
+  freundlichere, die zweite die wirksame.
+- **Ein eBay-Ausfall darf nichts blockieren.** Unbekannte Menge gilt nie als
+  ausverkauft. Fehler werden protokolliert und durchgelassen.
+- Beim Capture wird **vor** dem `PENDING → PROCESSING`-Riegel geprüft, damit
+  keine Bestellung in `PROCESSING` hängenbleibt. Bei Ablehnung wird die
+  Reservierung freigegeben und verständlich zurückgemeldet. Die PayPal-Order
+  bleibt uneingezogen und verfällt; ein aktives `void` baue ich **nicht** —
+  das wäre ein weiterer Fremdaufruf mit eigenen Fehlerpfaden.
+- Ein Tokenaufruf für alle Karten einer Bestellung, nicht je Karte.
+
+**Verifikation:** Test nach dem Muster von `tests/ebay-active-list.test.mjs` —
+`globalThis.fetch` stubben, die echte Funktion aufrufen, GetItem-Antworten als
+Fixture. Dazu `npx tsc --noEmit`, `npm run lint`, `npm test`.
+
+**Grenze:** Gegen das echte eBay-Konto wird **nichts** ausgeführt. Der Token in
+der lokalen `.env.local` ist ohnehin abgelaufen; die Prüfung läuft vollständig
+gegen Fixtures.
+
+**Deploy:** Dauerfreigabe liegt vor, siehe „Offene Punkte".
+
+**Ergebnis:** _(offen — wird nach dem Durchlauf nachgetragen)_
 
 ---
 
