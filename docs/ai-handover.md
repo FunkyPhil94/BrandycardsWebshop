@@ -37,8 +37,35 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-_Kein laufender Auftrag._ Vorlage: Stand, Datum, Ziel, geplante Schritte,
-betroffene Dateien, Verifikation, Ergebnis.
+- **Stand:** LÄUFT
+- **Datum:** 2026-08-07
+- **Ziel:** Das Logo verkleinern. Es ist eine **747 KB** große PNG mit
+  1264×842 Bildpunkten und wird mit **164 px** Breite dargestellt (112 px auf
+  schmalen Geräten). Der Betreiber hat zugestimmt, nachdem der Befund vorlag.
+- **Warum es trotz `immutable` noch zählt:** Das Caching hilft ab dem zweiten
+  Besuch. Der **erste** Besuch lädt 747 KB, und das Logo steht im Kopf jeder
+  Seite — es konkurriert also mit dem Text um die erste Sekunde.
+- **Geplante Schritte:**
+  1. Mit `sharp` mehrere Varianten erzeugen und **messen statt schätzen**:
+     verkleinerte PNG, PNG mit reduzierter Palette, WebP. Dann die kleinste
+     wählen, die verlustfrei genug aussieht.
+  2. Zielbreite **500 px**: Das ist mehr als das Doppelte der größten
+     Darstellung (164 px) und deckt damit auch Bildschirme mit doppelter und
+     dreifacher Punktdichte ab, ohne unscharf zu werden.
+  3. **Das Original bleibt im Repository** (`app/brand/…-original.png`), wird
+     aber nicht importiert und landet damit auch nicht im Bauergebnis. Ein
+     verkleinertes Bild lässt sich nicht wieder vergrößern; die Vorlage muss
+     auffindbar bleiben.
+  4. `assets.d.ts` um `*.webp` ergänzen, falls die Wahl darauf fällt.
+- **Betroffen:** `app/site-chrome.tsx`, `assets.d.ts`, neu `app/brand/*`.
+  **Kein Code sonst, keine Datenbank, keine API, kein eBay-Aufruf.**
+- **Verifikation:** Größe vorher/nachher belegen; im Browser prüfen, dass das
+  Logo in Kopf **und** Fuß lädt, die Kopfleiste bei 126 px bleibt (sonst
+  stimmt `--header-h` nicht mehr) und das Bild bei 375 px wie bei 1280 px
+  scharf aussieht — also die gerenderten Maße gegen die natürlichen halten.
+- **Risiko und Rückweg:** Sichtbare Verschlechterung eines Markenzeichens. Der
+  Rückweg ist ein Zeilenwechsel im Import zurück auf das Original, das genau
+  dafür liegen bleibt.
 
 ---
 
