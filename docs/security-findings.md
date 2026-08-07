@@ -53,6 +53,13 @@ Zusätzlich umgesetzt: **E-2** (Honeypot und Zeitschwelle, nach Entscheidung des
 Nutzers statt Turnstile) und zwei vorbestehende Blocker der Entwicklungsumgebung,
 siehe [Phase 3](#phase-3--nachprüfung).
 
+**Zur Zählung, weil sie in älteren Absätzen anders lautet:** Die Tabelle führt
+**18 Befunde** (SEC-01 bis SEC-18), geschlossen sind **17 von 18** — offen ist
+allein SEC-12. Phase 1 hatte 17 Befunde; **SEC-18 kam erst danach dazu**, als
+sich zeigte, dass die Kontowiederherstellung auf `localhost` führte. Sätze der
+Form „16 von 17" weiter unten und in den anderen Dokumenten stammen aus der
+Zeit davor und sind nicht nachgezogen worden. **Maßgeblich ist diese Tabelle.**
+
 ---
 
 ## Datenbasis der Live-Stichproben
@@ -1427,7 +1434,10 @@ benannt ist.)*
 
 **Nachtrag 2026-08-07, zweite Runde.** Der Betreiber hat die offenen
 Entscheidungen getroffen. Damit sind SEC-15 (90 Tage Aufbewahrung) und SEC-16
-(Datenschutztext) umgesetzt — **16 von 17 Befunden geschlossen.**
+(Datenschutztext) umgesetzt — **17 von 18 Befunden geschlossen.**
+*(Korrigiert: Der Satz lautete „16 von 17" und übersah, dass SEC-18 nach
+Phase 1 dazugekommen und inzwischen ebenfalls behoben ist. Siehe die
+Statusübersicht oben.)*
 
 Der bestätigte **Free-Tarif** verschiebt das Bild noch einmal: SEC-05 ist kein
 Kostenproblem, sondern ein Ausfallproblem. Rund 2 900 Aufrufe eines

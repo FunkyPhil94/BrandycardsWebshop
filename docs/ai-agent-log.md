@@ -63,6 +63,15 @@ Dieses Protokoll hält fest, welche spezialisierten Agents im Projekt eingesetzt
   gefuehrt werden - das war aber genau der Grund fuer den Wechsel, weil dort nur 10 statt
   294 Artikel sichtbar waren. Die Outbox-Mechanik selbst bleibt unveraendert nutzbar;
   nur Operation und Identifikator aendern sich.
+  **Nachtrag, die Empfehlung hat sich geaendert:** Dass der Schreibpfad ueber die
+  Trading-API gehen muss, gilt weiterhin. Der Aufruf soll aber
+  **`ReviseInventoryStatus` mit Menge 0** sein, nicht `EndItem` -- siehe
+  [ai-todo.md](ai-todo.md) Punkt 6, das ist die maßgebliche Fassung. `EndItem`
+  ist endgueltig und erzwingt beim Wiedereinstellen eine neue ItemID, wodurch
+  die lokale Zuordnung bricht. Zu pruefen ist vorher, ob im eBay-Konto die
+  **Out-of-Stock-Option** aktiv ist: ohne sie beendet eBay ein Festpreisangebot
+  mit Menge 0 selbst, und bei Einzelstuecken waere dieser Weg genauso
+  endgueltig wie `EndItem`.
 - In diesem Lauf behoben: Zwei kaputte Umlaut-Encodings in Nutzerfehlermeldungen
   (`lib/ebay-client.ts`, `app/api/card-submissions/route.ts`), fehlendes `all()` in der
   handgeschriebenen `D1PreparedStatement`-Deklaration (`tsc --noEmit` war rot, CI prueft
@@ -231,7 +240,10 @@ und der SEC-01-Payload kommt escaped aus `GET /api/products/[id]` zurueck.
 ## 2026-08-07 - Aufbewahrungsfrist und Datenschutztext (SEC-15, SEC-16)
 
 Nachtrag zur Sicherheitspruefung: die beiden Befunde, die auf eine Entscheidung
-des Betreibers gewartet haben. Ergebnis: **16 von 17 Befunden geschlossen.**
+des Betreibers gewartet haben. Ergebnis: **17 von 18 Befunden geschlossen.**
+*(Korrigiert; der Eintrag sagte „16 von 17". SEC-18 kam nach Phase 1 dazu und
+ist ebenfalls behoben. Maßgeblich ist die Statusübersicht in
+[security-findings.md](security-findings.md).)*
 
 **Warum die Loesung so aussieht:**
 
@@ -303,6 +315,9 @@ Punkt 1 und 3 aus [ai-todo.md](ai-todo.md). Beide zielen auf dieselbe Richtung:
   `releaseExpiredReservations` haengt am selben Lauf. Abgelaufene
   Reservierungen kommen jetzt nach 15-25 statt nach 15-75 Minuten zurueck --
   das entschaerft SEC-03 zusaetzlich zu der dort eingebauten Obergrenze.
+  **Nachtrag: Diese Zahl gilt nicht mehr.** Der 10-Minuten-Takt wurde am selben
+  Tag zurueckgenommen (`0 */2 * * *`), damit sind es **15-135 Minuten**. Die
+  Obergrenze aus SEC-03 traegt den Schutz seitdem allein.
 - **Die Leitregel steht ueber der Wirksamkeit: ein eBay-Ausfall darf nichts
   blockieren.** Unbekannt gilt nie als ausverkauft. Fehlende Antwort, HTTP-
   Fehler, eBay-Fehlermeldung, unlesbare Menge -- alles laesst den Kauf durch.

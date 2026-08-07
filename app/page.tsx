@@ -39,9 +39,9 @@ export default function Home() {
 
     <section className="hero" id="top">
       <div className="hero-copy">
-        <p className="eyebrow">THE HOME OF FOOTBALL CARDS</p>
+        <p className="eyebrow">THE HOME OF SPORTS CARDS</p>
         <h1>Cards with<br /><em>character.</em></h1>
-        <p className="hero-text">Ausgewählte Fußballkarten für Sammler. Persönlich ausgesucht, sicher verpackt und mit Liebe zum Detail.</p>
+        <p className="hero-text">Ausgewählte Fußballkarten für Sammler und Liebhaber, sicher verpackt und mit Liebe zum Detail.</p>
         <div className="hero-actions">
           <Link className="button button-primary" href="/karten">Kollektion entdecken <span>↘</span></Link>
           <Link className="text-link" href="/ueber-uns">Mehr über BrandyCards <span>→</span></Link>
@@ -54,7 +54,7 @@ export default function Home() {
           <div className="hero-player">BC</div>
           <div className="hero-card-bottom"><strong>THE<br />COLLECTOR&apos;S<br />CHOICE</strong><span>LEVERKUSEN<br />GERMANY</span></div>
         </div>
-        <span className="hero-stamp">EST.<br /><strong>2024</strong></span>
+        <span className="hero-stamp">EST.<br /><strong>2026</strong></span>
       </div>
     </section>
 

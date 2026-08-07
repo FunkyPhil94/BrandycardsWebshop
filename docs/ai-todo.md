@@ -432,10 +432,10 @@ Der Text darf das nicht versprechen.
 
 **Aufwand:** klein bis mittel · **Hängt an:** nichts
 
-Die Prüfung selbst ist durch (siehe „Erledigt"). **16 von 17 Befunden sind
+Die Prüfung selbst ist durch (siehe „Erledigt"). **17 von 18 Befunden sind
 geschlossen** — SEC-15 (90 Tage Aufbewahrung) und SEC-16 (Datenschutztext)
-wurden am 2026-08-07 nachgezogen, nachdem der Betreiber entschieden hatte.
-Ein Befund bleibt offen:
+wurden am 2026-08-07 nachgezogen, nachdem der Betreiber entschieden hatte,
+SEC-18 (Kontowiederherstellung) ebenfalls. Ein Befund bleibt offen:
 
 **SEC-12 — eBay-OAuth-Rückseite zeigt den Refresh-Token ohne Anmeldung.**
 `app/api/admin/ebay/oauth/callback/route.ts` ist die einzige Route unter
@@ -558,10 +558,16 @@ Sanitizer hielt 49 Angriffen stand.
 **Nachgezogen am 2026-08-07**, nachdem der Betreiber entschieden hatte:
 SEC-15 (90 Tage Aufbewahrung für abgeschlossene Kartenangebote, automatisch im
 geplanten Lauf) und SEC-16 (Datenschutzerklärung um die eBay-Bildserver und die
-Löschfrist ergänzt). Damit **16 von 17 Befunden geschlossen**. Der bestätigte
-Cloudflare-**Free**-Tarif hat SEC-05 von *mittel* auf *hoch* gehoben: Rund
-2 900 Aufrufe von `/api/products` brauchen das D1-Tageskontingent auf, danach
-steht der ganze Shop bis zum nächsten Tag.
+Löschfrist ergänzt). Damit **17 von 18 Befunden geschlossen** (SEC-18 kam nach
+Phase 1 dazu und ist ebenfalls behoben; die Statusübersicht in
+[security-findings.md](security-findings.md) ist für die Zählung maßgeblich).
+Der damals geltende Cloudflare-**Free**-Tarif hatte SEC-05 von *mittel* auf
+*hoch* gehoben: Rund 2 900 Aufrufe von `/api/products` brauchten das
+D1-Tageskontingent auf, danach stand der ganze Shop bis zum nächsten Tag.
+**Diese Begründung ist überholt** — seit dem 2026-08-07 läuft das Projekt auf
+Workers Paid, die harten Tagesdeckel sind weg (siehe „Warum diese Reihenfolge"
+ganz oben). Die eingebaute Zwischenspeicherung bleibt trotzdem richtig, sie
+kostet jetzt nur kein Ausfallrisiko mehr, sondern Geld.
 
 **Der Deploy fehlt noch — er steht als Punkt 2 oben.** Ohne ihn wirkt keine der
 Korrekturen, auch die Löschfrist nicht. Ein Befund bleibt offen, siehe Punkt 8.

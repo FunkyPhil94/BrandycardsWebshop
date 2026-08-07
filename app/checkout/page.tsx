@@ -41,9 +41,14 @@ export default function CheckoutPage() {
     return () => window.clearTimeout(timer);
   }, []);
 
+  // Auf den verfügbaren Bestand begrenzt. Der Warenkorb liegt im
+  // sessionStorage und kann eine Menge aus einer Zeit tragen, in der es die
+  // Karte noch mehrfach gab — oder von Hand gesetzt worden sein. Der Server
+  // lehnt zu viel ohnehin ab (app/api/orders/route.ts); hier verhindert es,
+  // dass jemand erst nach der Adresseingabe davon erfährt.
   const items = useMemo(() => products
-    .filter((product) => product.category === "Festpreis" && cart[product.id] > 0)
-    .map((product) => ({ product, quantity: cart[product.id] })), [cart, products]);
+    .filter((product) => product.category === "Festpreis" && cart[product.id] > 0 && product.quantity > 0)
+    .map((product) => ({ product, quantity: Math.min(cart[product.id], product.quantity) })), [cart, products]);
   const subtotal = items.reduce((sum, item) => sum + (item.product.priceAmountCents ?? 0) * item.quantity, 0);
   const shipping = address.country === "DE" ? 345 : 1449;
   const total = subtotal + shipping;

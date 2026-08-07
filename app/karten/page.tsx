@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { ebayImageVariant } from "../../lib/ebay-images.ts";
 import { BotGuardFields, Field, FormFeedback, PrivacyNotice, botGuardPayload, postJson, useFormSubmit } from "../forms";
-import { EBAY_SHOP_URL, SiteFooter, SiteHeader, formatPrice, useCart } from "../site-chrome";
+import { EBAY_SHOP_URL, SiteFooter, SiteHeader, cartButtonState, formatPrice, useCart } from "../site-chrome";
 
 type Product = {
   id: string;
@@ -35,7 +35,7 @@ export default function KartenPage() {
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Product | null>(null);
-  const { addToCart } = useCart();
+  const { cart, addToCart } = useCart();
   const interest = useFormSubmit();
 
   useEffect(() => {
@@ -113,7 +113,10 @@ export default function KartenPage() {
                     ? <a className="product-cta ebay" href={product.listingUrl || EBAY_SHOP_URL} target="_blank" rel="noreferrer">Auf eBay ansehen ↗</a>
                     : product.category === "Vormerkliste"
                       ? <button className="product-cta" type="button" onClick={() => { interest.setFeedback(null); setSelected(product); }}>Vormerken <span>→</span></button>
-                      : <button className="product-cta" type="button" disabled={product.quantity === 0} onClick={() => addToCart(product.id)} title={product.quantity === 0 ? "Nicht verfügbar" : "Zum Warenkorb hinzufügen"}>In den Warenkorb <span>+</span></button>}
+                      : (() => {
+                          const state = cartButtonState(product.quantity, cart[product.id] ?? 0);
+                          return <button className="product-cta" type="button" disabled={state.disabled} onClick={() => addToCart(product.id, product.quantity)} title={state.label}>{state.label} <span>+</span></button>;
+                        })()}
                 </div>
               </div>
             </article>

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { EBAY_SHOP_URL, formatPrice, useCart } from "./site-chrome";
+import { EBAY_SHOP_URL, cartButtonState, formatPrice, useCart } from "./site-chrome";
 
 const ROTATE_MS = 2000;
 export const GALLERY_SIZE = 5;
@@ -49,7 +49,7 @@ export function Gallery() {
   const [paused, setPaused] = useState(false);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const reducedMotion = usePrefersReducedMotion();
-  const { addToCart } = useCart();
+  const { cart, addToCart } = useCart();
   const regionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -172,14 +172,20 @@ export function Gallery() {
               ? <a href={current.listingUrl || EBAY_SHOP_URL} target="_blank" rel="noreferrer">{current.title}</a>
               : <Link href="/karten">{current.title}</Link>}
           </h3>
-          {current.description && <p className="gallery-description">{current.description}</p>}
+          {/* Immer gerendert, auch ohne Text: Die Bühne wechselt alle zwei
+              Sekunden die Karte, und ein Absatz, der mal da ist und mal nicht,
+              lässt das Layout bei jedem Wechsel springen. */}
+          <p className="gallery-description">{current.description}</p>
           <div className="gallery-actions">
             {formatPrice(current.priceAmountCents, current.priceCurrency) && <strong>{formatPrice(current.priceAmountCents, current.priceCurrency)}</strong>}
             {current.category === "Auktion"
               ? <a className="button button-primary" href={current.listingUrl || EBAY_SHOP_URL} target="_blank" rel="noreferrer">Auf eBay ansehen <span>↗</span></a>
-              : <button className="button button-primary" type="button" disabled={current.quantity === 0} onClick={() => addToCart(current.id)}>
-                  {current.quantity === 0 ? "Nicht verfügbar" : "In den Warenkorb"} <span>+</span>
-                </button>}
+              : (() => {
+                  const state = cartButtonState(current.quantity, cart[current.id] ?? 0);
+                  return <button className="button button-primary" type="button" disabled={state.disabled} onClick={() => addToCart(current.id, current.quantity)}>
+                    {state.label} <span>+</span>
+                  </button>;
+                })()}
           </div>
         </div>
 

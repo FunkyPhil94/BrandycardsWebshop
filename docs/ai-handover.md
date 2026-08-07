@@ -37,8 +37,36 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-_Kein laufender Auftrag._ Vorlage: Stand, Datum, Ziel, geplante Schritte,
-betroffene Dateien, Verifikation, Ergebnis.
+- **Stand:** LÄUFT
+- **Datum:** 2026-08-07
+- **Ziel:** Die sieben Oberflächen- und Warenkorbkorrekturen aus dem Eintrag
+  darunter nach `agent/initial-brandycards` bringen und deployen.
+- **Neue Dauerfreigabe des Betreibers:** „Immer deployen, nicht fragen."
+  Deploys nach grüner Prüfkette brauchen ab sofort **keine** Rückfrage mehr.
+  Unverändert abzusprechen bleiben: Produktionsdaten, Migrationen,
+  eBay-Bestand, alles mit Kosten.
+- **Ausgangslage, zwei Stolpersteine:**
+  1. Die Arbeit liegt in einem Worktree auf `claude/brandycards-onboarding-b56bd0`.
+     **Dort darf nicht deployed werden** — `.env.local` wird in Worktrees nicht
+     vererbt, genau so ging schon ein Deploy schief.
+  2. **Das Hauptverzeichnis steht auf `0504567` und ist damit 48 Commits
+     zurück.** Es muss vor dem Deploy nachgezogen werden, und weil sich
+     `package-lock.json` dazwischen stark geändert hat, auch `npm ci`.
+- **Geplante Schritte:**
+  1. Im Worktree committen und nach `origin/agent/initial-brandycards` pushen
+  2. Hauptverzeichnis: `git pull`, `npm ci`
+  3. Prüfkette dort: `npx tsc --noEmit`, `npm run lint`, `npm test`
+  4. **Bundle-Probe:** `grep -rl "supabase.co" dist/client/assets` — findet sie
+     nichts, fehlte `.env.local` beim Build und der Deploy wird abgebrochen
+  5. `npx wrangler deploy`
+  6. Nachprüfen: `/account` und `/admin` laden (nicht „Supabase ist noch nicht
+     konfiguriert"), Sicherheits-Kopfzeilen, `cache-control` am Katalog
+- **Betroffen:** Branch `agent/initial-brandycards`, Produktions-Deployment.
+  **Keine** Datenbank, **keine** Migration, **kein** eBay-Aufruf.
+- **Risiko:** Der Deploy schaltet Oberflächenänderungen live, darunter eine
+  Verhaltensänderung am Kaufknopf. Rückweg ist ein Rollback auf die vorige
+  Worker-Version im Cloudflare-Dashboard.
+- **Ergebnis:** _(wird nach dem Durchlauf eingetragen)_
 
 ---
 
@@ -74,18 +102,39 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
   gebraucht. Wiederherstellung auf einem fremden Rechner ist also: Repository
   klonen, `npm ci`, zwei Zeilen `.env.local` schreiben, `npx wrangler login`,
   deployen.
-- **Produktion ist aktuell.** Fünf Deploys am 2026-08-07: `1cfd52f1` (alle
+- **Produktion ist aktuell; zuletzt deployed ist `07da6e9b`.** Am 2026-08-07
+  ging mehrfach hintereinander etwas raus: `1cfd52f1` (alle
   Sicherheitskorrekturen), `650c189a` (HSTS), `81c6422d` (Profilformular),
   `d893527a` (Konto- und Adminfläche in der Sprache des Shops), `0b25ae0f`
-  (Import alle 10 Minuten, Bestandsprüfung vor der Zahlung). Das Rate-Limit
-  hat seine Bindings, der Katalog wird am Rand zwischengespeichert, alle sechs
-  Sicherheits-Kopfzeilen sind gesetzt, die CSP setzt durch. Nachprüfung in
+  (Import alle 10 Minuten, Bestandsprüfung vor der Zahlung), `2557ca3d`
+  (Rücknahme des 10-Minuten-Takts), `a1cdd14f` (`start_at` im Mapper) und
+  `07da6e9b` (Zeitgrenzen für eBay, Sperre mit Verfallszeit).
+  **Diese Aufzählung endete früher bei `0b25ae0f` und behauptete „fünf
+  Deploys" — dabei kamen die drei wichtigsten danach.** Wer den Stand wissen
+  will, verlässt sich besser auf `npx wrangler deployments list` als auf diese
+  Liste.
+  Das Rate-Limit hat seine Bindings, der Katalog wird am Rand
+  zwischengespeichert, alle sechs Sicherheits-Kopfzeilen sind gesetzt, die CSP
+  setzt durch. Nachprüfung in
   [security-findings.md](security-findings.md) unter „Deploy am 2026-08-07".
-- **Der Import läuft alle 10 Minuten und ist belegt.** Erster Lauf im neuen
-  Takt am 2026-08-07 um 10:50:40 UTC, `SUCCEEDED`, 294 aktualisiert. Ein Lauf
-  dauert **rund 77 Sekunden** — nicht die 30, die früher in der Aufgabenliste
-  standen. Für 10 Minuten Abstand unkritisch, aber die richtige Zahl, falls
-  jemand die Frequenz je weiter erhöhen will.
+- **Der Import läuft alle zwei Stunden, nicht alle 10 Minuten.** Maßgeblich ist
+  `crons = ["0 */2 * * *"]` in [wrangler.toml](../wrangler.toml) — das ist die
+  Wahrheit, wenn eine Angabe hier ihr je widerspricht. Der 10-Minuten-Takt lief
+  am 2026-08-07 nur wenige Stunden (Version `0b25ae0f`, erster Lauf 10:50:40
+  UTC, `SUCCEEDED`, 294 aktualisiert) und wurde **am selben Tag zurückgenommen**
+  (`2557ca3d`), weil er bei ~5 396 geschriebenen Zeilen je Lauf das
+  D1-Schreibbudget um ein Vielfaches gerissen hätte. Begründung in
+  [ai-todo.md](ai-todo.md) unter „Erledigt".
+  **Folgen, die man kennen muss:** Das Fenster für „auf eBay verkauft, der Shop
+  weiß es nicht" ist bis zu zwei Stunden groß — geschlossen wird es erst an der
+  Kasse durch die Bestandsprüfung, nicht durch den Import. Und
+  `releaseExpiredReservations` hängt am selben Cron, eine abgelaufene
+  Reservierung kommt daher nach 15–135 Minuten zurück, nicht nach 15–25.
+  Der Weg zurück zu einem schnellen Takt führt über Punkt 2 in
+  [ai-todo.md](ai-todo.md) (nur schreiben, was sich geändert hat), **nicht**
+  über einen anderen Cron-Ausdruck.
+  Ein Lauf dauert **rund 77 Sekunden** — nicht die 30, die früher in der
+  Aufgabenliste standen.
 - **Die Kontofläche im angemeldeten Zustand hat niemand geprüft.** Weder das
   Profilformular noch die Adminübersicht mit echten Zahlen — dafür wäre eine
   Anmeldung mit dem Passwort des Betreibers nötig. Die Gestaltung stammt
@@ -158,8 +207,18 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
 - **eBay-Schreibpfad ist unterbrochen.** `mapActiveListing` setzt `ebayOfferId`
   fest auf `null`, weil `GetMyeBaySelling` nur eine ItemID liefert. Dadurch bleibt
   die `ebay_outbox` ohne Auftrag und ein bezahlter Webshop-Kauf beendet das
-  eBay-Angebot nicht. Entschärft nur durch `EBAY_WRITE_ENABLED=false`. Umstellung
-  auf `EndItem`/`EndFixedPriceItem` steht aus.
+  eBay-Angebot nicht. Entschärft nur durch `EBAY_WRITE_ENABLED=false`.
+  **Maßgeblich für die Umstellung ist [ai-todo.md](ai-todo.md) Punkt 6:
+  `ReviseInventoryStatus` mit Menge 0, nicht `EndItem`.** Ältere Stellen in
+  dieser Datei und in [ai-agent-log.md](ai-agent-log.md) nennen noch
+  `EndItem`/`EndFixedPriceItem` — das war der erste Gedanke und ist überholt;
+  `EndItem` ist endgültig und bricht durch die neue ItemID die lokale Zuordnung.
+  **Was in Punkt 6 fehlt und vorher zu klären ist:** „Umkehrbar" gilt für
+  `ReviseInventoryStatus` nur, wenn im eBay-Konto die **Out-of-Stock-Option**
+  aktiv ist. Ohne sie beendet eBay ein Festpreisangebot, dessen Menge auf 0
+  fällt, von selbst — bei lauter Einzelstücken (Menge 1) also **immer**, und
+  dann ist dieser Weg genauso endgültig wie `EndItem`. Zu prüfen über
+  `GetUserPreferences` (`OutOfStockControlPreference`), bevor gebaut wird.
 - **Migrationsjournal ist veraltet.** `drizzle/meta/_journal.json` endet bei
   `0002`, `0003`–`0005` kamen handgeschrieben dazu. `npm run db:generate` würde
   gegen den alten Snapshot diffen. Vor dem nächsten Schemaschritt nachziehen.
@@ -172,6 +231,142 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
 ---
 
 ## Historie
+
+### 2026-08-07 — Sichtprüfung: sechs Oberflächenpunkte und ein Warenkorbfehler
+
+- **Stand:** ABGESCHLOSSEN
+- **Datum:** 2026-08-07
+- **Ziel:** Sieben Punkte aus einer Sichtprüfung des Betreibers — sechs
+  Oberfläche, einer davon ein **echter Fehler im Warenkorb**.
+- **Die Punkte:**
+  1. **Werteleiste („AUTHENTIC CARDS ✦ …") bricht mobil.** `.ticker` ist ein
+     `flex` ohne Umbruch mit `overflow:hidden` — auf schmalen Geräten wird
+     abgeschnitten statt umgebrochen.
+  2. **`EST. 2024` → `EST. 2026`** im Hero-Stempel.
+  3. **Kopfleiste soll beim Scrollen oben bleiben** (`position:sticky`).
+     Achtung: `.detail-media` klebt bereits bei `top:24px` und muss um die
+     Kopfhöhe versetzt werden, sonst schiebt es sich darunter.
+  4. **Hero-Text:** „THE HOME OF FOOTBALL CARDS" → „THE HOME OF SPORTS CARDS",
+     Fließtext neu.
+  5. **Galerie springt.** `.gallery-stage` und der Titel wachsen mit dem
+     Text — bei einer Rotation alle 2 Sekunden hüpft das Layout sichtbar.
+     Feste Höhe für Titel und Bühne.
+  6. **Warenkorb-Fehler (kein Kosmetikpunkt):** `addToCart` in
+     `app/site-chrome.tsx:51` erhöht die Menge ungeprüft. Eine Karte, die es
+     genau **einmal** gibt, lässt sich beliebig oft hinzufügen. Der Server
+     lehnt das später ab (`app/api/orders/route.ts:75`), der Kunde erfährt es
+     also erst nach dem Ausfüllen der Adresse. Die Grenze fehlt im Browser.
+  7. **„BC" auf der Hero-Karte unlesbar.** `.hero-player` ist `#282019` auf
+     einem Verlauf, der ab 46 % auf `#262321` umschlägt — dunkel auf dunkel.
+- **Geplante Schritte:** Punkte 1–5 und 7 in `app/globals.css` und
+  `app/page.tsx`. Punkt 6 in `app/site-chrome.tsx` (Grenze in `addToCart`),
+  dazu die drei Kaufknöpfe (`gallery.tsx`, `karten/page.tsx`,
+  `karten/[id]/page.tsx`) und `app/checkout/page.tsx`, das eine veraltete
+  Menge aus `sessionStorage` sonst weiterreicht.
+- **Betroffen:** `app/globals.css`, `app/page.tsx`, `app/site-chrome.tsx`,
+  `app/gallery.tsx`, `app/karten/page.tsx`, `app/karten/[id]/page.tsx`,
+  `app/checkout/page.tsx`. Keine Datenbank, kein Schema, kein eBay.
+- **Verifikation:** `npx tsc --noEmit`, `npm run lint`, `npm test`; dazu die
+  Oberfläche lokal im Browser gegenprüfen (Kopfleiste beim Scrollen, Galerie
+  ohne Sprung, Warenkorbknopf nach dem zweiten Klick). **Kein Deploy** in
+  diesem Durchlauf ohne Ansage.
+- **Ergebnis: ABGESCHLOSSEN, nicht deployed.** `npx tsc --noEmit` sauber,
+  `npm run lint` 0 Fehler (die eine bekannte `img`-Warnung in `app/admin`),
+  `npm test` **130/130**. Alle sieben Punkte im laufenden Browser nachgemessen,
+  nicht nur im Code geändert:
+  - **Warenkorb:** ein Klick → `{"p1":1}`, Knopf danach deaktiviert
+    („Bereits im Warenkorb"); drei weitere Klicks ändern nichts. Ein von Hand
+    auf `{"p1":7,"p3":4}` gesetzter `sessionStorage` wird im Checkout auf je 1
+    zurückgeschnitten (Summe 28,45 € statt 115 €).
+  - **Galerie:** über sieben Kartenwechsel Bühne konstant 488 px, Titel 58 px,
+    Beschreibung 62 px, und der Kaufknopf bleibt auf derselben Bildschirm-
+    position — auch bei einer Karte ganz ohne Beschreibung und bei einem
+    Titel, der über zwei Zeilen hinausgeht.
+  - **Kopfleiste:** ab Scrollposition 400 fest bei `top:0`, der Versandhinweis
+    darüber scrollt weg. Treffertest in der Leistenmitte liefert immer die
+    Leiste — es scheint nichts durch.
+  - **Werteleiste:** bei 375 px und 768 px kein waagerechter Überlauf mehr
+    (vorher abgeschnitten), Umbruch auf zwei Zeilen.
+- **Zwei Messbefunde, die eine Annahme widerlegt haben:**
+  1. **Die Kopfleiste ist 164 px hoch, nicht die 110 px, die ich geschätzt
+     hatte** — an den drei Breakpoints 164 / 150 / 116 px. Davon hängen der
+     Sticky-Versatz von `.detail-media` und `scroll-padding-top` ab; mit dem
+     Schätzwert wäre das Kartenbild beim Scrollen unter die Leiste gerutscht.
+     Die Werte stehen jetzt als `--header-h` je Breakpoint im CSS, mit dem
+     Hinweis, bei Änderungen an Logo oder Innenabstand neu zu messen.
+  2. Die umgebrochene Werteleiste begann auf schmalen Geräten mit einem
+     **einzelnen ✦** in der zweiten Zeile. Unter 500 px entfallen die Rauten
+     deshalb ganz.
+- **Nebenbefund, nicht behoben, betrifft jede frische Installation:**
+  `npm ci` bricht die Installationsskripte ab (npm verlangt seit Neuestem eine
+  Freigabe), dadurch bleibt `workerd` unvollständig und **`npm run dev` stürzt
+  beim Start ab**. Sichtbar wird das als „The Workers runtime crashed
+  unexpectedly". Abhilfe:
+  `npm install-scripts approve workerd esbuild sharp unrs-resolver && npm rebuild`.
+  Das schreibt ein Feld `allowScripts` in die `package.json`. **Bewusst nicht
+  eingecheckt** — es erlaubt Installationsskripten dauerhaft die Ausführung und
+  ist damit eine Entscheidung über die Lieferkette, die der Betreiber treffen
+  sollte, nicht ein Nebeneffekt eines Oberflächenauftrags.
+- **Ebenfalls zu wissen:** Der Worktree hatte kein eigenes `node_modules` und
+  zog das des Hauptverzeichnisses, dessen `workerd` zu alt für das
+  `compatibility_date` dieses Branches war. Erst `npm ci` im Worktree machte
+  die lokale Vorschau überhaupt möglich.
+- **Lokale Datenbank:** Für die Sichtprüfung wurden die Migrationen auf die
+  **lokale** D1 angewandt und fünf Testkarten eingefügt (`--local`).
+  **Produktionsdaten wurden nicht angefasst.**
+
+### 2026-08-07 — Sechs Fehler in der Doku, gefunden beim Kaltlesen
+
+- **Stand:** ABGESCHLOSSEN
+- **Ziel:** Die Dokumentation gegen sich selbst und gegen den Code prüfen. Anlass
+  war eine reine Einarbeitungssitzung — der erste Leser, der die Unterlagen ohne
+  Vorwissen las.
+- **Vorbemerkung, die eigentliche Lehre des Durchlaufs:** Der Worktree, aus dem
+  gelesen wurde, hing **48 Commits zurück**. `docs/ai-todo.md`,
+  `docs/security-findings.md`, `docs/security-audit-brief.md` und rund 30
+  Code-Dateien existierten dort schlicht nicht, und die eingelesene `CLAUDE.md`
+  war die alte Fassung. Wer in einem Worktree arbeitet, prüft **vor** dem ersten
+  Urteil `git rev-list --left-right --count HEAD...origin/agent/initial-brandycards`
+  — sonst beurteilt er einen Stand, den es nicht mehr gibt.
+- **Gefunden und korrigiert:**
+  1. **Falscher Import-Takt.** „Offene Punkte" behauptete „Der Import läuft alle
+     10 Minuten und ist belegt". Real: `0 */2 * * *` in `wrangler.toml`, und
+     `ai-todo.md` dokumentiert die Rücknahme am selben Tag. Die Fassung hier war
+     die falsche — und beschönigte ausgerechnet das Doppelverkaufsfenster.
+     Korrigiert samt der Folgen (Fenster bis zu zwei Stunden, Reservierungen
+     kommen nach 15–135 Minuten zurück).
+  2. **Zwei gegensätzliche Empfehlungen zum eBay-Schreibpfad.** Hier und im
+     Agentenprotokoll stand `EndItem`/`EndFixedPriceItem`, in `ai-todo.md`
+     Punkt 6 ausdrücklich das Gegenteil (`ReviseInventoryStatus` mit Menge 0).
+     `ai-todo.md` ist jetzt an beiden Stellen als maßgeblich gekennzeichnet.
+  3. **Befundzahl.** Überall „17 Befunde / 16 von 17 geschlossen", tatsächlich
+     **18** (SEC-01…SEC-18), geschlossen **17 von 18**. Ursache: SEC-18 kam nach
+     Phase 1 dazu und wurde in den Summen nie nachgezogen. Die Statusübersicht in
+     `security-findings.md` ist jetzt ausdrücklich die maßgebliche Quelle.
+  4. **Veraltete Reservierungsfrist** im Agentenprotokoll („15–25 Minuten") —
+     galt nur für den 10-Minuten-Takt, real 15–135 Minuten.
+  5. **Free-Tarif als Begründung**, obwohl seit dem 2026-08-07 Workers Paid
+     läuft. Stand noch in der SEC-05-Begründung in `ai-todo.md`.
+  6. **Veraltete Deploy-Liste.** „Produktion ist aktuell. Fünf Deploys …"
+     endete bei `0b25ae0f` — dabei kamen `2557ca3d`, `a1cdd14f` und `07da6e9b`
+     erst danach. Der Eintrag nannte also ausgerechnet den zurückgenommenen
+     Stand als den letzten.
+- **Ergänzt, weil es in Punkt 6 fehlte:** „`ReviseInventoryStatus` ist
+  umkehrbar" gilt nur, wenn im eBay-Konto die **Out-of-Stock-Option** aktiv ist.
+  Ohne sie beendet eBay ein Festpreisangebot mit Menge 0 selbst — bei lauter
+  Einzelstücken also immer, und dann ist der Weg genauso endgültig wie `EndItem`.
+  Vor dem Bau über `GetUserPreferences` (`OutOfStockControlPreference`) prüfen.
+- **Betroffen:** `docs/ai-handover.md`, `docs/ai-todo.md`,
+  `docs/security-findings.md`, `docs/ai-agent-log.md`. **Kein Code, keine
+  Datenbank, kein Deployment, kein eBay-Aufruf.**
+- **Ergebnis:** Alle fünf Stellen korrigiert. Historische Einträge blieben
+  stehen und haben nur dort eine Korrekturmarke bekommen, wo sie einen
+  Kaltleser sonst in die Irre führen — ein Protokoll, das rückwirkend
+  geglättet wird, verliert seinen Zweck.
+- **Nicht geprüft, bewusst:** Ob die Zahlen aus den „Offenen Punkten" (296
+  aktive Karten, `start_at`, letzter Sync-Lauf) noch stimmen. Lesende
+  D1-Abfragen wären erlaubt gewesen, die Sitzung war aber als reine Lesearbeit
+  am Code angelegt. **Wer als Nächstes hier ist, sollte das nachholen.**
 
 ### 2026-08-07 — Zeitgrenzen für eBay, und eine Sperre, die sich nicht verklemmt
 
