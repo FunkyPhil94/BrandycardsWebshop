@@ -20,17 +20,22 @@ Drei Überlegungen bestimmen sie, in dieser Rangfolge:
    verärgerte Kunden und — bei eBay-Stornos — eine Verschlechterung des
    Verkäuferstatus. Dieses Risiko besteht **jetzt schon**, unabhängig von jeder
    neuen Funktion. Deshalb stehen die billigsten Gegenmaßnahmen ganz oben.
-2. **Was hängt woran?** Werbung für das Verhandeln (Punkt 6) darf erst laufen,
+2. **Was hängt woran?** Werbung für das Verhandeln (Punkt 7) darf erst laufen,
    wenn das Erlebnis trägt: richtiger Preis im Checkout, Antwort per E-Mail —
    und vor allem der eBay-Schreibpfad. Mehr Shop-Verkäufe zu bewerben, während
    verkaufte Karten auf eBay online bleiben, vergrößert genau das Risiko aus
    Punkt 1.
-3. **Was kostet wenig und wirkt sofort?** Punkt 1 ist eine Zeile, Punkt 2 ein
-   überschaubarer Eingriff. Beide zusammen nehmen den Großteil des Risikos weg,
-   bevor irgendjemand den großen Brocken anfasst.
+3. **Was kostet wenig und wirkt sofort?** Punkt 1 ist eine Zeile, Punkt 2 eine
+   Konfiguration, Punkt 3 ein überschaubarer Eingriff. Zusammen nehmen sie den
+   Großteil des Risikos weg, bevor jemand den großen Brocken anfasst.
 
 Kurz: **erst absichern, dann das Erlebnis vervollständigen, dann bewerben,
 zuletzt ausbauen.**
+
+Die Sicherheitsprüfung (Punkt 8) steht bewusst außerhalb dieser Kette: Sie ändert
+nichts und blockiert nichts, kann also jederzeit dazwischengeschoben werden. Ihr
+auffälligster Voranalyse-Fund wurde als Punkt 2 vorgezogen, weil er mit einer
+Konfigurationszeile behoben ist.
 
 ---
 
@@ -51,7 +56,34 @@ sichtbar; ein Lauf in `sync_runs` mit Status `SUCCEEDED` bestätigt.
 
 ---
 
-## 2. Bestand live prüfen, bevor Geld fließt
+## 2. Rate-Limiting tatsächlich scharf schalten
+
+**Aufwand:** klein · **Hängt an:** nichts
+
+**Warum:** `lib/rate-limit.ts` nutzt das Cloudflare-Binding `RATE_LIMITER`, falls
+vorhanden — **in `wrangler.toml` ist es nicht konfiguriert.** Ohne Binding fällt
+der Code auf eine `Map` im Arbeitsspeicher zurück. Workers-Isolate sind aber
+kurzlebig und existieren vielfach parallel; eine solche Map teilt sich nichts
+mit anderen Instanzen. Die Begrenzung auf `/api/inquiries`,
+`/api/card-submissions` und `/api/prelisted-interest` ist damit in Produktion
+sehr wahrscheinlich **wirkungslos** — und das ist genau der Schutz gegen Bots
+und Formularfluten.
+
+**Wie:** Rate-Limiting-Binding in `wrangler.toml` deklarieren und deployen.
+Zusätzlich sollte das Fehlen des Bindings beim Start protokolliert werden — ein
+stiller Rückfall auf einen wirkungslosen Schutz ist schlimmer als gar keiner,
+weil er Sicherheit vortäuscht.
+
+**Zusammen mit Punkt 8 zu bewerten:** Ohne Bot-Schutz (Turnstile) bleibt auch
+ein funktionierendes Rate-Limit nur eine halbe Antwort.
+
+**Fertig, wenn:** Das Binding ist deployed, und wiederholte Anfragen an einen
+öffentlichen Endpunkt liefern nachweislich `429` — **lokal geprüft, nicht gegen
+die Produktion.**
+
+---
+
+## 3. Bestand live prüfen, bevor Geld fließt
 
 **Aufwand:** klein · **Hängt an:** nichts
 
@@ -76,7 +108,7 @@ verständlicher Meldung abgelehnt, statt eine Zahlung entgegenzunehmen.
 
 ---
 
-## 3. Checkout zeigt den ausgehandelten Preis
+## 4. Checkout zeigt den ausgehandelten Preis
 
 **Aufwand:** klein · **Hängt an:** nichts
 
@@ -107,9 +139,9 @@ Betrag, den die Bestellung anschließend berechnet.
 
 ---
 
-## 4. Kunden-E-Mails
+## 5. Kunden-E-Mails
 
-**Aufwand:** mittel · **Hängt an:** nichts, ist aber Voraussetzung für Punkt 6
+**Aufwand:** mittel · **Hängt an:** nichts, ist aber Voraussetzung für Punkt 7
 
 **Warum:** Preisvorschläge werden still entschieden. Der Kunde muss von sich aus
 auf die Kartenseite zurückkehren, um zu erfahren, ob angenommen wurde. Das
@@ -140,9 +172,9 @@ nötig, bei Werbung schon.
 
 ---
 
-## 5. eBay-Schreibpfad reparieren
+## 6. eBay-Schreibpfad reparieren
 
-**Aufwand:** groß · **Hängt an:** nichts · **Blockiert:** Punkt 6
+**Aufwand:** groß · **Hängt an:** nichts · **Blockiert:** Punkt 7
 
 **Warum:** Die zweite Richtung des Doppelverkaufs — im Shop verkauft, eBay weiß
 es nicht. Sie ist die unangenehmere: Ein Storno bei eBay verschlechtert den
@@ -178,9 +210,9 @@ auf 0, und die Outbox zeigt den Auftrag als erfolgreich.
 
 ---
 
-## 6. Verhandeln auf der Seite bewerben
+## 7. Verhandeln auf der Seite bewerben
 
-**Aufwand:** klein · **Hängt an:** Punkt 3, 4 und 5
+**Aufwand:** klein · **Hängt an:** Punkt 4, 5 und 6
 
 **Warum:** Die Funktion existiert, aber niemand erfährt davon — dabei ist genau
 sie die Antwort auf „warum hier bestellen statt auf eBay". Sie steht bewusst
@@ -203,7 +235,31 @@ Der Text darf das nicht versprechen.
 
 ---
 
-## 7. Englische Sprachversion
+## 8. Vollständige Sicherheitsprüfung
+
+**Aufwand:** groß (reine Analyse) · **Hängt an:** nichts · **Blockiert:** nichts
+
+**Warum:** Bisher wurde Sicherheit punktuell mitgedacht, nie systematisch
+geprüft. Der Shop nimmt echtes Geld ein, speichert Adressen und nimmt
+unauthentifizierte Uploads entgegen.
+
+**Der Auftrag ist ausformuliert:** [security-audit-brief.md](security-audit-brief.md).
+Er enthält Systemüberblick, Vertrauensgrenzen, Angreifermodelle, zwölf konkrete
+Verdachtsmomente mit Dateiverweisen, Regeln für die Durchführung und das
+Berichtsformat. Gedacht für ein Modell mit hoher Reasoning-Tiefe.
+
+**Kann jederzeit laufen** — die Prüfung ändert nichts am System und blockiert
+keinen anderen Punkt. Sinnvoll ist sie, sobald ein längeres Zeitfenster da ist.
+
+**Ergebnis:** `docs/security-findings.md`. Daraus abgeleitete Korrekturen kommen
+anschließend nach Schweregrad in diese Liste.
+
+**Vorgezogen:** Der auffälligste Voranalyse-Fund steckt bereits als Punkt 2 hier
+drin — er ist zu billig zu beheben, um auf den Bericht zu warten.
+
+---
+
+## 9. Englische Sprachversion
 
 **Aufwand:** sehr groß · **Hängt an:** einer Entscheidung des Nutzers
 
