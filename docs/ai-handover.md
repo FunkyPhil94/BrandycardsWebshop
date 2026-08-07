@@ -69,9 +69,13 @@ dafür wäre das Passwort des Betreibers nötig. Die Gestaltung muss deshalb aus
 vorhandenen, bewährten Regeln entstehen, nicht aus freihändigen Werten, und
 der Betreiber sieht sich das Ergebnis an.
 
-**Deploy:** nicht ohne erneute Freigabe.
+**Deploy:** ~~nicht ohne erneute Freigabe~~ — der Betreiber hat eine
+**Dauerfreigabe für Deploys** erteilt: „Deploy. Dafür brauchst du nicht
+fragen." Sie gilt für `npx wrangler deploy` nach grüner Prüfkette, **nicht**
+für schreibende Eingriffe in Produktionsdaten, Migrationen oder Änderungen am
+eBay-Angebotsbestand — dafür bleibt es bei der Einzelrücksprache.
 
-**Ergebnis: ABGESCHLOSSEN, nicht deployed.**
+**Ergebnis: ABGESCHLOSSEN und deployed.**
 
 - SEC-18 auf *behoben* gesetzt — der Betreiber hat bestätigt, dass der
   Reset-Link jetzt auf `shop.brandycards.de/account` zeigt. Damit sind **alle
