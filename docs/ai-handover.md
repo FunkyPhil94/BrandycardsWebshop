@@ -37,29 +37,8 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-- **Stand:** LÄUFT
-- **Datum:** 2026-08-07
-- **Ziel:** Zwei überholte Stellen in der Doku schließen, beide durch Messung an
-  der Produktion belegt: den offenen Punkt „Sync-Lauf nötig, damit ‚Neu dabei'
-  echt wird" und die erweiterte Dauerfreigabe des Betreibers.
-- **Befund, gemessen statt vermutet:**
-  `curl -s https://shop.brandycards.de/api/products/highlights` meldet
-  `"startAtAvailable": true`. `ebay_listings.start_at` ist gefüllt, die fünf
-  neuesten Karten tragen echte Einstelldaten (06.08. 17:13, 17:09, 17:00,
-  04.08. 18:23), absteigend sortiert. Damit liefert „Neu dabei" nicht mehr die
-  Importreihenfolge als Notbehelf.
-- **Zweite Änderung:** Der Betreiber hat die Dauerfreigabe am 2026-08-07 auf
-  **Commits und Pushes** ausgeweitet: „immer committen, pushen und deployen,
-  ohne mich zu fragen." Der bestehende Eintrag unter „Offene Punkte" nennt nur
-  Deploys und wird nachgezogen. Die Ausnahmen bleiben unverändert.
-- **Geplante Schritte:** Beide Punkte in `docs/ai-handover.md` nachziehen,
-  diesen Eintrag nach „Historie" verschieben, committen und nach
-  `agent/initial-brandycards` **und** `main` pushen.
-- **Betroffen:** `docs/ai-handover.md`. **Kein Code, keine Datenbank, keine
-  Migration, kein eBay-Aufruf, kein Deploy** — an der ausgelieferten Anwendung
-  ändert sich nichts, ein `wrangler deploy` hätte hier nichts zu tun.
-- **Verifikation:** `git status --short` leer, `origin/main` und
-  `origin/agent/initial-brandycards` auf demselben Commit.
+_Kein laufender Auftrag._ Vorlage: Stand, Datum, Ziel, geplante Schritte,
+betroffene Dateien, Verifikation, Ergebnis.
 
 ---
 
@@ -74,9 +53,10 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
   der Kopfzeile. Der Kontolink steht weiterhin daneben in der Leiste und
   **nicht** zusätzlich im Menü — zwei Wege zum selben Ziel sind eine
   Fehlerquelle, keine Hilfe.
-- **Dauerfreigabe für Deploys, am 2026-08-07 noch einmal bekräftigt:** „Immer
-  deployen, nicht fragen." Ein `npx wrangler deploy` nach grüner Prüfkette
-  (`tsc`, Lint, `npm test`, Bundle-Probe) braucht **keine** Einzelrücksprache
+- **Dauerfreigabe, am 2026-08-07 zuletzt auf Commits und Pushes ausgeweitet:**
+  „Immer committen, pushen und deployen, ohne mich zu fragen." Ein `git push`
+  und ein `npx wrangler deploy` nach grüner Prüfkette
+  (`tsc`, Lint, `npm test`, Bundle-Probe) brauchen **keine** Einzelrücksprache
   mehr — auch nicht am Ende einer Sitzung, in der nur Oberfläche geändert
   wurde. **Nicht** eingeschlossen und weiterhin abzusprechen: schreibende
   Eingriffe in Produktionsdaten, Migrationen, Änderungen am eBay-Angebots-
@@ -203,12 +183,13 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
   Token-Laufzeit (*Authentication → Policies*). Über keinen öffentlichen
   Endpunkt lesbar; die Alternative wäre gewesen, mit schwachen Passwörtern
   Konten in der Produktions-Instanz anzulegen — deshalb unterlassen.
-- **Sync-Lauf nötig, damit „Neu dabei" echt wird.** `ebay_listings.start_at` ist
-  noch überall NULL; der Mapper füllt es erst ab Version `a1cdd14f`. Solange
-  liefert `/api/products/highlights` für „neueste" bewusst die Importreihenfolge
-  (`startAtAvailable: false`) statt fünf willkürlicher Karten. Nach einem
-  Sync-Lauf prüfen: `curl -s https://shop.brandycards.de/api/products/highlights`
-  muss `"startAtAvailable": true` melden.
+- ~~**Sync-Lauf nötig, damit „Neu dabei" echt wird.**~~ **Erledigt, am
+  2026-08-07 an der Produktion nachgemessen:**
+  `curl -s https://shop.brandycards.de/api/products/highlights` meldet
+  `"startAtAvailable": true`. Die Sync-Läufe seit Version `a1cdd14f` haben
+  `ebay_listings.start_at` gefüllt; „Neu dabei" zeigt echte Einstelldaten
+  (06.08. 17:13, 17:09, 17:00, dann 04.08. 18:23), absteigend sortiert, statt
+  der Importreihenfolge als Notbehelf.
 - ~~**Preisvorschlag hat keine Oberfläche mehr.**~~ **Veraltet, korrigiert am
   2026-08-07:** `/api/price-offers` verlangt heute ein Produkt mit **aktivem
   eBay-Listing** und lehnt Auktionen ab, nicht `PRELISTED`
@@ -250,6 +231,39 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
 ---
 
 ## Historie
+
+### 2026-08-07 — „Neu dabei" ist echt, und die Dauerfreigabe wächst
+
+- **Stand:** ABGESCHLOSSEN
+- **Datum:** 2026-08-07
+- **Ziel:** Zwei überholte Stellen in dieser Datei schließen, beide durch
+  Messung an der Produktion belegt statt durch Annahme.
+- **Anlass:** Eine reine Durchsicht von GitHub, lokalem Stand und allen
+  `.md`-Dateien. Sie ergab: alles synchron (`main`,
+  `agent/initial-brandycards` und die Worktrees auf `8eabd3e`), CI auf den
+  letzten vier Läufen grün, letzter Deploy `fc35c017`, kein Eintrag auf
+  `LÄUFT`. Zwei Doku-Stellen waren aber von der Wirklichkeit überholt.
+- **Befund 1, gemessen:** `curl -s
+  https://shop.brandycards.de/api/products/highlights` meldet
+  `"startAtAvailable": true`. Die Sync-Läufe seit `a1cdd14f` haben
+  `ebay_listings.start_at` gefüllt; die fünf neuesten Karten tragen echte
+  Einstelldaten (06.08. 17:13, 17:09, 17:00, dann 04.08. 18:23), absteigend
+  sortiert. Der Notbehelf „Importreihenfolge statt fünf willkürlicher Karten"
+  greift nicht mehr. Damit ist die Nachprüfung erledigt, die der Eintrag zu
+  `a1cdd14f` der jeweils nächsten Sitzung aufgetragen hatte.
+- **Befund 2, vom Betreiber:** Die Dauerfreigabe gilt jetzt auch für Commits
+  und Pushes — „immer committen, pushen und deployen, ohne mich zu fragen".
+  Der Eintrag unter „Offene Punkte" nannte nur Deploys. Die Ausnahmen bleiben
+  unverändert: Produktionsdaten, Migrationen, eBay-Bestand, alles mit Kosten.
+- **Betroffen:** `docs/ai-handover.md`. **Kein Code, keine Datenbank, keine
+  Migration, kein eBay-Aufruf.**
+- **Ergebnis: ABGESCHLOSSEN.** Beide Stellen nachgezogen, committet und nach
+  `agent/initial-brandycards` und `main` gepusht.
+- **Bewusst nicht deployed, trotz der Dauerfreigabe:** Die Änderung betrifft
+  ausschließlich Dokumentation. Am ausgelieferten Worker ändert sich kein Byte,
+  ein `wrangler deploy` hätte nichts zu tun und würde nur eine Version ohne
+  Inhalt in die Liste schreiben — die man später beim Zurückrollen sucht und
+  nicht versteht. **Produktion bleibt auf `fc35c017`.**
 
 ### 2026-08-07 — Burger-Menü für schmale Geräte (fc35c017)
 
