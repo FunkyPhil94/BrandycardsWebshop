@@ -4,7 +4,7 @@ import { EBAY_SHOP_URL, SiteFooter, SiteHeader } from "../site-chrome";
 
 export const metadata: Metadata = {
   title: "Über uns — BrandyCards",
-  description: "BrandyCards ist ein Familienprojekt zweier Brüder aus Leverkusen: Fußballkarten, ehrlich gehandelt und sorgfältig verpackt.",
+  description: "BrandyCards ist ein Familienprojekt zweier Brüder aus Leverkusen: Sammelkarten, ehrlich gehandelt und sorgfältig verpackt.",
 };
 
 export default function UeberUnsPage() {
@@ -14,7 +14,7 @@ export default function UeberUnsPage() {
     <section className="page-intro">
       <p className="eyebrow">FROM LEVERKUSEN, WITH PASSION</p>
       <h1>Für Karten, die<br /><em>mehr erzählen.</em></h1>
-      <p>BrandyCards ist ein Familienprojekt von zwei Brüdern. Wir sammeln, handeln und teilen die Begeisterung für Fußballkarten. Ehrlich, persönlich und mit einem Auge fürs Detail.</p>
+      <p>BrandyCards ist ein Familienprojekt von zwei Brüdern. Wir sammeln, handeln und teilen die Begeisterung für Sammelkarten. Ehrlich, persönlich und mit einem Auge fürs Detail.</p>
     </section>
 
     <section className="about-columns">

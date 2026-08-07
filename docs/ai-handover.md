@@ -37,24 +37,8 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-- **Stand:** LÄUFT
-- **Datum:** 2026-08-07
-- **Ziel:** Die drei verbliebenen „Fußballkarten"-Stellen auf **„Sammelkarten"**
-  umstellen: die beiden Seitenbeschreibungen (`app/layout.tsx:6`,
-  `app/ueber-uns/page.tsx:7`) und den Absatz über die beiden Brüder
-  (`app/ueber-uns/page.tsx:17`). Der Betreiber hat das ausdrücklich für alle
-  drei angeordnet, also auch für die Tatsachenaussage, bei der ich vorher
-  nachgefragt hatte.
-- **Sprachlich zu beachten:** Die Beschreibung in `layout.tsx` lautet heute
-  „Ausgewählte Fußball-Trading-Cards **für Sammler**". Ein bloßes Ersetzen
-  ergäbe „Sammelkarten für Sammler" — die Dopplung wird beim Umbau aufgelöst.
-- **Bleibt bewusst stehen:** „Sportkarten" im Banner und „THE HOME OF SPORTS
-  CARDS" darüber. Der Auftrag galt den drei genannten Stellen. Dass der Shop
-  damit an einer Stelle von Sportkarten und sonst von Sammelkarten spricht,
-  wird dem Betreiber genannt.
-- **Betroffen:** `app/layout.tsx`, `app/ueber-uns/page.tsx`. Nur Text.
-- **Verifikation:** Kein „Fußball" mehr in sichtbarem Text oder in den
-  Beschreibungen; die Über-uns-Seite im Browser ansehen.
+_Kein laufender Auftrag._ Vorlage: Stand, Datum, Ziel, geplante Schritte,
+betroffene Dateien, Verifikation, Ergebnis.
 
 ---
 
@@ -269,6 +253,45 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
 ---
 
 ## Historie
+
+### 2026-08-07 — Sammelkarten statt Fußballkarten
+
+- **Stand:** ABGESCHLOSSEN
+- **Datum:** 2026-08-07
+- **Ziel:** Die drei verbliebenen „Fußballkarten"-Stellen auf **„Sammelkarten"**
+  umstellen: die beiden Seitenbeschreibungen (`app/layout.tsx:6`,
+  `app/ueber-uns/page.tsx:7`) und den Absatz über die beiden Brüder
+  (`app/ueber-uns/page.tsx:17`). Der Betreiber hat das ausdrücklich für alle
+  drei angeordnet, also auch für die Tatsachenaussage, bei der ich vorher
+  nachgefragt hatte.
+- **Sprachlich zu beachten:** Die Beschreibung in `layout.tsx` lautet heute
+  „Ausgewählte Fußball-Trading-Cards **für Sammler**". Ein bloßes Ersetzen
+  ergäbe „Sammelkarten für Sammler" — die Dopplung wird beim Umbau aufgelöst.
+- **Bleibt bewusst stehen:** „Sportkarten" im Banner und „THE HOME OF SPORTS
+  CARDS" darüber. Der Auftrag galt den drei genannten Stellen. Dass der Shop
+  damit an einer Stelle von Sportkarten und sonst von Sammelkarten spricht,
+  wird dem Betreiber genannt.
+- **Betroffen:** `app/layout.tsx`, `app/ueber-uns/page.tsx`. Nur Text.
+- **Verifikation:** Kein „Fußball" mehr in sichtbarem Text oder in den
+  Beschreibungen; die Über-uns-Seite im Browser ansehen.
+- **Ergebnis: ABGESCHLOSSEN.** Prüfkette grün (`tsc`, Lint 0 Fehler, 149/149).
+  **Im ganzen Projekt kommt „Fußball" in keiner Form mehr vor** — geprüft über
+  `grep -rni` auf `app/` und `lib/`, und im ausgelieferten HTML von Startseite
+  und `/ueber-uns` je null Treffer.
+- **Die Dopplung wurde aufgelöst, nicht nur das Wort getauscht:** Aus
+  „Ausgewählte Fußball-Trading-Cards **für Sammler**. Persönlich ausgesucht und
+  sicher verpackt." wurde „Ausgewählte Sammelkarten, persönlich ausgesucht und
+  sicher verpackt." Ein reines Ersetzen hätte „Sammelkarten für Sammler"
+  ergeben.
+- **Im Browser nachgemessen:** Der Absatz auf `/ueber-uns` steht weiterhin auf
+  zwei Zeilen, kein waagerechter Überlauf; beide Seitenbeschreibungen tragen
+  den neuen Text.
+- **Bewusst stehen geblieben — der Betreiber weiß davon:** Der Banner sagt
+  „Sportkarten", die Vorzeile darüber „THE HOME OF SPORTS CARDS", der Rest des
+  Shops „Sammelkarten". Beides ist weiter gefasst als Fußball, aber es sind
+  **zwei** Begriffe. Wer das vereinheitlichen will, muss sich entscheiden;
+  angefasst wird es nur auf Ansage.
+
 
 ### 2026-08-07 — Banner: Fußballkarten wird zu Sportkarten
 
