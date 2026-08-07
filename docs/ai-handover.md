@@ -37,8 +37,44 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-_Kein laufender Auftrag._ Vorlage: Stand, Datum, Ziel, geplante Schritte,
-betroffene Dateien, Verifikation, Ergebnis.
+**Stand:** LÄUFT · **Datum:** 2026-08-07
+
+**Ziel:** Einen Deploy-Workflow bauen, damit das Ausliefern nicht mehr am
+Rechner des Betreibers hängt.
+
+**Warum:** `npx wrangler deploy` baut **lokal** und lädt das Ergebnis hoch. Der
+Grund ist `.env.local`: `NEXT_PUBLIC_SUPABASE_*` wird zur Buildzeit ins
+Client-Bundle eingebacken, und die Datei liegt absichtlich nicht im
+Repository. Wäre der Rechner weg, liefe der Shop weiter — aber niemand könnte
+etwas ändern, bis die Datei rekonstruiert ist. Kein Sicherheitsproblem, ein
+Klumpenrisiko.
+
+**Entwurfsentscheidungen:**
+- **Nur `workflow_dispatch`**, kein Auto-Deploy bei jedem Push. In diesem
+  Repository landen laufend reine Dokumentcommits; jeder davon würde sonst
+  ausliefern. Ein Knopf in der GitHub-Oberfläche erfüllt den Zweck und geht
+  auch vom Telefon.
+- **Kein `pull_request`-Auslöser.** Ein Fork darf niemals deployen können.
+  `workflow_dispatch` kann ohnehin nur auslösen, wer Schreibrechte hat.
+- **Die vollständige Prüfkette vor dem Deploy** — Lint, `tsc --noEmit`,
+  `npm test` — und danach dieselbe Bundle-Probe, die CLAUDE.md verlangt:
+  Findet `grep supabase.co dist/client/assets` nichts, bricht der Lauf ab,
+  statt ein Bundle auszuliefern, in dem `/admin` und `/account` kaputt sind.
+- **Nachprüfung nach dem Deploy im Workflow selbst**, wieder nach der Regel aus
+  CLAUDE.md: eine Seite prüfen, die Client-Konfiguration braucht. Startseite
+  und `/api/*` sähen auch dann gesund aus, wenn das Bundle kaputt ist.
+- **Actions auf Commit-SHA gepinnt**, wie im CI-Workflow.
+- `concurrency`, damit zwei Deploys sich nicht überholen.
+
+**Was der Betreiber selbst tun muss:** drei Repository-Secrets anlegen. Ich
+lege keine Zugangsdaten an und fasse keine an. Stand jetzt sind **keine**
+Secrets im Repository hinterlegt (`gh secret list` ist leer).
+
+**Verifikation:** Der Workflow lässt sich erst nach dem Anlegen der Secrets
+ausführen. Bis dahin bleibt der bisherige Weg (`npx wrangler deploy` lokal)
+gültig — der neue Weg ist eine Ergänzung, kein Ersatz.
+
+**Ergebnis:** _(offen — wird nach dem Durchlauf nachgetragen)_
 
 ---
 
