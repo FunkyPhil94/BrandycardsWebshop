@@ -12,6 +12,16 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Build output. The npm script also passes --ignore-pattern, but that only
+    // matches at the root, so a nested copy would still be linted.
+    "dist/**",
+    "**/dist/**",
+    ".wrangler/**",
+    // Claude Code keeps its git worktrees here. Without this, running lint from
+    // the main checkout walks into a worktree and reports errors from its
+    // minified build output — results would depend on whether a worktree
+    // happens to exist.
+    ".claude/**",
   ]),
 ]);
 
