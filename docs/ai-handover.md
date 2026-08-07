@@ -305,6 +305,20 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
   Browsers liegen so dicht beieinander, dass die Messung **nichts** belegt —
   weder das eine noch das andere. Tragfähig sind die Netzwerkanfragen und
   `document.fonts`, nicht die Breite.
+- **Nach dem Deploy in Produktion nachgeprüft:** `document.fonts` meldet DM Mono
+  400/500 und Manrope als geladen, `performance.getEntriesByType('resource')`
+  zeigt **keinen einzigen Fremdhost** mehr, die Konsole ist fehlerfrei, und
+  `/fonts/manrope-400-800-normal-latin.woff2` antwortet mit 200 und
+  `content-type: font/woff2`. Deployed als Version `eb242e0b`.
+- **Offen geblieben, erst nach dem Deploy gemessen:** Die Schriften werden mit
+  `cache-control: public, max-age=0, must-revalidate` ausgeliefert. Der Browser
+  fragt sie damit bei **jedem** Seitenaufruf neu an — die Antwort ist zwar ein
+  304, aber der Rundlauf bleibt. Für Dateien, die sich praktisch nie ändern,
+  ist das verschenkt. **Nicht einfach hochgesetzt**, weil die Dateinamen
+  **keinen Inhalts-Hash** tragen (`manrope-400-800-normal-latin.woff2`): Mit
+  einem langen `max-age` würde ein späterer Austausch derselben Datei bei
+  Bestandskunden monatelang nicht ankommen. Der saubere Weg ist ein Hash im
+  Dateinamen und dann `immutable` — das ist eine eigene Änderung.
 - **Nicht gemacht, bewusst:** Kein `<link rel="preload">` für die beiden
   wichtigsten Schriften. Der Browser entdeckt die Dateien erst, wenn er die CSS
   geparst hat; ein Preload würde den ersten Textaufbau beschleunigen. Das ist
