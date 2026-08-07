@@ -37,35 +37,8 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-- **Stand:** LÄUFT
-- **Datum:** 2026-08-07
-- **Ziel:** Das Logo verkleinern. Es ist eine **747 KB** große PNG mit
-  1264×842 Bildpunkten und wird mit **164 px** Breite dargestellt (112 px auf
-  schmalen Geräten). Der Betreiber hat zugestimmt, nachdem der Befund vorlag.
-- **Warum es trotz `immutable` noch zählt:** Das Caching hilft ab dem zweiten
-  Besuch. Der **erste** Besuch lädt 747 KB, und das Logo steht im Kopf jeder
-  Seite — es konkurriert also mit dem Text um die erste Sekunde.
-- **Geplante Schritte:**
-  1. Mit `sharp` mehrere Varianten erzeugen und **messen statt schätzen**:
-     verkleinerte PNG, PNG mit reduzierter Palette, WebP. Dann die kleinste
-     wählen, die verlustfrei genug aussieht.
-  2. Zielbreite **500 px**: Das ist mehr als das Doppelte der größten
-     Darstellung (164 px) und deckt damit auch Bildschirme mit doppelter und
-     dreifacher Punktdichte ab, ohne unscharf zu werden.
-  3. **Das Original bleibt im Repository** (`app/brand/…-original.png`), wird
-     aber nicht importiert und landet damit auch nicht im Bauergebnis. Ein
-     verkleinertes Bild lässt sich nicht wieder vergrößern; die Vorlage muss
-     auffindbar bleiben.
-  4. `assets.d.ts` um `*.webp` ergänzen, falls die Wahl darauf fällt.
-- **Betroffen:** `app/site-chrome.tsx`, `assets.d.ts`, neu `app/brand/*`.
-  **Kein Code sonst, keine Datenbank, keine API, kein eBay-Aufruf.**
-- **Verifikation:** Größe vorher/nachher belegen; im Browser prüfen, dass das
-  Logo in Kopf **und** Fuß lädt, die Kopfleiste bei 126 px bleibt (sonst
-  stimmt `--header-h` nicht mehr) und das Bild bei 375 px wie bei 1280 px
-  scharf aussieht — also die gerenderten Maße gegen die natürlichen halten.
-- **Risiko und Rückweg:** Sichtbare Verschlechterung eines Markenzeichens. Der
-  Rückweg ist ein Zeilenwechsel im Import zurück auf das Original, das genau
-  dafür liegen bleibt.
+_Kein laufender Auftrag._ Vorlage: Stand, Datum, Ziel, geplante Schritte,
+betroffene Dateien, Verifikation, Ergebnis.
 
 ---
 
@@ -280,6 +253,76 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
 ---
 
 ## Historie
+
+### 2026-08-07 — Logo von 730 KB auf 30 KB
+
+- **Stand:** ABGESCHLOSSEN
+- **Datum:** 2026-08-07
+- **Ziel:** Das Logo verkleinern. Es ist eine **747 KB** große PNG mit
+  1264×842 Bildpunkten und wird mit **164 px** Breite dargestellt (112 px auf
+  schmalen Geräten). Der Betreiber hat zugestimmt, nachdem der Befund vorlag.
+- **Warum es trotz `immutable` noch zählt:** Das Caching hilft ab dem zweiten
+  Besuch. Der **erste** Besuch lädt 747 KB, und das Logo steht im Kopf jeder
+  Seite — es konkurriert also mit dem Text um die erste Sekunde.
+- **Geplante Schritte:**
+  1. Mit `sharp` mehrere Varianten erzeugen und **messen statt schätzen**:
+     verkleinerte PNG, PNG mit reduzierter Palette, WebP. Dann die kleinste
+     wählen, die verlustfrei genug aussieht.
+  2. Zielbreite **500 px**: Das ist mehr als das Doppelte der größten
+     Darstellung (164 px) und deckt damit auch Bildschirme mit doppelter und
+     dreifacher Punktdichte ab, ohne unscharf zu werden.
+  3. **Das Original bleibt im Repository** (`app/brand/…-original.png`), wird
+     aber nicht importiert und landet damit auch nicht im Bauergebnis. Ein
+     verkleinertes Bild lässt sich nicht wieder vergrößern; die Vorlage muss
+     auffindbar bleiben.
+  4. `assets.d.ts` um `*.webp` ergänzen, falls die Wahl darauf fällt.
+- **Betroffen:** `app/site-chrome.tsx`, `assets.d.ts`, neu `app/brand/*`.
+  **Kein Code sonst, keine Datenbank, keine API, kein eBay-Aufruf.**
+- **Verifikation:** Größe vorher/nachher belegen; im Browser prüfen, dass das
+  Logo in Kopf **und** Fuß lädt, die Kopfleiste bei 126 px bleibt (sonst
+  stimmt `--header-h` nicht mehr) und das Bild bei 375 px wie bei 1280 px
+  scharf aussieht — also die gerenderten Maße gegen die natürlichen halten.
+- **Risiko und Rückweg:** Sichtbare Verschlechterung eines Markenzeichens. Der
+  Rückweg ist ein Zeilenwechsel im Import zurück auf das Original, das genau
+  dafür liegen bleibt.
+- **Ergebnis: ABGESCHLOSSEN.** `app/brand/brandycards-logo.png`, 500×333,
+  **30,4 KB statt 729,8 KB — 4,2 % der ursprünglichen Größe.** Prüfkette grün
+  (`tsc`, Lint 0 Fehler, 149/149).
+- **Die Wahl fiel gegen WebP, und zwar aufgrund einer Messung.** Nach
+  Dateigröße allein hätte WebP gewonnen (19–24 KB gegen 30 KB). Entscheidend
+  war aber, **wie viel vom Original übrig bleibt**. Verglichen wurde bei 328 px
+  — der doppelten Anzeigebreite — auf dem echten Kopfleisten-Hintergrund
+  `#f2f0eb`:
+
+  | Variante | Größe | mittlere Abweichung | größter Fehler | sichtbar abweichend |
+  |---|---|---|---|---|
+  | **PNG 500, Palette** | **30,4 KB** | **0,49** | **24** | **3,7 %** |
+  | WebP 500, q90 | 24,2 KB | 1,86 | 63 | 15,7 % |
+  | WebP 500, q82 | 19,4 KB | 1,98 | 71 | 16,9 % |
+  | WebP 500, verlustfrei | 77,3 KB | 1,45 | 43 | 13,3 % |
+  | PNG 500, volle Farbtiefe | 127,6 KB | 0,27 | 21 | 1,7 % |
+
+  Die Palette-PNG ist 6 KB größer als WebP q90 und dabei **rund viermal
+  originalgetreuer**. Bei einem Markenzeichen ist das die richtige Seite des
+  Tauschs; die vollfarbige PNG wäre nochmals besser, kostet aber das Vierfache
+  für einen Unterschied, den bei 164 px niemand sieht. Nebenbei entfällt damit
+  die Frage nach WebP-Unterstützung und eine Ergänzung in `assets.d.ts`.
+- **Eine Messung, die zuerst Unsinn ergab — als Warnung:** Der erste Vergleich
+  lief auf den rohen RGBA-Werten und meldete für *jede* Variante einen
+  Maximalfehler von 255. Ursache: In vollständig durchsichtigen Bildpunkten ist
+  der Farbwert beliebig, und davon besteht ein Logo mit Freisteller
+  größtenteils. **Erst das Auflegen auf den echten Hintergrund macht den
+  Vergleich aussagekräftig.** Wer hier nachmisst, muss `flatten` benutzen.
+- **Im Browser gemessen:** Beide Logos (Kopf und Fuß) laden, natürlich 500×333.
+  Bei 1280 px dargestellt mit 164×109 — Schärfereserve **3,05×**, deckt also
+  dreifache Punktdichte. Bei 375 px dargestellt mit 112×75, Reserve **4,46×**.
+  Kopfleiste unverändert 126 px bzw. 92 px und deckungsgleich mit `--header-h`,
+  kein waagerechter Überlauf, keine fehlerhaften Abrufe.
+- **Das Original bleibt als `app/brand/brandycards-logo-original.png` liegen**
+  und wird **nicht** importiert — im Bauergebnis steht nur die 30-KB-Fassung
+  (nachgeprüft: `find dist -name "*original*"` ist leer). Wer das Logo neu
+  aufbereitet, geht von dieser Vorlage aus, nicht von der verkleinerten Datei.
+
 
 ### 2026-08-07 — Schriften und Logo in den Build, mit Inhalts-Hash
 

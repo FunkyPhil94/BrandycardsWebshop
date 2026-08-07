@@ -2,7 +2,10 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
-import logo from "./BrandyCards_Logo_transparent.png";
+// 500 px breit fuer eine Darstellung mit 164 px - deckt auch dreifache
+// Punktdichte ab. Die Vorlage liegt daneben als …-original.png und wird
+// bewusst nicht importiert, landet also nicht im Bauergebnis.
+import logo from "./brand/brandycards-logo.png";
 
 export const EBAY_SHOP_URL = "https://www.ebay.de/str/brandycards";
 const CART_KEY = "brandycards-cart";
