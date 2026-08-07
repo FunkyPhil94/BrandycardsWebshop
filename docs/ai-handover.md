@@ -37,36 +37,8 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-- **Stand:** LÄUFT
-- **Datum:** 2026-08-07
-- **Ziel:** Die sieben Oberflächen- und Warenkorbkorrekturen aus dem Eintrag
-  darunter nach `agent/initial-brandycards` bringen und deployen.
-- **Neue Dauerfreigabe des Betreibers:** „Immer deployen, nicht fragen."
-  Deploys nach grüner Prüfkette brauchen ab sofort **keine** Rückfrage mehr.
-  Unverändert abzusprechen bleiben: Produktionsdaten, Migrationen,
-  eBay-Bestand, alles mit Kosten.
-- **Ausgangslage, zwei Stolpersteine:**
-  1. Die Arbeit liegt in einem Worktree auf `claude/brandycards-onboarding-b56bd0`.
-     **Dort darf nicht deployed werden** — `.env.local` wird in Worktrees nicht
-     vererbt, genau so ging schon ein Deploy schief.
-  2. **Das Hauptverzeichnis steht auf `0504567` und ist damit 48 Commits
-     zurück.** Es muss vor dem Deploy nachgezogen werden, und weil sich
-     `package-lock.json` dazwischen stark geändert hat, auch `npm ci`.
-- **Geplante Schritte:**
-  1. Im Worktree committen und nach `origin/agent/initial-brandycards` pushen
-  2. Hauptverzeichnis: `git pull`, `npm ci`
-  3. Prüfkette dort: `npx tsc --noEmit`, `npm run lint`, `npm test`
-  4. **Bundle-Probe:** `grep -rl "supabase.co" dist/client/assets` — findet sie
-     nichts, fehlte `.env.local` beim Build und der Deploy wird abgebrochen
-  5. `npx wrangler deploy`
-  6. Nachprüfen: `/account` und `/admin` laden (nicht „Supabase ist noch nicht
-     konfiguriert"), Sicherheits-Kopfzeilen, `cache-control` am Katalog
-- **Betroffen:** Branch `agent/initial-brandycards`, Produktions-Deployment.
-  **Keine** Datenbank, **keine** Migration, **kein** eBay-Aufruf.
-- **Risiko:** Der Deploy schaltet Oberflächenänderungen live, darunter eine
-  Verhaltensänderung am Kaufknopf. Rückweg ist ein Rollback auf die vorige
-  Worker-Version im Cloudflare-Dashboard.
-- **Ergebnis:** _(wird nach dem Durchlauf eingetragen)_
+_Kein laufender Auftrag._ Vorlage: Stand, Datum, Ziel, geplante Schritte,
+betroffene Dateien, Verifikation, Ergebnis.
 
 ---
 
@@ -75,12 +47,24 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 Kein Auftrag, sondern der Zustand, den die nächste Sitzung kennen muss.
 Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
 
-- **Dauerfreigabe für Deploys.** Der Betreiber am 2026-08-07: „Deploy. Dafür
-  brauchst du nicht fragen." Ein `npx wrangler deploy` nach grüner Prüfkette
+- **Dauerfreigabe für Deploys, am 2026-08-07 noch einmal bekräftigt:** „Immer
+  deployen, nicht fragen." Ein `npx wrangler deploy` nach grüner Prüfkette
   (`tsc`, Lint, `npm test`, Bundle-Probe) braucht **keine** Einzelrücksprache
-  mehr. **Nicht** eingeschlossen und weiterhin abzusprechen: schreibende
+  mehr — auch nicht am Ende einer Sitzung, in der nur Oberfläche geändert
+  wurde. **Nicht** eingeschlossen und weiterhin abzusprechen: schreibende
   Eingriffe in Produktionsdaten, Migrationen, Änderungen am eBay-Angebots-
   bestand und alles, was Kosten oder Fremddienste hinzufügt.
+  **Deployed wird aus dem Hauptverzeichnis, nie aus einem Worktree** — dorthin
+  wird `.env.local` nicht vererbt.
+- **Frische Installationen sind kaputt, und das trifft jeden.** `npm ci`
+  blockiert seit einer npm-Neuerung die Installationsskripte; `workerd` und
+  `esbuild` bleiben dadurch unvollständig, und `npm run dev` stirbt beim Start
+  mit „The Workers runtime crashed unexpectedly". Behelf:
+  `npm install-scripts approve workerd esbuild sharp unrs-resolver && npm rebuild`.
+  Das schreibt `allowScripts` in die `package.json`. **Bewusst nicht
+  eingecheckt** — es erlaubt Installationsskripten dauerhaft die Ausführung.
+  Ob dieses Feld ins Repository gehört, ist eine Entscheidung des Betreibers;
+  bis dahin muss es jeder lokal ausführen.
 - **Der GitHub-Deploy-Workflow liegt bereit, ist aber bewusst nicht scharf.**
   [.github/workflows/deploy.yml](../.github/workflows/deploy.yml) ist fertig;
   der Betreiber hat am 2026-08-07 entschieden, die drei Secrets **vorerst
@@ -102,7 +86,8 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
   gebraucht. Wiederherstellung auf einem fremden Rechner ist also: Repository
   klonen, `npm ci`, zwei Zeilen `.env.local` schreiben, `npx wrangler login`,
   deployen.
-- **Produktion ist aktuell; zuletzt deployed ist `07da6e9b`.** Am 2026-08-07
+- **Produktion ist aktuell; zuletzt deployed ist `783402f9`** (Warenkorbgrenze
+  und Oberflächenkorrekturen, siehe Historie). Davor am 2026-08-07
   ging mehrfach hintereinander etwas raus: `1cfd52f1` (alle
   Sicherheitskorrekturen), `650c189a` (HSTS), `81c6422d` (Profilformular),
   `d893527a` (Konto- und Adminfläche in der Sprache des Shops), `0b25ae0f`
@@ -231,6 +216,67 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
 ---
 
 ## Historie
+
+### 2026-08-07 — Warenkorbgrenze und Oberflächenkorrekturen deployed (783402f9)
+
+- **Stand:** ABGESCHLOSSEN
+- **Datum:** 2026-08-07
+- **Ziel:** Die sieben Oberflächen- und Warenkorbkorrekturen aus dem Eintrag
+  darunter nach `agent/initial-brandycards` bringen und deployen.
+- **Neue Dauerfreigabe des Betreibers:** „Immer deployen, nicht fragen."
+  Deploys nach grüner Prüfkette brauchen ab sofort **keine** Rückfrage mehr.
+  Unverändert abzusprechen bleiben: Produktionsdaten, Migrationen,
+  eBay-Bestand, alles mit Kosten.
+- **Ausgangslage, zwei Stolpersteine:**
+  1. Die Arbeit liegt in einem Worktree auf `claude/brandycards-onboarding-b56bd0`.
+     **Dort darf nicht deployed werden** — `.env.local` wird in Worktrees nicht
+     vererbt, genau so ging schon ein Deploy schief.
+  2. **Das Hauptverzeichnis steht auf `0504567` und ist damit 48 Commits
+     zurück.** Es muss vor dem Deploy nachgezogen werden, und weil sich
+     `package-lock.json` dazwischen stark geändert hat, auch `npm ci`.
+- **Geplante Schritte:**
+  1. Im Worktree committen und nach `origin/agent/initial-brandycards` pushen
+  2. Hauptverzeichnis: `git pull`, `npm ci`
+  3. Prüfkette dort: `npx tsc --noEmit`, `npm run lint`, `npm test`
+  4. **Bundle-Probe:** `grep -rl "supabase.co" dist/client/assets` — findet sie
+     nichts, fehlte `.env.local` beim Build und der Deploy wird abgebrochen
+  5. `npx wrangler deploy`
+  6. Nachprüfen: `/account` und `/admin` laden (nicht „Supabase ist noch nicht
+     konfiguriert"), Sicherheits-Kopfzeilen, `cache-control` am Katalog
+- **Betroffen:** Branch `agent/initial-brandycards`, Produktions-Deployment.
+  **Keine** Datenbank, **keine** Migration, **kein** eBay-Aufruf.
+- **Risiko:** Der Deploy schaltet Oberflächenänderungen live, darunter eine
+  Verhaltensänderung am Kaufknopf. Rückweg ist ein Rollback auf die vorige
+  Worker-Version im Cloudflare-Dashboard.
+- **Ergebnis: ABGESCHLOSSEN.** Commit `0a9c48d`, als Fast-Forward nach
+  `agent/initial-brandycards` gepusht (`9d0ea64..0a9c48d`).
+  **Deployed als Version `783402f9`.**
+  - Hauptverzeichnis stand auf `0504567`, also 48 Commits zurück — nachgezogen
+    und `npm ci`. Prüfkette dort: `tsc` sauber, Lint 0 Fehler (die bekannte
+    `img`-Warnung), `npm test` **130/130**.
+  - **Bundle-Probe bestanden:** `supabase.co` liegt in
+    `dist/client/assets/supabase-browser-RbW28-cr.js`. Zusätzlich gegengeprüft,
+    dass **keines** der Server-Geheimnisse im Client-Bundle steht
+    (`EBAY_CLIENT_SECRET`, `EBAY_REFRESH_TOKEN`, `ADMIN_EMAILS`).
+  - **Nach dem Deploy in Produktion geprüft**, mit der Seite zuerst, die
+    Client-Konfiguration braucht: `/account` und `/admin` antworten mit 200 und
+    **ohne** „Supabase ist noch nicht konfiguriert"; `/` und `/karten` 200.
+    Alle sechs Sicherheits-Kopfzeilen stehen, `cache-control` am Katalog ist
+    `public, max-age=60, stale-while-revalidate=300`.
+  - **Die Korrekturen selbst live nachgemessen**, nicht nur im Markup gesucht:
+    Auf `/karten` (294 Kaufknöpfe) macht ein Klick die Menge 1 und sperrt den
+    Knopf auf „Bereits im Warenkorb"; drei weitere Klicks ändern nichts. Die
+    Kopfleiste rastet ab Scrollposition 600 bei `top:0` ein, gemessene Höhe
+    **164 px** — genau der Wert in `--header-h`. Hero-Text und `EST. 2026`
+    stehen, der alte „FOOTBALL CARDS"-Text ist weg.
+- **Offen geblieben, bewusst:** `npm ci` blockiert die Installationsskripte,
+  dadurch bleibt `workerd` unvollständig und `npm run dev` startet nicht.
+  Behelf lokal ausgeführt
+  (`npm install-scripts approve workerd esbuild sharp unrs-resolver && npm rebuild`),
+  das dabei entstehende Feld `allowScripts` in der `package.json` aber
+  **nicht eingecheckt**: Es erlaubt Installationsskripten dauerhaft die
+  Ausführung und ist damit eine Entscheidung über die Lieferkette. **Wer als
+  Nächstes frisch installiert, läuft erneut hinein.**
 
 ### 2026-08-07 — Sichtprüfung: sechs Oberflächenpunkte und ein Warenkorbfehler
 
