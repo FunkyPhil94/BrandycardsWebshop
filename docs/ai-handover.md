@@ -37,8 +37,47 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-_Kein laufender Auftrag._ Vorlage: Stand, Datum, Ziel, geplante Schritte,
-betroffene Dateien, Verifikation, Ergebnis.
+**Stand:** LÄUFT · **Datum:** 2026-08-07
+
+**Ziel:** Die Sicherheitskorrekturen nach Produktion deployen. Der Nutzer hat
+die Freigabe ausdrücklich erteilt („Deploy jetzt") und die Entscheidung über
+CSP-Scharfschaltung und die offenen Nachschlagearbeiten an mich delegiert.
+
+**Warum das riskant ist und worauf zu achten ist:**
+- Ohne `.env.local` im Build-Verzeichnis liefert der Build ein Bundle aus, in
+  dem `/admin` und `/account` mit „Supabase ist noch nicht konfiguriert"
+  abbrechen — Startseite und `/api/*` sehen dabei **gesund** aus. Dieser
+  Worktree erbt die Datei nicht, sie wird vor dem Build kopiert und danach
+  wieder entfernt.
+- Erster Deploy mit `[[ratelimits]]`, mit angehobenem `@cloudflare/vite-plugin`
+  (1.37.1 → 1.51.0) und `wrangler` (4.92.0 → 4.119.0) sowie `next` 16.2.11.
+- Cloudflare-Secrets überleben einen Deploy; `[vars]` in `wrangler.toml`
+  enthält nichts Geheimes.
+
+**Geplante Schritte:**
+1. `.env.local` kopieren, `npx tsc --noEmit`, `npm run lint`, `npm test`.
+2. Bundle-Probe: `grep -rl "supabase.co" dist/client/assets` muss treffen.
+3. CSP: prüfen, ob das Bundle Inline-Skripte braucht. Danach entscheiden, ob
+   scharf geschaltet wird und in welcher Form — mit lokalem Durchgang über
+   alle Seiten, bevor etwas durchsetzend wird.
+4. `npx wrangler deploy`.
+5. Nachprüfen: `/account` und `/admin` laden, Kopfzeilen, `cache-control`,
+   Bindings im Dashboard bzw. über die API.
+6. Nachschlagen, soweit lesend möglich: HSTS auf Zonenebene über die
+   Cloudflare-API, eBay-Kontingent über `GetApiAccessRules` (rein lesend,
+   verändert kein Angebot). Die Supabase-Passwortrichtlinie lässt sich **nicht**
+   ohne Dashboard oder Kontoanlage ermitteln — dafür wird nichts probiert.
+7. `.env.local` wieder entfernen, Ergebnis nachtragen, committen, pushen.
+
+**Grenzen bleiben:** kein Lasttest gegen Produktion, keine schreibenden
+Eingriffe in Produktionsdaten, keine Änderung am echten eBay-Angebotsbestand.
+
+**Wenn diese Sitzung hier abbricht:** Prüfen, ob bereits deployed wurde —
+`npx wrangler deployments list` und ein Aufruf von
+`https://shop.brandycards.de/account`. Trägt die Antwort von `/` bereits
+`x-content-type-options`, ist der Deploy durch.
+
+**Ergebnis:** _(offen — wird nach dem Durchlauf nachgetragen)_
 
 ---
 
