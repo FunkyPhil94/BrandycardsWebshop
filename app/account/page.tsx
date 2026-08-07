@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import type { User } from "@supabase/supabase-js";
 import { getSupabaseBrowserClient } from "../../lib/supabase-browser";
+import { SiteFooter, SiteHeader } from "../site-chrome";
 
 type Mode = "login" | "signup" | "reset";
 
@@ -143,8 +144,10 @@ export default function AccountPage() {
   }
 
   return (
-    <main className="account-page">
-      <Link className="back-link" href="/">← Zurück zu BrandyCards</Link>
+    <main>
+      <SiteHeader />
+      <section className="account-page">
+      <Link className="back-link" href="/">← Zurück zum Shop</Link>
       <section className="account-card" aria-labelledby="account-title">
         <p className="eyebrow">BRANDYCARDS ACCOUNT</p>
         {user && !recovery && <>
@@ -181,6 +184,8 @@ export default function AccountPage() {
           {!recovery && mode !== "login" && <button type="button" onClick={() => setMode("login")}>Zur Anmeldung</button>}
         </div>}
       </section>
+      </section>
+      <SiteFooter />
     </main>
   );
 }

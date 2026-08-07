@@ -47,7 +47,7 @@ Phase 3 nachgeprüft.
 | [SEC-15](#sec-15--kein-selbstbedienungs-auskunfts--oder-löschweg-unbegrenzte-aufbewahrung) | Hinweis | **behoben** | 90-Tage-Frist, vom Betreiber festgelegt; 11 Tests, darunter die Zeitstempel-Falle |
 | [SEC-16](#sec-16--bilder-kommen-direkt-von-ebays-cdn) | Hinweis | **behoben** | `Referrer-Policy` gesetzt; Abschnitt 7 und 11 der Datenschutzerklärung ergänzt |
 | [SEC-17](#sec-17--rate-limit-schlüssel-vertraut-auf-x-forwarded-for) | niedrig | **behoben** | Test belegt, dass `x-forwarded-for` nicht mehr in den Schlüssel gelangt |
-| [SEC-18](#sec-18--kontowiederherstellung-führt-auf-localhost) | **hoch** | **umgestellt, Bestätigung steht aus** | Betreiber hat die Supabase-URLs angepasst; der Nachweis braucht einen echten Reset-Durchlauf in sein Postfach |
+| [SEC-18](#sec-18--kontowiederherstellung-führt-auf-localhost) | **hoch** | **behoben** | Betreiber hat die URLs angepasst und den Ablauf durchgespielt: der Link zeigt jetzt auf `shop.brandycards.de/account` |
 
 Zusätzlich umgesetzt: **E-2** (Honeypot und Zeitschwelle, nach Entscheidung des
 Nutzers statt Turnstile) und zwei vorbestehende Blocker der Entwicklungsumgebung,

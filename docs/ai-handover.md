@@ -37,8 +37,70 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-_Kein laufender Auftrag._ Vorlage: Stand, Datum, Ziel, geplante Schritte,
-betroffene Dateien, Verifikation, Ergebnis.
+**Stand:** LÄUFT · **Datum:** 2026-08-07
+
+**Ziel:** Konto- und Adminfläche in die Formensprache des Shops holen. Der
+Betreiber: „sieht billig und ziemlich düster aus, der Rest ist hell, modern
+und elegant."
+
+**Diagnose:** `/account` und `/admin` stammen sichtbar aus der Starter-Vorlage
+und wurden nie angeglichen. Der Shop arbeitet mit `--paper:#f2f0eb`,
+`--ink:#111112`, `--line:#d8d4cc`, Manrope, Playfair-Kursive für Akzente und
+`.form-card{background:#f8f6f1}`. Die Kontofläche dagegen: `#0d0e11`,
+Georgia-Überschriften, Goldränder, dunkle Verläufe.
+
+**Mein Fehler von vorhin:** Ich habe die Formularfelder an die dunkle Karte
+angepasst, statt zu fragen, warum die Karte dunkel ist. Die Felder waren nicht
+das Problem, die Fläche war es.
+
+**Geplante Schritte:**
+1. SEC-18 im Bericht auf *behoben* setzen — der Betreiber hat bestätigt, dass
+   der Reset-Link jetzt auf `shop.brandycards.de/account` zeigt.
+2. `app/globals.css`: Block „Account surface" auf die helle Sprache umstellen,
+   meine dunklen Feld-Überschreibungen wieder entfernen. Wo möglich die
+   vorhandenen Regeln (`.form-card`, `.form-field`, `.button`) benutzen statt
+   neue zu erfinden — so passt es von selbst.
+3. `app/account/page.tsx` und `app/admin/page.tsx`: `SiteHeader`/`SiteFooter`
+   einsetzen. Ohne sie bleibt die Seite auch in Hell eine Fremdkörperfläche.
+4. `npx tsc --noEmit`, `npm run lint`, `npm test`, lokal ansehen.
+
+**Grenze dieser Sitzung:** Den angemeldeten Zustand kann ich nicht ansehen —
+dafür wäre das Passwort des Betreibers nötig. Die Gestaltung muss deshalb aus
+vorhandenen, bewährten Regeln entstehen, nicht aus freihändigen Werten, und
+der Betreiber sieht sich das Ergebnis an.
+
+**Deploy:** nicht ohne erneute Freigabe.
+
+**Ergebnis: ABGESCHLOSSEN, nicht deployed.**
+
+- SEC-18 auf *behoben* gesetzt — der Betreiber hat bestätigt, dass der
+  Reset-Link jetzt auf `shop.brandycards.de/account` zeigt. Damit sind **alle
+  18 Befunde** dieser Prüfung geschlossen bis auf SEC-12 (wartet auf den
+  nächsten Schemaschritt) und den Konto-Löschweg aus SEC-15.
+- `app/globals.css`: Der Block „Account surface" ist auf `--paper`, `--ink`,
+  `--line` und `--muted` umgestellt. Keine eigenen Farbwerte mehr außer den
+  beiden Flächentönen, die der Shop ohnehin verwendet (`#f8f6f1` wie
+  `.form-card`, `#ebe8e1` wie `.forms-section`).
+- `app/account/page.tsx` und `app/admin/page.tsx` tragen jetzt `SiteHeader`
+  und `SiteFooter`.
+
+**Gemessener Beleg, dass es dieselbe Sprache ist** — Kontokarte gegen die
+Formularkarte auf `/anfragen`:
+
+| | `/account` | `/anfragen` |
+|---|---|---|
+| Kartenfläche | `rgb(248,246,241)` | `rgb(248,246,241)` |
+| Überschrift | 51,2 px Manrope | 51,2 px Manrope |
+| Eingabefeld | `rgb(255,255,255)` | `rgb(255,255,255)` |
+| Beschriftung | `rgb(81,77,70)` | `rgb(81,77,70)` |
+
+Fläche `rgb(242,240,235)` = `--paper`, gleich dem `body`. Kopf und Fuß auf
+beiden Seiten vorhanden, 0 fehlerhafte Ressourcen, keine Konsolenfehler.
+`tsc` sauber, Lint 0 Fehler, 98 Tests grün.
+
+**Weiterhin ungeprüft, weil dafür eine Anmeldung nötig wäre:** wie die Karte
+im angemeldeten Zustand aussieht (Profilfelder, Adminübersicht mit Zahlen und
+Kartenangeboten).
 
 ---
 

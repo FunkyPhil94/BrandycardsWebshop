@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { OffersPanel } from "./offers-panel";
 import Link from "next/link";
 import { getSupabaseBrowserClient } from "../../lib/supabase-browser";
+import { SiteFooter, SiteHeader } from "../site-chrome";
 
 type Dashboard = {
   user: { email: string; role: string };
@@ -111,8 +112,10 @@ export default function AdminPage() {
   }
 
   return (
-    <main className="account-page">
-      <Link className="back-link" href="/">← Zurück zu BrandyCards</Link>
+    <main>
+      <SiteHeader />
+      <section className="account-page">
+      <Link className="back-link" href="/">← Zurück zum Shop</Link>
       <section className="account-card admin-card" aria-labelledby="admin-title">
         <p className="eyebrow">BRANDYCARDS ADMIN</p>
         <h1 id="admin-title">Übersicht.</h1>
@@ -135,6 +138,8 @@ export default function AdminPage() {
           <p className="form-feedback">Weitere Verwaltungsfunktionen werden als nächster Schritt ergänzt.</p>
         </> : <p className="form-feedback error" role="status">{message}</p>}
       </section>
+      </section>
+      <SiteFooter />
     </main>
   );
 }
