@@ -37,59 +37,8 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-- **Stand:** LÄUFT
-- **Datum:** 2026-08-07
-- **Ziel:** Zwei Mängel, die der Betreiber beim Markieren von Text auf der
-  Startseite gesehen hat.
-  1. **Die Kartengrafik rechts im Banner ist auswählbarer Text.** „BRANDYCARDS",
-     „01 / 01", „BC", „THE COLLECTOR'S CHOICE", „LEVERKUSEN GERMANY" und
-     „EST. 2026" stehen als echte HTML-Elemente da (`app/page.tsx`,
-     `.hero-art`). Beim Markieren wird die Grafik zu einer Ansammlung blauer
-     Kästen — sie soll sich wie ein Bild verhalten.
-  2. **Die Markierungen der beiden Überschriftzeilen überlappen sich.**
-- **Ursache von 2, gemessen statt vermutet:** Bei 89,6 px Schriftgröße ist die
-  Zeilenhöhe `.9` = 80,64 px, die Zeilen stehen also 82 px auseinander. Das
-  gemalte Markierungsrechteck ist aber **123 px** hoch — der Browser nimmt
-  dafür die **Schriftmetriken** (Oberlänge + Unterlänge ≈ 1,37 em), nicht die
-  Zeilenhöhe. Daraus **40 px Überlappung**; das Rechteck der ersten Zeile legt
-  sich über die Oberlängen von „character.".
-- **Vier Wege, alle durchgemessen:**
-
-  | Weg | Überlappung | Höhe der Überschrift | Preis |
-  |---|---|---|---|
-  | so lassen | 40 px | 164 px | — |
-  | `line-height: 1.37` | 0 px | 249 px | **+85 px, das enge Satzbild ist hin** |
-  | Schriftmetriken stutzen | 10 px | 163 px | kursive Zeile rutscht 10 px |
-  | nicht markierbar | entfällt | 164 px | Überschrift lässt sich nicht kopieren |
-
-  Der dritte Weg ist erst möglich, seit wir die Schriften selbst ausliefern
-  (`ascent-override` in einer eigenen `@font-face`-Familie). Er drückt das
-  Rechteck von 123 px auf **81 px**, also genau auf die Zeilenhöhe — bringt die
-  Überlappung aber nicht ganz auf null und verschiebt die kursive Zeile
-  sichtbar.
-- **Gewählt: der vierte Weg für beide Punkte** — `user-select: none` auf der
-  Kartengrafik **und** auf der Banner-Überschrift. Begründung: Er löst beide
-  Mängel vollständig und **verändert die Darstellung um keinen einzigen
-  Bildpunkt**; der Betreiber hat ausdrücklich gesagt, dass ihm der Banner
-  gefällt. Die Kartengrafik ist reine Dekoration, die Überschrift ein
-  Schaubild aus zwei Wörtern — beides ist nichts, was jemand herauskopieren
-  will. **Der Fließtext darunter bleibt markierbar**, der ist Inhalt.
-- **Warum kein echtes Bild aus der Kartengrafik:** Der Wunsch war „soll ein
-  Bild sein". Das Ziel dahinter — sie soll sich beim Markieren wie ein Bild
-  verhalten — erreicht `user-select: none` vollständig. Eine Rastergrafik
-  daraus zu machen kostet Ladezeit, wird auf hochauflösenden Bildschirmen
-  unschärfer als die jetzige CSS-Zeichnung und friert Farben ein, die heute aus
-  den Farbvariablen kommen. Wird dem Betreiber als Alternative genannt.
-- **Mitzunehmen:** `.hero-art` trägt ein `aria-label` an einem `div` **ohne
-  Rolle** — das ist wirkungslos. Richtig ist `aria-hidden="true"`, denn für
-  Vorleseprogramme ist die Grafik Zierrat; heute lesen sie „BRANDYCARDS 01 / 01
-  BC …" mit.
-- **Betroffen:** `app/globals.css`, `app/page.tsx`. **Kein Datenmodell, keine
-  API, keine Datenbank, kein eBay-Aufruf.**
-- **Verifikation:** Im Browser eine Auswahl über die ganze Seite legen und
-  messen, dass aus Kartengrafik und Überschrift **kein** Text in der Auswahl
-  landet, der Fließtext aber schon; dazu belegen, dass sich die dargestellten
-  Maße von Überschrift und Grafik **nicht** geändert haben.
+_Kein laufender Auftrag._ Vorlage: Stand, Datum, Ziel, geplante Schritte,
+betroffene Dateien, Verifikation, Ergebnis.
 
 ---
 
@@ -304,6 +253,92 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
 ---
 
 ## Historie
+
+### 2026-08-07 — Banner: Grafik und Überschrift nicht mehr markierbar
+
+- **Stand:** ABGESCHLOSSEN
+- **Datum:** 2026-08-07
+- **Ziel:** Zwei Mängel, die der Betreiber beim Markieren von Text auf der
+  Startseite gesehen hat.
+  1. **Die Kartengrafik rechts im Banner ist auswählbarer Text.** „BRANDYCARDS",
+     „01 / 01", „BC", „THE COLLECTOR'S CHOICE", „LEVERKUSEN GERMANY" und
+     „EST. 2026" stehen als echte HTML-Elemente da (`app/page.tsx`,
+     `.hero-art`). Beim Markieren wird die Grafik zu einer Ansammlung blauer
+     Kästen — sie soll sich wie ein Bild verhalten.
+  2. **Die Markierungen der beiden Überschriftzeilen überlappen sich.**
+- **Ursache von 2, gemessen statt vermutet:** Bei 89,6 px Schriftgröße ist die
+  Zeilenhöhe `.9` = 80,64 px, die Zeilen stehen also 82 px auseinander. Das
+  gemalte Markierungsrechteck ist aber **123 px** hoch — der Browser nimmt
+  dafür die **Schriftmetriken** (Oberlänge + Unterlänge ≈ 1,37 em), nicht die
+  Zeilenhöhe. Daraus **40 px Überlappung**; das Rechteck der ersten Zeile legt
+  sich über die Oberlängen von „character.".
+- **Vier Wege, alle durchgemessen:**
+
+  | Weg | Überlappung | Höhe der Überschrift | Preis |
+  |---|---|---|---|
+  | so lassen | 40 px | 164 px | — |
+  | `line-height: 1.37` | 0 px | 249 px | **+85 px, das enge Satzbild ist hin** |
+  | Schriftmetriken stutzen | 10 px | 163 px | kursive Zeile rutscht 10 px |
+  | nicht markierbar | entfällt | 164 px | Überschrift lässt sich nicht kopieren |
+
+  Der dritte Weg ist erst möglich, seit wir die Schriften selbst ausliefern
+  (`ascent-override` in einer eigenen `@font-face`-Familie). Er drückt das
+  Rechteck von 123 px auf **81 px**, also genau auf die Zeilenhöhe — bringt die
+  Überlappung aber nicht ganz auf null und verschiebt die kursive Zeile
+  sichtbar.
+- **Gewählt: der vierte Weg für beide Punkte** — `user-select: none` auf der
+  Kartengrafik **und** auf der Banner-Überschrift. Begründung: Er löst beide
+  Mängel vollständig und **verändert die Darstellung um keinen einzigen
+  Bildpunkt**; der Betreiber hat ausdrücklich gesagt, dass ihm der Banner
+  gefällt. Die Kartengrafik ist reine Dekoration, die Überschrift ein
+  Schaubild aus zwei Wörtern — beides ist nichts, was jemand herauskopieren
+  will. **Der Fließtext darunter bleibt markierbar**, der ist Inhalt.
+- **Warum kein echtes Bild aus der Kartengrafik:** Der Wunsch war „soll ein
+  Bild sein". Das Ziel dahinter — sie soll sich beim Markieren wie ein Bild
+  verhalten — erreicht `user-select: none` vollständig. Eine Rastergrafik
+  daraus zu machen kostet Ladezeit, wird auf hochauflösenden Bildschirmen
+  unschärfer als die jetzige CSS-Zeichnung und friert Farben ein, die heute aus
+  den Farbvariablen kommen. Wird dem Betreiber als Alternative genannt.
+- **Mitzunehmen:** `.hero-art` trägt ein `aria-label` an einem `div` **ohne
+  Rolle** — das ist wirkungslos. Richtig ist `aria-hidden="true"`, denn für
+  Vorleseprogramme ist die Grafik Zierrat; heute lesen sie „BRANDYCARDS 01 / 01
+  BC …" mit.
+- **Betroffen:** `app/globals.css`, `app/page.tsx`. **Kein Datenmodell, keine
+  API, keine Datenbank, kein eBay-Aufruf.**
+- **Verifikation:** Im Browser eine Auswahl über die ganze Seite legen und
+  messen, dass aus Kartengrafik und Überschrift **kein** Text in der Auswahl
+  landet, der Fließtext aber schon; dazu belegen, dass sich die dargestellten
+  Maße von Überschrift und Grafik **nicht** geändert haben.
+- **Ergebnis: ABGESCHLOSSEN.** Prüfkette grün (`tsc`, Lint 0 Fehler, 149/149).
+  Gemessen im Browser:
+  - `user-select` ist auf Überschrift, Grafik, Kartenvorderseite,
+    Spielerkürzel und Stempel `none`.
+  - Eine Auswahl über das **einzelne** Element liefert bei allen dekorativen
+    Teilen **0 Zeichen**; der Fließtext dagegen 94.
+  - Eine Auswahl über das **ganze** Banner enthält nur noch Vorzeile,
+    Fließtext und die beiden Knöpfe — kein „BC", kein „COLLECTOR'S CHOICE",
+    kein „EST. 2026", keine Überschrift.
+  - **Maße unverändert:** Überschrift 435×164, Grafik 530×430 — dieselben
+    Werte wie vorher. Es hat sich kein Bildpunkt verschoben.
+- **Zwei Messverfahren von mir taugten nichts — beide aus demselben Grund:**
+  1. Ein **programmatisch** über `document.body` gelegter Bereich meldete den
+     Kartentext weiter als ausgewählt. Die Range-API kennt `user-select` nicht;
+     sie beschreibt Geometrie und Inhalt, nicht das, was der Nutzer auswählen
+     kann. Dasselbe gilt für `Range.getClientRects()` — es liefert weiter
+     Rechtecke über der Grafik, obwohl dort nichts markiert werden kann.
+  2. `document.caretRangeFromPoint` als Ersatz gedacht: ebenfalls untauglich,
+     das ist Treffererkennung und ignoriert `user-select` genauso.
+     **Tragfähig ist allein `Selection.toString()` je Element.**
+  Nebenbei aufgeklärt: Ein Treffer auf „BRANDYCARDS" in der Auswahl kam nicht
+  aus der Grafik, sondern aus dem Link „Mehr über BrandyCards" — `Selection`
+  gibt den **dargestellten** Text zurück, `text-transform:uppercase` schlägt
+  also durch.
+- **Was ich nicht prüfen konnte:** einen Blick auf das gemalte Bild. Die
+  Vorschau ließ sich in dieser Sitzung nicht einblenden, Bildschirmfotos
+  scheiterten. Der Nachweis stützt sich deshalb auf die Textauswahl und die
+  berechneten Stile, nicht auf den Augenschein. **Wer als Nächstes hier ist:
+  einmal mit der Maus über den Banner ziehen und hinsehen.**
+
 
 ### 2026-08-07 — Logo von 730 KB auf 30 KB
 

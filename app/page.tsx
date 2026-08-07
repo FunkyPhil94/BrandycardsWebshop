@@ -47,7 +47,14 @@ export default function Home() {
           <Link className="text-link" href="/ueber-uns">Mehr über BrandyCards <span>→</span></Link>
         </div>
       </div>
-      <div className="hero-art" aria-label="Abstrakte Darstellung einer Premium-Sammelkarte">
+      {/* Zierrat, kein Inhalt: Die „Karte" ist aus CSS gezeichnet, ihre
+          Beschriftungen wiederholen nur, was daneben im Text steht.
+          `aria-hidden`, weil Vorleseprogramme sonst „BRANDYCARDS 01 / 01 BC
+          THE COLLECTOR'S CHOICE …" mitlesen — das vorherige `aria-label` an
+          einem `div` ohne Rolle war wirkungslos. Nicht markierbar, damit sie
+          sich beim Ziehen über die Seite wie ein Bild verhält und nicht in
+          eine Ansammlung blauer Kästen zerfällt. */}
+      <div className="hero-art" aria-hidden="true">
         <div className="hero-card hero-card-back"><span>BRANDY<br />CARDS</span></div>
         <div className="hero-card hero-card-front">
           <div className="hero-card-top">BRANDYCARDS <span>01 / 01</span></div>
