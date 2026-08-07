@@ -3,7 +3,9 @@ import { cardSubmissionAssets, cardSubmissions } from "../../../db/schema";
 import { getAssetBucket, getDb } from "../../../db";
 import { eq } from "drizzle-orm";
 import { enforcePublicRateLimit } from "../../../lib/rate-limit";
+import { HONEYPOT_FIELD, RENDERED_AT_FIELD } from "../../../lib/form-bot-guard";
 import {
+  assertHumanSubmission,
   formMetadata,
   jsonError,
   optionalPrice,
@@ -18,11 +20,12 @@ import {
 
 export async function POST(request: Request) {
   try {
-    await enforcePublicRateLimit(request, "card-submissions", 3);
+    await enforcePublicRateLimit(request, "card-submissions", "strict");
     if (request.headers.get("content-type")?.startsWith("multipart/form-data")) {
       return await handleMultipartSubmission(request);
     }
     const body = await readJsonBody(request);
+    assertHumanSubmission(body);
     const email = requiredEmail(body);
     const title = requiredString(body, "title", "Kartentitel", 240);
     const name = optionalString(body, "name", "Name", 120);
@@ -44,9 +47,18 @@ export async function POST(request: Request) {
 
 async function handleMultipartSubmission(request: Request) {
   assertSameOrigin(request);
-  const contentLength = Number(request.headers.get("content-length") ?? 0);
+  // A missing Content-Length used to read as 0 and sail past the ceiling —
+  // and `formData()` below buffers the whole body before any per-file check
+  // runs, so a chunked request could push the isolate over its memory limit.
+  // Demanding the header costs a legitimate upload nothing: every browser
+  // sends it for multipart. See docs/security-findings.md, SEC-08.
+  const declaredLength = request.headers.get("content-length");
+  if (declaredLength === null) throw new PublicFormError(411, "LENGTH_REQUIRED", "Die Anfrage muss ihre Größe angeben.");
+  const contentLength = Number(declaredLength);
+  if (!Number.isFinite(contentLength) || contentLength < 0) throw new PublicFormError(400, "INVALID_LENGTH", "Die angegebene Anfragegröße ist ungültig.");
   if (contentLength > 52_000_000) throw new PublicFormError(413, "UPLOAD_TOO_LARGE", "Die gesamte Upload-Anfrage ist zu groß.");
   const form = await request.formData();
+  assertHumanSubmission({ [HONEYPOT_FIELD]: form.get(HONEYPOT_FIELD), [RENDERED_AT_FIELD]: form.get(RENDERED_AT_FIELD) });
   const email = requiredEmail({ email: form.get("email") });
   const title = requiredString({ title: form.get("title") }, "title", "Kartentitel", 240);
   const name = optionalString({ name: form.get("name") }, "name", "Name", 120);

@@ -68,6 +68,24 @@ Build hier liefert ein Bundle, in dem `/admin` und `/account` brechen.
 **Grenzen:** keine Angriffe, Lasttests oder schreibenden Eingriffe gegen die
 Produktion. Lesende D1-Abfragen und normale Seitenaufrufe sind erlaubt.
 
+**Zwischenstand 2026-08-07:** Phase 1 abgeschlossen, 17 Befunde in
+[security-findings.md](security-findings.md), Commit `4fbde38`, gepusht.
+Phase 2 läuft.
+
+**Entscheidungen des Nutzers zu den vorgelegten Punkten:**
+1. Bot-Schutz: **Honeypot + Zeitschwelle**, kein Turnstile.
+2. CSP: **erst `Content-Security-Policy-Report-Only`**, durchsetzend später in
+   einer zweiten Runde nach Auswertung der Verstöße.
+3. Abhängigkeiten: `next` und `react-server-dom-webpack` **anheben, wenn
+   `tsc`, `lint` und `npm test` grün sind** — sonst zurücknehmen und melden.
+4. Deploy: **der Nutzer deployt selbst.** Diese Sitzung baut nicht für
+   Produktion und deployt nicht. Geliefert wird eine Schritt-für-Schritt-
+   Anleitung inkl. `.env.local`-Kopie und Nachprüfung von `/admin`.
+
+**Noch offen (bewusst nicht eigenmächtig):** Aufbewahrungsfrist für
+Kartenangebote (SEC-15) und der Satz zu eBay-Bildern in der
+Datenschutzerklärung (SEC-16) — beides kein rein technischer Eingriff.
+
 **Ergebnis:** _(offen — wird nach dem Durchlauf nachgetragen)_
 
 ---

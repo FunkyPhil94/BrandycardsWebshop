@@ -32,6 +32,28 @@ function decode(text: string) {
 
 const text = (html: string) => decode(stripTags(html)).replace(/\s+/g, " ").trim();
 
+/** Puts plain text back into markup safely.
+ *
+ * `text()` deliberately decodes entities — headings and spec values are handed
+ * to React, which escapes them again. The one branch that builds HTML from a
+ * `text()` result must undo that decoding itself: without this, an eBay
+ * description containing `&lt;img src=x onerror=…&gt;` would leave the
+ * sanitiser correctly escaped and come back out of this parser as a live tag,
+ * straight into `dangerouslySetInnerHTML`. See docs/security-findings.md,
+ * SEC-01.
+ *
+ * Unconditional, unlike the sanitiser's `escapeText`: the input here is fully
+ * decoded, so a bare `&` is a literal ampersand and never an entity prefix.
+ */
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 /** Rows of a two-column table read as label/value pairs. */
 function tableSpecs(html: string): CardSpec[] {
   const specs: CardSpec[] = [];
@@ -95,9 +117,11 @@ export function parseEbayDescription(sanitizedHtml: string): ParsedDescription {
       .filter((block) => text(block) && !isBoilerplate("", block));
 
     const html = blocks.length
+      // Verbatim slices of the sanitised input — already safe, keep as markup.
       ? blocks.join("\n")
       // No block markup at all: keep the prose so nothing is silently lost.
-      : text(body) && !isBoilerplate(heading, body) ? `<p>${text(body)}</p>` : "";
+      // This is text, not markup, and has to be escaped on the way back in.
+      : text(body) && !isBoilerplate(heading, body) ? `<p>${escapeHtml(text(body))}</p>` : "";
 
     if (!text(html) || isTitleBlock) return;
     sections.push({ heading, html });

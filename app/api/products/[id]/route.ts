@@ -4,9 +4,21 @@ import { getDb } from "../../../../db";
 import { ebayListings, productAssets, products } from "../../../../db/schema";
 import { getEbayItemDescription } from "../../../../lib/ebay-client";
 import { parseEbayDescription } from "../../../../lib/ebay-description";
+import { enforcePublicRateLimit } from "../../../../lib/rate-limit";
 import { sanitizeHtml } from "../../../../lib/sanitize-html";
 
-export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
+/** Whether this caller may still trigger an eBay lookup right now.
+ *  Running out of budget is not an error — the card is served either way. */
+async function withinEbayFetchBudget(request: Request) {
+  try {
+    await enforcePublicRateLimit(request, "ebay-description");
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params;
   if (!/^[a-f0-9]{32}$/iu.test(id)) {
     return NextResponse.json({ error: "Unbekannte Karte." }, { status: 404 });
@@ -31,8 +43,16 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
     // GetMyeBaySelling carries no description, so it is fetched from GetItem the
     // first time a card is opened and cached from then on. A failure here must
     // not take the page down — the rest of the card is still worth showing.
+    //
+    // The fetch sits behind its own rate limit because it is the expensive
+    // half of this endpoint: two eBay calls (token + GetItem), and a listing
+    // whose description eBay returns empty is never cached, so every request
+    // asks again. Left open, anyone could burn the daily eBay quota from a
+    // loop — and a stalled quota stalls the import, which is what keeps sold
+    // cards off the shop. Exceeding the limit costs the description, not the
+    // card. See docs/security-findings.md, SEC-04.
     let descriptionHtml = row.listing.descriptionHtml;
-    if (!descriptionHtml && row.listing.ebayItemId) {
+    if (!descriptionHtml && row.listing.ebayItemId && await withinEbayFetchBudget(request)) {
       try {
         const fetched = await getEbayItemDescription(row.listing.ebayItemId);
         if (fetched) {

@@ -3,6 +3,7 @@ import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { getDb } from "../db";
 import { users } from "../db/schema";
 import { getSupabaseUser } from "./supabase-server";
+import { changed, isUniqueViolation } from "./user-profile";
 
 export type AppUser = typeof users.$inferSelect;
 
@@ -50,17 +51,35 @@ export async function findOrCreateAppUser(authUser: SupabaseUser, requestedUsern
   }
 
   if (existing) {
-    await db.update(users).set({
+    const next = {
       email: emailVerified ? email : existing.email,
       ...(username ? { username } : {}),
       ...(displayName ? { displayName } : {}),
-      authProvider: "supabase",
+      authProvider: "supabase" as const,
       authSubject: authUser.id,
       emailVerifiedAt: emailVerified ? verifiedAt : existing.emailVerifiedAt,
       ...(configuredAdmin && existing.role === "CUSTOMER" ? { role: "ADMIN" as const } : {}),
-      updatedAt: new Date().toISOString(),
-    }).where(eq(users.id, existing.id));
-    return { ...existing, email: emailVerified ? email : existing.email, username: username ?? existing.username, displayName: displayName ?? existing.displayName, authProvider: "supabase", authSubject: authUser.id, emailVerifiedAt: emailVerified ? verifiedAt : existing.emailVerifiedAt, role: configuredAdmin && existing.role === "CUSTOMER" ? "ADMIN" as const : existing.role };
+    };
+    const merged = { ...existing, ...next };
+    // Every authenticated request lands here, including plain reads such as
+    // GET /api/price-offers. Writing unconditionally turned each one into a
+    // D1 write; now the row is only touched when something actually differs.
+    // See docs/security-findings.md, SEC-09.
+    if (changed(existing, next)) {
+      try {
+        await db.update(users).set({ ...next, updatedAt: new Date().toISOString() }).where(eq(users.id, existing.id));
+      } catch (error) {
+        // `username` comes from Supabase user_metadata, which the customer can
+        // write themselves. Picking a name someone else already has violates
+        // users_username_unique — and because this runs on *every* request,
+        // letting it through would lock the account out of the whole shop over
+        // a display detail. The name simply does not change.
+        if (!username || !isUniqueViolation(error)) throw error;
+        console.warn("Benutzername bereits vergeben, Profil bleibt unverändert.", { userId: existing.id });
+        return { ...merged, username: existing.username };
+      }
+    }
+    return merged;
   }
 
   const [created] = await db.insert(users).values({

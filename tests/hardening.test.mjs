@@ -1,0 +1,206 @@
+import assert from "node:assert/strict";
+import { access, readFile } from "node:fs/promises";
+import test from "node:test";
+
+const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
+
+const {
+  HONEYPOT_FIELD,
+  RENDERED_AT_FIELD,
+  MIN_FILL_MILLISECONDS,
+  MAX_FORM_AGE_MILLISECONDS,
+  inspectSubmission,
+} = await import("../lib/form-bot-guard.ts");
+const { securityHeaders, contentSecurityPolicy, CSP_HEADER_NAME, withSecurityHeaders } = await import("../lib/security-headers.ts");
+const { changed, isUniqueViolation } = await import("../lib/user-profile.ts");
+
+// --- E-2, bot deterrence ----------------------------------------------------
+
+test("a filled honeypot is refused, an empty one is not", () => {
+  const now = Date.now();
+  assert.equal(inspectSubmission("http://spam.example", now - 10_000, now).human, false);
+  assert.equal(inspectSubmission("", now - 10_000, now).human, true);
+  assert.equal(inspectSubmission("   ", now - 10_000, now).human, true, "whitespace is not a fill");
+});
+
+test("a form submitted faster than a human could type is refused", () => {
+  const now = Date.now();
+  assert.equal(inspectSubmission("", now, now).human, false, "instant submission is a script");
+  assert.equal(inspectSubmission("", now - (MIN_FILL_MILLISECONDS - 1), now).human, false);
+  assert.equal(inspectSubmission("", now - (MIN_FILL_MILLISECONDS + 1), now).human, true);
+});
+
+test("a stale stamp is refused, so a captured request cannot be replayed for days", () => {
+  const now = Date.now();
+  assert.equal(inspectSubmission("", now - (MAX_FORM_AGE_MILLISECONDS + 1), now).human, false);
+});
+
+test("a missing stamp is not held against the sender", () => {
+  // An old cached page or a browser without scripting must still reach us.
+  const now = Date.now();
+  for (const missing of [undefined, null, "", "nonsense", 0, -1]) {
+    assert.equal(inspectSubmission("", missing, now).human, true, `rejected on renderedAt=${JSON.stringify(missing)}`);
+  }
+});
+
+test("all three public forms render the guard fields and all three routes check them", async () => {
+  const [forms, anfragen, verkaufen, karten] = await Promise.all([
+    read("app/forms.tsx"), read("app/anfragen/page.tsx"),
+    read("app/verkaufen/page.tsx"), read("app/karten/page.tsx"),
+  ]);
+  assert.match(forms, new RegExp(`name=\\{${HONEYPOT_FIELD === "website" ? "HONEYPOT_FIELD" : HONEYPOT_FIELD}\\}`));
+  assert.match(forms, /aria-hidden="true"/, "the honeypot must be hidden from assistive technology too");
+  assert.match(forms, /autoComplete="off"/, "a password manager must not fill the honeypot");
+  // useFormSubmit calls form.reset() on success, which restores defaultValue="0".
+  // Without re-stamping, only the first submission from a page is ever timed.
+  assert.match(forms, /addEventListener\("reset"/, "the stamp must be renewed after a form reset");
+  for (const [name, page] of [["anfragen", anfragen], ["verkaufen", verkaufen], ["karten", karten]]) {
+    assert.match(page, /<BotGuardFields \/>/, `${name} must render the guard fields`);
+  }
+  for (const route of ["app/api/inquiries/route.ts", "app/api/prelisted-interest/route.ts", "app/api/card-submissions/route.ts"]) {
+    assert.match(await read(route), /assertHumanSubmission\(/, `${route} must check them`);
+  }
+});
+
+test("the multipart upload path checks the guard too, not just the JSON one", async () => {
+  const route = await read("app/api/card-submissions/route.ts");
+  const multipart = route.slice(route.indexOf("async function handleMultipartSubmission"));
+  assert.match(multipart, /assertHumanSubmission\(/, "uploads are the expensive path — they need it most");
+  // Both fields have to be read out of the multipart form; the JSON body
+  // helper cannot do it for this path.
+  assert.match(multipart, /HONEYPOT_FIELD\]: form\.get\(HONEYPOT_FIELD\)/);
+  assert.match(multipart, /RENDERED_AT_FIELD\]: form\.get\(RENDERED_AT_FIELD\)/);
+  assert.equal(RENDERED_AT_FIELD, "renderedAt", "the client and the route must agree on the field name");
+});
+
+// --- SEC-06, security headers ----------------------------------------------
+
+test("the four undisputed headers are set", () => {
+  const headers = securityHeaders("https://project.supabase.co");
+  assert.equal(headers["x-content-type-options"], "nosniff");
+  assert.equal(headers["referrer-policy"], "strict-origin-when-cross-origin");
+  assert.match(headers["permissions-policy"], /camera=\(\)/);
+  assert.equal(headers["x-frame-options"], "DENY");
+});
+
+test("the CSP ships report-only until it has been watched under real traffic", () => {
+  assert.equal(CSP_HEADER_NAME, "content-security-policy-report-only",
+    "turning this into the enforcing header is a deliberate second step");
+  const headers = securityHeaders("https://project.supabase.co");
+  assert.ok(!("content-security-policy" in headers), "the enforcing header must not appear by accident");
+});
+
+test("the policy allows what the shop actually needs and forbids the rest", () => {
+  const policy = contentSecurityPolicy("https://project.supabase.co");
+  assert.match(policy, /img-src[^;]*i\.ebayimg\.com/, "card photos come from eBay's CDN");
+  assert.match(policy, /img-src[^;]*data:/, "the sanitiser allows inline data: images");
+  assert.match(policy, /connect-src[^;]*https:\/\/project\.supabase\.co/, "auth is called from the browser");
+  assert.match(policy, /frame-ancestors 'none'/, "the shop does not belong in someone else's frame");
+  assert.match(policy, /object-src 'none'/);
+  assert.match(policy, /base-uri 'self'/);
+});
+
+test("a missing Supabase URL does not produce a broken connect-src", () => {
+  const policy = contentSecurityPolicy(undefined);
+  assert.match(policy, /connect-src 'self'(;|$)/, `dangling directive: ${policy}`);
+  assert.ok(!policy.includes("undefined"));
+});
+
+test("headers are added without overwriting what a route set on purpose", async () => {
+  const original = new Response("{}", { headers: { "cache-control": "no-store", "x-frame-options": "SAMEORIGIN" } });
+  const hardened = withSecurityHeaders(original, "https://project.supabase.co");
+  assert.equal(hardened.headers.get("cache-control"), "no-store", "the route's own header must survive");
+  assert.equal(hardened.headers.get("x-frame-options"), "SAMEORIGIN", "a deliberate override must survive");
+  assert.equal(hardened.headers.get("x-content-type-options"), "nosniff");
+  assert.equal(await hardened.text(), "{}", "the body must come through unchanged");
+});
+
+test("a bodyless response survives hardening", () => {
+  for (const status of [204, 304]) {
+    const hardened = withSecurityHeaders(new Response(null, { status }), undefined);
+    assert.equal(hardened.status, status);
+    assert.equal(hardened.headers.get("x-content-type-options"), "nosniff");
+  }
+});
+
+test("the worker actually applies them to every response", async () => {
+  const worker = await read("worker/index.ts");
+  assert.match(worker, /withSecurityHeaders/, "the headers must be wired up, not just written");
+  assert.match(worker, /harden\(await handler\.fetch/, "server-rendered pages need them too");
+  assert.match(worker, /harden\(await handleImageOptimization/, "so does the image endpoint");
+});
+
+// --- SEC-05, catalogue caching ---------------------------------------------
+
+test("the catalogue is cacheable at the edge, failures are not", async () => {
+  const route = await read("app/api/products/route.ts");
+  assert.match(route, /max-age=60/, "128 KB and ~1 725 D1 rows per call must not be served from the database every time");
+  assert.match(route, /stale-while-revalidate/);
+  const failure = route.slice(route.indexOf("catch (error)"));
+  assert.match(failure, /"cache-control": "no-store"/, "a cached 503 turns one bad moment into a minute-long outage");
+});
+
+// --- SEC-04, eBay quota -----------------------------------------------------
+
+test("the eBay description lookup is rate limited, the card is not", async () => {
+  const route = await read("app/api/products/[id]/route.ts");
+  assert.match(route, /enforcePublicRateLimit\(request, "ebay-description"\)/);
+  assert.match(route, /withinEbayFetchBudget/, "running out of budget must cost the description, not the card");
+  const guard = route.slice(route.indexOf("async function withinEbayFetchBudget"), route.indexOf("export async function GET"));
+  assert.match(guard, /return false/, "the limit must not turn into a 500");
+});
+
+// --- SEC-07, no password on our own server ---------------------------------
+
+test("the registration check neither expects nor accepts a password", async () => {
+  const [route, page] = await Promise.all([read("app/api/account/validate-registration/route.ts"), read("app/account/page.tsx")]);
+  assert.ok(!/body\.password/.test(route.replace(/"password" in body/, "")), "the route must not read a password");
+  assert.match(route, /"password" in body/, "and must refuse one if it arrives anyway");
+  const signup = page.slice(page.indexOf('mode === "signup"'), page.indexOf("supabase.auth.signUp"));
+  assert.ok(!/body: JSON.stringify\(\{ username, password/.test(signup), "the browser must not send it");
+  assert.match(signup, /password\.length < 8/, "length is checked in the browser instead");
+  assert.match(signup, /password !== passwordConfirmation/);
+});
+
+// --- SEC-08, upload size ----------------------------------------------------
+
+test("a multipart upload without Content-Length is refused before the body is buffered", async () => {
+  const route = await read("app/api/card-submissions/route.ts");
+  const multipart = route.slice(route.indexOf("async function handleMultipartSubmission"));
+  const beforeFormData = multipart.slice(0, multipart.indexOf("await request.formData()"));
+  assert.match(beforeFormData, /declaredLength === null/, "a missing header used to read as 0 and sail past the ceiling");
+  assert.match(beforeFormData, /411/, "the right answer is Length Required, not a crash");
+  assert.ok(!/Number\(request\.headers\.get\("content-length"\) \?\? 0\)/.test(route),
+    "`?? 0` is exactly the bypass: no header means no limit");
+});
+
+// --- SEC-09, write amplification and username collisions -------------------
+
+test("an unchanged profile is not written back on every request", () => {
+  const existing = { email: "a@b.de", username: "alice", role: "CUSTOMER" };
+  assert.equal(changed(existing, { email: "a@b.de", username: "alice" }), false);
+  assert.equal(changed(existing, { email: "a@b.de", username: "alicia" }), true);
+  assert.equal(changed(existing, { role: "ADMIN" }), true);
+});
+
+test("a taken username is recognised as a unique violation, not a crash", () => {
+  assert.equal(isUniqueViolation(new Error("D1_ERROR: UNIQUE constraint failed: users.username")), true);
+  assert.equal(isUniqueViolation(new Error("no such table: users")), false);
+  assert.equal(isUniqueViolation("not an error"), false);
+});
+
+test("a taken username leaves the account usable instead of breaking every request", async () => {
+  const appUser = await read("lib/app-user.ts");
+  assert.match(appUser, /isUniqueViolation\(error\)/,
+    "this runs on every authenticated request — an unhandled violation locks the account out of the shop");
+  assert.match(appUser, /changed\(existing, next\)/);
+});
+
+// --- SEC-11, dead header-trusting auth --------------------------------------
+
+test("the starter's header-trusting auth helper is gone", async () => {
+  await assert.rejects(access(new URL("../app/chatgpt-auth.ts", import.meta.url)),
+    "a module that reads identity straight out of a request header must not sit around waiting to be imported");
+  const readme = await read("README.md");
+  assert.ok(!/Import the ready-to-use helpers/.test(readme), "the README must not invite anyone to use it");
+});

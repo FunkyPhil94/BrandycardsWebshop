@@ -1,13 +1,12 @@
 import { env } from "cloudflare:workers";
+import { RATE_LIMIT_TIERS, createMemoryLimiter, rateLimitKey, type RateLimitTier } from "./rate-limit-policy";
 
-type MemoryEntry = { count: number; resetAt: number };
 type CloudflareRateLimiter = { limit(input: { key: string }): Promise<{ success: boolean }> };
-const memoryStore = new Map<string, MemoryEntry>();
 
-function keyFor(request: Request, scope: string) {
-  const ip = request.headers.get("cf-connecting-ip") ?? request.headers.get("x-forwarded-for")?.split(",")[0] ?? "unknown";
-  return `${scope}:${ip.trim().slice(0, 128)}`;
-}
+const memory = createMemoryLimiter();
+/** One warning per binding per isolate — enough to be visible in the log,
+ *  not enough to drown it. */
+const announced = new Set<string>();
 
 export class RateLimitError extends Error {
   readonly status = 429;
@@ -16,16 +15,23 @@ export class RateLimitError extends Error {
   constructor() { super("Zu viele Anfragen. Bitte später erneut versuchen."); }
 }
 
-export async function enforcePublicRateLimit(request: Request, scope: string, limit = 10, windowMs = 60_000) {
-  const binding = (env as unknown as { RATE_LIMITER?: CloudflareRateLimiter }).RATE_LIMITER;
-  const key = keyFor(request, scope);
+export async function enforcePublicRateLimit(request: Request, scope: string, tier: RateLimitTier = "standard") {
+  const policy = RATE_LIMIT_TIERS[tier];
+  const binding = (env as unknown as Record<string, CloudflareRateLimiter | undefined>)[policy.binding];
+  const key = rateLimitKey(request, scope);
+
   if (binding) {
     if (!(await binding.limit({ key })).success) throw new RateLimitError();
     return;
   }
-  const now = Date.now();
-  const current = memoryStore.get(key);
-  if (!current || current.resetAt <= now) { memoryStore.set(key, { count: 1, resetAt: now + windowMs }); return; }
-  current.count += 1;
-  if (current.count > limit) throw new RateLimitError();
+
+  // Falling back silently is worse than having no limit: the code reads as
+  // protected while every isolate starts counting from scratch. Say it out
+  // loud so a missing binding shows up in the log instead of in an incident.
+  if (!announced.has(policy.binding)) {
+    announced.add(policy.binding);
+    console.error(`[rate-limit] Binding ${policy.binding} fehlt in wrangler.toml — die Begrenzung wirkt nur innerhalb dieses Isolates und ist praktisch wirkungslos.`, { scope, tier });
+  }
+
+  if (!memory.take(key, policy.limit, policy.periodSeconds * 1000)) throw new RateLimitError();
 }

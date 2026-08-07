@@ -3,6 +3,18 @@ import { NextResponse } from "next/server";
 import { getDb } from "../../../db";
 import { ebayListings, productAssets, products } from "../../../db/schema";
 
+/** The catalogue changes when the eBay sync runs, not between two page views.
+ *
+ * Without this the endpoint answered every single request from D1: 296 cards,
+ * ~1 725 rows read and 128 KB per call, with no authentication in front of it.
+ * A loop could exhaust a day's D1 read allowance in minutes — and then every
+ * page that needs the database answers 503, not just this one. Cloudflare now
+ * serves repeats from the edge; `stale-while-revalidate` keeps the first
+ * request after expiry fast instead of making it wait.
+ * See docs/security-findings.md, SEC-05.
+ */
+export const CATALOGUE_CACHE_CONTROL = "public, max-age=60, stale-while-revalidate=300";
+
 export async function GET() {
   try {
     const db = getDb();
@@ -28,9 +40,11 @@ export async function GET() {
       if (row.asset?.sourceUrl) current.imageUrls.push(row.asset.sourceUrl);
       byId.set(row.product.id, current);
     }
-    return NextResponse.json({ products: Array.from(byId.values()) });
+    return NextResponse.json({ products: Array.from(byId.values()) }, { headers: { "cache-control": CATALOGUE_CACHE_CONTROL } });
   } catch (error) {
     console.error("public product query failed", error);
-    return NextResponse.json({ error: "Produkte konnten nicht geladen werden." }, { status: 503 });
+    // Never cache a failure — a 503 sitting at the edge for a minute would
+    // turn one bad moment into a minute-long outage.
+    return NextResponse.json({ error: "Produkte konnten nicht geladen werden." }, { status: 503, headers: { "cache-control": "no-store" } });
   }
 }

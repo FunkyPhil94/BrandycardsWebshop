@@ -112,10 +112,14 @@ export default function AccountPage() {
         if (error) throw error;
         setMessage("Wenn ein Konto existiert, wurde eine E-Mail zum Zurücksetzen versendet.");
       } else if (mode === "signup") {
+        // Length and equality are decided here; the password is never sent to
+        // our own server, only to Supabase. See docs/security-findings.md, SEC-07.
+        if (password.length < 8) throw new Error("Das Passwort muss mindestens 8 Zeichen lang sein.");
+        if (password !== passwordConfirmation) throw new Error("Die Passwörter stimmen nicht überein.");
         const validation = await fetch("/api/account/validate-registration", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ username, password, passwordConfirmation }),
+          body: JSON.stringify({ username }),
         });
         const validationBody = await validation.json() as { error?: string };
         if (!validation.ok) throw new Error(validationBody.error ?? "Die Registrierungsdaten sind ungültig.");

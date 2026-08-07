@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { ChangeEvent, useState } from "react";
-import { Field, FormFeedback, PrivacyNotice, postMultipart, useFormSubmit } from "../forms";
+import { BotGuardFields, Field, FormFeedback, PrivacyNotice, postMultipart, useFormSubmit } from "../forms";
 import { SiteFooter, SiteHeader } from "../site-chrome";
 
 export default function VerkaufenPage() {
@@ -38,6 +38,7 @@ export default function VerkaufenPage() {
           setImageCount(0);
           return message;
         })}>
+          <BotGuardFields />
           <Field label="Kartentitel" name="title" placeholder="z. B. 2023-24 Panini Prizm Bukayo Saka Silver" />
           <Field label="Gewünschter Preis in €" name="price" type="number" required={false} placeholder="Optional" />
           <label className="form-field">

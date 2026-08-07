@@ -1,3 +1,21 @@
+/** NOTE (docs/security-findings.md, SEC-12): this route deliberately has no
+ * `requireAdmin` check, and adding one would break the flow rather than secure
+ * it — eBay redirects the *browser* here, and a navigation carries no
+ * `Authorization` header, which is where this app's Supabase session lives.
+ *
+ * What guards it instead: `state` is HMAC-signed with EBAY_CLIENT_SECRET,
+ * valid for ten minutes, and only ever handed out by the admin-protected
+ * `/start` route; eBay's `code` is single-use. The residual risk is an
+ * attacker who reads `code` and `state` out of a proxy log or browser history
+ * and replays them before the admin's own browser arrives — seconds, in
+ * practice.
+ *
+ * Closing it properly means not printing the token in the response to the
+ * redirect at all: park the exchange behind a short-lived claim id and let the
+ * signed-in admin area fetch the token with its Bearer token. That needs a
+ * place to park it, i.e. a migration, so it is left as an open finding rather
+ * than half-built.
+ */
 function escapeHtml(value: string) {
   return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
 }

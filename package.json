@@ -9,16 +9,16 @@
     "dev": "vinext dev",
     "build": "vinext build",
     "start": "vinext start",
-    "test": "npm run build && node --test tests/rendered-html.test.mjs tests/ebay-active-list.test.mjs tests/d1-limits.test.mjs tests/ebay-images.test.mjs tests/sanitize-html.test.mjs tests/ebay-description.test.mjs tests/price-offers.test.mjs",
+    "test": "npm run build && node --test tests/rendered-html.test.mjs tests/ebay-active-list.test.mjs tests/d1-limits.test.mjs tests/ebay-images.test.mjs tests/sanitize-html.test.mjs tests/ebay-description.test.mjs tests/price-offers.test.mjs tests/rate-limit.test.mjs tests/order-guard.test.mjs tests/hardening.test.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.112.1",
     "drizzle-orm": "0.45.2",
-    "next": "16.2.6",
-    "react": "19.2.6",
-    "react-dom": "19.2.6"
+    "next": "16.2.11",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "1.37.1",
@@ -31,7 +31,7 @@
     "drizzle-kit": "0.31.10",
     "eslint": "9.39.4",
     "eslint-config-next": "16.2.6",
-    "react-server-dom-webpack": "19.2.6",
+    "react-server-dom-webpack": "19.2.8",
     "tailwindcss": "4.2.1",
     "typescript": "5.9.3",
     "vinext": "0.0.50",

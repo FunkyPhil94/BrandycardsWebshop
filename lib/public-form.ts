@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { getDb } from "../db";
 import { products } from "../db/schema";
+import { HONEYPOT_FIELD, RENDERED_AT_FIELD, inspectSubmission } from "./form-bot-guard";
 import { RateLimitError } from "./rate-limit";
 
 export class PublicFormError extends Error {
@@ -55,6 +56,17 @@ export async function readJsonBody(request: Request): Promise<UnknownRecord> {
     throw new PublicFormError(400, "INVALID_BODY", "Die Anfrage muss ein JSON-Objekt enthalten.");
   }
   return body as UnknownRecord;
+}
+
+/** Rejects the cheap automation the rate limit alone cannot tell apart from a
+ *  customer. Deliberately answers like an ordinary validation error, so a bot
+ *  learns nothing about why it was turned away. */
+export function assertHumanSubmission(fields: { [HONEYPOT_FIELD]?: unknown; [RENDERED_AT_FIELD]?: unknown }, now = Date.now()) {
+  const verdict = inspectSubmission(fields[HONEYPOT_FIELD], fields[RENDERED_AT_FIELD], now);
+  if (verdict.human) return;
+  throw new PublicFormError(400, "INVALID_INPUT", verdict.reason === "too-fast"
+    ? "Das ging uns zu schnell. Bitte sende das Formular gleich noch einmal ab."
+    : "Die Anfrage konnte nicht verarbeitet werden. Bitte lade die Seite neu und versuche es erneut.");
 }
 
 export function assertSameOrigin(request: Request) {

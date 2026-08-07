@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { inquiries } from "../../../db/schema";
 import {
+  assertHumanSubmission,
   existingProduct,
   formMetadata,
   jsonError,
@@ -16,6 +17,7 @@ export async function POST(request: Request) {
   try {
     await enforcePublicRateLimit(request, "inquiries");
     const body = await readJsonBody(request);
+    assertHumanSubmission(body);
     const email = requiredEmail(body);
     const title = requiredString(body, "title", "Kartentitel", 240);
     const message = requiredString(body, "message", "Nachricht", 4000);

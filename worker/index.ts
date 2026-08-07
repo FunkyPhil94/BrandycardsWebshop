@@ -6,6 +6,7 @@ import { getDb } from "../db";
 import { releaseExpiredReservations } from "../lib/paypal/settle-order";
 import { processEbayOutbox } from "../lib/ebay-outbox";
 import { expireLapsedOffers } from "../lib/price-offers";
+import { withSecurityHeaders } from "../lib/security-headers";
 
 interface Env {
   ASSETS: Fetcher;
@@ -39,18 +40,24 @@ const worker = {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
 
+    // Every response leaves through here, so this is the one place where the
+    // security headers reach server-rendered pages, API answers and assets
+    // alike. `public/_headers` would only cover the last of the three.
+    // See docs/security-findings.md, SEC-06.
+    const harden = (response: Response) => withSecurityHeaders(response, process.env.NEXT_PUBLIC_SUPABASE_URL);
+
     if (url.pathname === "/_vinext/image") {
       const allowedWidths = [...DEFAULT_DEVICE_SIZES, ...DEFAULT_IMAGE_SIZES];
-      return handleImageOptimization(request, {
+      return harden(await handleImageOptimization(request, {
         fetchAsset: (path) => env.ASSETS.fetch(new Request(new URL(path, request.url))),
         transformImage: async (body, { width, format, quality }) => {
           const result = await env.IMAGES.input(body).transform(width > 0 ? { width } : {}).output({ format, quality });
           return result.response();
         },
-      }, allowedWidths);
+      }, allowedWidths));
     }
 
-    return handler.fetch(request, env, ctx);
+    return harden(await handler.fetch(request, env, ctx));
   },
 
   scheduled(_controller: ScheduledController, _env: Env, ctx: ExecutionContext): void {

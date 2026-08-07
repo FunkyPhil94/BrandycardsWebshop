@@ -100,3 +100,53 @@ test("a table with more than two columns is not misread as specs", () => {
   const wide = sanitizeHtml("<h2>Tabelle</h2><table><tr><td>a</td><td>b</td><td>c</td></tr></table><p>Text</p>");
   assert.deepEqual(parseEbayDescription(wide).specs, []);
 });
+
+// --- SEC-01 -----------------------------------------------------------------
+// The parser runs on the sanitiser's output and hands its result to
+// dangerouslySetInnerHTML. Its text() helper decodes entities, so any branch
+// that puts text back into markup must escape it again — otherwise the
+// sanitiser's work is undone one layer later. See docs/security-findings.md.
+//
+// The trigger is ordinary eBay markup: a heading followed by a <div>, with no
+// <p>/<ul>/<ol> block underneath, takes the fallback branch.
+
+/** Every route by which a section's html reaches the browser as live markup. */
+function executableMarkup(sections) {
+  return sections.filter((section) => /<\w+[^>]*\son[a-z]+\s*=/i.test(section.html) || /<script\b/i.test(section.html));
+}
+
+test("entity-encoded markup in a description stays inert", () => {
+  const attack = "<h2>Zustand</h2><div>Karte ist top &lt;img src=x onerror=alert(1)&gt; Ende</div>";
+  const result = parseEbayDescription(sanitizeHtml(attack));
+
+  assert.equal(executableMarkup(result.sections).length, 0,
+    `sanitised markup came back alive: ${JSON.stringify(result.sections)}`);
+  const section = result.sections.find((entry) => entry.heading === "Zustand");
+  assert.ok(section, "the section itself must survive, only its markup must not");
+  assert.ok(section.html.includes("&lt;img"), `the tag must stay escaped, got ${section.html}`);
+  assert.ok(section.html.includes("Karte ist top"), "the readable text must survive");
+});
+
+test("uppercase entities are no way around it either", () => {
+  // decode() matches case-insensitively, so &LT; must be treated like &lt;.
+  const attack = "<h2>Info</h2><div>&LT;img src=x onerror=alert(1)&GT;</div>";
+  const result = parseEbayDescription(sanitizeHtml(attack));
+  assert.equal(executableMarkup(result.sections).length, 0,
+    `uppercase entities slipped through: ${JSON.stringify(result.sections)}`);
+});
+
+test("an entity-encoded script block stays text", () => {
+  const attack = "<h2>Info</h2><div>&lt;script&gt;alert(1)&lt;/script&gt; Rest</div>";
+  const result = parseEbayDescription(sanitizeHtml(attack));
+  for (const section of result.sections) {
+    assert.ok(!/<script/i.test(section.html), `script tag rebuilt: ${section.html}`);
+  }
+});
+
+test("a bare ampersand in the fallback branch is escaped, not left dangling", () => {
+  const result = parseEbayDescription(sanitizeHtml("<h2>Titel</h2><div>Sleeve &amp; Toploader</div>"));
+  const section = result.sections.find((entry) => entry.heading === "Titel");
+  assert.ok(section, "section expected");
+  assert.equal(section.html, "<p>Sleeve &amp; Toploader</p>",
+    "the text must render as 'Sleeve & Toploader', so the ampersand needs re-encoding");
+});

@@ -3,6 +3,8 @@ name: CI
 on:
   push:
     branches: [main]
+  # Deliberately `pull_request`, never `pull_request_target`: a fork's pull
+  # request must not run with access to this repository's secrets.
   pull_request:
 
 permissions:
@@ -14,11 +16,14 @@ jobs:
     timeout-minutes: 10
 
     steps:
+      # Actions are pinned to a commit, not a tag: a tag can be moved to point
+      # at different code, and this workflow would then run it without anyone
+      # noticing. The version stays in the comment so upgrades remain readable.
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22
           cache: npm
@@ -29,5 +34,21 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      # `npm test` only builds; it never sees a type error. Two real type bugs
+      # reached main through green runs before this step existed.
+      - name: Type check
+        run: npx tsc --noEmit
+
       - name: Test and build
         run: npm test
+
+      # Fails on `critical` rather than `high` on purpose. The remaining high
+      # findings are build tooling that `next` carries along (postcss, sharp)
+      # and cannot be resolved without a minor Next.js bump — see
+      # docs/security-findings.md, SEC-13. A gate that is red every single run
+      # is a gate nobody reads; this one stays quiet until something genuinely
+      # needs attention, while the full report is printed either way.
+      - name: Dependency audit
+        run: |
+          npm audit || true
+          npm audit --audit-level=critical

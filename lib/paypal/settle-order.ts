@@ -48,9 +48,27 @@ export async function releaseOrderReservations(db: ReturnType<typeof getDb>, ord
   return rows.length;
 }
 
-export async function releaseExpiredReservations(db: ReturnType<typeof getDb>, now: string) {
-  const expired = await db.select({ orderId: reservations.orderId }).from(reservations).where(and(eq(reservations.status, "ACTIVE"), lte(reservations.expiresAt, now)));
+/** Frees reservations whose window has closed.
+ *
+ * `userId` narrows the sweep to one customer. The checkout uses that before
+ * creating an order, so a customer's own lapsed holds come back immediately
+ * instead of waiting for the next scheduled run — which, at an hourly cron and
+ * a fifteen minute window, could be another 45 minutes away. See
+ * docs/security-findings.md, SEC-03.
+ */
+export async function releaseExpiredReservations(db: ReturnType<typeof getDb>, now: string, userId?: string) {
+  const lapsed = and(eq(reservations.status, "ACTIVE"), lte(reservations.expiresAt, now));
+  const expired = await db.select({ orderId: reservations.orderId }).from(reservations)
+    .where(userId ? and(lapsed, eq(reservations.userId, userId)) : lapsed);
   const orderIds = [...new Set(expired.map((row) => row.orderId).filter((id): id is string => Boolean(id)))];
   for (const orderId of orderIds) await releaseOrderReservations(db, orderId, now, "EXPIRED");
   return orderIds.length;
+}
+
+/** Units of stock a customer is currently holding in unpaid orders. */
+export async function reservedUnitsForUser(db: ReturnType<typeof getDb>, userId: string) {
+  const [row] = await db.select({ total: sql<number>`COALESCE(SUM(${reservations.quantity}), 0)` })
+    .from(reservations)
+    .where(and(eq(reservations.userId, userId), eq(reservations.status, "ACTIVE")));
+  return Number(row?.total ?? 0);
 }

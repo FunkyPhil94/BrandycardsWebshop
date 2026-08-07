@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Field, FormFeedback, PrivacyNotice, postJson, useFormSubmit } from "../forms";
+import { BotGuardFields, Field, FormFeedback, PrivacyNotice, botGuardPayload, postJson, useFormSubmit } from "../forms";
 import { SiteFooter, SiteHeader } from "../site-chrome";
 
 export default function AnfragenPage() {
@@ -24,11 +24,13 @@ export default function AnfragenPage() {
         <form onSubmit={(event) => inquiry.run(event, async (form) => {
           const data = new FormData(form);
           return postJson("/api/inquiries", {
+            ...botGuardPayload(form),
             title: data.get("title"),
             message: data.get("message"),
             email: data.get("email"),
           });
         })}>
+          <BotGuardFields />
           <Field label="Kartentitel" name="title" placeholder="z. B. 2024 Topps Chrome UCC Lamine Yamal" />
           <label className="form-field">
             <span>Nachricht<b aria-hidden="true"> *</b></span>

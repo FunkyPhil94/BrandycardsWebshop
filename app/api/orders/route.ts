@@ -1,12 +1,14 @@
-import { and, eq, gte, inArray } from "drizzle-orm";
+import { and, eq, gte, inArray, sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { getDb } from "../../../db";
 import { ebayListings, inventory, orderItems, orders, products, reservations } from "../../../db/schema";
 import { getAuthenticatedAppUser } from "../../../lib/app-user";
+import { checkReservationCapacity, MAX_ORDER_POSITIONS, RESERVATION_MINUTES } from "../../../lib/order-guard";
 import { acceptedOfferPrices } from "../../../lib/price-offers";
+import { releaseExpiredReservations, reservedUnitsForUser } from "../../../lib/paypal/settle-order";
+import { enforcePublicRateLimit } from "../../../lib/rate-limit";
 
 const EU_COUNTRIES = new Set(["AT", "BE", "BG", "HR", "CY", "CZ", "DK", "EE", "ES", "FI", "FR", "GR", "HU", "IE", "IT", "LT", "LU", "LV", "MT", "NL", "PL", "PT", "RO", "SE", "SI", "SK"]);
-const RESERVATION_MINUTES = 15;
 
 class OrderIssue extends Error {
   constructor(public readonly publicMessage: string) {
@@ -35,10 +37,11 @@ function orderNumber() {
 
 export async function POST(request: Request) {
   try {
+    await enforcePublicRateLimit(request, "orders");
     const appUser = await getAuthenticatedAppUser(request);
     if (!appUser) return NextResponse.json({ error: "Bitte melde dich für den Checkout an." }, { status: 401 });
     const body = await request.json() as { items?: unknown; shippingAddress?: unknown };
-    if (!Array.isArray(body.items) || body.items.length < 1 || body.items.length > 50) return NextResponse.json({ error: "Der Warenkorb ist leer." }, { status: 400 });
+    if (!Array.isArray(body.items) || body.items.length < 1 || body.items.length > MAX_ORDER_POSITIONS) return NextResponse.json({ error: "Der Warenkorb ist leer." }, { status: 400 });
     const shippingAddress = cleanAddress(body.shippingAddress);
     if (!shippingAddress) return NextResponse.json({ error: "Bitte vervollständige die Lieferadresse für Deutschland oder die EU." }, { status: 400 });
     const requested = new Map<string, number>();
@@ -49,6 +52,15 @@ export async function POST(request: Request) {
       requested.set(productId, (requested.get(productId) ?? 0) + quantity);
     }
     const db = getDb();
+
+    // Give this customer's own lapsed holds back before counting what they
+    // hold. Without it the ceiling below would lock someone out for up to an
+    // hour over a checkout they abandoned fifteen minutes ago.
+    await releaseExpiredReservations(db, new Date().toISOString(), appUser.id);
+    const requestedUnits = [...requested.values()].reduce((sum, quantity) => sum + quantity, 0);
+    const capacity = checkReservationCapacity(await reservedUnitsForUser(db, appUser.id), requestedUnits);
+    if (!capacity.allowed) throw new OrderIssue(capacity.message);
+
     const ids = Array.from(requested.keys());
     const rows = await db.select({ product: products, listing: ebayListings, stock: inventory }).from(products)
         .innerJoin(ebayListings, and(eq(ebayListings.productId, products.id), eq(ebayListings.status, "ACTIVE"), eq(ebayListings.listingType, "FIXED_PRICE")))
@@ -77,11 +89,32 @@ export async function POST(request: Request) {
     // Cloudflare D1 rejects SQL BEGIN/COMMIT statements. Drizzle's generic
     // transaction helper emits those statements, so use D1's native batch API.
     // D1 executes the batch atomically while keeping all writes on one request.
-    const stockWrites = lineItems.map((item) => db.update(inventory).set({ availableQuantity: item.stock.availableQuantity - item.quantity, reservedQuantity: item.stock.reservedQuantity + item.quantity, status: "RESERVED", version: item.stock.version + 1, updatedAt: new Date().toISOString() }).where(and(eq(inventory.id, item.stock.id), gte(inventory.availableQuantity, item.quantity))));
+    //
+    // The quantities are written relative to the stored value, never as an
+    // absolute number computed from the row we read earlier: two concurrent
+    // orders can both pass the `gte` guard and would then write the same
+    // absolute value, losing one booking. Relative arithmetic makes the write
+    // itself the arithmetic. See docs/security-findings.md, SEC-10.
+    const bookedAt = new Date().toISOString();
+    const stockWrites = lineItems.map((item) => db.update(inventory).set({
+      availableQuantity: sql`${inventory.availableQuantity} - ${item.quantity}`,
+      reservedQuantity: sql`${inventory.reservedQuantity} + ${item.quantity}`,
+      status: "RESERVED",
+      version: sql`${inventory.version} + 1`,
+      updatedAt: bookedAt,
+    }).where(and(eq(inventory.id, item.stock.id), gte(inventory.availableQuantity, item.quantity))));
     const stockResults = await db.batch(stockWrites as unknown as Parameters<typeof db.batch>[0]);
     if (stockResults.some((result) => result.meta.changes !== 1)) {
+      // Undo relatively as well — restoring the snapshot would overwrite
+      // whatever the concurrent order booked in between.
       const rollbackWrites = lineItems.map((item, index) => stockResults[index].meta.changes === 1
-        ? db.update(inventory).set({ availableQuantity: item.stock.availableQuantity, reservedQuantity: item.stock.reservedQuantity, status: item.stock.status, version: item.stock.version, updatedAt: new Date().toISOString() }).where(eq(inventory.id, item.stock.id))
+        ? db.update(inventory).set({
+            availableQuantity: sql`${inventory.availableQuantity} + ${item.quantity}`,
+            reservedQuantity: sql`${inventory.reservedQuantity} - ${item.quantity}`,
+            status: sql`CASE WHEN ${inventory.reservedQuantity} - ${item.quantity} = 0 THEN 'AVAILABLE' ELSE 'RESERVED' END`,
+            version: sql`${inventory.version} + 1`,
+            updatedAt: new Date().toISOString(),
+          }).where(and(eq(inventory.id, item.stock.id), gte(inventory.reservedQuantity, item.quantity)))
         : null).filter((write): write is NonNullable<typeof write> => write !== null);
       if (rollbackWrites.length) await db.batch(rollbackWrites as unknown as Parameters<typeof db.batch>[0]);
       throw new OrderIssue("Ein Artikel wurde gerade von einem anderen Kunden reserviert.");

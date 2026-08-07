@@ -2,6 +2,7 @@ import { and, desc, eq, isNotNull, sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { getDb } from "../../../../db";
 import { ebayListings, productAssets, products } from "../../../../db/schema";
+import { CATALOGUE_CACHE_CONTROL } from "../route";
 
 export const GALLERY_SIZE = 5;
 
@@ -78,9 +79,9 @@ export async function GET() {
       newest: newestRows.map(toHighlight),
       priciest: priciest.map(toHighlight),
       startAtAvailable: newest.length > 0,
-    });
+    }, { headers: { "cache-control": CATALOGUE_CACHE_CONTROL } });
   } catch (error) {
     console.error("product highlights query failed", error);
-    return NextResponse.json({ error: "Karten konnten nicht geladen werden." }, { status: 503 });
+    return NextResponse.json({ error: "Karten konnten nicht geladen werden." }, { status: 503, headers: { "cache-control": "no-store" } });
   }
 }

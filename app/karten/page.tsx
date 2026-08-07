@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { ebayImageVariant } from "../../lib/ebay-images.ts";
-import { Field, FormFeedback, PrivacyNotice, postJson, useFormSubmit } from "../forms";
+import { BotGuardFields, Field, FormFeedback, PrivacyNotice, botGuardPayload, postJson, useFormSubmit } from "../forms";
 import { EBAY_SHOP_URL, SiteFooter, SiteHeader, formatPrice, useCart } from "../site-chrome";
 
 type Product = {
@@ -134,9 +134,11 @@ export default function KartenPage() {
         <p>Hinterlasse deine E-Mail-Adresse — wir melden uns, sobald die Karte in den Verkauf geht.</p>
       </div>
       <form onSubmit={(event) => interest.run(event, async (form) => postJson("/api/prelisted-interest", {
+        ...botGuardPayload(form),
         productId: selected.id,
         email: new FormData(form).get("email"),
       }))}>
+        <BotGuardFields />
         <Field label="E-Mail-Adresse" name="email" type="email" />
         <PrivacyNotice />
         <div className="form-row">

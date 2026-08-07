@@ -30,6 +30,7 @@ declare module "cloudflare:workers" {
     DB: D1Database;
     UPLOADS: R2Bucket;
     RATE_LIMITER?: { limit(input: { key: string }): Promise<{ success: boolean }> };
+    RATE_LIMITER_STRICT?: { limit(input: { key: string }): Promise<{ success: boolean }> };
     [key: string]: string | Fetcher | D1Database | R2Bucket | { limit(input: { key: string }): Promise<{ success: boolean }> } | undefined;
   };
 }

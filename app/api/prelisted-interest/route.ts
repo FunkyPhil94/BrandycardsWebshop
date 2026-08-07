@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { inquiries } from "../../../db/schema";
 import {
+  assertHumanSubmission,
   existingProduct,
   formMetadata,
   jsonError,
@@ -15,6 +16,7 @@ export async function POST(request: Request) {
   try {
     await enforcePublicRateLimit(request, "prelisted-interest");
     const body = await readJsonBody(request);
+    assertHumanSubmission(body);
     const email = requiredEmail(body);
     const productId = requiredString(body, "productId", "Produktreferenz", 64);
     const message = optionalString(body, "message", "Nachricht", 4000) ?? "Interesse an dieser Karte.";
