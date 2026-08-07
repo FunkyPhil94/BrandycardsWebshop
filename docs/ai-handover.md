@@ -37,47 +37,8 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-- **Stand:** LÄUFT
-- **Datum:** 2026-08-07
-- **Ziel:** Die drei Schriften selbst ausliefern statt von Google Fonts. Der
-  Betreiber hat sich am 2026-08-07 dafür entschieden, nachdem der Befund
-  vorlag.
-- **Warum:** `app/globals.css:1` lädt DM Mono, Manrope und Playfair Display per
-  `@import` von `fonts.googleapis.com`. Die CSP erlaubt nur
-  `style-src 'self' 'unsafe-inline'` — der Browser **blockt den Import**.
-  Nachgeprüft, dass das nicht nur lokal gilt: Die ausgelieferte CSS in
-  Produktion trägt den `@import`, und der `content-security-policy`-Kopf dort
-  nennt dieselbe Regel. **Der Shop läuft seit jeher auf Ersatzschriften.**
-- **Warum selbst ausliefern und nicht die CSP öffnen:** Zwei Fremdhosts weniger
-  (`fonts.googleapis.com` für die CSS, `fonts.gstatic.com` für die Dateien),
-  die CSP bleibt eng, und es entfällt ein Datenabfluss an Google bei jedem
-  Seitenaufruf — was die Datenschutzerklärung sonst nennen müsste. Dazu ein
-  Rundlauf weniger beim Laden: Der Browser muss heute erst die CSS holen, um
-  überhaupt zu erfahren, welche Dateien er braucht.
-- **Geplante Schritte:**
-  1. Die `woff2`-Dateien von `fonts.gstatic.com` holen, **nur die Schnitte
-     `latin` und `latin-ext`**. `latin-ext` wird gebraucht, weil Kartentitel
-     von eBay polnische und südslawische Namen enthalten (`Kamiński`,
-     `Jovanović`) — ohne den Schnitt wechselt mitten im Wort die Schrift.
-     Nicht geholt werden Kyrillisch, Griechisch und Vietnamesisch.
-  2. Ablage in `public/fonts/`. Die CSP erlaubt `font-src 'self' data:`,
-     eigene Dateien sind damit ohne Änderung an der Regel abgedeckt.
-  3. `@import` in `app/globals.css` durch `@font-face`-Blöcke ersetzen, mit
-     `font-display:swap` und den `unicode-range`-Angaben aus der Google-CSS —
-     ohne sie lädt der Browser beide Schnitte statt nur des gebrauchten.
-  4. Manrope und Playfair Display sind **variable** Schriften (ein Schnitt
-     deckt `400 800` bzw. `500 600` ab), DM Mono ist statisch und braucht 400
-     und 500 einzeln.
-- **Betroffen:** `app/globals.css`, neu `public/fonts/*.woff2`.
-  **Kein Code, keine Datenbank, keine Migration, kein eBay-Aufruf.** Die CSP
-  bleibt unverändert — das ist der Punkt der Übung.
-- **Verifikation:** Im Browser messen, nicht im Markup suchen: keine
-  CSP-Meldung mehr in der Konsole, kein Abruf an `fonts.gstatic.com` oder
-  `fonts.googleapis.com` in den Netzwerkanfragen, und die tatsächlich
-  verwendete Schrift über `document.fonts.check` bzw. die gerenderte
-  Textbreite gegen die Ersatzschrift prüfen. Danach Prüfkette und Deploy.
-- **Rückweg:** Der `@import` ist eine Zeile; die Schriftdateien stören nicht,
-  wenn sie ungenutzt liegen bleiben.
+_Kein laufender Auftrag._ Vorlage: Stand, Datum, Ziel, geplante Schritte,
+betroffene Dateien, Verifikation, Ergebnis.
 
 ---
 
@@ -181,6 +142,13 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
   vollständig aus den vorhandenen Regeln (`--paper`, `--ink`, `--line`,
   `--muted`, `#f8f6f1` wie `.form-card`), sollte also tragen; ein Blick lohnt
   trotzdem.
+- **Die Schriften liegen im Repository und werden selbst ausgeliefert**
+  (`public/fonts/`, 10 Dateien, 228 KB, Schnitte `latin` und `latin-ext`).
+  Der frühere `@import` von Google Fonts wurde von der eigenen CSP blockiert —
+  der Shop lief unbemerkt auf Ersatzschriften. **Wer eine Schrift, einen
+  Schnitt oder ein Schriftgewicht ergänzt, muss die Datei mit einchecken**;
+  ein neuer `@import` würde wieder still blockiert. Die CSP bleibt dafür
+  unverändert eng (`font-src 'self' data:`).
 - **Die CSP trägt `'unsafe-inline'` für Skripte.** vinext liefert acht
   Inline-`<script>`-Blöcke je Seite; ohne Nonces bliebe die Seite sonst leer.
   Folge: Inline-Eventhandler sind erlaubt, ein künftiges `<img onerror=…>`
@@ -272,6 +240,76 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
 ---
 
 ## Historie
+
+### 2026-08-07 — Schriften selbst ausliefern statt von Google
+
+- **Stand:** ABGESCHLOSSEN
+- **Datum:** 2026-08-07
+- **Ziel:** Die drei Schriften selbst ausliefern statt von Google Fonts. Der
+  Betreiber hat sich am 2026-08-07 dafür entschieden, nachdem der Befund
+  vorlag.
+- **Warum:** `app/globals.css:1` lädt DM Mono, Manrope und Playfair Display per
+  `@import` von `fonts.googleapis.com`. Die CSP erlaubt nur
+  `style-src 'self' 'unsafe-inline'` — der Browser **blockt den Import**.
+  Nachgeprüft, dass das nicht nur lokal gilt: Die ausgelieferte CSS in
+  Produktion trägt den `@import`, und der `content-security-policy`-Kopf dort
+  nennt dieselbe Regel. **Der Shop läuft seit jeher auf Ersatzschriften.**
+- **Warum selbst ausliefern und nicht die CSP öffnen:** Zwei Fremdhosts weniger
+  (`fonts.googleapis.com` für die CSS, `fonts.gstatic.com` für die Dateien),
+  die CSP bleibt eng, und es entfällt ein Datenabfluss an Google bei jedem
+  Seitenaufruf — was die Datenschutzerklärung sonst nennen müsste. Dazu ein
+  Rundlauf weniger beim Laden: Der Browser muss heute erst die CSS holen, um
+  überhaupt zu erfahren, welche Dateien er braucht.
+- **Geplante Schritte:**
+  1. Die `woff2`-Dateien von `fonts.gstatic.com` holen, **nur die Schnitte
+     `latin` und `latin-ext`**. `latin-ext` wird gebraucht, weil Kartentitel
+     von eBay polnische und südslawische Namen enthalten (`Kamiński`,
+     `Jovanović`) — ohne den Schnitt wechselt mitten im Wort die Schrift.
+     Nicht geholt werden Kyrillisch, Griechisch und Vietnamesisch.
+  2. Ablage in `public/fonts/`. Die CSP erlaubt `font-src 'self' data:`,
+     eigene Dateien sind damit ohne Änderung an der Regel abgedeckt.
+  3. `@import` in `app/globals.css` durch `@font-face`-Blöcke ersetzen, mit
+     `font-display:swap` und den `unicode-range`-Angaben aus der Google-CSS —
+     ohne sie lädt der Browser beide Schnitte statt nur des gebrauchten.
+  4. Manrope und Playfair Display sind **variable** Schriften (ein Schnitt
+     deckt `400 800` bzw. `500 600` ab), DM Mono ist statisch und braucht 400
+     und 500 einzeln.
+- **Betroffen:** `app/globals.css`, neu `public/fonts/*.woff2`.
+  **Kein Code, keine Datenbank, keine Migration, kein eBay-Aufruf.** Die CSP
+  bleibt unverändert — das ist der Punkt der Übung.
+- **Verifikation:** Im Browser messen, nicht im Markup suchen: keine
+  CSP-Meldung mehr in der Konsole, kein Abruf an `fonts.gstatic.com` oder
+  `fonts.googleapis.com` in den Netzwerkanfragen, und die tatsächlich
+  verwendete Schrift über `document.fonts.check` bzw. die gerenderte
+  Textbreite gegen die Ersatzschrift prüfen. Danach Prüfkette und Deploy.
+- **Rückweg:** Der `@import` ist eine Zeile; die Schriftdateien stören nicht,
+  wenn sie ungenutzt liegen bleiben.
+- **Ergebnis: ABGESCHLOSSEN.** Zehn `woff2`-Dateien unter `public/fonts/`,
+  zusammen **228 KB**; `@import` durch zehn `@font-face`-Blöcke ersetzt.
+  Prüfkette grün: `tsc` sauber, Lint 0 Fehler, `npm test` 149/149.
+- **Im Browser gemessen, nicht im Markup gesucht:**
+  - **Netzwerk:** alle Schriftabrufe gehen an `/fonts/…`, alle mit 200. **Kein
+    einziger Abruf an `fonts.gstatic.com` oder `fonts.googleapis.com`.**
+  - **Konsole:** keine Fehler mehr. Vorher standen dort bei jedem Seitenaufruf
+    CSP-Meldungen zur blockierten Google-CSS.
+  - **Tatsächlich geladen** meldet `document.fonts`: DM Mono 400, DM Mono 500,
+    Manrope 400–800 und Playfair Display italic — also genau die Schnitte, die
+    die Seite braucht.
+  - **`unicode-range` wirkt:** Auf einer normalen Seite lädt der Browser **nur**
+    `latin`. Erst als Text mit `Kamiński`, `Jovanović` und `Šešelj` im Dokument
+    stand, kam `manrope-…-latin-ext.woff2` dazu. Der Schnitt ist damit belegt
+    nötig und kostet trotzdem nichts, solange er nicht gebraucht wird.
+- **Ein Messversuch, der nichts taugte — damit ihn niemand wiederholt:** Ich
+  wollte die Schrift über die gerenderte Textbreite gegen `sans-serif`
+  nachweisen. Ergebnis: 539 px gegen 536 px. Manrope und die Ersatzschrift des
+  Browsers liegen so dicht beieinander, dass die Messung **nichts** belegt —
+  weder das eine noch das andere. Tragfähig sind die Netzwerkanfragen und
+  `document.fonts`, nicht die Breite.
+- **Nicht gemacht, bewusst:** Kein `<link rel="preload">` für die beiden
+  wichtigsten Schriften. Der Browser entdeckt die Dateien erst, wenn er die CSS
+  geparst hat; ein Preload würde den ersten Textaufbau beschleunigen. Das ist
+  eine eigene Änderung mit eigener Messung und gehörte nicht in diesen Auftrag.
+
 
 ### 2026-08-07 — Warenkorb-Umschalter und Blättern im Bestand
 
