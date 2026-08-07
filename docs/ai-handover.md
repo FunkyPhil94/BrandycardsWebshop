@@ -37,7 +37,75 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-**Stand:** LÄUFT · **Datum:** 2026-08-07
+_Kein laufender Auftrag._ Vorlage: Stand, Datum, Ziel, geplante Schritte,
+betroffene Dateien, Verifikation, Ergebnis.
+
+---
+
+## Offene Punkte
+
+Kein Auftrag, sondern der Zustand, den die nächste Sitzung kennen muss.
+Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
+
+- **Die Sicherheitskorrekturen sind nicht deployed.** In Produktion läuft der
+  Stand *vor* der Prüfung vom 2026-08-07. Das betrifft besonders das
+  Rate-Limiting: Es wirkt ausschließlich über das Cloudflare-Binding, und das
+  entsteht erst beim Deploy. Bis dahin ist der Shop genau so angreifbar, wie
+  [security-findings.md](security-findings.md) es beschreibt. Der Nutzer
+  deployt selbst; Schrittfolge dort unter „E-6 — Deploy", als Punkt 2 in
+  [ai-todo.md](ai-todo.md).
+- **Die CSP läuft nur berichtend.** `Content-Security-Policy-Report-Only`
+  meldet Verstöße und verhindert nichts. Umstellung auf durchsetzend ist ein
+  bewusster zweiter Schritt nach ein paar Tagen Beobachtung — Punkt 2a in
+  [ai-todo.md](ai-todo.md).
+- **Drei Fragen sind im Dashboard in fünf Minuten zu klären** und würden die
+  Einstufung zweier Befunde schärfen: der Cloudflare-Tarif (entscheidet, ob
+  SEC-05 „Shop steht" oder „Rechnung steigt" heißt), das echte eBay-Kontingent
+  des Keysets (SEC-04) sowie Supabase-Passwortrichtlinie und Token-Laufzeit
+  (Authentication → Policies). Ebenfalls offen: ob HSTS auf Zonenebene aktiv
+  ist — die Antwort trägt kein `strict-transport-security`.
+
+- **Sync-Lauf nötig, damit „Neu dabei" echt wird.** `ebay_listings.start_at` ist
+  noch überall NULL; der Mapper füllt es erst ab Version `a1cdd14f`. Solange
+  liefert `/api/products/highlights` für „neueste" bewusst die Importreihenfolge
+  (`startAtAvailable: false`) statt fünf willkürlicher Karten. Nach einem
+  Sync-Lauf prüfen: `curl -s https://shop.brandycards.de/api/products/highlights`
+  muss `"startAtAvailable": true` melden.
+- ~~**Preisvorschlag hat keine Oberfläche mehr.**~~ **Veraltet, korrigiert am
+  2026-08-07:** `/api/price-offers` verlangt heute ein Produkt mit **aktivem
+  eBay-Listing** und lehnt Auktionen ab, nicht `PRELISTED`
+  (`app/api/price-offers/route.ts:34`). Das Formular existiert und ist auf der
+  Kartendetailseite eingebunden (`app/karten/[id]/page.tsx:138`).
+- **CI hat den aktuellen `main` nie geprüft.** Der Merge lief während des
+  GitHub-Actions-Ausfalls vom 2026-08-06 und wurde nur lokal verifiziert. Sobald
+  Actions wieder `operational` meldet, einmal den Workflow über `main` laufen
+  lassen: `gh workflow run CI --ref main` oder `gh run rerun <id>`. Status prüfen:
+  `curl -s https://www.githubstatus.com/api/v2/components.json`
+- ~~**CI prüft keine Typen.**~~ **Erledigt am 2026-08-07:** Der Workflow führt
+  jetzt `npx tsc --noEmit` aus, auditiert die Abhängigkeiten und pinnt seine
+  Actions auf Commit-SHAs statt auf bewegliche Tags.
+  **Lokal weiterhin selbst ausführen** — der Workflow läuft erst beim Push.
+- **eBay-Schreibpfad ist unterbrochen.** `mapActiveListing` setzt `ebayOfferId`
+  fest auf `null`, weil `GetMyeBaySelling` nur eine ItemID liefert. Dadurch bleibt
+  die `ebay_outbox` ohne Auftrag und ein bezahlter Webshop-Kauf beendet das
+  eBay-Angebot nicht. Entschärft nur durch `EBAY_WRITE_ENABLED=false`. Umstellung
+  auf `EndItem`/`EndFixedPriceItem` steht aus.
+- **Migrationsjournal ist veraltet.** `drizzle/meta/_journal.json` endet bei
+  `0002`, `0003`–`0005` kamen handgeschrieben dazu. `npm run db:generate` würde
+  gegen den alten Snapshot diffen. Vor dem nächsten Schemaschritt nachziehen.
+- **Build braucht `.env.local`.** `NEXT_PUBLIC_SUPABASE_*` wird zur Buildzeit
+  eingebacken. Ein Build ohne die Datei liefert ein Bundle aus, in dem `/admin`
+  und `/account` mit „Supabase ist noch nicht konfiguriert" abbrechen, während der
+  Rest gesund aussieht. Git-Worktrees erben die ignorierte Datei nicht. Details in
+  der README unter „Before the first production deployment".
+
+---
+
+## Historie
+
+### 2026-08-07 — Vollständige Sicherheitsprüfung
+
+- **Stand:** ABGESCHLOSSEN
 
 **Ziel:** Sicherheitsprüfung nach [security-audit-brief.md](security-audit-brief.md)
 in drei Phasen: (1) prüfen und nach `docs/security-findings.md` berichten,
@@ -94,7 +162,7 @@ Datenschutzerklärung (SEC-16) — beides kein rein technischer Eingriff.
   Angriff nachstellt; SEC-01, SEC-02 und SEC-03 wurden ohne die Korrektur
   nachweislich rot gesehen.
 - Phase 3: Nachprüfung gegen einen **lokalen** Server, Status je Befund in der
-  Statusübersicht des Berichts, Commit `<dieser>`.
+  Statusübersicht des Berichts, Commit `7b73c4f`.
 
 **Zahlen:** `npm test` 63 → 85 Tests, alle grün. `npx tsc --noEmit` sauber.
 `npm run lint` 0 Fehler (1 vorbestehende `<img>`-Warnung).
@@ -128,50 +196,6 @@ Deploy, weil das Rate-Limit-Binding zur Laufzeit entsteht. Der Nutzer deployt
 selbst; die Schrittfolge samt Nachprüfung steht in
 [security-findings.md](security-findings.md) unter „E-6 — Deploy".
 
----
-
-## Offene Punkte
-
-Kein Auftrag, sondern der Zustand, den die nächste Sitzung kennen muss.
-Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
-
-- **Sync-Lauf nötig, damit „Neu dabei" echt wird.** `ebay_listings.start_at` ist
-  noch überall NULL; der Mapper füllt es erst ab Version `a1cdd14f`. Solange
-  liefert `/api/products/highlights` für „neueste" bewusst die Importreihenfolge
-  (`startAtAvailable: false`) statt fünf willkürlicher Karten. Nach einem
-  Sync-Lauf prüfen: `curl -s https://shop.brandycards.de/api/products/highlights`
-  muss `"startAtAvailable": true` melden.
-- ~~**Preisvorschlag hat keine Oberfläche mehr.**~~ **Veraltet, korrigiert am
-  2026-08-07:** `/api/price-offers` verlangt heute ein Produkt mit **aktivem
-  eBay-Listing** und lehnt Auktionen ab, nicht `PRELISTED`
-  (`app/api/price-offers/route.ts:34`). Das Formular existiert und ist auf der
-  Kartendetailseite eingebunden (`app/karten/[id]/page.tsx:138`).
-- **CI hat den aktuellen `main` nie geprüft.** Der Merge lief während des
-  GitHub-Actions-Ausfalls vom 2026-08-06 und wurde nur lokal verifiziert. Sobald
-  Actions wieder `operational` meldet, einmal den Workflow über `main` laufen
-  lassen: `gh workflow run CI --ref main` oder `gh run rerun <id>`. Status prüfen:
-  `curl -s https://www.githubstatus.com/api/v2/components.json`
-- ~~**CI prüft keine Typen.**~~ **Erledigt am 2026-08-07:** Der Workflow führt
-  jetzt `npx tsc --noEmit` aus, auditiert die Abhängigkeiten und pinnt seine
-  Actions auf Commit-SHAs statt auf bewegliche Tags.
-  **Lokal weiterhin selbst ausführen** — der Workflow läuft erst beim Push.
-- **eBay-Schreibpfad ist unterbrochen.** `mapActiveListing` setzt `ebayOfferId`
-  fest auf `null`, weil `GetMyeBaySelling` nur eine ItemID liefert. Dadurch bleibt
-  die `ebay_outbox` ohne Auftrag und ein bezahlter Webshop-Kauf beendet das
-  eBay-Angebot nicht. Entschärft nur durch `EBAY_WRITE_ENABLED=false`. Umstellung
-  auf `EndItem`/`EndFixedPriceItem` steht aus.
-- **Migrationsjournal ist veraltet.** `drizzle/meta/_journal.json` endet bei
-  `0002`, `0003`–`0005` kamen handgeschrieben dazu. `npm run db:generate` würde
-  gegen den alten Snapshot diffen. Vor dem nächsten Schemaschritt nachziehen.
-- **Build braucht `.env.local`.** `NEXT_PUBLIC_SUPABASE_*` wird zur Buildzeit
-  eingebacken. Ein Build ohne die Datei liefert ein Bundle aus, in dem `/admin`
-  und `/account` mit „Supabase ist noch nicht konfiguriert" abbrechen, während der
-  Rest gesund aussieht. Git-Worktrees erben die ignorierte Datei nicht. Details in
-  der README unter „Before the first production deployment".
-
----
-
-## Historie
 
 ### 2026-08-06 — Preisverhandlung statt Gutscheincodes, echte Versandkosten
 

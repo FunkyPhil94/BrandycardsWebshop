@@ -348,7 +348,7 @@ _(Erledigte Punkte hierher verschieben, mit Datum und Commit.)_
 
 Auftrag: [security-audit-brief.md](security-audit-brief.md).
 Bericht: [security-findings.md](security-findings.md).
-Commits: `4fbde38` (Bericht), `eff5c35` (Korrekturen), `<Phase 3>` (Nachprüfung).
+Commits: `4fbde38` (Bericht), `eff5c35` (Korrekturen), `7b73c4f` (Nachprüfung).
 
 17 Befunde, drei davon hoch: der Beschreibungs-Parser hob die Arbeit des
 HTML-Sanitizers wieder auf und lieferte `&lt;img onerror=…&gt;` als lebendes
