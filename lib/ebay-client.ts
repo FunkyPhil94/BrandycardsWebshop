@@ -232,6 +232,73 @@ export async function getEbayItemDescription(ebayItemId: string): Promise<string
   return description && description.trim() ? description : null;
 }
 
+/** What eBay says about one listing's availability right now.
+ *
+ * `quantityAvailable: null` means eBay did not tell us — a malformed answer, a
+ * field that was not returned, an item id it does not know. That is treated as
+ * "no information" and never as "sold out": see `unavailableTitles`.
+ */
+export type EbayAvailability = { quantityAvailable: number | null; listingStatus: string | null };
+
+/** Reads the parts of a GetItem response that decide whether a card can still
+ *  be sold. Exported so the parsing can be tested without a network. */
+export function parseItemAvailability(xml: string): EbayAvailability {
+  const item = xmlBlock(xml, "Item") ?? xml;
+  const listingStatus = xmlValue(item, "ListingStatus") ?? null;
+  // eBay returns QuantityAvailable to the seller of the item. Where it is
+  // missing, Quantity minus QuantitySold says the same thing.
+  const direct = Number(xmlValue(item, "QuantityAvailable"));
+  if (Number.isFinite(direct)) return { quantityAvailable: direct, listingStatus };
+  const quantity = Number(xmlValue(item, "Quantity"));
+  const sold = Number(xmlValue(item, "QuantitySold"));
+  if (Number.isFinite(quantity) && Number.isFinite(sold)) {
+    return { quantityAvailable: Math.max(0, quantity - sold), listingStatus };
+  }
+  return { quantityAvailable: null, listingStatus };
+}
+
+/** Asks eBay how many of each listing are still available.
+ *
+ * One token call for the whole order rather than one per card. A card whose
+ * lookup fails is simply absent from the result — the caller must read that as
+ * "unknown", not as "gone". See docs/ai-todo.md, Punkt 3: an eBay outage must
+ * never stop the shop from selling.
+ */
+export async function getEbayAvailability(ebayItemIds: string[]): Promise<Map<string, EbayAvailability>> {
+  const result = new Map<string, EbayAvailability>();
+  const ids = [...new Set(ebayItemIds.map((id) => id.replace(/[^0-9]/g, "")).filter(Boolean))];
+  if (!ids.length) return result;
+
+  const config = getConfig();
+  const accessToken = await getAccessToken(config);
+  for (const ebayItemId of ids) {
+    try {
+      const response = await fetch(`${apiBase(config.environment)}/ws/api.dll`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "text/xml",
+          "X-EBAY-API-CALL-NAME": "GetItem",
+          "X-EBAY-API-SITEID": config.siteId,
+          "X-EBAY-API-COMPATIBILITY-LEVEL": "1231",
+          "X-EBAY-API-IAF-TOKEN": accessToken,
+        },
+        body: `<?xml version="1.0" encoding="utf-8"?><GetItemRequest xmlns="urn:ebay:apis:eBLBaseComponents"><ItemID>${ebayItemId}</ItemID><DetailLevel>ReturnAll</DetailLevel><IncludeItemSpecifics>false</IncludeItemSpecifics></GetItemRequest>`,
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const xml = await response.text();
+      if (xmlValue(xml, "Ack")?.toUpperCase() === "FAILURE") {
+        throw new Error(xmlValue(xml, "LongMessage") ?? "Unbekannter eBay-Fehler.");
+      }
+      result.set(ebayItemId, parseItemAvailability(xml));
+    } catch (error) {
+      // Deliberately swallowed: a missing entry means "unknown", and unknown
+      // lets the sale through. Logged so a systematic failure is visible.
+      console.error("[ebay-availability] GetItem fehlgeschlagen", ebayItemId, error instanceof Error ? error.message : error);
+    }
+  }
+  return result;
+}
+
 /** Withdraws an Inventory API offer.
  *
  * NOTE: this only works for offers created through the Sell Inventory API.

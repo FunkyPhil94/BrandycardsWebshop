@@ -21,8 +21,20 @@ EBAY_WRITE_ENABLED = "false"
 EBAY_RUNAME = "BrandyCards_GbR-BrandyCa-Brandy-cqibopjv"
 EBAY_OAUTH_CALLBACK_URL = "https://shop.brandycards.de/api/admin/ebay/oauth/callback"
 
+# Alle 10 Minuten statt stündlich. Jede Karte ist ein Einzelstück und steht
+# gleichzeitig hier und auf eBay; wird sie dort verkauft, erfährt der Shop es
+# erst beim nächsten Import und verkauft sie bis dahin weiter. Das Fenster
+# schrumpft damit von bis zu 60 auf bis zu 10 Minuten.
+#
+# Kosten: ein Lauf sind drei eBay-Aufrufe (ein Token, zwei Seiten à 200
+# Angebote bei 296 Karten). 432 statt 72 am Tag, gegen ein Standardkontingent
+# von 5 000 — unkritisch.
+#
+# Zweite Wirkung: `releaseExpiredReservations` hängt am selben Lauf. Eine
+# abgelaufene Reservierung wird damit nach 15–25 statt nach 15–75 Minuten
+# freigegeben, was die Bestandssperre aus SEC-03 zusätzlich entschärft.
 [triggers]
-crons = ["0 * * * *"]
+crons = ["*/10 * * * *"]
 
 [assets]
 binding = "ASSETS"

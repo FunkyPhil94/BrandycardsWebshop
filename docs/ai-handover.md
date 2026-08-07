@@ -79,7 +79,38 @@ gegen Fixtures.
 
 **Deploy:** Dauerfreigabe liegt vor, siehe „Offene Punkte".
 
-**Ergebnis:** _(offen — wird nach dem Durchlauf nachgetragen)_
+**Ergebnis: ABGESCHLOSSEN. Deployed als Version `0b25ae0f` (10:45:18 UTC).**
+
+**Punkt 1** — `crons = ["*/10 * * * *"]`. Das Deploy-Protokoll bestätigt
+`schedule: */10 * * * *`.
+
+**Punkt 3** — neu:
+- `lib/ebay-stock-check.ts` — die Entscheidung, ohne Netz und ohne Datenbank
+  prüfbar
+- `lib/ebay-stock-guard.ts` — die Verdrahtung, gibt bei jedem eigenen Fehler
+  frei statt zu blockieren
+- `getEbayAvailability` und `parseItemAvailability` in `lib/ebay-client.ts` —
+  ein Tokenaufruf je Bestellung, dann ein GetItem je Karte
+- `orderCardsForStockCheck` in `lib/paypal/settle-order.ts`
+- geprüft in `app/api/paypal/orders/route.ts` und
+  `app/api/paypal/capture/route.ts`
+
+**Verifikation:** `tsc` sauber, Lint 0 Fehler, `npm test` 98 → **119 Tests**,
+alle grün. Die Leitregel wurde testweise aufgehoben (unbekannt = ausverkauft)
+und die vier zugehörigen Tests nachweislich rot gesehen; ebenso der Cron-Test
+beim Zurückdrehen auf stündlich.
+
+**Gegen das echte eBay-Konto wurde nichts ausgeführt** — alle Tests laufen
+gegen Fixtures mit gestubbtem `fetch`. Der Token in der lokalen `.env.local`
+ist ohnehin abgelaufen.
+
+**Nach dem Deploy geprüft:** `/`, `/karten` und `/account` gesund, keine
+Supabase-Fehlermeldung, alle sechs Sicherheits-Kopfzeilen gesetzt.
+
+**Eine Falle beim Nachprüfen, für die nächste Sitzung:** Ich habe zuerst um
+10:47 in `sync_runs` geschaut und keinen neuen Lauf gefunden — der Deploy war
+aber erst um 10:45:18, der erste `*/10`-Lauf also frühestens um 10:50. **Erst
+die Deploy-Zeit nachsehen (`npx wrangler deployments list`), dann urteilen.**
 
 ---
 

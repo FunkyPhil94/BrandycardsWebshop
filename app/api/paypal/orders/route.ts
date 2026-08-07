@@ -3,8 +3,10 @@ import { NextResponse } from "next/server";
 import { getDb } from "../../../../db";
 import { orderItems, orders, payments } from "../../../../db/schema";
 import { getAuthenticatedAppUser } from "../../../../lib/app-user";
+import { ebaySoldOutMessage } from "../../../../lib/ebay-stock-guard";
 import { createPayPalOrder } from "../../../../lib/paypal/client";
 import { assertValidMoney } from "../../../../lib/paypal/money";
+import { releaseOrderReservations } from "../../../../lib/paypal/settle-order";
 
 export async function POST(request: Request) {
   try {
@@ -23,6 +25,16 @@ export async function POST(request: Request) {
     const calculatedTotal = calculatedSubtotal + order.shippingAmountCents;
     if (calculatedSubtotal !== order.subtotalAmountCents || calculatedTotal !== order.totalAmountCents) return NextResponse.json({ error: "Bestellbetrag konnte nicht verifiziert werden." }, { status: 409 });
     assertValidMoney(order.totalAmountCents, order.currency);
+
+    // Erste von zwei Bestandsprüfungen gegen eBay. Hier ist sie die
+    // freundliche: Der Kunde erfährt vor dem Gang zu PayPal, dass die Karte
+    // weg ist, statt danach. Die verbindliche sitzt im Capture.
+    const soldOut = await ebaySoldOutMessage(db, order.id);
+    if (soldOut) {
+      await releaseOrderReservations(db, order.id, new Date().toISOString());
+      return NextResponse.json({ error: soldOut }, { status: 409 });
+    }
+
     const existingPayment = await db.query.payments.findFirst({ where: and(eq(payments.orderId, order.id), eq(payments.provider, "PAYPAL")) });
     if (existingPayment?.status === "CAPTURED") return NextResponse.json({ error: "Diese Bestellung wurde bereits bezahlt." }, { status: 409 });
     if (existingPayment?.providerOrderId && ["CREATED", "APPROVED"].includes(existingPayment.status)) return NextResponse.json({ error: "Für diese Bestellung wurde bereits eine PayPal-Zahlung gestartet." }, { status: 409 });

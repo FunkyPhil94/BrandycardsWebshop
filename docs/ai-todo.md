@@ -13,46 +13,66 @@ dabei, damit niemand den Gesprächsverlauf braucht.
 
 ## Warum diese Reihenfolge
 
-Drei Überlegungen bestimmen sie, in dieser Rangfolge:
+**Stand 2026-08-07:** Die Sicherheitsprüfung ist durch und deployed, und die
+beiden billigen Maßnahmen gegen Doppelverkäufe sind gebaut (Import alle zehn
+Minuten, Bestandsprüfung vor der Zahlung). Damit hat sich die Rangfolge
+verschoben.
 
-1. **Was kann Geld kosten?** Alle 296 Karten sind Einzelstücke und stehen
+Zwei Überlegungen bestimmen sie jetzt:
+
+1. **Der Shop konnte bis heute niemandem verkaufen.** Der Checkout verlangt ein
+   Konto, ein Konto verlangt eine bestätigte E-Mail-Adresse — und die
+   Bestätigungslinks zeigten auf `localhost` (SEC-18). Diese Tür ist seit
+   heute offen. Was jetzt zählt, ist, dass der erste echte Kauf **vollständig**
+   funktioniert. Genau dort klafft die größte Lücke: Wer zahlt, bekommt keine
+   Bestätigung. Deshalb stehen die Kunden-E-Mails ganz oben.
+2. **Was kann Geld kosten?** Alle 296 Karten sind Einzelstücke und stehen
    gleichzeitig hier und auf eBay. Ein Doppelverkauf bedeutet Rückerstattung,
    verärgerte Kunden und — bei eBay-Stornos — eine Verschlechterung des
-   Verkäuferstatus. Dieses Risiko besteht **jetzt schon**, unabhängig von jeder
-   neuen Funktion. Deshalb stehen die billigsten Gegenmaßnahmen ganz oben.
-2. **Was hängt woran?** Werbung für das Verhandeln (Punkt 7) darf erst laufen,
-   wenn das Erlebnis trägt: richtiger Preis im Checkout, Antwort per E-Mail —
-   und vor allem der eBay-Schreibpfad. Mehr Shop-Verkäufe zu bewerben, während
-   verkaufte Karten auf eBay online bleiben, vergrößert genau das Risiko aus
-   Punkt 1.
-3. **Was kostet wenig und wirkt sofort?** Punkt 1 ist eine Zeile, Punkt 2 eine
-   Konfiguration, Punkt 3 ein überschaubarer Eingriff. Zusammen nehmen sie den
-   Großteil des Risikos weg, bevor jemand den großen Brocken anfasst.
+   Verkäuferstatus. Die Richtung „auf eBay verkauft, Shop weiß es nicht" ist
+   jetzt weitgehend abgedeckt. Die andere Richtung — „im Shop verkauft, eBay
+   weiß es nicht" — ist **offen** und wird mit jedem Verkauf wahrscheinlicher.
+   Das ist Punkt 6, der große Brocken, und er muss vor jeder Werbung stehen.
 
-Kurz: **erst absichern, dann das Erlebnis vervollständigen, dann bewerben,
-zuletzt ausbauen.**
-
-Die Sicherheitsprüfung (Punkt 8) steht bewusst außerhalb dieser Kette: Sie ändert
-nichts und blockiert nichts, kann also jederzeit dazwischengeschoben werden. Ihr
-auffälligster Voranalyse-Fund wurde als Punkt 2 vorgezogen, weil er mit einer
-Konfigurationszeile behoben ist.
+Kurz: **erst den Kaufweg zu Ende bauen, dann den eBay-Schreibpfad, dann
+bewerben, zuletzt ausbauen.**
 
 ---
 
-## 1. Sync alle 10 Minuten statt stündlich
+## 1. Kunden-E-Mails
 
-**Aufwand:** Minuten · **Hängt an:** nichts
+**Aufwand:** mittel · **Hängt an:** nichts · **Blockiert:** Punkt 7
 
-**Warum:** Wird eine Karte auf eBay verkauft, erfährt der Shop es erst beim
-nächsten Import — aktuell bis zu 60 Minuten später. Solange ist sie hier noch
-kaufbar. Das Fenster schrumpft auf ein Sechstel.
+**Warum jetzt ganz oben:** Wer im Shop zahlt, bekommt **keine
+Bestellbestätigung**. Es gibt überhaupt keinen eigenen E-Mail-Versand — nur
+Supabase verschickt seine Anmeldemails. Solange der Shop niemandem verkauft
+hat, war das folgenlos. Seit dem 2026-08-07 kann sich zum ersten Mal überhaupt
+ein Kunde registrieren (bis dahin zeigten die Bestätigungslinks auf
+`localhost`, siehe SEC-18 in [security-findings.md](security-findings.md)) —
+der erste echte Käufer zahlt also demnächst 40 € und hört nichts.
 
-**Wie:** In `wrangler.toml` `crons = ["0 * * * *"]` auf `["*/10 * * * *"]`.
-Ein Sync-Lauf dauert rund 30 Sekunden und verarbeitet knapp 300 Angebote; alle
-10 Minuten trägt das ohne Weiteres.
+**Fehlt komplett:** Für eigene Nachrichten braucht es einen Anbieter; auf
+Cloudflare Workers bieten sich Resend oder MailChannels an. Der API-Schlüssel
+gehört als Cloudflare-Secret hinterlegt, **niemals** ins Repository. Die
+Datenschutzerklärung nennt in Abschnitt 5 bereits Resend für die
+Supabase-Anmeldemails — das ist der naheliegende Anbieter.
 
-**Fertig, wenn:** Deployed und im Cloudflare-Dashboard unter „Triggers"
-sichtbar; ein Lauf in `sync_runs` mit Status `SUCCEEDED` bestätigt.
+**Anlässe, nach Wichtigkeit:**
+1. **Bestellbestätigung nach erfolgreicher Zahlung** — das ist die Lücke, die
+   jetzt zuerst wehtut
+2. Preisvorschlag angenommen — mit Betrag, Gültigkeit und Link zur Karte
+3. Preisvorschlag abgelehnt
+4. Eingangsbestätigung für Anfrage und Kartenankauf
+
+**Ton:** Professionell, aber nicht steif. BrandyCards ist ein Familienprojekt
+zweier Brüder, das darf man hören. Kein „Sehr geehrte Damen und Herren", kein
+Behördendeutsch — persönlich, knapp, freundlich, geduzt wie der übrige Shop.
+
+**Wichtig:** Ein fehlgeschlagener Versand darf **nie** die auslösende Aktion
+scheitern lassen. Muster wie bei der Beschreibungsabfrage in
+`app/api/products/[id]/route.ts`: Fehler protokollieren, Ablauf fortsetzen.
+Impressum-Link in den Fuß; bei rein transaktionalen Mails ist keine Abmeldung
+nötig, bei Werbung schon.
 
 ---
 
@@ -128,31 +148,26 @@ ohne Konsolenfehler bedienbar — **lokal geprüft, bevor deployed wird.**
 
 ---
 
-## 3. Bestand live prüfen, bevor Geld fließt
+## 2b. ~~Bestand live prüfen, bevor Geld fließt~~ — ERLEDIGT am 2026-08-07
 
-**Aufwand:** klein · **Hängt an:** nichts
+Geprüft wird jetzt an zwei Stellen: in `app/api/paypal/orders/route.ts` vor dem
+Gang zu PayPal (damit der Kunde es früh erfährt) und in
+`app/api/paypal/capture/route.ts` unmittelbar vor dem Einzug — dort bewusst
+**vor** dem `PENDING → PROCESSING`-Riegel, damit eine abgelehnte Bestellung
+nicht in `PROCESSING` hängenbleibt. Bei Ablehnung wird die Reservierung
+freigegeben und die Karte beim Namen genannt.
 
-**Warum:** Die wirksamste Einzelmaßnahme gegen Doppelverkäufe in der Richtung
-„auf eBay verkauft, Shop weiß es nicht". Statt auf den nächsten Import zu warten,
-wird genau im entscheidenden Moment gefragt — wenn der Kunde zahlt.
+Die Leitregel des ursprünglichen Punktes ist eingehalten und durch Tests
+festgehalten: **Antwortet eBay nicht, wird der Kauf durchgelassen.** Unbekannt
+gilt nie als ausverkauft — ein eBay-Ausfall darf den Shop nicht anhalten.
 
-**Wie:** In `app/api/paypal/capture/route.ts` vor dem Capture (alternativ in
-`app/api/paypal/orders/route.ts` vor dem Anlegen) für jede Karte der Bestellung
-ein `GetItem` gegen eBay und prüfen, ob `QuantityAvailable > 0`. Ein Aufruf je
-Karte, nur an dieser einen Stelle. `getEbayItemDescription` in
-`lib/ebay-client.ts` zeigt Aufbau und Fehlerbehandlung eines `GetItem`-Aufrufs.
-
-**Wichtig:** Ist eBay nicht erreichbar, darf die Bestellung **nicht** blockiert
-werden — sonst legt ein eBay-Ausfall den Shop lahm. Fehler protokollieren und
-durchlassen; die Prüfung ist eine zusätzliche Sicherung, keine Voraussetzung.
-Beim Capture zusätzlich beachten: Der Kunde hat bei PayPal bereits zugestimmt,
-ein Abbruch muss sauber zurückgemeldet und die Reservierung freigegeben werden.
-
-**Fertig, wenn:** Eine Bestellung auf eine bei eBay ausverkaufte Karte wird mit
-verständlicher Meldung abgelehnt, statt eine Zahlung entgegenzunehmen.
+`lib/ebay-stock-check.ts` (Entscheidung, ohne Netz prüfbar),
+`lib/ebay-stock-guard.ts` (Verdrahtung), `getEbayAvailability` in
+`lib/ebay-client.ts` (ein Tokenaufruf je Bestellung, dann ein GetItem je Karte).
+21 Tests in `tests/ebay-stock-check.test.mjs` und
+`tests/ebay-availability.test.mjs`.
 
 ---
-
 ## 4. Checkout zeigt den ausgehandelten Preis
 
 **Aufwand:** klein · **Hängt an:** nichts
@@ -181,39 +196,6 @@ ausschließlich serverseitig bestimmt — niemals einen Betrag aus dem Browser
 
 **Fertig, wenn:** Ein Konto mit angenommenem Angebot sieht im Checkout exakt den
 Betrag, den die Bestellung anschließend berechnet.
-
----
-
-## 5. Kunden-E-Mails
-
-**Aufwand:** mittel · **Hängt an:** nichts, ist aber Voraussetzung für Punkt 7
-
-**Warum:** Preisvorschläge werden still entschieden. Der Kunde muss von sich aus
-auf die Kartenseite zurückkehren, um zu erfahren, ob angenommen wurde. Das
-trägt, solange kaum jemand die Funktion kennt — sobald sie beworben wird, ist es
-der schwächste Punkt im ganzen Ablauf.
-
-**Fehlt komplett:** Es gibt keinerlei Versand-Infrastruktur. Supabase verschickt
-nur seine eigenen Anmelde-Mails. Für eigene Nachrichten braucht es einen
-Anbieter; auf Cloudflare Workers bieten sich Resend oder MailChannels an. Der
-API-Schlüssel gehört als Cloudflare-Secret hinterlegt, **niemals** ins
-Repository.
-
-**Anlässe, nach Wichtigkeit:**
-1. Preisvorschlag angenommen — mit Betrag, Gültigkeit und Link zur Karte
-2. Preisvorschlag abgelehnt
-3. Bestellbestätigung nach erfolgreicher Zahlung
-4. Eingangsbestätigung für Anfrage und Kartenankauf
-
-**Ton:** Professionell, aber nicht steif. BrandyCards ist ein Familienprojekt
-zweier Brüder, das darf man hören. Kein „Sehr geehrte Damen und Herren", kein
-Behördendeutsch — persönlich, knapp, freundlich, geduzt wie der übrige Shop.
-
-**Wichtig:** Ein fehlgeschlagener Versand darf **nie** die auslösende Aktion
-scheitern lassen. Muster wie bei der Beschreibungsabfrage in
-`app/api/products/[id]/route.ts`: Fehler protokollieren, Ablauf fortsetzen.
-Impressum-Link in den Fuß; bei rein transaktionalen Mails ist keine Abmeldung
-nötig, bei Werbung schon.
 
 ---
 
@@ -359,6 +341,21 @@ sind.
 ## Erledigt
 
 _(Erledigte Punkte hierher verschieben, mit Datum und Commit.)_
+
+### Sync alle 10 Minuten statt stündlich — 2026-08-07
+
+`wrangler.toml`: `crons = ["0 * * * *"]` → `["*/10 * * * *"]`. Deployed als
+Version `0b25ae0f`, im Deploy-Protokoll als `schedule: */10 * * * *` bestätigt.
+
+Das Fenster „auf eBay verkauft, Shop weiß es nicht" schrumpft von bis zu 60 auf
+bis zu 10 Minuten. Kosten nachgerechnet statt geschätzt: **drei** eBay-Aufrufe
+je Lauf (ein Token, zwei Seiten à 200 Angebote bei 296 Karten), also 432 statt
+72 am Tag gegen ein Standardkontingent von 5 000.
+
+**Zweite Wirkung, die leicht übersehen wird:** `releaseExpiredReservations`
+hängt am selben Lauf. Eine abgelaufene Reservierung wird jetzt nach 15–25 statt
+nach 15–75 Minuten freigegeben — das entschärft die Bestandssperre aus SEC-03
+zusätzlich zur dort eingebauten Obergrenze.
 
 ### Vollständige Sicherheitsprüfung — 2026-08-07
 

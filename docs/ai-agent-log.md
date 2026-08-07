@@ -280,6 +280,62 @@ erst mit dem Deploy.
 Zeitstempeln in beiden Formaten geprueft; kein schreibender Eingriff in
 Produktionsdaten.
 
+## 2026-08-07 - Doppelverkaufsschutz: Import alle 10 Minuten, Bestandspruefung vor der Zahlung
+
+Punkt 1 und 3 aus [ai-todo.md](ai-todo.md). Beide zielen auf dieselbe Richtung:
+*auf eBay verkauft, der Shop weiss es nicht*. Die andere Richtung bleibt offen
+(Punkt 6).
+
+**Warum die Loesungen so aussehen:**
+
+- **Der Import allein reicht nicht, die Pruefung allein auch nicht.** Ein
+  10-Minuten-Takt verkleinert das Fenster, schliesst es aber nie: Die Karte
+  kann zwei Minuten vor der Zahlung weggehen. Die Bestandspruefung schliesst
+  genau diesen Rest, ist dafuer aber teuer (ein GetItem je Karte) und darf
+  deshalb nur an der Kasse laufen, nicht bei jedem Seitenaufruf. Zusammen
+  ergeben sie ein Netz, einzeln nicht. `tests/ebay-stock-check.test.mjs` haelt
+  die Kopplung fest, indem es den Cron mitprueft.
+- **Gerechnet statt geschaetzt.** Ein Sync-Lauf sind **drei** eBay-Aufrufe: ein
+  Token plus zwei Seiten a 200 Angebote bei 296 Karten. 432 statt 72 am Tag,
+  gegen ein Standardkontingent von 5 000. Die naheliegende Sorge beim
+  Sechsfachen der Frequenz ist damit ausgeraeumt, ohne sie zu vermuten.
+- **Zweite Wirkung des Crons, die leicht uebersehen wird:**
+  `releaseExpiredReservations` haengt am selben Lauf. Abgelaufene
+  Reservierungen kommen jetzt nach 15-25 statt nach 15-75 Minuten zurueck --
+  das entschaerft SEC-03 zusaetzlich zu der dort eingebauten Obergrenze.
+- **Die Leitregel steht ueber der Wirksamkeit: ein eBay-Ausfall darf nichts
+  blockieren.** Unbekannt gilt nie als ausverkauft. Fehlende Antwort, HTTP-
+  Fehler, eBay-Fehlermeldung, unlesbare Menge -- alles laesst den Kauf durch.
+  Der Grund ist eine Abwaegung, keine Bequemlichkeit: Ein Shop, der wegen einer
+  fremden API nicht verkaufen kann, richtet mehr Schaden an als der seltene
+  Doppelverkauf, den die Pruefung verhindert. Vier Tests halten das fest, und
+  ein Test prueft, dass auch ein Fehler *in der Pruefung selbst* freigibt.
+- **Der Unterschied zwischen `null` und `0` traegt die ganze Regel.** Deshalb
+  gibt `parseItemAvailability` bei einer unlesbaren Antwort ausdruecklich
+  `null` zurueck und nicht `0`, und `getEbayAvailability` laesst eine
+  gescheiterte Karte aus der Map *fehlen*, statt sie mit 0 einzutragen. Beides
+  hat einen eigenen Test, weil ein spaeterer "Aufraeumer" hier sonst leicht
+  eine 0 einsetzt und damit die Regel umdreht.
+- **Geprueft wird an zwei Stellen, nicht an einer.** Vor dem Gang zu PayPal
+  (freundlich: der Kunde erfaehrt es, bevor er zahlt) und unmittelbar vor dem
+  Einzug (wirksam: das ist der letzte Moment vor dem Geld). Im Capture bewusst
+  **vor** dem `PENDING -> PROCESSING`-Riegel -- danach bliebe eine abgelehnte
+  Bestellung in `PROCESSING` haengen und kaeme nur von Hand wieder heraus.
+- **Kein aktives `void` der PayPal-Order.** Sie bleibt uneingezogen und
+  verfaellt. Ein Void waere ein weiterer Fremdaufruf mit eigenen Fehlerpfaden
+  an der Stelle, an der gerade schon etwas schiefgelaufen ist.
+- **Ein Tokenaufruf je Bestellung**, nicht je Karte. `getEbayItemDescription`
+  daneben macht es anders, weil es immer nur eine Karte betrifft.
+- **Die Meldung nennt die Karte beim Namen.** "Ein Artikel ist nicht mehr
+  verfuegbar" laesst jemanden mit fuenf Karten im Warenkorb ratlos zurueck.
+
+**Verifikation:** 21 neue Tests, gegen Fixtures statt gegen das echte
+eBay-Konto -- `globalThis.fetch` gestubbt nach dem Muster von
+`tests/ebay-active-list.test.mjs`, inklusive der GetItem-Antwortformen mit und
+ohne `QuantityAvailable`. `npm test` 98 -> 119, alle gruen. Die Leitregel wurde
+testweise aufgehoben (unbekannt = ausverkauft) und die zugehoerigen vier Tests
+nachweislich rot gesehen.
+
 ## Arbeitsweise
 
 Agents erhalten klar abgegrenzte Prüf- oder Implementierungsaufträge. Ihre Ergebnisse werden vor Übernahme geprüft. Änderungen werden anschließend lokal getestet, committed und nach GitHub gepusht.

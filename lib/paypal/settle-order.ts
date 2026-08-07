@@ -1,6 +1,6 @@
 import { and, eq, gte, lte, sql } from "drizzle-orm";
 import { getDb } from "../../db";
-import { ebayListings, inventory, orders, reservations } from "../../db/schema";
+import { ebayListings, inventory, orderItems, orders, reservations } from "../../db/schema";
 import { enqueueEbayWithdraw } from "../ebay-outbox";
 
 export async function settlePaidOrder(db: ReturnType<typeof getDb>, orderId: string, now: string) {
@@ -63,6 +63,20 @@ export async function releaseExpiredReservations(db: ReturnType<typeof getDb>, n
   const orderIds = [...new Set(expired.map((row) => row.orderId).filter((id): id is string => Boolean(id)))];
   for (const orderId of orderIds) await releaseOrderReservations(db, orderId, now, "EXPIRED");
   return orderIds.length;
+}
+
+/** Die Karten einer Bestellung mit ihrer eBay-ItemID, für die Bestandsprüfung
+ *  vor der Zahlung. `ebayItemId` bleibt null, wenn es kein Listing (mehr) gibt
+ *  — solche Positionen werden von der Prüfung übersprungen. */
+export async function orderCardsForStockCheck(db: ReturnType<typeof getDb>, orderId: string) {
+  const rows = await db.select({
+    title: orderItems.titleSnapshot,
+    quantity: orderItems.quantity,
+    ebayItemId: ebayListings.ebayItemId,
+  }).from(orderItems)
+    .leftJoin(ebayListings, eq(ebayListings.productId, orderItems.productId))
+    .where(eq(orderItems.orderId, orderId));
+  return rows.map((row) => ({ title: row.title, quantity: row.quantity, ebayItemId: row.ebayItemId ?? null }));
 }
 
 /** Units of stock a customer is currently holding in unpaid orders. */

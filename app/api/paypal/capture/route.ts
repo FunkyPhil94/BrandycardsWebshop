@@ -3,9 +3,10 @@ import { NextResponse } from "next/server";
 import { getDb } from "../../../../db";
 import { orders, payments } from "../../../../db/schema";
 import { getAuthenticatedAppUser } from "../../../../lib/app-user";
+import { ebaySoldOutMessage } from "../../../../lib/ebay-stock-guard";
 import { capturePayPalOrder } from "../../../../lib/paypal/client";
 import { assertValidMoney, centsToPayPalValue } from "../../../../lib/paypal/money";
-import { settlePaidOrder } from "../../../../lib/paypal/settle-order";
+import { releaseOrderReservations, settlePaidOrder } from "../../../../lib/paypal/settle-order";
 
 type CaptureRequest = { orderId?: unknown; paypalOrderId?: unknown };
 
@@ -55,6 +56,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Zahlung kann nicht eingezogen werden." }, { status: 409 });
     }
     if (order.status !== "PENDING") return NextResponse.json({ error: "Bestellung kann nicht eingezogen werden." }, { status: 409 });
+
+    // Die verbindliche Bestandsprüfung: letzte Gelegenheit, bevor Geld fließt.
+    // Bewusst **vor** dem PENDING → PROCESSING-Riegel, damit eine abgelehnte
+    // Bestellung nicht in PROCESSING hängenbleibt — aus dem Status käme sie
+    // nur von Hand wieder heraus.
+    //
+    // Der Kunde hat bei PayPal bereits zugestimmt. Abgelehnt wird deshalb mit
+    // Klartext und die Reservierung wird freigegeben. Die PayPal-Order bleibt
+    // uneingezogen und verfällt von selbst; ein aktives `void` wäre ein
+    // weiterer Fremdaufruf mit eigenen Fehlerpfaden für keinen Gewinn.
+    const soldOut = await ebaySoldOutMessage(db, order.id);
+    if (soldOut) {
+      await releaseOrderReservations(db, order.id, new Date().toISOString());
+      return NextResponse.json({ error: soldOut }, { status: 409 });
+    }
 
     const lockResult = await db.batch([db.update(orders).set({ status: "PROCESSING", updatedAt: new Date().toISOString() }).where(and(eq(orders.id, order.id), eq(orders.status, "PENDING")))]);
     if (lockResult[0].meta.changes !== 1) return NextResponse.json({ error: "Die Bestellung wird gerade verarbeitet oder ist abgelaufen." }, { status: 409 });
