@@ -37,8 +37,46 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-_Kein laufender Auftrag._ Vorlage: Stand, Datum, Ziel, geplante Schritte,
-betroffene Dateien, Verifikation, Ergebnis.
+- **Stand:** LÄUFT
+- **Datum:** 2026-08-07
+- **Ziel:** Schriften **und** Logo aus `public/` in den Build geben, damit sie
+  einen Inhalts-Hash im Dateinamen bekommen — und damit dauerhaft gecacht
+  werden.
+- **Befund, gemessen:** Der Build vergibt zwei Klassen von Cache-Regeln.
+  Gehashte Bau-Ergebnisse (`/assets/index-CwO5vYEP.css`) bekommen
+  `max-age=31536000, immutable`. **Alles unter `public/` bekommt
+  `max-age=0, must-revalidate`** — Schriften und Logo also auch. Der Browser
+  fragt sie bei jedem Seitenaufruf neu an; die Antwort ist ein 304 ohne Daten,
+  aber der Rundlauf bleibt. Von hier aus dreimal gemessen: **85 ms**. Bis er
+  durch ist, zeigt `font-display: swap` die Ersatzschrift — der Schriftwechsel
+  ist damit bei *jedem* Besuch kurz sichtbar, nicht nur beim ersten.
+- **Warum nicht einfach die Header ändern:** Ohne Hash im Dateinamen würde ein
+  langes `max-age` einen späteren Austausch derselben Datei bei Bestandskunden
+  monatelang blockieren. Der Hash löst beides zugleich — deshalb der Weg über
+  den Build und nicht über eine Cache-Regel daneben.
+- **Geplante Schritte:**
+  1. Die zehn `woff2` von `public/fonts/` nach `app/fonts/` verschieben und in
+     `app/globals.css` die zehn `url('/fonts/…')` auf `url('./fonts/…')`
+     umstellen. Relative Pfade in CSS fasst Vite an, absolute nicht.
+  2. Das Logo aus `public/` in den Build geben und in `app/site-chrome.tsx` an
+     **zwei** Stellen (Kopfzeile und Fuß) darauf verweisen.
+  3. **Offene Frage, die empirisch zu klären ist, nicht durch Annahme:** Was
+     ein Bild-Import in diesem Projekt liefert. Unter Vite ist das eine
+     Zeichenkette, unter Next.js ein `StaticImageData`-Objekt mit `src`,
+     `width` und `height` — und vinext ist beides zugleich. Deshalb erst
+     ausprobieren und `npx tsc --noEmit` sowie das Bauergebnis ansehen, bevor
+     die Form feststeht.
+- **Betroffen:** `app/globals.css`, `app/site-chrome.tsx`, neu `app/fonts/*`,
+  Entfall von `public/fonts/` und `public/BrandyCards_Logo_transparent.png`.
+  **Kein Datenmodell, keine API, keine Datenbank, kein eBay-Aufruf.**
+- **Verifikation:** In Produktion belegen, dass Schriften und Logo gehashte
+  Namen tragen **und** `cache-control: …immutable` liefern; dazu Kopfzeile und
+  Fuß im Browser ansehen, damit das Logo nicht still verschwindet.
+- **Nebenbefund, noch nicht entschieden:** Das Logo ist eine **747 KB** große
+  PNG und wird mit 164 px Breite dargestellt. Das ist unabhängig vom Cache zu
+  viel und trifft jeden Erstbesucher. Nicht Teil dieses Auftrags — ein
+  Neucodieren verändert ein Gestaltungsmittel des Betreibers und wird ihm
+  vorgelegt.
 
 ---
 
