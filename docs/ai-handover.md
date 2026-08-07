@@ -37,8 +37,34 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-_Kein laufender Auftrag._ Vorlage: Stand, Datum, Ziel, geplante Schritte,
-betroffene Dateien, Verifikation, Ergebnis.
+- **Stand:** LÄUFT
+- **Datum:** 2026-08-07
+- **Ziel:** Punkt 1 aus [ai-todo.md](ai-todo.md) — Zeitgrenzen für eBay und eine
+  Sperre, die sich nicht verklemmt.
+- **Befund vorab (Diagnose ist durch, siehe unten „Ergebnis"):** Die in der
+  Aufgabenliste genannte Ursachenkette stimmt in ihren ersten beiden Gliedern
+  und ist im dritten **falsch**. Zusätzlich ein zweiter, unabhängiger Fehler
+  gefunden: Die Veraltet-Prüfung `activeRun.startedAt < staleBefore` vergleicht
+  zwei unterschiedliche Zeitformate als Zeichenketten und ist damit
+  **immer wahr**.
+- **Geplante Schritte:**
+  1. `fetchWithTimeout` in `lib/ebay-client.ts`, an allen fünf Aufrufen
+  2. Neues, netzfreies Modul `lib/sync-lock.ts`: Sperre mit Verfallszeit statt
+     Wahrheitswert, Veraltet-Prüfung über `parseDbTimestamp`, `withDeadline`
+  3. `lib/ebay-sync.ts`: Aufräumcode für verwaiste `sync_runs`-Zeilen **vor**
+     die Sperrprüfung ziehen; ganzen Lauf unter eine Frist stellen
+  4. Test `tests/ebay-sync-timeout.test.mjs`, in `npm test` aufnehmen
+  5. Korrektur testweise zurücknehmen, Test rot sehen
+  6. `npx tsc --noEmit`, `npm run lint`, `npm test`, Build mit `.env.local`,
+     `npx wrangler deploy`, `/admin` prüfen
+- **Betroffen:** `lib/ebay-client.ts`, `lib/ebay-sync.ts`, neu `lib/sync-lock.ts`,
+  neu `tests/ebay-sync-timeout.test.mjs`, `package.json`. Kein Schema, keine
+  Migration, keine Produktionsdaten.
+- **Verifikation:** Test stellt eine nicht antwortende eBay-API nach; der Lauf
+  endet mit Fehler statt zu hängen, und der nächste Lauf startet wieder.
+- **Risiko:** gering. Der Cron-Takt bleibt in diesem Schritt unverändert bei
+  `0 */2 * * *` — Beschleunigung erst nach Punkt 2.
+- **Ergebnis:** _(wird nachgetragen)_
 
 ---
 
