@@ -37,8 +37,20 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-_Kein laufender Auftrag._ Vorlage: Stand, Datum, Ziel, geplante Schritte,
-betroffene Dateien, Verifikation, Ergebnis.
+- **Stand:** LÄUFT
+- **Datum:** 2026-08-07
+- **Ziel:** Im Banner der Startseite „Fußballkarten" durch „Sportkarten"
+  ersetzen (`app/page.tsx`, `.hero-text`).
+- **Passt zur Vorzeile darüber**, die schon „THE HOME OF SPORTS CARDS" sagt.
+- **Bewusst nur diese eine Stelle.** Drei weitere nennen ebenfalls
+  „Fußballkarten": die beiden Seitenbeschreibungen (`app/layout.tsx:6`,
+  `app/ueber-uns/page.tsx:7`) und der Absatz über die beiden Brüder
+  (`app/ueber-uns/page.tsx:17`). Der Auftrag lautete „hier", und der
+  Brüder-Absatz ist eine **Tatsachenaussage** darüber, was die beiden sammeln —
+  die zu ändern steht mir nicht zu. Wird dem Betreiber vorgelegt.
+- **Betroffen:** `app/page.tsx`. Nur Text.
+- **Verifikation:** Im Browser prüfen, dass der Satz weiterhin auf zwei Zeilen
+  passt und die Knöpfe darunter nicht verrutschen.
 
 ---
 
