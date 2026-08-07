@@ -33,6 +33,26 @@ button { cursor:pointer; }
    die Leiste kommt damit auf 126px statt der früheren 164px. Geklebt nahm sie
    sonst fast ein Viertel eines 720px-Fensters ein. */
 .site-header { align-items:center; display:flex; gap:48px; justify-content:space-between; margin:auto; max-width:1400px; padding:8px 48px; }
+
+/* --- Burger-Menü: nur unter 850px, siehe Medienabfrage weiter unten --- */
+/* Standardmäßig aus. Oberhalb von 850px trägt `.main-nav` die Navigation, und
+   ein versehentlich offen gelassenes Menü bleibt dadurch folgenlos, ohne dass
+   beim Vergrößern des Fensters Zustand zurückgesetzt werden müsste. */
+.nav-toggle { display:none; }
+.mobile-nav { display:none; }
+.nav-toggle { align-items:center; background:transparent; border:1px solid var(--line); height:38px; justify-content:center; padding:0; width:38px; }
+.nav-toggle[aria-expanded="true"] { background:var(--ink); border-color:var(--ink); }
+.nav-toggle-icon { display:block; height:12px; position:relative; width:18px; }
+.nav-toggle-icon i { background:var(--ink); display:block; height:2px; left:0; position:absolute; transition:transform .18s ease, opacity .18s ease; width:100%; }
+.nav-toggle-icon i:nth-child(1) { top:0; }
+.nav-toggle-icon i:nth-child(2) { top:5px; }
+.nav-toggle-icon i:nth-child(3) { top:10px; }
+/* Offen: aus den drei Balken wird ein Kreuz. */
+.nav-toggle-icon.offen i { background:#fff; }
+.nav-toggle-icon.offen i:nth-child(1) { transform:translateY(5px) rotate(45deg); }
+.nav-toggle-icon.offen i:nth-child(2) { opacity:0; }
+.nav-toggle-icon.offen i:nth-child(3) { transform:translateY(-5px) rotate(-45deg); }
+@media (prefers-reduced-motion:reduce) { .nav-toggle-icon i { transition:none; } }
 .brand { align-items:center; display:flex; font-size:16px; font-weight:800; letter-spacing:.1em; line-height:.9; }
 .brand-logo { display:block; height:auto; object-fit:contain; width:164px; }
 .brand-mark { align-items:center; background:var(--ink); color:var(--gold); display:flex; font-family:Georgia,serif; font-size:25px; font-style:italic; height:40px; justify-content:center; margin-right:10px; transform:skew(-8deg); width:34px; }
@@ -76,12 +96,29 @@ footer { background:var(--ink); color:#fff; padding:52px max(48px,calc((100vw - 
      und weil die Hauptnavigation auf schmalen Geräten ohnehin verschwindet,
      blieb vom Kopf nur Logo und Warenkorb übrig — an sein Konto kam man nur
      über den Seitenfuß, also nach dem Scrollen über die ganze Seite. */
-  .account-link { display:inline; white-space:nowrap; }.hero { min-height:670px; padding:62px 22px; }.hero-art { bottom:-6px; height:360px; margin:0; position:absolute; right:-40px; transform:scale(.8); width:460px; }.shop-section { padding:75px 22px; }.section-heading { align-items:flex-start; flex-direction:column; gap:24px; }.shop-toolbar { align-items:flex-start; flex-direction:column-reverse; gap:20px; padding:18px 0; }.filter-tabs { flex-wrap:wrap; gap:8px 18px; }.filter-tabs button { padding:10px 0; }.search-field { width:100%; }.product-grid { grid-template-columns:repeat(2,1fr); }.product-image { height:300px; }.card-art { height:235px; top:33px; width:160px; }.art-mark { font-size:65px; left:32px; }.split-section,.service-section,.forms-section { grid-template-columns:1fr; }.split-copy { padding:75px 22px; }.split-panel { min-height:430px; }.service-card,.service-card-dark { padding:70px 22px; }.forms-section,.offer-section,.form-section { padding:70px 22px; }.form-card { padding:30px 22px; }.footer-top { flex-wrap:wrap; gap:35px; }.footer-top p { order:3; width:100%; }.footer-bottom { flex-wrap:wrap; gap:12px; line-height:1.5; } }
+  .account-link { display:inline; white-space:nowrap; }
+  /* Hier übernimmt das Burger-Menü die Navigation, die `.main-nav` oben abgibt. */
+  .nav-toggle { display:inline-flex; flex-shrink:0; }
+  .mobile-nav[hidden] { display:none; }
+  /* `top:100%` bezieht sich auf die Padding-Box der Leiste — deren
+     Rahmenlinie liegt darunter, das Menü begänne also 1px zu hoch und läge auf
+     der Linie. Die eine Pixelzeile Versatz setzt es darunter; einen eigenen
+     Rahmen braucht es dann nicht, die Linie der Leiste trennt bereits. */
+  .mobile-nav { background:var(--paper); box-shadow:0 18px 30px #1111120f; display:flex; flex-direction:column; left:0; padding:6px 22px 14px; position:absolute; right:0; top:calc(100% + 1px); }
+  .mobile-nav a { border-bottom:1px solid var(--line); color:#56534e; font-size:12px; font-weight:700; letter-spacing:.1em; padding:16px 2px; text-transform:uppercase; }
+  .mobile-nav a:last-child { border-bottom:0; }
+  .mobile-nav a:hover { color:var(--red); }
+  .mobile-nav a[aria-current="page"] { color:var(--ink); }.hero { min-height:670px; padding:62px 22px; }.hero-art { bottom:-6px; height:360px; margin:0; position:absolute; right:-40px; transform:scale(.8); width:460px; }.shop-section { padding:75px 22px; }.section-heading { align-items:flex-start; flex-direction:column; gap:24px; }.shop-toolbar { align-items:flex-start; flex-direction:column-reverse; gap:20px; padding:18px 0; }.filter-tabs { flex-wrap:wrap; gap:8px 18px; }.filter-tabs button { padding:10px 0; }.search-field { width:100%; }.product-grid { grid-template-columns:repeat(2,1fr); }.product-image { height:300px; }.card-art { height:235px; top:33px; width:160px; }.art-mark { font-size:65px; left:32px; }.split-section,.service-section,.forms-section { grid-template-columns:1fr; }.split-copy { padding:75px 22px; }.split-panel { min-height:430px; }.service-card,.service-card-dark { padding:70px 22px; }.forms-section,.offer-section,.form-section { padding:70px 22px; }.form-card { padding:30px 22px; }.footer-top { flex-wrap:wrap; gap:35px; }.footer-top p { order:3; width:100%; }.footer-bottom { flex-wrap:wrap; gap:12px; line-height:1.5; } }
 @media (max-width:500px) { :root { --header-h:92px; }.announcement { font-size:8px; gap:8px; }.ticker { font-size:8px; gap:6px 16px; letter-spacing:.08em; min-height:46px; padding:12px 14px; }
   /* Auf dieser Breite bricht die Leiste auf zwei Zeilen um, und der Trenner
      rutscht dabei an den Anfang der zweiten — ein ✦ ohne Bezug davor. Die
      Rauten entfallen deshalb schmal, der Abstand trennt allein. */
-  .ticker i { display:none; }.header-actions { gap:10px; }.cart-button { font-size:8px; padding:11px 9px; }
+  .ticker i { display:none; }  /* Der Standardabstand von 48px zwischen Logo und Aktionen ist auf dieser
+     Breite der Grund, warum das Logo zusammengedrückt würde: 331px stehen zur
+     Verfügung, allein der Abstand nähme 48 davon. Mit 14px bleibt das Logo bei
+     seinen 112px und die Leiste bei den 92px, mit denen --header-h rechnet. */
+  .site-header { gap:14px; }
+  .header-actions { gap:10px; }.cart-button { font-size:8px; padding:11px 9px; }
   /* Auf dieser Breite müssen Logo, Konto und Warenkorb nebeneinander passen,
      ohne die Leiste umbrechen zu lassen — sonst wächst sie über die 92px,
      mit denen --header-h rechnet. */

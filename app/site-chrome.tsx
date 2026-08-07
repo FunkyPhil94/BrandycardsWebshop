@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 export const EBAY_SHOP_URL = "https://www.ebay.de/str/brandycards";
 const CART_KEY = "brandycards-cart";
@@ -91,12 +91,31 @@ const NAV = [
 
 export function SiteHeader({ active }: { active?: string }) {
   const { count } = useCart();
+  const [menuOffen, setMenuOffen] = useState(false);
+  const leisteRef = useRef<HTMLDivElement>(null);
+
+  // Escape schließt, ein Klick außerhalb der Leiste ebenfalls. Beides hängt nur
+  // am geöffneten Zustand — im geschlossenen liegen keine Listener herum.
+  useEffect(() => {
+    if (!menuOffen) return;
+    const beiTaste = (event: KeyboardEvent) => { if (event.key === "Escape") setMenuOffen(false); };
+    const beiKlick = (event: MouseEvent) => {
+      if (!leisteRef.current?.contains(event.target as Node)) setMenuOffen(false);
+    };
+    document.addEventListener("keydown", beiTaste);
+    document.addEventListener("pointerdown", beiKlick);
+    return () => {
+      document.removeEventListener("keydown", beiTaste);
+      document.removeEventListener("pointerdown", beiKlick);
+    };
+  }, [menuOffen]);
+
   return <>
     <div className="announcement"><span>✦</span> Versand innerhalb Deutschlands 3,45 € · EU 14,49 € <span>→</span></div>
     {/* Der Balken trägt das Kleben und den Hintergrund, nicht die Kopfzeile
         selbst: `.site-header` ist auf 1400px begrenzt und zentriert, ein
         `position:sticky` darauf ließe den Inhalt an den Rändern durchscheinen. */}
-    <div className="site-header-bar">
+    <div className="site-header-bar" ref={leisteRef}>
       <header className="site-header">
         <Link className="brand" href="/" aria-label="BrandyCards Startseite">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -110,8 +129,35 @@ export function SiteHeader({ active }: { active?: string }) {
         <div className="header-actions">
           <Link className="account-link" href="/account">Konto <span>↗</span></Link>
           <Link className="cart-button" href="/checkout" aria-label={`Warenkorb, ${count} Artikel`}>Warenkorb <b>{count}</b></Link>
+          {/* Nur unter 850px sichtbar. Oberhalb blendet CSS Schaltfläche und
+              Liste aus — ein offen gelassenes Menü ist beim Vergrößern des
+              Fensters dadurch folgenlos, ohne dass Zustand aufgeräumt wird. */}
+          <button
+            className="nav-toggle"
+            type="button"
+            aria-expanded={menuOffen}
+            aria-controls="mobile-nav"
+            aria-label={menuOffen ? "Menü schließen" : "Menü öffnen"}
+            onClick={() => setMenuOffen((offen) => !offen)}
+          >
+            <span className={menuOffen ? "nav-toggle-icon offen" : "nav-toggle-icon"} aria-hidden="true">
+              <i /><i /><i />
+            </span>
+          </button>
         </div>
       </header>
+      {/* Absolut positioniert, nicht im Fluss: Die Leiste muss ihre Höhe
+          behalten, sonst stimmt --header-h im geöffneten Zustand nicht mehr. */}
+      <nav id="mobile-nav" className={menuOffen ? "mobile-nav offen" : "mobile-nav"} aria-label="Hauptnavigation" hidden={!menuOffen}>
+        {NAV.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            aria-current={active === item.href ? "page" : undefined}
+            onClick={() => setMenuOffen(false)}
+          >{item.label}</Link>
+        ))}
+      </nav>
     </div>
   </>;
 }

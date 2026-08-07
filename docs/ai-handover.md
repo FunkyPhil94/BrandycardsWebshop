@@ -47,16 +47,12 @@ betroffene Dateien, Verifikation, Ergebnis.
 Kein Auftrag, sondern der Zustand, den die nächste Sitzung kennen muss.
 Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
 
-- **Auf schmalen Geräten gibt es keine Hauptnavigation.** `.main-nav` steht im
-  850-px-Block auf `display:none`; im Kopf stehen dort nur Logo, „Konto" und
-  Warenkorb. **Karten, Anfragen, Verkaufen und Über uns sind ausschließlich
-  über den Seitenfuß erreichbar** — also erst nach dem Scrollen über die ganze
-  Seite. Für einen Shop, dessen wichtigster Weg „zum Kartenbestand" heißt, ist
-  das die unangenehmere Hälfte des Problems; der fehlende Kontolink war am
-  2026-08-07 nur der Teil, der zuerst aufgefallen ist.
-  Die Lösung ist ein Menü (Schaltfläche plus ausklappende Liste) und damit eine
-  Gestaltungsentscheidung, keine Zeile CSS — deshalb bewusst nicht nebenbei
-  erfunden. Betrifft `app/site-chrome.tsx` und `app/globals.css`.
+- ~~**Auf schmalen Geräten gibt es keine Hauptnavigation.**~~ **Erledigt am
+  2026-08-07:** Burger-Menü gebaut, deployed als `fc35c017`. `.main-nav` bleibt
+  unter 850 px ausgeblendet, die Navigation übernimmt dort die Schaltfläche in
+  der Kopfzeile. Der Kontolink steht weiterhin daneben in der Leiste und
+  **nicht** zusätzlich im Menü — zwei Wege zum selben Ziel sind eine
+  Fehlerquelle, keine Hilfe.
 - **Dauerfreigabe für Deploys, am 2026-08-07 noch einmal bekräftigt:** „Immer
   deployen, nicht fragen." Ein `npx wrangler deploy` nach grüner Prüfkette
   (`tsc`, Lint, `npm test`, Bundle-Probe) braucht **keine** Einzelrücksprache
@@ -101,8 +97,8 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
   Tests abbrach — **hier Node 24, in CI Node 22**. Ein Deploy ging auf grüner
   lokaler Kette raus, obwohl CI seit Stunden rot war. `gh run list --limit 3`
   kostet nichts und hätte es gezeigt.
-- **Produktion ist aktuell; zuletzt deployed ist `161c74e4`** (Kontolink im
-  mobilen Kopf). Davor `21bd0667` (CI-Korrektur und
+- **Produktion ist aktuell; zuletzt deployed ist `fc35c017`** (Burger-Menü
+  für schmale Geräte). Davor `161c74e4` (Kontolink im mobilen Kopf). Davor `21bd0667` (CI-Korrektur und
   schlankere Kopfleiste, 126 px statt 164 px). Davor `783402f9` (Warenkorb-
   grenze und Oberflächenkorrekturen). Weiter davor am 2026-08-07
   ging mehrfach hintereinander etwas raus: `1cfd52f1` (alle
@@ -233,6 +229,65 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
 ---
 
 ## Historie
+
+### 2026-08-07 — Burger-Menü für schmale Geräte (fc35c017)
+
+- **Stand:** ABGESCHLOSSEN
+- **Datum:** 2026-08-07
+- **Ziel:** Burger-Menü für schmale Geräte. Schließt den offenen Punkt
+  „Auf schmalen Geräten gibt es keine Hauptnavigation".
+- **Ausgangslage:** `.main-nav` steht im 850-px-Block auf `display:none`.
+  Karten, Anfragen, Verkaufen und Über uns sind dort nur über den Seitenfuß
+  erreichbar. `SiteHeader` ist bereits eine Client-Komponente (`"use client"`),
+  Zustand ist also ohne Umbau möglich.
+- **Geplante Umsetzung:**
+  - Schaltfläche in der Kopfzeile, nur unter 850 px sichtbar, mit
+    `aria-expanded`, `aria-controls` und wechselnder Beschriftung
+    („Menü öffnen" / „Menü schließen").
+  - Die Liste klappt **absolut positioniert** unter der Leiste auf, nicht im
+    Fluss. Grund: Die Leiste muss ihre 92 px behalten, sonst stimmt
+    `--header-h` im geöffneten Zustand nicht mehr.
+  - Schließt bei Klick auf einen Eintrag, bei `Escape` und bei Klick daneben.
+  - Ab 851 px sind Schaltfläche und Liste per CSS ausgeblendet — damit ist ein
+    offen gelassenes Menü beim Vergrößern des Fensters folgenlos, ohne dass
+    dafür Zustand aufgeräumt werden muss.
+  - **Kein zweiter Kontolink im Menü.** Er steht seit `161c74e4` in der Leiste;
+    zwei Wege zum selben Ziel sind eine Fehlerquelle, keine Hilfe.
+- **Betroffen:** `app/site-chrome.tsx`, `app/globals.css`. Kein Datenmodell,
+  keine API, kein eBay.
+- **Verifikation:** Bei 375 px im Browser: Menü öffnet und schließt über die
+  Schaltfläche, `Escape` schließt, ein Klick auf einen Eintrag navigiert und
+  schließt; `aria-expanded` folgt dem Zustand; die Leistenhöhe bleibt im
+  geöffneten Zustand bei 92 px; kein waagerechter Überlauf. Bei 1280 px darf
+  nichts davon sichtbar sein. Dann Prüfkette und Deploy.
+- **Ergebnis: ABGESCHLOSSEN**, deployed als Version `fc35c017`.
+  `tsc` sauber, Lint 0 Fehler, `npm test` 130/130.
+  **Live auf `shop.brandycards.de` bei 375 px durchgespielt:** Schaltfläche
+  sichtbar, `aria-expanded` folgt dem Zustand, Beschriftung wechselt auf
+  „Menü schließen", alle vier Einträge mit korrekten Zielen, `aria-current`
+  markiert die aktive Seite, `Escape` schließt, Klick daneben schließt, Klick
+  **innerhalb** der Leiste schließt nicht, Klick auf einen Eintrag navigiert und
+  schließt. Leiste bleibt im geöffneten Zustand bei 91 px, kein waagerechter
+  Überlauf. Bei 1280 px sind Schaltfläche und Liste `display:none` — auch nach
+  einem erzwungenen Klick auf die unsichtbare Schaltfläche.
+- **Drei Dinge, die die Messung erst sichtbar gemacht hat:**
+  1. **Der Burger drückte das Logo zusammen** — die Leiste fiel auf 83 px statt
+     92 px. Ursache war nicht die Schaltfläche, sondern der Standardabstand von
+     **48 px** zwischen Logo und Aktionen: Von 331 px verfügbarer Breite nahm er
+     allein 48. Unter 500 px steht er jetzt auf 14 px, damit bleibt das Logo bei
+     112 px und die Leiste bei ihren 92 px (gemessen 91, Subpixel-Rundung).
+  2. **Das Menü begann 1 px zu hoch.** `top:100%` bezieht sich auf die
+     Padding-Box der Leiste, deren Rahmenlinie liegt darunter — die Liste lag
+     damit auf der Linie. Jetzt `top:calc(100% + 1px)`, und der eigene Rahmen
+     der Liste entfällt, weil die Linie der Leiste bereits trennt.
+  3. Die Schaltfläche wurde selbst zusammengedrückt (31 statt 38 px), daher
+     `flex-shrink:0`.
+- **Nochmals dieselbe Falle wie beim Deploy davor, diesmal andersherum:** Die
+  Prüfung direkt nach `wrangler deploy` zeigte noch das **alte** Stylesheet —
+  nicht weil der Deploy fehlschlug, sondern weil die Verteilung an den Rand
+  einen Moment braucht. Nach etwa 20 Sekunden lieferte die Produktion die neue
+  Datei. **Nach einem Deploy kurz warten, bevor man die Bundle-Referenz
+  prüft**, sonst diagnostiziert man ein Problem, das keines ist.
 
 ### 2026-08-07 — Kontolink im mobilen Kopf (161c74e4)
 
