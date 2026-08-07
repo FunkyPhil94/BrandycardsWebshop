@@ -37,8 +37,29 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-_Kein laufender Auftrag._ Vorlage: Stand, Datum, Ziel, geplante Schritte,
-betroffene Dateien, Verifikation, Ergebnis.
+- **Stand:** LÄUFT
+- **Datum:** 2026-08-07
+- **Ziel:** Zwei überholte Stellen in der Doku schließen, beide durch Messung an
+  der Produktion belegt: den offenen Punkt „Sync-Lauf nötig, damit ‚Neu dabei'
+  echt wird" und die erweiterte Dauerfreigabe des Betreibers.
+- **Befund, gemessen statt vermutet:**
+  `curl -s https://shop.brandycards.de/api/products/highlights` meldet
+  `"startAtAvailable": true`. `ebay_listings.start_at` ist gefüllt, die fünf
+  neuesten Karten tragen echte Einstelldaten (06.08. 17:13, 17:09, 17:00,
+  04.08. 18:23), absteigend sortiert. Damit liefert „Neu dabei" nicht mehr die
+  Importreihenfolge als Notbehelf.
+- **Zweite Änderung:** Der Betreiber hat die Dauerfreigabe am 2026-08-07 auf
+  **Commits und Pushes** ausgeweitet: „immer committen, pushen und deployen,
+  ohne mich zu fragen." Der bestehende Eintrag unter „Offene Punkte" nennt nur
+  Deploys und wird nachgezogen. Die Ausnahmen bleiben unverändert.
+- **Geplante Schritte:** Beide Punkte in `docs/ai-handover.md` nachziehen,
+  diesen Eintrag nach „Historie" verschieben, committen und nach
+  `agent/initial-brandycards` **und** `main` pushen.
+- **Betroffen:** `docs/ai-handover.md`. **Kein Code, keine Datenbank, keine
+  Migration, kein eBay-Aufruf, kein Deploy** — an der ausgelieferten Anwendung
+  ändert sich nichts, ein `wrangler deploy` hätte hier nichts zu tun.
+- **Verifikation:** `git status --short` leer, `origin/main` und
+  `origin/agent/initial-brandycards` auf demselben Commit.
 
 ---
 
