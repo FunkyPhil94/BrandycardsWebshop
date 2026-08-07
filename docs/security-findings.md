@@ -1611,3 +1611,27 @@ dem Deploy mit derselben Bundle-Probe, ob die Supabase-URL im Client gelandet
 ist, und danach, ob `/account` und `/admin` wirklich laden statt „Supabase ist
 noch nicht konfiguriert" zu melden. Genau der Fehler, der schon einmal
 durchgerutscht ist, weil Startseite und `/api/*` dabei gesund aussehen.
+
+**Stand 2026-08-07: bewusst nicht scharf geschaltet.** Der Betreiber hat
+entschieden, die Secrets vorerst nicht anzulegen. Der Workflow läuft nur auf
+Knopfdruck und bricht ohne sie mit einer klaren Meldung ab — er stört also
+nicht, während er wartet.
+
+### Wenn der Arbeitsrechner verloren geht
+
+Das Klumpenrisiko, gegen das der Workflow gedacht war, ist kleiner als es
+klingt. Am 2026-08-07 nachgemessen, nicht angenommen: **Ein Produktionsbuild
+braucht aus `.env.local` genau zwei Werte** — `NEXT_PUBLIC_SUPABASE_URL` und
+`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. Ein Build allein damit lief durch und
+bestand die Bundle-Probe.
+
+Beide stehen im Supabase-Dashboard unter *Project Settings → API* und sind
+ohnehin öffentlich; sie werden an jeden Browser ausgeliefert. Alles Übrige
+(`EBAY_*`, `PAYPAL_*`, `ADMIN_EMAILS`) liest der Worker zur **Laufzeit** aus
+den Cloudflare-Secrets und wird für einen Deploy nicht gebraucht.
+
+Wiederherstellung auf einem fremden Rechner:
+
+```bash
+git clone https://github.com/FunkyPhil94/BrandycardsWebshop.git && cd BrandycardsWebshop && git checkout agent/initial-brandycards && npm ci && printf 'NEXT_PUBLIC_SUPABASE_URL=…\nNEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=…\n' > .env.local && npx wrangler login && npm test && npx wrangler deploy
+```

@@ -53,14 +53,27 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
   mehr. **Nicht** eingeschlossen und weiterhin abzusprechen: schreibende
   Eingriffe in Produktionsdaten, Migrationen, Änderungen am eBay-Angebots-
   bestand und alles, was Kosten oder Fremddienste hinzufügt.
-- **Der GitHub-Deploy-Workflow wartet auf drei Secrets.**
-  [.github/workflows/deploy.yml](../.github/workflows/deploy.yml) ist gebaut,
-  aber `gh secret list` war am 2026-08-07 leer. Nötig sind
-  `CLOUDFLARE_API_TOKEN`, `NEXT_PUBLIC_SUPABASE_URL` und
-  `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`; Anleitung in
+- **Der GitHub-Deploy-Workflow liegt bereit, ist aber bewusst nicht scharf.**
+  [.github/workflows/deploy.yml](../.github/workflows/deploy.yml) ist fertig;
+  der Betreiber hat am 2026-08-07 entschieden, die drei Secrets **vorerst
+  nicht** anzulegen („ist mir jetzt zu viel Arbeit"). Der Workflow schadet
+  nicht: Er läuft nur auf Knopfdruck und bricht ohne Secrets mit einer klaren
+  Meldung ab, statt etwas Halbes auszuliefern. Wer ihn später scharf schalten
+  will, findet die Anleitung in
   [security-findings.md](security-findings.md) unter „Alternativ: Deploy über
-  GitHub". Bis dahin ist der lokale `npx wrangler deploy` der einzige Weg —
-  und damit hängt das Ausliefern weiterhin an einer Maschine.
+  GitHub". **Deployed wird bis dahin lokal mit `npx wrangler deploy`.**
+- **Wenn der Arbeitsrechner verloren geht** — das war der Anlass für den
+  Workflow, und es ist harmloser als befürchtet. Am 2026-08-07 nachgemessen:
+  Ein Produktionsbuild braucht aus `.env.local` **nur zwei Werte**,
+  `NEXT_PUBLIC_SUPABASE_URL` und `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. Ein
+  Build allein damit lief durch und bestand die Bundle-Probe. Beide stehen im
+  Supabase-Dashboard unter *Project Settings → API* und sind ohnehin
+  öffentlich — sie werden an jeden Browser ausgeliefert.
+  Alles Übrige (`EBAY_*`, `PAYPAL_*`, `ADMIN_EMAILS`) liest der Worker zur
+  Laufzeit aus den Cloudflare-Secrets und wird für einen Deploy **nicht**
+  gebraucht. Wiederherstellung auf einem fremden Rechner ist also: Repository
+  klonen, `npm ci`, zwei Zeilen `.env.local` schreiben, `npx wrangler login`,
+  deployen.
 - **Produktion ist aktuell.** Fünf Deploys am 2026-08-07: `1cfd52f1` (alle
   Sicherheitskorrekturen), `650c189a` (HSTS), `81c6422d` (Profilformular),
   `d893527a` (Konto- und Adminfläche in der Sprache des Shops), `0b25ae0f`
