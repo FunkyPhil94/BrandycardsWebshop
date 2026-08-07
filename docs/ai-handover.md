@@ -37,8 +37,46 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-_Kein laufender Auftrag._ Vorlage: Stand, Datum, Ziel, geplante Schritte,
-betroffene Dateien, Verifikation, Ergebnis.
+**Stand:** LÄUFT · **Datum:** 2026-08-07
+
+**Ziel:** Die beiden Befunde umsetzen, die nach der Sicherheitsprüfung auf eine
+Entscheidung des Betreibers gewartet haben, und den Bericht mit der nun
+bekannten Tarifauskunft nachschärfen.
+
+**Entscheidungen des Nutzers:**
+1. **SEC-15 — Aufbewahrung: 90 Tage.** Abgeschlossene Kartenangebote
+   (`REJECTED`, `CLOSED`) samt Bildern werden 90 Tage nach der letzten
+   Statusänderung automatisch gelöscht. Angenommene bleiben — sie werden zu
+   Bestellungen und fallen unter steuerliche Aufbewahrungspflichten.
+2. **SEC-16 — Datenschutzerklärung ergänzen** um einen Satz zu den direkt von
+   eBays CDN geladenen Bildern, als Arbeitsentwurf gekennzeichnet.
+3. **SEC-12 — bleibt offen** bis zum nächsten ohnehin nötigen Schemaschritt.
+   Keine Migration allein für diesen Befund.
+4. **Cloudflare-Tarif: Free.** Damit steigt SEC-05 von *mittel* auf *hoch* —
+   rund 2 900 Aufrufe von `/api/products` brauchen das D1-Tageskontingent auf,
+   danach antwortet jede datenbankgestützte Seite mit 503.
+
+**Geplante Schritte:**
+1. Aufbewahrungslogik als reine, testbare Funktion (`lib/retention.ts`), die
+   Datenbank- und R2-Seite in `lib/card-submission-cleanup.ts`, ausgelöst vom
+   `scheduled`-Lauf in `worker/index.ts`.
+2. Satz in `app/datenschutz/page.tsx`.
+3. `docs/security-findings.md`: SEC-05 auf hoch, Status von SEC-15 und SEC-16,
+   Tarif-Unsicherheit auflösen.
+4. `docs/ai-todo.md` und `docs/ai-agent-log.md` nachziehen.
+
+**Achtung, Falle:** `card_submissions.created_at`/`updated_at` stehen per
+SQLite-Vorgabe im Format `YYYY-MM-DD HH:MM:SS`, während der Anwendungscode
+sonst ISO-8601 mit `T` und `Z` schreibt. Ein reiner Zeichenkettenvergleich
+zwischen beiden Formen ist **falsch** — `' '` sortiert vor `'T'`, also gölte
+jede Vorgabe-Zeitangabe als uralt und würde gelöscht. Der Vergleich läuft
+deshalb über SQLites `datetime()` auf beiden Seiten.
+
+**Verifikation:** `npx tsc --noEmit`, `npm run lint`, `npm test`. Löschlauf
+gegen die **lokale** D1 mit gesetzten Zeitstempeln beider Formate; **kein**
+schreibender Eingriff in Produktionsdaten.
+
+**Ergebnis:** _(offen — wird nach dem Durchlauf nachgetragen)_
 
 ---
 
