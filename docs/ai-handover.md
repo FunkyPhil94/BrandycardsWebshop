@@ -69,8 +69,15 @@ bearbeitbar aus, nehmen den Fokus an und verweigern dann die Eingabe.
    `.account-card` an die dunkle Fläche anpassen, `.profile-panel` gestalten.
 4. `npx tsc --noEmit`, `npm run lint`, `npm test`, lokal im Browser ansehen.
 
-**Deploy:** **nicht** ohne erneute Freigabe. Die Zustimmung vom letzten Mal galt
-diesem einen Deploy.
+**Deploy:** ~~nicht ohne erneute Freigabe~~ — **Freigabe erteilt** („Deploye
+jetzt das neue Formular"). Der Betreiber hat zuvor die Supabase-URLs
+angepasst, SEC-18 sollte damit erledigt sein.
+
+**Was nach dem Deploy nur der Betreiber prüfen kann:**
+- Das Profilformular selbst — dafür wäre eine Anmeldung nötig, und das
+  Passwort des Betreibers fasse ich nicht an.
+- Der Reset-Ablauf — die Bestätigungsmail geht an sein Postfach. Ein Aufruf
+  von „Passwort vergessen" von hier aus wäre eine Nachricht in seinem Namen.
 
 **Ergebnis:** _(offen — wird nach dem Durchlauf nachgetragen)_
 
