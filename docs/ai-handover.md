@@ -37,8 +37,36 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-_Kein laufender Auftrag._ Vorlage: Stand, Datum, Ziel, geplante Schritte,
-betroffene Dateien, Verifikation, Ergebnis.
+- **Stand:** LÄUFT
+- **Datum:** 2026-08-07
+- **Ziel:** Textänderungen aus einer Sichtprüfung des Betreibers.
+  1. **Gedankenstriche raus.** Sie durchziehen die Werbetexte („Der komplette
+     Bestand mit Suche und Filter — Festpreis, Auktion und Vormerkliste."). Die
+     Sätze werden dabei umgebaut, nicht nur der Strich durch ein Komma ersetzt.
+  2. **„Preisvorschlag" auf der Verkaufen-Kachel der Startseite** ist das
+     falsche Wort: Dort nennt der Kunde *uns* seinen Preis.
+- **Befund zu Punkt 2, der die Sache entscheidet:** „Preisvorschlag" ist im
+  Shop bereits **belegt** — so heißt die Verhandlung auf der Käuferseite
+  (`lib/price-offers.ts`, `app/karten/[id]/offer-form.tsx`). Die Seite
+  `/verkaufen`, auf die die Kachel zeigt, sagt dagegen schon
+  **„Preisvorstellung"** und **„Wunschpreis"**. Die Kachel ist also nicht nur
+  schief formuliert, sie **widerspricht ihrem eigenen Ziel und belegt ein Wort
+  doppelt**. Sie wird an die Seite angeglichen, nicht neu erfunden.
+- **Umfang:** Alle zwölf Gedankenstriche in sichtbarem Text, auch die vier, die
+  der Betreiber nicht abgebildet hat (`/anfragen` zweiter Absatz, Vormerk-
+  Formular auf `/karten`, zwei Stellen im Angebotsformular). Ein halb
+  bereinigter Shop wäre schlechter als gar keiner.
+- **Bewusst ausgenommen:** die beiden `<title>`-Angaben
+  („BrandyCards — Football Collectibles", „Über uns — BrandyCards"). Das ist
+  Registerkartentext, kein Fließtext; dort ist der Strich ein üblicher Trenner
+  und hat keine Alternative, die nicht schlechter aussieht. Wird dem Betreiber
+  genannt.
+- **Betroffen:** `app/page.tsx`, `app/karten/page.tsx`, `app/anfragen/page.tsx`,
+  `app/ueber-uns/page.tsx`, `app/karten/[id]/offer-form.tsx`. **Nur Text —
+  kein Verhalten, keine Datenbank, keine API, kein eBay-Aufruf.**
+- **Verifikation:** `grep` auf `—` in sichtbarem Text muss leer sein; Prüfkette;
+  die geänderten Seiten im Browser ansehen, damit kein Satz umbricht oder
+  seine Kachel sprengt.
 
 ---
 
