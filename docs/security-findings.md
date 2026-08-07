@@ -893,6 +893,7 @@ Einstellungs-Endpunkt:
 | Anonyme Anmeldungen? | Nein |
 | Fremdanbieter-Logins? | Keine aktiv, nur E-Mail |
 | Datentabellen über den Publishable Key erreichbar? | **Nein** — `/rest/v1/` antwortet mit 401 |
+| Row Level Security aktiv? | **Frage entfällt** — im Schema `public` gibt es überhaupt keine Tabellen (vom Betreiber am 2026-08-07 im Dashboard bestätigt: „No tables to create policies for"). Supabase wird ausschließlich zur Anmeldung genutzt, sämtliche Anwendungsdaten liegen in D1 |
 | Schlüsselform | `sb_publishable_*` (neues Format), kein Legacy-JWT |
 
 **Das entschärft das größte denkbare Risiko:** Weil `email_confirmed_at` erst
@@ -905,6 +906,13 @@ Die Token-Prüfung läuft gegen `<project>/auth/v1/user`
 ([lib/supabase-server.ts:15](lib/supabase-server.ts:15)), also gegen die
 **richtige** Projektinstanz. Ein Token aus einem fremden Supabase-Projekt wird
 abgelehnt. Kein Service-Role-Key im Code oder im Client.
+
+**Zur RLS-Frage aus Abschnitt 6.10 des Auftrags:** Sie stellt sich nicht. Das
+Schema `public` enthält **keine einzige Tabelle** — Supabase dient hier
+ausschließlich der Anmeldung, alle Anwendungsdaten liegen in D1. Wo keine
+Tabelle steht, kann auch keine ohne Zeilenschutz stehen. Empfehlenswert bleibt
+der Schalter *„Automatically enable RLS on new tables"*, damit das so bleibt,
+falls dort je eine Tabelle entsteht.
 
 **Unsicherheit, ausdrücklich benannt:** Passwortrichtlinie und Token-Laufzeit
 gibt der öffentliche Endpunkt nicht preis; siehe
