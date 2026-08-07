@@ -37,8 +37,49 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-_Kein laufender Auftrag._ Vorlage: Stand, Datum, Ziel, geplante Schritte,
-betroffene Dateien, Verifikation, Ergebnis.
+- **Stand:** LÄUFT
+- **Datum:** 2026-08-07
+- **Ziel:** Zwei Punkte aus einer Sichtprüfung des Betreibers.
+  1. **Eine Karte lässt sich nicht wieder aus dem Warenkorb nehmen.** Auf
+     `/karten` steht der Knopf nach dem Hinzufügen auf „Bereits im Warenkorb"
+     und ist **deaktiviert** — eine Sackgasse. Der einzige Weg hinaus führt
+     über den Checkout, wo es einen „Entfernen"-Knopf gibt. Das ist umständlich.
+  2. **`/karten` listet alle 294 Angebote auf einer Seite.** Gewünscht ist
+     Blättern mit 10, 20, 50 oder 100 Karten je Seite.
+- **Befund zum ersten Punkt, beim Lesen dazugekommen:** Der „Entfernen"-Knopf
+  im Checkout schreibt zwar den `sessionStorage`, löst aber **kein**
+  `brandycards-cart-changed` aus. Die Zahl im Warenkorbsymbol der Kopfleiste
+  hängt an genau diesem Ereignis und bleibt daher stehen, bis die Seite neu
+  geladen wird. Das gehört mit repariert, sonst zeigt der Kopf nach dem
+  Entfernen eine falsche Zahl.
+- **Geplante Umsetzung:**
+  - `useCart` bekommt `removeFromCart`. Der Knopf wird vom deaktivierten
+    Hinweis zu einem **Umschalter**: „In den Warenkorb" ↔ „Aus dem Warenkorb".
+  - `cartButtonState` entscheidet künftig auch die Aktion (`add` / `remove` /
+    keine). **Wichtig:** Liegt eine Karte im Warenkorb und ist inzwischen
+    ausverkauft, muss „Entfernen" trotzdem möglich sein — sonst klemmt sie
+    dauerhaft fest. Deshalb wird „im Warenkorb" **vor** „nicht verfügbar"
+    geprüft.
+  - `cartButtonState` und die Blätter-Rechnung wandern nach `lib/` und
+    bekommen Tests. Beides ist reine Entscheidungslogik und ohne Browser
+    prüfbar — dieselbe Bewegung wie bei `lib/ebay-stock-check.ts`.
+  - Seitengröße und Seitenzahl stehen in der URL (`?pro=50&seite=3`), gelesen
+    über `window.location` im Mount-Effekt, geschrieben mit `replaceState`.
+    **Grund:** Wer von Seite 7 in eine Karte klickt und zurückgeht, landet
+    sonst wieder auf Seite 1. Kein `useSearchParams`, weil das eine
+    Suspense-Grenze verlangt; kein Lesen von `window` beim ersten Rendern,
+    das bräche die Hydration.
+- **Betroffen:** `lib/cart.ts` (neu), `lib/pagination.ts` (neu),
+  `tests/cart-and-pagination.test.mjs` (neu, in `npm test` aufnehmen),
+  `app/site-chrome.tsx`, `app/karten/page.tsx`, `app/karten/[id]/page.tsx`,
+  `app/gallery.tsx`, `app/checkout/page.tsx`, `app/globals.css`.
+  **Keine Datenbank, keine Migration, kein eBay-Aufruf.**
+- **Verifikation:** `npx tsc --noEmit`, `npm run lint`, `npm test`; dazu im
+  laufenden Browser messen statt nur im Markup suchen — Hinzufügen und
+  Entfernen samt Zahl in der Kopfleiste, Blättern bei allen vier Seitengrößen,
+  Rücksprung aus einer Kartendetailseite auf dieselbe Seite, Verhalten bei
+  aktiver Suche. Danach Prüfkette und Deploy (Dauerfreigabe).
+- **Angekündigt:** Danach folgen noch inhaltliche Textänderungen.
 
 ---
 
