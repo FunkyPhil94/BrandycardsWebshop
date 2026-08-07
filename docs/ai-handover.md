@@ -37,8 +37,59 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-_Kein laufender Auftrag._ Vorlage: Stand, Datum, Ziel, geplante Schritte,
-betroffene Dateien, Verifikation, Ergebnis.
+- **Stand:** LÄUFT
+- **Datum:** 2026-08-07
+- **Ziel:** Zwei Dinge: **CI wieder grün bekommen** und die klebende Kopfleiste
+  verschlanken.
+- **Befund 1 — CI ist seit dem 2026-08-07, 15:16 Uhr rot, und es ist mir
+  entgangen.** Ich habe `783402f9` auf grüner *lokaler* Prüfkette deployed,
+  ohne den CI-Zustand anzusehen. Der Fehler stammt **nicht** aus meinen
+  Änderungen (letzter grüner Lauf 15:11, erster roter 15:16 — beides vor dieser
+  Sitzung), aber beim Push hätte ich ihn sehen müssen.
+  - Symptom: `npm test` meldet in CI 130 Tests, **0 fehlgeschlagen, 11
+    abgebrochen** → Exit 1. Alle elf stammen aus
+    `tests/ebay-sync-timeout.test.mjs` und tragen `cancelledByParent` mit
+    `Promise resolution is still pending but the event loop has already resolved`.
+  - Ursache: **`AbortSignal.timeout()` hält den Event-Loop nicht wach** (der
+    Timer ist unref'd). Im Test ist die stumme `fetch`-Zusage das einzige
+    offene Handle; Node stellt fest, dass nichts mehr Fortschritt machen kann,
+    und räumt ab, bevor die Zeitgrenze greift. **Lokal läuft Node 24, in CI
+    Node 22** — daher 130/130 auf diesem Rechner und rot auf GitHub.
+  - **Das ist ein Fehler im Test, nicht in der Produktion.** Im Worker hält die
+    laufende Anfrage den Kontext offen; die Zeitgrenze selbst ist richtig.
+    Korrigiert wird deshalb der Stub: Er hält den Loop für die Dauer des
+    Versuchs mit einem ref'd Timer wach — das bildet die Situation ab, die im
+    Worker ohnehin herrscht.
+- **Befund 2 — Kopfleiste zu wuchtig.** Sie ist 164 px hoch und nimmt geklebt
+  fast ein Viertel eines 720-px-Fensters ein. Sie soll „minimal größer als das
+  Logo" werden: Logo bleibt, Innenabstand schrumpft. `--header-h` muss danach
+  **neu gemessen** werden — davon hängen der Sticky-Versatz von
+  `.detail-media` und `scroll-padding-top` ab.
+- **Geplante Schritte:** Test korrigieren und den Rot-Nachweis **unter Node 22**
+  führen, statt zu behaupten, es helfe; Innenabstand der Kopfzeile reduzieren;
+  Höhen an allen drei Breakpoints neu messen; Prüfkette; deployen; **den
+  CI-Lauf abwarten und grün sehen**, nicht annehmen.
+- **Betroffen:** `tests/ebay-sync-timeout.test.mjs`, `app/globals.css`.
+  Keine Produktionsdaten, keine Migration, kein eBay.
+- **Ergebnis:** _(siehe unten, wird beim Abschluss ergänzt)_
+- **Beleg für Befund 1, gemessen statt vermutet:** Ein Skript, dessen einziges
+  offenes Handle ein `AbortSignal.timeout(600)` mit `abort`-Listener ist,
+  endete **nach 1 ms** — der Abbruch feuerte nie. Das gilt sogar unter Node 24;
+  dass die Tests hier durchliefen, war ein Rennen, das Node 24 gewinnt und
+  Node 22 verliert. **Ein echtes Node 22 stand nicht zur Verfügung** (kein
+  nvm/fnm; `npx node@22` liefert das lokale Node 24). Der Nachweis, dass die
+  Korrektur greift, ist deshalb **der grüne CI-Lauf**, nicht ein lokaler Lauf.
+- **Zur Kopfleiste, nachgemessen:** Das Logo rendert bei 164 px Breite genau
+  **109 px** hoch (Original 1264×842). Mit 8 px Innenabstand kommt die Leiste
+  auf **126 px** statt 164 px. Browserwerte an beiden Breakpoints deckungsgleich
+  mit `--header-h`: 126/109 auf 1280 px, 92/75 auf 375 px, kein waagerechter
+  Überlauf, Kleben unverändert.
+- **Fallstrick, der Zeit gekostet hat und der nächsten Sitzung erspart bleiben
+  soll:** Der Vorschau-Server startet im **Worktree**, während diese Änderungen
+  im **Hauptverzeichnis** lagen. Er lieferte deshalb minutenlang das alte CSS,
+  und die Messung zeigte hartnäckig die alten 164 px. Wer im Hauptverzeichnis
+  arbeitet, startet `npm run dev` auch dort — sonst misst er einen anderen
+  Stand, als er gerade schreibt.
 
 ---
 

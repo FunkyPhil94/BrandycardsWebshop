@@ -34,7 +34,28 @@ function stubStummeEbayApi({ tokenAntwortet = true } = {}) {
       return Promise.resolve(new Response(JSON.stringify({ access_token: "test-token" }), { status: 200 }));
     }
     return new Promise((_resolve, reject) => {
-      init?.signal?.addEventListener("abort", () => reject(init.signal.reason ?? new Error("aborted")));
+      // **Der wache Timer ist Absicht.** `AbortSignal.timeout()` hält den
+      // Event-Loop *nicht* wach — sein Timer ist unref'd. Am 2026-08-07
+      // nachgemessen: Ein Prozess, dessen einziges offenes Handle ein
+      // `AbortSignal.timeout(600)` ist, endet nach 1 ms, ohne dass der Abbruch
+      // je feuert. Ohne eigenes waches Handle stellt Node hier fest, dass
+      // niemand mehr Fortschritt machen kann, und räumt ab, bevor die
+      // Zeitgrenze greift. In CI (Node 22) brach die ganze Datei deshalb mit
+      // „Promise resolution is still pending but the event loop has already
+      // resolved" ab, während sie lokal (Node 24) zufällig durchlief.
+      //
+      // Der Timer bildet ab, was im Worker ohnehin gilt: Die laufende Anfrage
+      // hält den Kontext offen, solange der Aufruf unterwegs ist. Zugleich ist
+      // er ein Netz — greift die echte Zeitgrenze nicht, scheitert der Test mit
+      // einer Aussage, statt in sein Zeitlimit zu laufen.
+      const wach = setTimeout(
+        () => reject(new Error("Die Zeitgrenze am eBay-Aufruf hat nicht gegriffen.")),
+        4_000,
+      );
+      init?.signal?.addEventListener("abort", () => {
+        clearTimeout(wach);
+        reject(init.signal.reason ?? new Error("aborted"));
+      });
     });
   };
   return calls;

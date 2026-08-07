@@ -1,7 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,500;0,600;1,500;1,600&display=swap');
 @import "tailwindcss";
 
-:root { --ink:#111112; --paper:#f2f0eb; --muted:#77736c; --line:#d8d4cc; --red:#c9362d; --gold:#c99d58; --night:#18191a; --header-h:164px; }
+:root { --ink:#111112; --paper:#f2f0eb; --muted:#77736c; --line:#d8d4cc; --red:#c9362d; --gold:#c99d58; --night:#18191a; --header-h:126px; }
 /* --header-h ist die Höhe der klebenden Kopfleiste. Am 2026-08-07 im Browser
    gemessen, nicht geschätzt: 164px / 150px / 116px an den drei Breakpoints.
    Wer Logo oder Innenabstand der Kopfzeile ändert, misst neu — davon hängen
@@ -21,7 +21,10 @@ button { cursor:pointer; }
    Seiteninhalt links und rechts daneben durchscheinen. z-index bleibt unter
    der Lightbox (60). */
 .site-header-bar { background:var(--paper); border-bottom:1px solid var(--line); position:sticky; top:0; z-index:50; }
-.site-header { align-items:center; display:flex; gap:48px; justify-content:space-between; margin:auto; max-width:1400px; padding:27px 48px; }
+/* Innenabstand knapp gehalten: Das Logo rendert bei 164px Breite 109px hoch,
+   die Leiste kommt damit auf 126px statt der früheren 164px. Geklebt nahm sie
+   sonst fast ein Viertel eines 720px-Fensters ein. */
+.site-header { align-items:center; display:flex; gap:48px; justify-content:space-between; margin:auto; max-width:1400px; padding:8px 48px; }
 .brand { align-items:center; display:flex; font-size:16px; font-weight:800; letter-spacing:.1em; line-height:.9; }
 .brand-logo { display:block; height:auto; object-fit:contain; width:164px; }
 .brand-mark { align-items:center; background:var(--ink); color:var(--gold); display:flex; font-family:Georgia,serif; font-size:25px; font-style:italic; height:40px; justify-content:center; margin-right:10px; transform:skew(-8deg); width:34px; }
@@ -60,8 +63,8 @@ footer { background:var(--ink); color:#fff; padding:52px max(48px,calc((100vw - 
 .legal-nav a { color:inherit; text-decoration:underline; }
 .form-card .button,.compact-form .button { justify-self:start; }.form-feedback { font-size:12px; line-height:1.5; margin:0; padding:12px 14px; }.form-feedback.success { background:#dcebdc; color:#245b2d; }.form-feedback.error { background:#f7deda; color:#8e2923; }
 .product-cta:disabled { color:#8d8982; cursor:not-allowed; }.product-cta { padding:4px 0; }
-@media (max-width:850px) { :root { --header-h:150px; }.site-header { padding:20px 22px; }.main-nav { display:none; }.account-link { display:none; }.hero { min-height:670px; padding:62px 22px; }.hero-art { bottom:-6px; height:360px; margin:0; position:absolute; right:-40px; transform:scale(.8); width:460px; }.shop-section { padding:75px 22px; }.section-heading { align-items:flex-start; flex-direction:column; gap:24px; }.shop-toolbar { align-items:flex-start; flex-direction:column-reverse; gap:20px; padding:18px 0; }.filter-tabs { flex-wrap:wrap; gap:8px 18px; }.filter-tabs button { padding:10px 0; }.search-field { width:100%; }.product-grid { grid-template-columns:repeat(2,1fr); }.product-image { height:300px; }.card-art { height:235px; top:33px; width:160px; }.art-mark { font-size:65px; left:32px; }.split-section,.service-section,.forms-section { grid-template-columns:1fr; }.split-copy { padding:75px 22px; }.split-panel { min-height:430px; }.service-card,.service-card-dark { padding:70px 22px; }.forms-section,.offer-section,.form-section { padding:70px 22px; }.form-card { padding:30px 22px; }.footer-top { flex-wrap:wrap; gap:35px; }.footer-top p { order:3; width:100%; }.footer-bottom { flex-wrap:wrap; gap:12px; line-height:1.5; } }
-@media (max-width:500px) { :root { --header-h:116px; }.announcement { font-size:8px; gap:8px; }.ticker { font-size:8px; gap:6px 16px; letter-spacing:.08em; min-height:46px; padding:12px 14px; }
+@media (max-width:850px) { :root { --header-h:126px; }.site-header { padding:8px 22px; }.main-nav { display:none; }.account-link { display:none; }.hero { min-height:670px; padding:62px 22px; }.hero-art { bottom:-6px; height:360px; margin:0; position:absolute; right:-40px; transform:scale(.8); width:460px; }.shop-section { padding:75px 22px; }.section-heading { align-items:flex-start; flex-direction:column; gap:24px; }.shop-toolbar { align-items:flex-start; flex-direction:column-reverse; gap:20px; padding:18px 0; }.filter-tabs { flex-wrap:wrap; gap:8px 18px; }.filter-tabs button { padding:10px 0; }.search-field { width:100%; }.product-grid { grid-template-columns:repeat(2,1fr); }.product-image { height:300px; }.card-art { height:235px; top:33px; width:160px; }.art-mark { font-size:65px; left:32px; }.split-section,.service-section,.forms-section { grid-template-columns:1fr; }.split-copy { padding:75px 22px; }.split-panel { min-height:430px; }.service-card,.service-card-dark { padding:70px 22px; }.forms-section,.offer-section,.form-section { padding:70px 22px; }.form-card { padding:30px 22px; }.footer-top { flex-wrap:wrap; gap:35px; }.footer-top p { order:3; width:100%; }.footer-bottom { flex-wrap:wrap; gap:12px; line-height:1.5; } }
+@media (max-width:500px) { :root { --header-h:92px; }.announcement { font-size:8px; gap:8px; }.ticker { font-size:8px; gap:6px 16px; letter-spacing:.08em; min-height:46px; padding:12px 14px; }
   /* Auf dieser Breite bricht die Leiste auf zwei Zeilen um, und der Trenner
      rutscht dabei an den Anfang der zweiten — ein ✦ ohne Bezug davor. Die
      Rauten entfallen deshalb schmal, der Abstand trennt allein. */
