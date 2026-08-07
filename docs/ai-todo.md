@@ -265,8 +265,10 @@ Der Text darf das nicht versprechen.
 
 **Aufwand:** klein bis mittel · **Hängt an:** nichts
 
-Die Prüfung selbst ist durch (siehe „Erledigt"). Zwei Befunde blieben bewusst
-offen, weil sie keine reine Codeänderung sind:
+Die Prüfung selbst ist durch (siehe „Erledigt"). **16 von 17 Befunden sind
+geschlossen** — SEC-15 (90 Tage Aufbewahrung) und SEC-16 (Datenschutztext)
+wurden am 2026-08-07 nachgezogen, nachdem der Betreiber entschieden hatte.
+Ein Befund bleibt offen:
 
 **SEC-12 — eBay-OAuth-Rückseite zeigt den Refresh-Token ohne Anmeldung.**
 `app/api/admin/ebay/oauth/callback/route.ts` ist die einzige Route unter
@@ -282,17 +284,12 @@ Adminbereich mit seinem Bearer-Token einlöst. Braucht eine Tabelle, also eine
 Migration — **beim nächsten ohnehin nötigen Schemaschritt erledigen** und dabei
 `drizzle/meta/_journal.json` nachziehen (endet bei `0002`).
 
-**SEC-15 — Aufbewahrung und Löschung.** Kartenangebote und ihre Bilder werden
-nie automatisch gelöscht; `cleanupOrphanedCardSubmissionAssets` räumt nur
-verwaiste R2-Objekte auf. Es gibt keinen Selbstbedienungsweg für Auskunft oder
-Löschung, obwohl die Datenschutzerklärung beides zusagt (per E-Mail, das ist
-zulässig). **Das ist zuerst eine Festlegung, keine Programmierarbeit:** Wie
-lange bleiben abgelehnte Kartenangebote liegen? Danach ist die Erweiterung des
-vorhandenen Aufräumlaufs überschaubar.
-
-**Ebenfalls offen, kein Sicherheitsbefund:** Ein Satz zu den direkt von eBays
-CDN geladenen Bildern gehört in Abschnitt 6 oder 11 der Datenschutzerklärung
-(SEC-16). Die technische Hälfte — `Referrer-Policy` — ist gesetzt.
+**Aus SEC-15 bleibt ein Rest:** Es gibt keinen Selbstbedienungsweg für Auskunft
+oder Löschung des **Kontos**. Die Löschfrist für Kartenangebote steht (90 Tage,
+automatisch im geplanten Lauf), aber ein Kunde kann seine eigenen Daten weder
+einsehen noch löschen lassen — er muss eine E-Mail schreiben. Das ist zulässig
+und trägt, solange es genau einen Nutzer gibt. **Vor dem Verkaufsstart sollte
+es stehen.**
 
 ---
 
@@ -361,8 +358,16 @@ Webhook wirklich verifiziert und idempotent, Preisintegrität durchgängig
 serverseitig, Supabase erzwingt E-Mail-Bestätigung, der selbstgeschriebene
 Sanitizer hielt 49 Angriffen stand.
 
+**Nachgezogen am 2026-08-07**, nachdem der Betreiber entschieden hatte:
+SEC-15 (90 Tage Aufbewahrung für abgeschlossene Kartenangebote, automatisch im
+geplanten Lauf) und SEC-16 (Datenschutzerklärung um die eBay-Bildserver und die
+Löschfrist ergänzt). Damit **16 von 17 Befunden geschlossen**. Der bestätigte
+Cloudflare-**Free**-Tarif hat SEC-05 von *mittel* auf *hoch* gehoben: Rund
+2 900 Aufrufe von `/api/products` brauchen das D1-Tageskontingent auf, danach
+steht der ganze Shop bis zum nächsten Tag.
+
 **Der Deploy fehlt noch — er steht als Punkt 2 oben.** Ohne ihn wirkt keine der
-Korrekturen. Zwei Befunde bleiben offen, siehe Punkt 8.
+Korrekturen, auch die Löschfrist nicht. Ein Befund bleibt offen, siehe Punkt 8.
 
 **Nebenbei repariert:** `npm run dev` startete gar nicht — `nodejs_compat` war
 in `vite.config.ts` und `wrangler.toml` doppelt deklariert, und das gebündelte

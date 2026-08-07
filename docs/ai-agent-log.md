@@ -228,6 +228,58 @@ Sicherheits-Kopfzeilen an `/`, `/karten` und `/api/products`,
 `cache-control: public, max-age=60` im Erfolgsfall und `no-store` im Fehlerfall,
 und der SEC-01-Payload kommt escaped aus `GET /api/products/[id]` zurueck.
 
+## 2026-08-07 - Aufbewahrungsfrist und Datenschutztext (SEC-15, SEC-16)
+
+Nachtrag zur Sicherheitspruefung: die beiden Befunde, die auf eine Entscheidung
+des Betreibers gewartet haben. Ergebnis: **16 von 17 Befunden geschlossen.**
+
+**Warum die Loesung so aussieht:**
+
+- **Die Frist zaehlt nur abgeschlossene Vorgaenge.** `ACCEPTED` ist bewusst
+  ausgenommen — daraus wird ein Ankauf, und fuer Kaufvorgaenge gelten handels-
+  und steuerrechtliche Aufbewahrungspflichten, die eine 90-Tage-Loeschung
+  ueberschreiben wuerden. Offene Vorgaenge (`NEW`, `IN_REVIEW`, `NEEDS_INFO`)
+  bleiben ebenfalls, unabhaengig vom Alter.
+- **Der Loeschlauf haengt am Cron, nicht an einer Schaltflaeche.** Eine Frist,
+  die jemand von Hand ausloesen muss, ist keine Frist. Die Admin-Route bleibt
+  zusaetzlich bestehen, damit man nicht bis zur naechsten Stunde warten muss.
+- **R2 vor der Datenbankzeile.** Bricht das Loeschen eines Objekts ab,
+  verschwindet die Zeile trotzdem und das Objekt ist verwaist — der bestehende
+  Waisenlauf sammelt es binnen 24 Stunden ein. Andersherum bliebe eine Zeile
+  zurueck, die auf ein fehlendes Bild zeigt, und der Adminbereich zeigte einen
+  kaputten Vorgang. Selbstheilend statt sauber-aussehend.
+
+**Die eigentliche Falle war das Zeitstempelformat, und sie waere ein eigener
+Befund gewesen.** `card_submissions.created_at`/`updated_at` bekommen ihre
+Werte aus SQLites `CURRENT_TIMESTAMP` und stehen damit im Format
+`YYYY-MM-DD HH:MM:SS`; der uebrige Anwendungscode schreibt ISO-8601 mit `T` und
+`Z`. Ein direkter `<=`-Vergleich zwischen beiden Formen ist falsch, weil `' '`
+(0x20) vor `'T'` (0x54) sortiert. Gemessen an der lokalen Datenbank, Stichtag
+heute Mitternacht, ein Vorgang von heute 23 Uhr im Bestand:
+
+```
+naiver Vergleich loescht : 4 Vorgaenge
+mit datetime() loescht   : 3 Vorgaenge
+```
+
+Ein Vorgang von **heute** waere als 90 Tage alt geloescht worden. Beide Seiten
+laufen deshalb ueber SQLites `datetime()`, und `parseDbTimestamp` liest in
+JavaScript beide Formate. Ein Datumsfehler in einem Loeschlauf ist die
+unangenehmste Sorte Fehler: Er faellt erst auf, wenn die Daten weg sind.
+
+**Nebenbefund aus der Tarifauskunft:** Der Betreiber hat den Cloudflare-**Free**
+-Tarif bestaetigt. Damit ist SEC-05 kein Kostenproblem, sondern ein
+Ausfallproblem — 5 Mio. gelesene D1-Zeilen pro Tag fuer alles zusammen, rund
+2 900 Aufrufe von `/api/products` brauchen sie auf, danach antwortet jede
+datenbankgestuetzte Seite mit 503. Der Befund wurde von *mittel* auf *hoch*
+hochgestuft; die eingebaute Zwischenspeicherung nimmt ihm den Boden, wirkt aber
+erst mit dem Deploy.
+
+**Verifikation:** `npm test` 85 → 96 Tests, alle gruen. `npx tsc --noEmit` und
+`npm run lint` sauber. Der Loeschlauf wurde gegen die **lokale** D1 mit
+Zeitstempeln in beiden Formaten geprueft; kein schreibender Eingriff in
+Produktionsdaten.
+
 ## Arbeitsweise
 
 Agents erhalten klar abgegrenzte Prüf- oder Implementierungsaufträge. Ihre Ergebnisse werden vor Übernahme geprüft. Änderungen werden anschließend lokal getestet, committed und nach GitHub gepusht.

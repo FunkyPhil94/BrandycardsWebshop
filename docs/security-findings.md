@@ -34,7 +34,7 @@ Phase 3 nachgeprüft.
 | [SEC-02](#sec-02--rate-limiting-ist-in-produktion-wirkungslos) | hoch | **behoben, wirkt erst mit dem Deploy** | `wrangler deploy --dry-run` löst beide Bindings auf · lokal 10× 201 dann 429 mit `retry-after: 60` |
 | [SEC-03](#sec-03--ein-einziges-konto-kann-den-gesamten-bestand-blockieren) | hoch | **behoben** | Angriff gegen die Entscheidungslogik nachgestellt: 296 → 50 Einheiten |
 | [SEC-04](#sec-04--jeder-kann-über-apiproductsid-ebay-kontingent-verbrennen) | mittel | **behoben** | eigener Grenzwert nur für den eBay-Abruf; Karte wird weiterhin ausgeliefert |
-| [SEC-05](#sec-05--apiproducts-liefert-128-kb-und-1-725-d1-zeilen-je-aufruf) | mittel | **behoben** | lokal: `cache-control: public, max-age=60, …` im Erfolgsfall, `no-store` im Fehlerfall |
+| [SEC-05](#sec-05--apiproducts-liefert-128-kb-und-1-725-d1-zeilen-je-aufruf) | **hoch** (hochgestuft, siehe unten) | **behoben** | lokal: `cache-control: public, max-age=60, …` im Erfolgsfall, `no-store` im Fehlerfall |
 | [SEC-06](#sec-06--keine-einzige-sicherheits-kopfzeile) | mittel | **behoben, CSP bewusst nur berichtend** | lokal an `/`, `/karten` und `/api/products` gemessen |
 | [SEC-07](#sec-07--die-registrierung-schickt-das-klartextpasswort-an-den-eigenen-server) | mittel | **behoben** | lokal: Anfrage mit Passwort → 400, ohne → 200 |
 | [SEC-08](#sec-08--die-upload-größengrenze-lässt-sich-durch-weglassen-von-content-length-umgehen) | niedrig | **behoben** | lokal: `Transfer-Encoding: chunked` → 411 vor dem Puffern |
@@ -44,8 +44,8 @@ Phase 3 nachgeprüft.
 | [SEC-12](#sec-12--die-ebay-oauth-rückseite-zeigt-den-refresh-token-ohne-anmeldung) | niedrig | **offen** | siehe [Phase 3](#phase-3--nachprüfung) — der naheliegende Fix wäre falsch |
 | [SEC-13](#sec-13--abhängigkeiten-18-offene-meldungen-next-neun-advisories-hinter-dem-patchstand) | mittel | **behoben, wirkt erst mit dem Deploy** | 9 `next`-Advisories weg; verbleibend nur Bauwerkzeug |
 | [SEC-14](#sec-14--ci-prüft-weder-typen-noch-abhängigkeiten-actions-sind-nicht-gepinnt) | niedrig | **behoben** | Workflow prüft Typen, auditiert, Actions auf Commit gepinnt |
-| [SEC-15](#sec-15--kein-selbstbedienungs-auskunfts--oder-löschweg-unbegrenzte-aufbewahrung) | Hinweis | **wartet auf Entscheidung** | Aufbewahrungsfrist ist eine Festlegung, keine Technik |
-| [SEC-16](#sec-16--bilder-kommen-direkt-von-ebays-cdn) | Hinweis | **teilweise behoben** | `Referrer-Policy` gesetzt; der Satz in der Datenschutzerklärung wartet auf Entscheidung |
+| [SEC-15](#sec-15--kein-selbstbedienungs-auskunfts--oder-löschweg-unbegrenzte-aufbewahrung) | Hinweis | **behoben** | 90-Tage-Frist, vom Betreiber festgelegt; 11 Tests, darunter die Zeitstempel-Falle |
+| [SEC-16](#sec-16--bilder-kommen-direkt-von-ebays-cdn) | Hinweis | **behoben** | `Referrer-Policy` gesetzt; Abschnitt 7 und 11 der Datenschutzerklärung ergänzt |
 | [SEC-17](#sec-17--rate-limit-schlüssel-vertraut-auf-x-forwarded-for) | niedrig | **behoben** | Test belegt, dass `x-forwarded-for` nicht mehr in den Schlüssel gelangt |
 
 Zusätzlich umgesetzt: **E-2** (Honeypot und Zeitschwelle, nach Entscheidung des
@@ -328,11 +328,20 @@ die Trading API liegt bei 5 000 Aufrufen/Tag; das entspräche ~2 500 Anfragen.
 
 ## SEC-05 — `/api/products` liefert 128 KB und 1 725 D1-Zeilen je Aufruf
 
-**Schweregrad: mittel** (auf dem Free-Tarif: hoch)
+**Schweregrad: hoch** *(am 2026-08-07 von mittel hochgestuft)*
 
-**Warum:** Kein Datenabfluss — die Daten sind öffentlich —, aber der billigste
-Weg, Kosten zu erzeugen oder den Shop lahmzulegen. Die Einstufung hängt am
-Cloudflare-Tarif, den ich nicht auslesen kann.
+**Warum hoch:** Kein Datenabfluss — die Daten sind öffentlich —, aber der
+billigste Weg, den Shop lahmzulegen. Die Einstufung hing am Cloudflare-Tarif;
+der Betreiber hat bestätigt: **Free.** Damit ist die Obergrenze 5 Mio. gelesene
+D1-Zeilen pro Tag, und rund **2 900 Aufrufe** brauchen sie auf. Danach antwortet
+nicht nur dieser Endpunkt mit 503, sondern **jede datenbankgestützte Seite** —
+Startseite, Kartenliste, Kartendetail, Checkout — bis zum nächsten Tag.
+Das ist ein Ausfall, keine Rechnung, und er kostet einen Angreifer nichts
+außer einer Schleife.
+
+Die eingebaute Zwischenspeicherung am Rand nimmt dem den Boden: Wiederholte
+Aufrufe beantwortet Cloudflare, ohne D1 anzufassen. **Sie wirkt allerdings erst
+mit dem Deploy.**
 
 **Ort:** [app/api/products/route.ts:6](app/api/products/route.ts:6) — kein Limit,
 keine Seitenaufteilung, keine `cache-control`-Kopfzeile, keine Anmeldung
@@ -350,8 +359,8 @@ keine Seitenaufteilung, keine `cache-control`-Kopfzeile, keine Anmeldung
 Free-Tarif D1: 5 Mio. gelesene Zeilen/Tag. **~2 900 Aufrufe** brauchen das
 Tageskontingent auf — das sind rund 370 MB, in wenigen Minuten erzeugt. Danach
 antwortet **jede** D1-gestützte Seite mit 503, inklusive Startseite, Kartenliste
-und Checkout. Auf dem bezahlten Tarif wird daraus eine Rechnung statt eines
-Ausfalls.
+und Checkout. **Der Betreiber hat den Free-Tarif bestätigt**, dies ist also der
+tatsächliche Fall, nicht der schlimmstenfalls angenommene.
 
 **Nachweis (bestätigt):** Antwortgröße und Zeit per `curl` gegen Produktion
 gemessen (ein einzelner Aufruf, kein Lasttest). Die 1 725 Zeilen stammen aus
@@ -679,6 +688,43 @@ festlegen und den vorhandenen Aufräumlauf darauf erweitern. Ein Konto-Löschweg
 kann warten, solange es einen Nutzer gibt — sollte aber vor dem Verkaufsstart
 stehen.
 
+**Umgesetzt am 2026-08-07.** Der Betreiber hat **90 Tage** festgelegt.
+`deleteExpiredCardSubmissions` in
+[lib/card-submission-cleanup.ts](../lib/card-submission-cleanup.ts) löscht
+abgeschlossene Vorgänge (`REJECTED`, `CLOSED`) samt R2-Objekten 90 Tage nach
+der letzten Statusänderung, ausgelöst vom `scheduled`-Lauf — eine Frist, die
+jemand von Hand auslösen muss, ist keine. Die Entscheidung selbst steht als
+reine Funktion in [lib/retention.ts](../lib/retention.ts) und ist in
+`tests/retention.test.mjs` mit 11 Tests belegt.
+
+**Bewusst ausgenommen:** `ACCEPTED`. Daraus wird ein Ankauf, und für
+Kaufvorgänge gelten handels- und steuerrechtliche Aufbewahrungspflichten, die
+eine 90-Tage-Löschung überschreiben würden. Offene Vorgänge (`NEW`,
+`IN_REVIEW`, `NEEDS_INFO`) bleiben ebenfalls, unabhängig vom Alter.
+
+**Eine Falle, die dabei aufgefallen ist und selbst ein Befund gewesen wäre:**
+`card_submissions.created_at`/`updated_at` bekommen ihre Werte aus SQLites
+`CURRENT_TIMESTAMP` und stehen damit im Format `YYYY-MM-DD HH:MM:SS`, während
+der übrige Anwendungscode ISO-8601 mit `T` und `Z` schreibt. Ein direkter
+`<=`-Vergleich zwischen beiden Formen ist falsch, weil `' '` (0x20) vor `'T'`
+(0x54) sortiert. Gemessen an der lokalen Datenbank:
+
+```
+Stichtag heute Mitternacht, ein Vorgang von heute 23 Uhr im Bestand:
+  naiver Vergleich loescht : 4 Vorgaenge
+  mit datetime() loescht   : 3 Vorgaenge
+```
+
+Der naive Vergleich hätte einen Vorgang von **heute** als 90 Tage alt
+eingestuft und gelöscht. Beide Seiten laufen deshalb über SQLites `datetime()`.
+Ein Löschlauf mit einem Datumsfehler ist die unangenehmste Sorte Fehler —
+er fällt erst auf, wenn die Daten weg sind.
+
+**Weiterhin offen:** Ein Selbstbedienungsweg für Auskunft und Löschung des
+Kontos. Solange es genau einen Nutzer gibt (den Betreiber selbst), ist der
+Verweis auf die E-Mail-Adresse in der Datenschutzerklärung tragfähig. Vor dem
+Verkaufsstart sollte er stehen.
+
 ---
 
 ## SEC-16 — Bilder kommen direkt von eBays CDN
@@ -702,6 +748,20 @@ der SEC-06-Korrektur, kostet nichts) und Abschnitt 6 oder 11 der
 Datenschutzerklärung um einen Satz zu eBay-Bildern ergänzen. Wer die Übertragung
 ganz vermeiden will, müsste die Bilder über R2 spiegeln — spürbarer Aufwand und
 laufende Kosten, deshalb hier nur als Option genannt.
+
+**Umgesetzt am 2026-08-07.** Die `Referrer-Policy` ist gesetzt (SEC-06).
+Abschnitt 7 der Datenschutzerklärung heißt jetzt „eBay-Synchronisierung und
+Kartenbilder" und benennt ausdrücklich, dass die Bilder direkt von eBays
+Servern geladen werden, welche Daten dabei übertragen werden, dass nur die
+Herkunft und nicht die vollständige Adresse mitgeht, und auf welche
+Rechtsgrundlage sich das stützt. Abschnitt 11 verweist darauf, damit die
+Aussage „kein Tracking" nicht mehr allein steht. Abschnitt 9 nennt die
+90-Tage-Frist aus [SEC-15](#sec-15--kein-selbstbedienungs-auskunfts--oder-löschweg-unbegrenzte-aufbewahrung).
+
+**Ausdrücklich keine Rechtsberatung.** Der Hinweis am Ende der Seite nennt jetzt
+Abschnitt 7 und 9 als die beiden, die vor dem Verkaufsstart fachlich zu prüfen
+sind. Die Spiegelung über R2 bleibt die einzige Variante, die die Übertragung
+ganz vermeidet — sie steht weiterhin nur als Option da.
 
 ---
 
@@ -977,10 +1037,14 @@ Sicherheitsbefund, aber irreführend für die nächste Sitzung.
 
 Ehrlich als ungeklärt markiert, statt eine Entwarnung zu geben:
 
-1. **Cloudflare-Tarif.** Ob D1/R2/Workers auf dem Free- oder einem bezahlten
-   Tarif laufen, konnte ich nicht auslesen. Davon hängt ab, ob
+1. ~~**Cloudflare-Tarif.**~~ **Geklärt am 2026-08-07: Free.**
    [SEC-05](#sec-05--apiproducts-liefert-128-kb-und-1-725-d1-zeilen-je-aufruf)
-   „Shop steht still" oder „Rechnung steigt" bedeutet.
+   bedeutet damit „Shop steht still", nicht „Rechnung steigt", und wurde auf
+   **hoch** hochgestuft. Nebenwirkung, die im Auge zu behalten ist: Auf dem
+   Free-Tarif zählen auch der stündliche eBay-Import und jeder Seitenaufruf
+   gegen dieselben 5 Mio. Zeilen. Sollte der Shop wachsen, ist der
+   Workers-Paid-Tarif für 5 $/Monat die einfachere Antwort als weiteres
+   Sparen an Abfragen.
 2. **eBay-Kontingent.** Das tatsächliche Tageslimit des Keysets ist nicht
    gemessen — dafür hätte ich gegen das echte eBay-Konto arbeiten müssen. Die
    5 000 in [SEC-04](#sec-04--jeder-kann-über-apiproductsid-ebay-kontingent-verbrennen)
@@ -1196,20 +1260,28 @@ kein Codeproblem:
 > Binding, und das Binding entsteht erst beim Deploy. Bis dahin steht in
 > Produktion exakt der Code, den diese Prüfung als angreifbar beschrieben hat.
 
-Danach bleiben drei Dinge offen, in dieser Reihenfolge:
+Danach bleiben zwei Dinge offen, in dieser Reihenfolge:
 
 1. **Die CSP scharf schalten.** Sie läuft berichtend, was heute nichts
    verhindert. Erst wenn sie durchsetzt, ist SEC-01 auch gegen den nächsten
    Fehler dieser Art abgesichert — und XSS bedeutet hier Kontoübernahme.
 2. **SEC-12 richtig schließen**, beim nächsten ohnehin nötigen Schemaschritt.
-3. **Aufbewahrungsfristen festlegen** (SEC-15). Das ist keine technische
-   Frage und braucht eine Entscheidung, keine Umsetzung.
 
-Was diese Prüfung **nicht** beantwortet hat, steht unverändert unter
-[Offene Unsicherheiten](#offene-unsicherheiten) — insbesondere der
-Cloudflare-Tarif, das echte eBay-Kontingent und die Supabase-Passwortrichtlinie.
-Drei Fragen, die im Dashboard in fünf Minuten geklärt sind und die die
-Einstufung zweier Befunde schärfen würden.
+**Nachtrag 2026-08-07, zweite Runde.** Der Betreiber hat die offenen
+Entscheidungen getroffen. Damit sind SEC-15 (90 Tage Aufbewahrung) und SEC-16
+(Datenschutztext) umgesetzt — **16 von 17 Befunden geschlossen.**
+
+Der bestätigte **Free-Tarif** verschiebt das Bild noch einmal: SEC-05 ist kein
+Kostenproblem, sondern ein Ausfallproblem. Rund 2 900 Aufrufe eines
+ungeschützten Endpunkts legen den ganzen Shop für den Rest des Tages still.
+Zusammen mit dem bislang wirkungslosen Rate-Limit war das der billigste Weg,
+den Laden zuzumachen — und beides wird erst durch den Deploy behoben.
+
+Was diese Prüfung **nicht** beantwortet hat, steht unter
+[Offene Unsicherheiten](#offene-unsicherheiten). Der Cloudflare-Tarif ist
+geklärt; offen bleiben das echte eBay-Kontingent, die
+Supabase-Passwortrichtlinie und ob HSTS auf Zonenebene aktiv ist. Drei
+Nachschlagearbeiten im Dashboard, keine davon blockiert etwas.
 
 ---
 
@@ -1219,7 +1291,23 @@ Diese Punkte ändern die Bedienung, verursachen laufende Kosten, binden fremde
 Dienste ein oder greifen in Produktionsdaten ein. Sie werden **nicht**
 eigenmächtig umgesetzt.
 
-### E-1 — Content-Security-Policy
+**Stand 2026-08-07:** Alle vorgelegten Punkte sind entschieden. Was der
+Betreiber gewählt hat, steht jeweils direkt beim Punkt.
+
+| Punkt | Entscheidung |
+|---|---|
+| E-1 Content-Security-Policy | **a, dann b** — erst berichtend, nach Auswertung durchsetzend |
+| E-2 Bot-Schutz | **b + c** — Honeypot und Zeitschwelle, kein Turnstile |
+| E-3 Seitenaufteilung | **nicht** — Zwischenspeicherung löst es billiger |
+| E-4 Spalte `description_fetched_at` | **warten** auf den nächsten Schemaschritt |
+| E-5 Cron auf 10 Minuten | offen — hängt an der eBay-Kontingentfrage |
+| E-6 Deploy | **der Betreiber deployt selbst** |
+| SEC-15 Aufbewahrungsfrist | **90 Tage** — umgesetzt |
+| SEC-16 Datenschutztext | **ergänzen** — umgesetzt |
+| SEC-12 Migration | **warten** auf den nächsten Schemaschritt |
+| Cloudflare-Tarif | **Free** — SEC-05 auf hoch hochgestuft |
+
+### E-1 — Content-Security-Policy · **entschieden: erst a, später b**
 
 Wäre die wirksamste einzelne Härtung (siehe
 [SEC-01](#sec-01--der-html-sanitizer-wird-nach-seinem-lauf-wieder-aufgehoben)),
@@ -1235,7 +1323,7 @@ Empfehlung: **b**, nach einem Testlauf mit **a**.
 Zu beachten: `img-src` muss `https://i.ebayimg.com` und `data:` erlauben,
 `connect-src` die Supabase-Projektdomäne.
 
-### E-2 — Bot-Schutz auf den öffentlichen Formularen (Auftrag 6.5)
+### E-2 — Bot-Schutz auf den öffentlichen Formularen (Auftrag 6.5) · **entschieden: b + c, umgesetzt**
 
 Auch ein funktionierendes Rate-Limit ist nur die halbe Antwort. Optionen:
 

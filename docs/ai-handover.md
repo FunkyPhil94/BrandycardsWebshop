@@ -37,7 +37,78 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-**Stand:** LÄUFT · **Datum:** 2026-08-07
+_Kein laufender Auftrag._ Vorlage: Stand, Datum, Ziel, geplante Schritte,
+betroffene Dateien, Verifikation, Ergebnis.
+
+---
+
+## Offene Punkte
+
+Kein Auftrag, sondern der Zustand, den die nächste Sitzung kennen muss.
+Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
+
+- **Die Sicherheitskorrekturen sind nicht deployed.** In Produktion läuft der
+  Stand *vor* der Prüfung vom 2026-08-07. Das betrifft besonders das
+  Rate-Limiting: Es wirkt ausschließlich über das Cloudflare-Binding, und das
+  entsteht erst beim Deploy. Bis dahin ist der Shop genau so angreifbar, wie
+  [security-findings.md](security-findings.md) es beschreibt. Der Nutzer
+  deployt selbst; Schrittfolge dort unter „E-6 — Deploy", als Punkt 2 in
+  [ai-todo.md](ai-todo.md).
+- **Die CSP läuft nur berichtend.** `Content-Security-Policy-Report-Only`
+  meldet Verstöße und verhindert nichts. Umstellung auf durchsetzend ist ein
+  bewusster zweiter Schritt nach ein paar Tagen Beobachtung — Punkt 2a in
+  [ai-todo.md](ai-todo.md).
+- **Cloudflare-Tarif ist Free** (vom Betreiber bestätigt, 2026-08-07). Das
+  heißt: 5 Mio. gelesene D1-Zeilen pro Tag für **alles zusammen** — jeden
+  Seitenaufruf und jeden stündlichen eBay-Import. SEC-05 wurde deshalb auf
+  *hoch* hochgestuft. Sollte der Shop wachsen, ist Workers Paid (5 $/Monat) die
+  einfachere Antwort als weiteres Sparen an Abfragen.
+- **Drei Nachschlagearbeiten bleiben offen**, keine davon blockiert etwas: das
+  echte eBay-Tageskontingent des Keysets (schärft SEC-04), die
+  Supabase-Passwortrichtlinie und Token-Laufzeit (Authentication → Policies),
+  und ob HSTS auf Zonenebene aktiv ist — die Antwort von `shop.brandycards.de`
+  trägt kein `strict-transport-security`.
+- **Sync-Lauf nötig, damit „Neu dabei" echt wird.** `ebay_listings.start_at` ist
+  noch überall NULL; der Mapper füllt es erst ab Version `a1cdd14f`. Solange
+  liefert `/api/products/highlights` für „neueste" bewusst die Importreihenfolge
+  (`startAtAvailable: false`) statt fünf willkürlicher Karten. Nach einem
+  Sync-Lauf prüfen: `curl -s https://shop.brandycards.de/api/products/highlights`
+  muss `"startAtAvailable": true` melden.
+- ~~**Preisvorschlag hat keine Oberfläche mehr.**~~ **Veraltet, korrigiert am
+  2026-08-07:** `/api/price-offers` verlangt heute ein Produkt mit **aktivem
+  eBay-Listing** und lehnt Auktionen ab, nicht `PRELISTED`
+  (`app/api/price-offers/route.ts:34`). Das Formular existiert und ist auf der
+  Kartendetailseite eingebunden (`app/karten/[id]/page.tsx:138`).
+- **CI hat den aktuellen `main` nie geprüft.** Der Merge lief während des
+  GitHub-Actions-Ausfalls vom 2026-08-06 und wurde nur lokal verifiziert. Sobald
+  Actions wieder `operational` meldet, einmal den Workflow über `main` laufen
+  lassen: `gh workflow run CI --ref main` oder `gh run rerun <id>`. Status prüfen:
+  `curl -s https://www.githubstatus.com/api/v2/components.json`
+- ~~**CI prüft keine Typen.**~~ **Erledigt am 2026-08-07:** Der Workflow führt
+  jetzt `npx tsc --noEmit` aus, auditiert die Abhängigkeiten und pinnt seine
+  Actions auf Commit-SHAs statt auf bewegliche Tags.
+  **Lokal weiterhin selbst ausführen** — der Workflow läuft erst beim Push.
+- **eBay-Schreibpfad ist unterbrochen.** `mapActiveListing` setzt `ebayOfferId`
+  fest auf `null`, weil `GetMyeBaySelling` nur eine ItemID liefert. Dadurch bleibt
+  die `ebay_outbox` ohne Auftrag und ein bezahlter Webshop-Kauf beendet das
+  eBay-Angebot nicht. Entschärft nur durch `EBAY_WRITE_ENABLED=false`. Umstellung
+  auf `EndItem`/`EndFixedPriceItem` steht aus.
+- **Migrationsjournal ist veraltet.** `drizzle/meta/_journal.json` endet bei
+  `0002`, `0003`–`0005` kamen handgeschrieben dazu. `npm run db:generate` würde
+  gegen den alten Snapshot diffen. Vor dem nächsten Schemaschritt nachziehen.
+- **Build braucht `.env.local`.** `NEXT_PUBLIC_SUPABASE_*` wird zur Buildzeit
+  eingebacken. Ein Build ohne die Datei liefert ein Bundle aus, in dem `/admin`
+  und `/account` mit „Supabase ist noch nicht konfiguriert" abbrechen, während der
+  Rest gesund aussieht. Git-Worktrees erben die ignorierte Datei nicht. Details in
+  der README unter „Before the first production deployment".
+
+---
+
+## Historie
+
+### 2026-08-07 — Aufbewahrungsfrist und Datenschutztext (SEC-15, SEC-16)
+
+- **Stand:** ABGESCHLOSSEN
 
 **Ziel:** Die beiden Befunde umsetzen, die nach der Sicherheitsprüfung auf eine
 Entscheidung des Betreibers gewartet haben, und den Bericht mit der nun
@@ -76,70 +147,41 @@ deshalb über SQLites `datetime()` auf beiden Seiten.
 gegen die **lokale** D1 mit gesetzten Zeitstempeln beider Formate; **kein**
 schreibender Eingriff in Produktionsdaten.
 
-**Ergebnis:** _(offen — wird nach dem Durchlauf nachgetragen)_
+**Ergebnis: ABGESCHLOSSEN.** Beide Befunde umgesetzt, Bericht nachgeschärft.
+**16 von 17 Befunden geschlossen**, offen bleibt nur SEC-12.
 
----
+- `lib/retention.ts` (neu) enthält die Entscheidung als reine Funktion,
+  `deleteExpiredCardSubmissions` in `lib/card-submission-cleanup.ts` die
+  Datenbank- und R2-Seite, ausgelöst vom `scheduled`-Lauf und zusätzlich über
+  `POST /api/admin/card-submissions/cleanup`.
+- `tests/retention.test.mjs` (neu, 11 Tests). `npm test` 85 → **96 Tests**,
+  alle grün. `tsc` und Lint sauber.
+- Datenschutzerklärung: Abschnitt 7 heißt jetzt „eBay-Synchronisierung und
+  Kartenbilder" und benennt die Einbindung der eBay-Bildserver, Abschnitt 9
+  die 90-Tage-Frist, Abschnitt 11 verweist auf 7. Der Arbeitsentwurf-Hinweis
+  am Seitenende nennt 7 und 9 als fachlich zu prüfen.
 
-## Offene Punkte
+**Die Zeitstempel-Falle war real und wurde gemessen.** `card_submissions`
+bekommt seine Zeiten aus SQLites `CURRENT_TIMESTAMP` (`YYYY-MM-DD HH:MM:SS`),
+der übrige Code schreibt ISO-8601 mit `T` und `Z`. Roh verglichen sortiert
+`' '` vor `'T'`. Gegen die lokale Datenbank, Stichtag heute Mitternacht, ein
+Vorgang von heute 23 Uhr im Bestand:
 
-Kein Auftrag, sondern der Zustand, den die nächste Sitzung kennen muss.
-Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
+```
+naiver Vergleich loescht : 4 Vorgaenge
+mit datetime() loescht   : 3 Vorgaenge
+```
 
-- **Die Sicherheitskorrekturen sind nicht deployed.** In Produktion läuft der
-  Stand *vor* der Prüfung vom 2026-08-07. Das betrifft besonders das
-  Rate-Limiting: Es wirkt ausschließlich über das Cloudflare-Binding, und das
-  entsteht erst beim Deploy. Bis dahin ist der Shop genau so angreifbar, wie
-  [security-findings.md](security-findings.md) es beschreibt. Der Nutzer
-  deployt selbst; Schrittfolge dort unter „E-6 — Deploy", als Punkt 2 in
-  [ai-todo.md](ai-todo.md).
-- **Die CSP läuft nur berichtend.** `Content-Security-Policy-Report-Only`
-  meldet Verstöße und verhindert nichts. Umstellung auf durchsetzend ist ein
-  bewusster zweiter Schritt nach ein paar Tagen Beobachtung — Punkt 2a in
-  [ai-todo.md](ai-todo.md).
-- **Drei Fragen sind im Dashboard in fünf Minuten zu klären** und würden die
-  Einstufung zweier Befunde schärfen: der Cloudflare-Tarif (entscheidet, ob
-  SEC-05 „Shop steht" oder „Rechnung steigt" heißt), das echte eBay-Kontingent
-  des Keysets (SEC-04) sowie Supabase-Passwortrichtlinie und Token-Laufzeit
-  (Authentication → Policies). Ebenfalls offen: ob HSTS auf Zonenebene aktiv
-  ist — die Antwort trägt kein `strict-transport-security`.
+Ein Vorgang von **heute** wäre als 90 Tage alt gelöscht worden. Beide Seiten
+laufen deshalb über SQLites `datetime()`; ein Test hält den Fall fest.
 
-- **Sync-Lauf nötig, damit „Neu dabei" echt wird.** `ebay_listings.start_at` ist
-  noch überall NULL; der Mapper füllt es erst ab Version `a1cdd14f`. Solange
-  liefert `/api/products/highlights` für „neueste" bewusst die Importreihenfolge
-  (`startAtAvailable: false`) statt fünf willkürlicher Karten. Nach einem
-  Sync-Lauf prüfen: `curl -s https://shop.brandycards.de/api/products/highlights`
-  muss `"startAtAvailable": true` melden.
-- ~~**Preisvorschlag hat keine Oberfläche mehr.**~~ **Veraltet, korrigiert am
-  2026-08-07:** `/api/price-offers` verlangt heute ein Produkt mit **aktivem
-  eBay-Listing** und lehnt Auktionen ab, nicht `PRELISTED`
-  (`app/api/price-offers/route.ts:34`). Das Formular existiert und ist auf der
-  Kartendetailseite eingebunden (`app/karten/[id]/page.tsx:138`).
-- **CI hat den aktuellen `main` nie geprüft.** Der Merge lief während des
-  GitHub-Actions-Ausfalls vom 2026-08-06 und wurde nur lokal verifiziert. Sobald
-  Actions wieder `operational` meldet, einmal den Workflow über `main` laufen
-  lassen: `gh workflow run CI --ref main` oder `gh run rerun <id>`. Status prüfen:
-  `curl -s https://www.githubstatus.com/api/v2/components.json`
-- ~~**CI prüft keine Typen.**~~ **Erledigt am 2026-08-07:** Der Workflow führt
-  jetzt `npx tsc --noEmit` aus, auditiert die Abhängigkeiten und pinnt seine
-  Actions auf Commit-SHAs statt auf bewegliche Tags.
-  **Lokal weiterhin selbst ausführen** — der Workflow läuft erst beim Push.
-- **eBay-Schreibpfad ist unterbrochen.** `mapActiveListing` setzt `ebayOfferId`
-  fest auf `null`, weil `GetMyeBaySelling` nur eine ItemID liefert. Dadurch bleibt
-  die `ebay_outbox` ohne Auftrag und ein bezahlter Webshop-Kauf beendet das
-  eBay-Angebot nicht. Entschärft nur durch `EBAY_WRITE_ENABLED=false`. Umstellung
-  auf `EndItem`/`EndFixedPriceItem` steht aus.
-- **Migrationsjournal ist veraltet.** `drizzle/meta/_journal.json` endet bei
-  `0002`, `0003`–`0005` kamen handgeschrieben dazu. `npm run db:generate` würde
-  gegen den alten Snapshot diffen. Vor dem nächsten Schemaschritt nachziehen.
-- **Build braucht `.env.local`.** `NEXT_PUBLIC_SUPABASE_*` wird zur Buildzeit
-  eingebacken. Ein Build ohne die Datei liefert ein Bundle aus, in dem `/admin`
-  und `/account` mit „Supabase ist noch nicht konfiguriert" abbrechen, während der
-  Rest gesund aussieht. Git-Worktrees erben die ignorierte Datei nicht. Details in
-  der README unter „Before the first production deployment".
+**Nicht angefasst:** Ein Selbstbedienungsweg für Auskunft und Löschung des
+Kontos. Solange es genau einen Nutzer gibt, trägt der Verweis auf die
+E-Mail-Adresse. Vor dem Verkaufsstart sollte er stehen.
 
----
+**Weiterhin gilt: es ist nicht deployed.** Die Löschfrist läuft im
+`scheduled`-Lauf und beginnt damit erst nach dem Deploy zu wirken.
 
-## Historie
 
 ### 2026-08-07 — Vollständige Sicherheitsprüfung
 
@@ -214,8 +256,8 @@ Bauwerkzeug aus `next` (`postcss`, `sharp`).
   statt ihn zu sichern. Die richtige Lösung braucht einen Ablageort für eine
   kurzlebige Anspruchs-Kennung, also eine Migration. Begründung steht als
   Kommentar an der Route.
-- **SEC-15** (Aufbewahrungsfrist) — Festlegung des Betreibers, keine Technik.
-- **SEC-16**, zweite Hälfte — ein Satz zu eBay-Bildern in der
+- ~~**SEC-15**~~ **erledigt am 2026-08-07:** 90 Tage, vom Betreiber festgelegt.
+- ~~**SEC-16**, zweite Hälfte~~ **erledigt am 2026-08-07:** Satz zu eBay-Bildern in der
   Datenschutzerklärung. `Referrer-Policy` ist gesetzt; den Rechtstext ändert
   diese Sitzung nicht.
 

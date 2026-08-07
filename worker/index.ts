@@ -3,6 +3,7 @@ import { handleImageOptimization, DEFAULT_DEVICE_SIZES, DEFAULT_IMAGE_SIZES } fr
 import handler from "vinext/server/app-router-entry";
 import { runEbaySync } from "../lib/ebay-sync";
 import { getDb } from "../db";
+import { deleteExpiredCardSubmissions } from "../lib/card-submission-cleanup";
 import { releaseExpiredReservations } from "../lib/paypal/settle-order";
 import { processEbayOutbox } from "../lib/ebay-outbox";
 import { expireLapsedOffers } from "../lib/price-offers";
@@ -63,7 +64,16 @@ const worker = {
   scheduled(_controller: ScheduledController, _env: Env, ctx: ExecutionContext): void {
     const now = new Date().toISOString();
     ctx.waitUntil(
-      Promise.all([runEbaySync(), releaseExpiredReservations(getDb(), now), processEbayOutbox(getDb()), expireLapsedOffers(getDb(), now)]).catch((error: unknown) => {
+      Promise.all([
+        runEbaySync(),
+        releaseExpiredReservations(getDb(), now),
+        processEbayOutbox(getDb()),
+        expireLapsedOffers(getDb(), now),
+        // Aufbewahrungsfrist für abgeschlossene Kartenangebote. Gehört in den
+        // geplanten Lauf, nicht in eine Admin-Schaltfläche: eine Löschfrist,
+        // die jemand von Hand auslösen muss, ist keine.
+        deleteExpiredCardSubmissions(),
+      ]).catch((error: unknown) => {
         const message = error instanceof Error ? error.message : "Unbekannter Fehler";
         console.error("[scheduled-ebay-sync] eBay-Synchronisierung fehlgeschlagen:", message);
       }),
