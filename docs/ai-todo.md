@@ -17,14 +17,19 @@ dabei, damit niemand den Gesprächsverlauf braucht.
 Bestandsprüfung vor der Zahlung ist gebaut. Damit hat sich die Rangfolge
 verschoben.
 
-Drei Überlegungen bestimmen sie jetzt:
+**Seit 2026-08-07 läuft das Projekt auf Workers Paid (5 $/Monat).** Damit sind
+die harten Tagesdeckel weg (D1 wird nach Verbrauch abgerechnet), `Email
+Sending` steht zur Verfügung, und die Grenze von 50 Unteranfragen je Anfrage
+ist auf 10 000 gestiegen. Das entschärft mehrere Punkte unten — es macht sie
+aber nicht überflüssig, siehe Punkt 2.
 
-1. **Etwas läuft gerade an einer Grenze.** Der Sync schreibt rund 5 400
-   D1-Zeilen je Lauf und lag damit selbst stündlich bei 102 % des
-   Free-Budgets. Der Cron steht deshalb notgedrungen auf zweistündlich, was
-   das Doppelverkaufsfenster wieder aufreißt. Solange das so ist, blockiert es
-   jede Beschleunigung — und irgendwann auch die Schreibvorgänge echter
-   Bestellungen. Deshalb steht es ganz oben.
+Drei Überlegungen bestimmen die Reihenfolge:
+
+1. **Der Import ist unzuverlässig, und das ist schlimmer als langsam.** Am
+   2026-08-07 blieb ein Lauf hängen und legte den Import über eine Stunde
+   still, bis jemand von Hand eingriff. Ein Bestand, der stillschweigend
+   veraltet, ist gefährlicher als einer, der langsam aktualisiert wird — man
+   merkt es nicht. Deshalb steht Punkt 1 ganz oben.
 2. **Der Shop konnte bis heute niemandem verkaufen.** Der Checkout verlangt ein
    Konto, ein Konto verlangt eine bestätigte E-Mail-Adresse — und die
    Bestätigungslinks zeigten auf `localhost` (SEC-18). Diese Tür ist seit
@@ -44,7 +49,61 @@ eBay-Schreibpfad, dann bewerben.**
 
 ---
 
-## 1. Der Sync darf nur schreiben, was sich geändert hat
+## 1. Zeitgrenzen für eBay, und eine Sperre, die sich nicht verklemmt
+
+**Aufwand:** klein · **Hängt an:** nichts · **Blockiert:** die Verlässlichkeit
+jedes Imports
+
+**Warum:** Am 2026-08-07 blieb der Sync-Lauf von 13:20 auf `RUNNING` hängen und
+**kein einziger weiterer Lauf startete danach** — über eine Stunde lang, obwohl
+der Cron alle 10 Minuten feuerte. Dasselbe Muster gab es an dem Tag schon um
+04:00 und vor 11:50 („Veralteter Sync-Lauf automatisch geschlossen").
+
+**Die wahrscheinliche Ursache — bitte zuerst bestätigen, nicht annehmen:**
+
+`lib/ebay-client.ts` setzt an **keinem einzigen** `fetch` eine Zeitgrenze.
+`lib/paypal/client.ts` daneben hat an jedem Aufruf `AbortSignal.timeout(10_000)`.
+Bleibt eine eBay-Antwort aus, wartet der Lauf **unbegrenzt**. Dann greift die
+Kette:
+
+1. `localSyncLock` in `lib/ebay-sync.ts` wird nie zurückgesetzt, weil `finally`
+   nie erreicht wird.
+2. Jeder weitere Lauf **im selben Isolate** bricht sofort mit „läuft bereits"
+   ab — und erreicht damit den Aufräumcode gar nicht, der verwaiste Läufe nach
+   30 Minuten schließt.
+3. Weil zusätzlich die Datenbankzeile auf `RUNNING` steht, verweigern auch
+   andere Isolates den Start (`INSERT … WHERE NOT EXISTS (… RUNNING)`).
+
+Ein einziger hängender Aufruf legt den Import also **dauerhaft** still, bis
+jemand von Hand eingreift. Genau das war am 2026-08-07 nötig.
+
+**Wie:**
+- `fetchWithTimeout` nach dem Vorbild von `lib/paypal/client.ts` in
+  `lib/ebay-client.ts` einführen und an **jedem** Aufruf verwenden:
+  `getAccessToken`, `getActiveEbayListings`, `getEbayItemDescription`,
+  `getEbayAvailability`, `withdrawEbayOffer`. Für den Import darf die Grenze
+  großzügiger sein als die 10 s bei PayPal — ein Lauf dauert rund 77 Sekunden
+  über mehrere Aufrufe —, aber sie muss existieren.
+- Die Sperre so bauen, dass ein abgestürzter Lauf sie nicht dauerhaft hält.
+  Ein Zeitstempel statt eines Wahrheitswerts genügt: Ist die Sperre älter als
+  ein Lauf dauern darf, gilt sie als verfallen.
+- **Wichtig:** Der Aufräumcode für verwaiste Datenbankzeilen muss laufen,
+  *bevor* die Sperre den Lauf abweisen kann — heute steht er dahinter und wird
+  im Fehlerfall nie erreicht.
+- Beim Vergleich `activeRun.startedAt < staleBefore` die Zeitstempelfalle
+  beachten: `started_at` kommt aus SQLites `CURRENT_TIMESTAMP` im Format
+  `YYYY-MM-DD HH:MM:SS`, `staleBefore` ist ISO-8601 mit `T` und `Z`. Roh
+  verglichen sortiert `' '` vor `'T'`. `lib/retention.ts` zeigt, wie es richtig
+  geht.
+
+**Fertig, wenn:** Ein Test stellt eine nicht antwortende eBay-API nach (mit
+gestubbtem `fetch`, wie in `tests/ebay-availability.test.mjs`) und belegt, dass
+der Lauf mit einem Fehler endet statt zu hängen — und dass der **nächste** Lauf
+danach wieder startet. Ohne die Korrektur muss der Test hängen bzw. rot sein.
+
+---
+
+## 2. Der Sync darf nur schreiben, was sich geändert hat
 
 **Aufwand:** mittel · **Hängt an:** nichts · **Blockiert:** jeden schnelleren
 Import-Takt
@@ -63,6 +122,18 @@ geschriebenen Zeilen pro Tag:
 **Auch stündlich war schon über dem Budget.** Der Cron steht deshalb vorerst
 auf zweistündlich — ein Notbehelf, der das Doppelverkaufsfenster wieder
 vergrößert.
+
+**Seit dem Wechsel auf Workers Paid ist das kein Ausfallrisiko mehr, sondern
+eine Rechnung.** Die Aufgabe bleibt trotzdem, und zwar aus zwei Gründen:
+
+| bei 3-Minuten-Takt | Schreibvorgänge/Monat | Kosten auf Paid |
+|---|---|---|
+| Sync wie jetzt | ~78 Mio. | 5 $ + **~28 $** |
+| Sync nach der Korrektur | ~86 000 | 5 $ + **0 $** |
+
+Rund **28 $ im Monat, dauerhaft**, dafür dass 99,95 % der Schreibvorgänge
+nichts bewirken. Und ohne die Korrektur bleibt der Takt bei zwei Stunden,
+weil die Kosten sonst mit jeder Beschleunigung linear mitwachsen.
 
 **Nach der Korrektur ist das Budget kein Thema mehr.** Bleiben nur noch die
 beiden `sync_runs`-Schreibvorgänge je Lauf (Anlegen und Abschließen, mit Index
@@ -118,7 +189,7 @@ werden — der Test dort erzwingt genau diese Reihenfolge.
 
 ---
 
-## 2. Kunden-E-Mails
+## 3. Kunden-E-Mails
 
 **Aufwand:** mittel · **Hängt an:** nichts · **Blockiert:** Punkt 7
 
@@ -155,7 +226,7 @@ nötig, bei Werbung schon.
 
 ---
 
-## 3. ~~Sicherheitskorrekturen deployen~~ — ERLEDIGT am 2026-08-07
+## 4. ~~Sicherheitskorrekturen deployen~~ — ERLEDIGT am 2026-08-07
 
 Deployed als Version `1cfd52f1`, HSTS nachgezogen als `650c189a`. In Produktion
 nachgeprüft: `/account` und `/admin` laden, alle Kopfzeilen gesetzt, CSP
@@ -195,7 +266,7 @@ belegt (10 Anfragen durch, dann `429` mit `retry-after: 60`).
 
 ---
 
-## 3a. CSP ohne `'unsafe-inline'`: Nonces für die Inline-Skripte
+## 4a. CSP ohne `'unsafe-inline'`: Nonces für die Inline-Skripte
 
 **Aufwand:** mittel · **Hängt an:** nichts · **Nicht nebenbei erledigen**
 
@@ -227,7 +298,7 @@ ohne Konsolenfehler bedienbar — **lokal geprüft, bevor deployed wird.**
 
 ---
 
-## 3b. ~~Bestand live prüfen, bevor Geld fließt~~ — ERLEDIGT am 2026-08-07
+## 4b. ~~Bestand live prüfen, bevor Geld fließt~~ — ERLEDIGT am 2026-08-07
 
 Geprüft wird jetzt an zwei Stellen: in `app/api/paypal/orders/route.ts` vor dem
 Gang zu PayPal (damit der Kunde es früh erfährt) und in
@@ -247,7 +318,7 @@ gilt nie als ausverkauft — ein eBay-Ausfall darf den Shop nicht anhalten.
 `tests/ebay-availability.test.mjs`.
 
 ---
-## 4. Checkout zeigt den ausgehandelten Preis
+## 5. Checkout zeigt den ausgehandelten Preis
 
 **Aufwand:** klein · **Hängt an:** nichts
 
