@@ -35,7 +35,7 @@ Phase 3 nachgeprüft.
 | [SEC-03](#sec-03--ein-einziges-konto-kann-den-gesamten-bestand-blockieren) | hoch | **behoben** | Angriff gegen die Entscheidungslogik nachgestellt: 296 → 50 Einheiten |
 | [SEC-04](#sec-04--jeder-kann-über-apiproductsid-ebay-kontingent-verbrennen) | mittel | **behoben** | eigener Grenzwert nur für den eBay-Abruf; Karte wird weiterhin ausgeliefert |
 | [SEC-05](#sec-05--apiproducts-liefert-128-kb-und-1-725-d1-zeilen-je-aufruf) | **hoch** (hochgestuft, siehe unten) | **behoben** | lokal: `cache-control: public, max-age=60, …` im Erfolgsfall, `no-store` im Fehlerfall |
-| [SEC-06](#sec-06--keine-einzige-sicherheits-kopfzeile) | mittel | **behoben, CSP bewusst nur berichtend** | lokal an `/`, `/karten` und `/api/products` gemessen |
+| [SEC-06](#sec-06--keine-einzige-sicherheits-kopfzeile) | mittel | **behoben, CSP durchsetzend, HSTS gesetzt** | in Produktion gemessen; siehe [Deploy](#deploy-am-2026-08-07) |
 | [SEC-07](#sec-07--die-registrierung-schickt-das-klartextpasswort-an-den-eigenen-server) | mittel | **behoben** | lokal: Anfrage mit Passwort → 400, ohne → 200 |
 | [SEC-08](#sec-08--die-upload-größengrenze-lässt-sich-durch-weglassen-von-content-length-umgehen) | niedrig | **behoben** | lokal: `Transfer-Encoding: chunked` → 411 vor dem Puffern |
 | [SEC-09](#sec-09--jede-angemeldete-anfrage-schreibt-in-users-und-ruft-supabase) | niedrig | **behoben** | 3 Tests |
@@ -1195,6 +1195,81 @@ Korrektur lokal nachstellen können — was der Prüfauftrag ausdrücklich verla
 
 ---
 
+# Deploy am 2026-08-07
+
+Die Korrekturen sind in Produktion. Zwei Deploys, weil HSTS nachgezogen wurde.
+
+**Version 1** `1cfd52f1` · **Version 2** `650c189a` (HSTS)
+
+## Vor dem Deploy
+
+`npx tsc --noEmit` sauber, `npm run lint` 0 Fehler, `npm test` 98 Tests grün,
+`grep -rl "supabase.co" dist/client/assets` trifft — die Client-Konfiguration
+ist im Bundle, `/admin` und `/account` kommen nicht kaputt heraus.
+
+## In Produktion nachgeprüft
+
+| Prüfung | Ergebnis |
+|---|---|
+| `/account` | zeigt das Anmeldeformular, **nicht** „Supabase ist noch nicht konfiguriert" |
+| `/admin` | zeigt „Bitte melde dich zuerst an" — der Client ist initialisiert |
+| `/karten` | 296 Karten im Raster, 0 blockierte Ressourcen, 0 Konsolenfehler |
+| Kartendetailseite mit echtem eBay-Bild | alle Bilder geladen, keine CSP-Blockade |
+| `/checkout`, `/anfragen` | keine Konsolenfehler; Honeypot und Zeitstempel sind live |
+| Bindings beim Deploy | `env.RATE_LIMITER (10 requests/60s)` und `env.RATE_LIMITER_STRICT (3 requests/60s)` als **Rate Limit** aufgelöst |
+| Kopfzeilen an `/` | `content-security-policy` (durchsetzend), `strict-transport-security`, `referrer-policy`, `permissions-policy`, `x-content-type-options`, `x-frame-options` |
+| `cache-control` auf `/api/products` | `public, max-age=60, stale-while-revalidate=300` |
+| eBay-Import nach dem Deploy | Lauf um 09:00 `SUCCEEDED`, 294 aktualisiert, 2 deaktiviert, 0 Fehler |
+
+**Das Rate-Limit wurde bewusst nicht gegen Produktion getestet** — das wäre
+genau die Last, gegen die es schützt. Lokal ist es belegt: 10 Anfragen durch,
+dann 429 mit `retry-after: 60`, und der strenge Tarif getrennt bei 3.
+
+## CSP: durchsetzend, mit einer Einschränkung, die genannt gehört
+
+Die Regel setzt seit diesem Deploy durch, nachdem jede Seite unter genau dieser
+Regel durchlaufen wurde — Startseite, `/karten`, Kartendetail, `/checkout`,
+`/account`, `/admin`, `/anfragen`, `/verkaufen`. Keine Blockade, kein
+Konsolenfehler.
+
+**Sie stoppt SEC-01-artige Lücken aber nicht vollständig.** vinext liefert acht
+Inline-`<script>`-Blöcke je Seite (RSC-Parameter, Navigationszustand, der
+Browser-Einstieg). `script-src` muss deshalb `'unsafe-inline'` tragen — und
+damit sind auch Inline-Eventhandler erlaubt. Ein künftig eingeschleustes
+`<img onerror=…>` **liefe**.
+
+Was die Regel dennoch bringt, ist die zweite Hälfte eines solchen Angriffs:
+`script-src 'self'` verbietet das Nachladen fremder Skripte, und `connect-src`
+begrenzt das Ziel jeder Übertragung auf diese Herkunft und Supabase. Ein
+gestohlenes Sitzungstoken kommt schwer heraus. Zusammen mit `frame-ancestors`,
+`object-src` und `base-uri` ist das echte Tiefenverteidigung — nur nicht die
+ganze Mauer.
+
+**Die ganze Mauer braucht Nonces statt `'unsafe-inline'`**, also ein Umschreiben
+jedes Inline-Skript-Tags auf dem Weg nach draußen (`HTMLRewriter` im Worker).
+Das ist neue Maschinerie und gehört nicht ungetestet in denselben Durchlauf wie
+ein Deploy. Steht als Aufgabe in [ai-todo.md](ai-todo.md).
+
+## HSTS: gesetzt, in der vorsichtigen Form
+
+Gemessen war: die Antwort trug **kein** `strict-transport-security`, HSTS war
+also aus. Jetzt gesetzt als `max-age=31536000` — **ohne** `includeSubDomains`
+und **ohne** `preload`. Ersteres würde jeden anderen Host unter
+`brandycards.de` mitbinden, auch solche, von denen dieses Projekt nichts weiß;
+Letzteres ist der einzige Schritt, der sich nicht durch einen weiteren Deploy
+zurücknehmen ließe. Rückweg: `max-age=0` setzen und deployen.
+
+## Nebenbefund: der lokale eBay-Token ist abgelaufen
+
+`EBAY_REFRESH_TOKEN` in der lokalen `.env.local` wird von eBay mit
+„invalid or was issued to another client" abgelehnt. **Produktion ist nicht
+betroffen** — dort liegt der Token als Cloudflare-Secret, und der Import um
+09:00 lief erfolgreich. Folge ist allein, dass sich das eBay-Kontingent von
+hier aus nicht abfragen ließ und lokale Entwicklung nicht mit eBay sprechen
+kann. Beim nächsten OAuth-Durchlauf im Adminbereich mit erneuern.
+
+---
+
 # Gesamteinschätzung
 
 **Wo die Plattform steht:** Deutlich besser, als eine selbstgebaute
@@ -1267,6 +1342,10 @@ Danach bleiben zwei Dinge offen, in dieser Reihenfolge:
    Fehler dieser Art abgesichert — und XSS bedeutet hier Kontoübernahme.
 2. **SEC-12 richtig schließen**, beim nächsten ohnehin nötigen Schemaschritt.
 
+*(Punkt 1 ist am selben Tag erledigt worden, siehe
+[Deploy](#deploy-am-2026-08-07) — allerdings mit einer Einschränkung, die dort
+benannt ist.)*
+
 **Nachtrag 2026-08-07, zweite Runde.** Der Betreiber hat die offenen
 Entscheidungen getroffen. Damit sind SEC-15 (90 Tage Aufbewahrung) und SEC-16
 (Datenschutztext) umgesetzt — **16 von 17 Befunden geschlossen.**
@@ -1278,10 +1357,28 @@ Zusammen mit dem bislang wirkungslosen Rate-Limit war das der billigste Weg,
 den Laden zuzumachen — und beides wird erst durch den Deploy behoben.
 
 Was diese Prüfung **nicht** beantwortet hat, steht unter
-[Offene Unsicherheiten](#offene-unsicherheiten). Der Cloudflare-Tarif ist
-geklärt; offen bleiben das echte eBay-Kontingent, die
-Supabase-Passwortrichtlinie und ob HSTS auf Zonenebene aktiv ist. Drei
-Nachschlagearbeiten im Dashboard, keine davon blockiert etwas.
+[Offene Unsicherheiten](#offene-unsicherheiten).
+
+**Nachtrag 2026-08-07, dritte Runde: deployed.** Beide Versionen sind live,
+alles in Produktion nachgeprüft — Einzelheiten unter
+[Deploy](#deploy-am-2026-08-07). Damit wirkt zum ersten Mal, was hier steht:
+das Rate-Limit hat sein Binding, der Katalog wird am Rand zwischengespeichert,
+die Kopfzeilen sind gesetzt, und die CSP setzt durch.
+
+Von den drei offenen Nachschlagearbeiten sind zwei erledigt: HSTS war **aus**
+und ist jetzt gesetzt; das eBay-Kontingent ließ sich nicht abfragen, weil der
+Token in der lokalen `.env.local` abgelaufen ist (Produktion ist gesund). Offen
+bleibt allein die **Supabase-Passwortrichtlinie** — sie ist über keinen
+öffentlichen Endpunkt lesbar, und die einzige Alternative wäre gewesen, mit
+schwachen Passwörtern Konten in der Produktions-Instanz anzulegen. Das ist
+nachzusehen unter *Authentication → Policies*: Mindestlänge, Prüfung gegen
+bekannte Leaks, JWT-Laufzeit.
+
+**Was jetzt noch aussteht, ist keine Lücke, sondern eine Steigerung:** Die CSP
+trägt `'unsafe-inline'` für Skripte, weil vinext acht Inline-Skripte je Seite
+ausliefert. Das lässt Inline-Eventhandler zu. Der Weg dahin — Nonces statt
+`'unsafe-inline'` — ist neue Maschinerie im Worker und gehört in einen eigenen,
+getesteten Durchlauf.
 
 ---
 

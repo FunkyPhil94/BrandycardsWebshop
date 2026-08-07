@@ -33,16 +33,49 @@ export function contentSecurityPolicy(supabaseUrl: string | undefined) {
 }
 
 /**
- * The CSP ships as `Report-Only` on purpose: a policy that is even slightly
- * too narrow takes the shop down, and the only way to find out is to watch a
- * real bundle under real traffic. Switch the header name to
- * `content-security-policy` once the reports are quiet — that is a deliberate
- * second step, not something to slip in.
+ * Enforcing since 2026-08-07, after every page was walked under this exact
+ * policy against a production build.
+ *
+ * **Be honest about what it does and does not buy.** vinext emits eight inline
+ * `<script>` blocks per page (RSC parameters, navigation state, the browser
+ * entry import), so `script-src` has to carry `'unsafe-inline'` — and that
+ * also permits inline event handlers. An `<img onerror=…>` injected through a
+ * future hole of the SEC-01 kind would still **run**.
+ *
+ * What it does buy is the second half of such an attack: `script-src 'self'`
+ * blocks loading a script from another origin, and `connect-src` limits where
+ * anything can be sent to this origin and Supabase. A stolen session token has
+ * no easy way out. Together with `frame-ancestors`, `object-src` and
+ * `base-uri`, that is real defence in depth — just not the whole wall.
+ *
+ * The whole wall needs nonces instead of `'unsafe-inline'`, which means
+ * rewriting every inline script tag on the way out. See docs/ai-todo.md.
  */
-export const CSP_HEADER_NAME = "content-security-policy-report-only";
+export const CSP_HEADER_NAME = "content-security-policy";
+
+/**
+ * HSTS, deliberately in its cautious form.
+ *
+ * Measured on 2026-08-07: the production response carried no
+ * `strict-transport-security` at all, so a visitor's *first* request of a
+ * session could still be pushed to plain HTTP on a hostile network — and this
+ * shop carries addresses and a session token.
+ *
+ * What is **not** in here, and why:
+ * - no `includeSubDomains`: this would bind every other host under
+ *   `brandycards.de` to HTTPS as well, including ones this project knows
+ *   nothing about. Not our call to make from here.
+ * - no `preload`: that is the one genuinely hard step to undo, because it means
+ *   asking browser vendors to bake the rule in.
+ *
+ * Backing out: set `max-age=0`, deploy, and browsers drop the rule the next
+ * time they visit. That works precisely because `preload` is absent.
+ */
+const HSTS = "max-age=31536000";
 
 export function securityHeaders(supabaseUrl: string | undefined): Record<string, string> {
   return {
+    "strict-transport-security": HSTS,
     "x-content-type-options": "nosniff",
     // Keeps the full card URL from travelling to eBay's CDN with every image.
     "referrer-policy": "strict-origin-when-cross-origin",

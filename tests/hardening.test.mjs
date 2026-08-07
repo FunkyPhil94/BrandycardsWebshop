@@ -83,11 +83,40 @@ test("the four undisputed headers are set", () => {
   assert.equal(headers["x-frame-options"], "DENY");
 });
 
-test("the CSP ships report-only until it has been watched under real traffic", () => {
-  assert.equal(CSP_HEADER_NAME, "content-security-policy-report-only",
-    "turning this into the enforcing header is a deliberate second step");
+test("HSTS is set, and set cautiously", () => {
+  const hsts = securityHeaders("https://project.supabase.co")["strict-transport-security"];
+  assert.match(hsts, /max-age=\d+/, "without this a first request can still be downgraded to HTTP");
+  assert.ok(Number(hsts.match(/max-age=(\d+)/)[1]) >= 31536000, "a year is the point at which this is worth having");
+  // The two parts that are hard or impossible to take back stay out: one binds
+  // sibling hosts this project knows nothing about, the other asks browser
+  // vendors to remember the rule permanently.
+  assert.ok(!/includeSubDomains/i.test(hsts), "not this project's call to make for other hosts under the domain");
+  assert.ok(!/preload/i.test(hsts), "preload is the one step that cannot be undone by deploying again");
+});
+
+test("the CSP enforces rather than reports", () => {
+  assert.equal(CSP_HEADER_NAME, "content-security-policy",
+    "report-only was the first step; it collects violations and blocks nothing");
   const headers = securityHeaders("https://project.supabase.co");
-  assert.ok(!("content-security-policy" in headers), "the enforcing header must not appear by accident");
+  assert.ok(!("content-security-policy-report-only" in headers),
+    "both headers at once would be confusing and the report-only one adds nothing here");
+});
+
+test("the policy is honest about needing unsafe-inline for scripts", () => {
+  // vinext emits eight inline <script> blocks per page. Dropping
+  // 'unsafe-inline' without putting nonces in their place would produce a
+  // blank page, not a safer one. The consequence has to stay visible: inline
+  // event handlers such as <img onerror=…> are permitted by the same token,
+  // so this policy does not stop a SEC-01-style hole from executing — it
+  // stops the stolen data from leaving.
+  const policy = contentSecurityPolicy("https://project.supabase.co");
+  assert.match(policy, /script-src [^;]*'unsafe-inline'/,
+    "removing this needs nonces first, see docs/ai-todo.md");
+  assert.match(policy, /script-src 'self'/,
+    "a script from another origin must still be refused");
+  assert.match(policy, /connect-src 'self' https:\/\/project\.supabase\.co(;|$)/,
+    "this is the half that matters: a stolen token has nowhere to go");
+  assert.ok(!/connect-src[^;]*\*/.test(policy), "a wildcard here would give the exfiltration path back");
 });
 
 test("the policy allows what the shop actually needs and forbids the rest", () => {

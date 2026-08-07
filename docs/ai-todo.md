@@ -56,7 +56,18 @@ sichtbar; ein Lauf in `sync_runs` mit Status `SUCCEEDED` bestätigt.
 
 ---
 
-## 2. Sicherheitskorrekturen deployen
+## 2. ~~Sicherheitskorrekturen deployen~~ — ERLEDIGT am 2026-08-07
+
+Deployed als Version `1cfd52f1`, HSTS nachgezogen als `650c189a`. In Produktion
+nachgeprüft: `/account` und `/admin` laden, alle Kopfzeilen gesetzt, CSP
+durchsetzend, `cache-control` auf dem Katalog, beide Rate-Limit-Bindings
+aufgelöst, 296 Karten ohne blockierte Ressource, eBay-Import um 09:00
+erfolgreich. Einzelheiten in
+[security-findings.md](security-findings.md) unter „Deploy am 2026-08-07".
+
+_Ursprünglicher Eintrag, zur Nachvollziehbarkeit:_
+
+<details><summary>Sicherheitskorrekturen deployen</summary>
 
 **Aufwand:** klein · **Hängt an:** nichts · **Blockiert:** die Wirkung von allem
 aus der Sicherheitsprüfung
@@ -81,31 +92,39 @@ aus dem **Hauptverzeichnis** (nicht aus einem Worktree), mit `.env.local`,
 **Nicht** gegen die Produktion nachtesten, ob das Limit greift — lokal ist es
 belegt (10 Anfragen durch, dann `429` mit `retry-after: 60`).
 
+</details>
+
 ---
 
-## 2a. CSP scharf schalten
+## 2a. CSP ohne `'unsafe-inline'`: Nonces für die Inline-Skripte
 
-**Aufwand:** klein · **Hängt an:** Punkt 2 · **Nicht vor:** ein paar Tagen
-Beobachtung
+**Aufwand:** mittel · **Hängt an:** nichts · **Nicht nebenbei erledigen**
 
-**Warum:** Die Content-Security-Policy läuft bewusst als
-`Content-Security-Policy-Report-Only` — sie meldet Verstöße und verhindert
-nichts. Erst durchsetzend schützt sie gegen die nächste Lücke der Art SEC-01,
-und weil das Supabase-Token im `localStorage` liegt, ist ein XSS hier direkt
-eine Kontoübernahme.
+**Warum:** Die CSP setzt seit dem 2026-08-07 durch — aber `script-src` trägt
+`'unsafe-inline'`, weil vinext acht Inline-`<script>`-Blöcke je Seite
+ausliefert (RSC-Parameter, Navigationszustand, Browser-Einstieg). Damit sind
+auch **Inline-Eventhandler erlaubt**: Ein künftig eingeschleustes
+`<img onerror=…>` würde laufen. Genau diese Form hatte SEC-01.
 
-**Wie:** Nach dem Deploy einige Tage die Browser-Konsole auf
-`Content-Security-Policy-Report-Only`-Meldungen ansehen. Sind sie ruhig, in
-[lib/security-headers.ts](../lib/security-headers.ts) `CSP_HEADER_NAME` auf
-`content-security-policy` umstellen und erneut deployen.
+Was die Regel heute schon leistet, ist die zweite Hälfte: `script-src 'self'`
+verbietet fremde Skripte, `connect-src` begrenzt jedes Ziel auf diese Herkunft
+und Supabase. Ein gestohlenes Token kommt schwer heraus. Das ist echte
+Tiefenverteidigung, aber eben nicht die ganze.
 
-**Achtung:** Eine zu enge Regel legt den Shop lahm. Auffällige Meldungen erst
-verstehen, dann die Regel erweitern — nicht `'unsafe-*'` nachschieben, bis es
-still ist.
+**Wie:** Je Antwort einen Zufallswert erzeugen, mit `HTMLRewriter` im Worker
+jedem `<script>` ohne `src` ein `nonce="…"` anhängen und in der Regel
+`'unsafe-inline'` durch `'nonce-…' 'strict-dynamic'` ersetzen.
+[lib/security-headers.ts](../lib/security-headers.ts) und
+[worker/index.ts](../worker/index.ts).
 
-**Fertig, wenn:** Der Header heißt `content-security-policy`, und Startseite,
-`/karten`, eine Kartendetailseite, `/checkout`, `/account` und `/admin` sind
-ohne Konsolenfehler bedienbar.
+**Achtung, drei Fallen:**
+- Der Zufallswert muss **je Antwort** neu sein, sonst ist er wertlos.
+- `'strict-dynamic'` wird gebraucht, weil vinext weitere Skripte nachlädt.
+- `HTMLRewriter` darf nur auf `text/html` laufen, nicht auf JSON oder Bilder.
+
+**Fertig, wenn:** `script-src` trägt kein `'unsafe-inline'` mehr, und
+Startseite, `/karten`, Kartendetail, `/checkout`, `/account` und `/admin` sind
+ohne Konsolenfehler bedienbar — **lokal geprüft, bevor deployed wird.**
 
 ---
 
