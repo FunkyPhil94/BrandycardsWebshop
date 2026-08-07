@@ -32,7 +32,6 @@ export default function AccountPage() {
   const [busy, setBusy] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [recovery, setRecovery] = useState(() => typeof window !== "undefined" && new URLSearchParams(window.location.hash.replace(/^#/, "")).get("type") === "recovery");
-  const [editingProfile, setEditingProfile] = useState(false);
 
   async function syncProfile(sessionUser: User | null, accessToken?: string, profile?: { username?: string; displayName?: string }) {
     if (!sessionUser || !accessToken) return;
@@ -83,7 +82,6 @@ export default function AccountPage() {
       if (error) throw error;
       await syncProfile(data.user, (await supabase.auth.getSession()).data.session?.access_token, { username, displayName });
       setUser(data.user);
-      setEditingProfile(false);
       setMessage("Dein Profil wurde gespeichert.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Das Profil konnte nicht gespeichert werden.");
@@ -154,10 +152,15 @@ export default function AccountPage() {
           <section className="profile-panel" aria-labelledby="profile-title">
             <h2 id="profile-title">Mein Profil</h2>
             <form onSubmit={saveProfile}>
-              <label className="form-field"><span>E-Mail-Adresse</span><input type="email" value={user.email ?? ""} readOnly /></label>
-              <label className="form-field"><span>Benutzername *</span><input type="text" value={username} onChange={(event) => setUsername(event.target.value)} required minLength={3} maxLength={30} pattern="[A-Za-z0-9_]{3,30}" readOnly={!editingProfile} /><small>3–30 Zeichen: nur Buchstaben, Zahlen und Unterstrich (_).</small></label>
-              <label className="form-field"><span>Anzeigename</span><input type="text" value={displayName} onChange={(event) => setDisplayName(event.target.value)} maxLength={120} readOnly={!editingProfile} /></label>
-              {editingProfile ? <button className="button button-primary" type="submit" disabled={busy}>{busy ? "Speichere …" : "Profil speichern"}</button> : <button className="button button-primary" type="button" onClick={() => setEditingProfile(true)}>Profil bearbeiten</button>}
+              {/* Die E-Mail-Adresse identifiziert das Konto bei Supabase und
+                  wird hier nur angezeigt. Damit das sichtbar ist statt sich
+                  erst beim Tippen zu zeigen, ist sie als `disabled` markiert
+                  und nicht bloß `readOnly` — Letzteres nimmt den Fokus an und
+                  verweigert dann stumm die Eingabe. */}
+              <label className="form-field"><span>E-Mail-Adresse</span><input type="email" value={user.email ?? ""} disabled /><small>Die E-Mail-Adresse deines Kontos lässt sich hier nicht ändern.</small></label>
+              <label className="form-field"><span>Benutzername *</span><input type="text" value={username} onChange={(event) => setUsername(event.target.value)} required minLength={3} maxLength={30} pattern="[A-Za-z0-9_]{3,30}" /><small>3–30 Zeichen: nur Buchstaben, Zahlen und Unterstrich (_).</small></label>
+              <label className="form-field"><span>Anzeigename</span><input type="text" value={displayName} onChange={(event) => setDisplayName(event.target.value)} maxLength={120} /></label>
+              <button className="button button-primary" type="submit" disabled={busy}>{busy ? "Speichere …" : "Profil speichern"}</button>
             </form>
           </section>
         </>}

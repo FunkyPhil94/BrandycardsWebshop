@@ -56,6 +56,19 @@ footer { background:var(--ink); color:#fff; padding:52px max(48px,calc((100vw - 
 .account-session { display: grid; gap: .25rem; margin: 1.5rem 0; padding: 1rem; border-left: 2px solid #c9a96b; background: rgba(201,169,107,.08); color: #b7b0a1; }
 .account-session strong { color: #f5f1e8; overflow-wrap: anywhere; }
 .account-session button { justify-self: start; margin-top: .5rem; border: 0; padding: 0; background: transparent; color: #c9a96b; cursor: pointer; text-decoration: underline; }
+/* Formularfelder auf der Kontoseite.
+   `.form-field` ist für die hellen Formularkarten gebaut (weisses Feld,
+   dunkle Beschriftung). Auf der dunklen Kontokarte ergab das weisse Kaesten
+   mit fast unlesbarer Beschriftung. */
+.account-card .form-field span { color: #b7b0a1; }
+.account-card .form-field small { color: #8b8578; }
+.account-card .form-field input,
+.account-card .form-field textarea { background: rgba(11,12,15,.75); border-color: rgba(201,169,107,.28); color: #f5f1e8; }
+.account-card .form-field input::placeholder { color: #6f6a60; }
+.account-card .form-field input:disabled { background: rgba(11,12,15,.35); border-style: dashed; color: #8b8578; cursor: not-allowed; }
+.profile-panel { margin-top: 2.5rem; padding-top: 2rem; border-top: 1px solid rgba(201,169,107,.2); }
+.profile-panel h2 { margin: 0; font-family: Georgia, serif; font-size: 1.5rem; font-weight: 400; }
+.profile-panel form { margin-top: 1.25rem; }
 .admin-stats { display:grid; gap:10px; grid-template-columns:repeat(2,minmax(0,1fr)); margin:28px 0; }
 .admin-stats div { background:#25262b; padding:18px; }
 .admin-stats strong,.admin-stats span { display:block; }

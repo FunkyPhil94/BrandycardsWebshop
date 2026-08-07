@@ -47,6 +47,7 @@ Phase 3 nachgeprüft.
 | [SEC-15](#sec-15--kein-selbstbedienungs-auskunfts--oder-löschweg-unbegrenzte-aufbewahrung) | Hinweis | **behoben** | 90-Tage-Frist, vom Betreiber festgelegt; 11 Tests, darunter die Zeitstempel-Falle |
 | [SEC-16](#sec-16--bilder-kommen-direkt-von-ebays-cdn) | Hinweis | **behoben** | `Referrer-Policy` gesetzt; Abschnitt 7 und 11 der Datenschutzerklärung ergänzt |
 | [SEC-17](#sec-17--rate-limit-schlüssel-vertraut-auf-x-forwarded-for) | niedrig | **behoben** | Test belegt, dass `x-forwarded-for` nicht mehr in den Schlüssel gelangt |
+| [SEC-18](#sec-18--kontowiederherstellung-führt-auf-localhost) | **hoch** | **wartet auf den Betreiber** | reine Supabase-Konfiguration, im Code ist nichts zu ändern |
 
 Zusätzlich umgesetzt: **E-2** (Honeypot und Zeitschwelle, nach Entscheidung des
 Nutzers statt Turnstile) und zwei vorbestehende Blocker der Entwicklungsumgebung,
@@ -788,6 +789,76 @@ unbegrenzt.
 **Empfehlung:** Den `x-forwarded-for`-Rückfall streichen und stattdessen bei
 fehlender `cf-connecting-ip` konservativ zählen. Aufwand: Minuten. Mitzuerledigen
 mit [SEC-02](#sec-02--rate-limiting-ist-in-produktion-wirkungslos).
+
+---
+
+## SEC-18 — Kontowiederherstellung führt auf `localhost`
+
+**Schweregrad: hoch**
+
+*Nachgemeldet am 2026-08-07. Nicht durch Codeprüfung gefunden, sondern weil der
+Betreiber den Ablauf durchgeklickt hat — ein Hinweis darauf, wie begrenzt eine
+reine Whitebox-Prüfung ist: Der Code war richtig, die Konfiguration dahinter
+nicht.*
+
+**Warum hoch:** Kein Einbruchsweg, aber **Passwort-Zurücksetzen und
+E-Mail-Bestätigung funktionieren für echte Kunden nicht.** Wer sein Passwort
+vergisst, bekommt einen Link auf `http://localhost:3000` und damit
+„Die Website ist nicht erreichbar". Wer sich neu registriert, kann seine
+E-Mail-Adresse nicht bestätigen — und ohne Bestätigung legt
+`findOrCreateAppUser` kein Konto an
+([lib/app-user.ts:48](lib/app-user.ts:48)). Ein Shop, in dem sich niemand
+registrieren und niemand sein Passwort zurücksetzen kann, ist für neue Kunden
+geschlossen.
+
+**Ort:** Supabase-Konfiguration, nicht der Code. Betroffen sind
+[app/account/page.tsx:109](app/account/page.tsx:109) (`resetPasswordForEmail`)
+und [app/account/page.tsx:127](app/account/page.tsx:127) (`signUp` mit
+`emailRedirectTo`).
+
+**Nachweis (bestätigt):** Der Link aus der Reset-Mail zeigt auf
+
+```
+http://localhost:3000/#access_token=eyJhbGciOiJFUzI1NiIs…
+```
+
+Entscheidend ist die **Form** dieser URL. Der Code setzt
+`redirectTo: ${window.location.origin}/account?next=…` — von der Produktion
+aus müsste daraus
+`https://shop.brandycards.de/account?next=…#access_token=…` werden. Da steht
+aber der **Wurzelpfad**, kein `/account` und kein `?next=`. Supabase hat das
+`redirectTo` also **verworfen** und ist auf die konfigurierte **Site URL**
+zurückgefallen — und die steht auf `http://localhost:3000`.
+
+**Auswirkung:** Registrierung und Passwort-Zurücksetzen sind unbrauchbar. Der
+Sicherheitsanteil ist gering, aber vorhanden: Das Zugriffstoken landet im
+URL-Fragment einer Adresse, die der Browser nicht laden kann, und bleibt im
+Verlauf stehen. Es wird nie an einen Server übertragen (Fragmente werden nicht
+gesendet), der eigentliche Schaden ist die kaputte Wiederherstellung.
+
+**Empfehlung — im Supabase-Dashboard unter *Authentication → URL Configuration*:**
+
+| Feld | Wert |
+|---|---|
+| **Site URL** | `https://shop.brandycards.de` |
+| **Redirect URLs** | `https://shop.brandycards.de/**` |
+| optional für lokale Entwicklung | zusätzlich `http://localhost:3000/**` |
+
+`Site URL` ist der Rückfall, `Redirect URLs` die Allowlist — **beide** müssen
+gesetzt sein, sonst greift wieder der Rückfall. Bleibt `localhost` in der
+Allowlist, zeigt ein von `localhost` aus angeforderter Link weiterhin dorthin;
+das ist beim Entwickeln gewollt und in Produktion folgenlos.
+
+**Fertig, wenn:** Eine Anforderung „Passwort vergessen" auf
+`shop.brandycards.de` liefert eine Mail, deren Link auf
+`https://shop.brandycards.de/account?next=…#access_token=…` zeigt, und das
+Formular „Neues Passwort festlegen" erscheint.
+
+**Am Code ist nichts zu ändern** — `window.location.origin` ist genau richtig,
+weil es lokal wie in Produktion die passende Adresse liefert. Der Fehler lag
+allein in der Allowlist.
+
+**Sicherheit der Einschätzung: bestätigt.**
 
 ---
 
