@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import logo from "./BrandyCards_Logo_transparent.png";
 
 export const EBAY_SHOP_URL = "https://www.ebay.de/str/brandycards";
 const CART_KEY = "brandycards-cart";
@@ -128,7 +129,7 @@ export function SiteHeader({ active }: { active?: string }) {
       <header className="site-header">
         <Link className="brand" href="/" aria-label="BrandyCards Startseite">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className="brand-logo" src="/BrandyCards_Logo_transparent.png" alt="BrandyCards" />
+          <img className="brand-logo" src={logo.src} width={logo.width} height={logo.height} alt="BrandyCards" />
         </Link>
         <nav className="main-nav" aria-label="Hauptnavigation">
           {NAV.map((item) => (
@@ -176,7 +177,7 @@ export function SiteFooter() {
     <div className="footer-top">
       <Link className="brand" href="/" aria-label="BrandyCards Startseite">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img className="brand-logo" src="/BrandyCards_Logo_transparent.png" alt="BrandyCards" />
+        <img className="brand-logo" src={logo.src} width={logo.width} height={logo.height} alt="BrandyCards" />
       </Link>
       <p>Collect the moment.</p>
       <div className="footer-links">

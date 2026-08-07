@@ -37,46 +37,8 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-- **Stand:** LÄUFT
-- **Datum:** 2026-08-07
-- **Ziel:** Schriften **und** Logo aus `public/` in den Build geben, damit sie
-  einen Inhalts-Hash im Dateinamen bekommen — und damit dauerhaft gecacht
-  werden.
-- **Befund, gemessen:** Der Build vergibt zwei Klassen von Cache-Regeln.
-  Gehashte Bau-Ergebnisse (`/assets/index-CwO5vYEP.css`) bekommen
-  `max-age=31536000, immutable`. **Alles unter `public/` bekommt
-  `max-age=0, must-revalidate`** — Schriften und Logo also auch. Der Browser
-  fragt sie bei jedem Seitenaufruf neu an; die Antwort ist ein 304 ohne Daten,
-  aber der Rundlauf bleibt. Von hier aus dreimal gemessen: **85 ms**. Bis er
-  durch ist, zeigt `font-display: swap` die Ersatzschrift — der Schriftwechsel
-  ist damit bei *jedem* Besuch kurz sichtbar, nicht nur beim ersten.
-- **Warum nicht einfach die Header ändern:** Ohne Hash im Dateinamen würde ein
-  langes `max-age` einen späteren Austausch derselben Datei bei Bestandskunden
-  monatelang blockieren. Der Hash löst beides zugleich — deshalb der Weg über
-  den Build und nicht über eine Cache-Regel daneben.
-- **Geplante Schritte:**
-  1. Die zehn `woff2` von `public/fonts/` nach `app/fonts/` verschieben und in
-     `app/globals.css` die zehn `url('/fonts/…')` auf `url('./fonts/…')`
-     umstellen. Relative Pfade in CSS fasst Vite an, absolute nicht.
-  2. Das Logo aus `public/` in den Build geben und in `app/site-chrome.tsx` an
-     **zwei** Stellen (Kopfzeile und Fuß) darauf verweisen.
-  3. **Offene Frage, die empirisch zu klären ist, nicht durch Annahme:** Was
-     ein Bild-Import in diesem Projekt liefert. Unter Vite ist das eine
-     Zeichenkette, unter Next.js ein `StaticImageData`-Objekt mit `src`,
-     `width` und `height` — und vinext ist beides zugleich. Deshalb erst
-     ausprobieren und `npx tsc --noEmit` sowie das Bauergebnis ansehen, bevor
-     die Form feststeht.
-- **Betroffen:** `app/globals.css`, `app/site-chrome.tsx`, neu `app/fonts/*`,
-  Entfall von `public/fonts/` und `public/BrandyCards_Logo_transparent.png`.
-  **Kein Datenmodell, keine API, keine Datenbank, kein eBay-Aufruf.**
-- **Verifikation:** In Produktion belegen, dass Schriften und Logo gehashte
-  Namen tragen **und** `cache-control: …immutable` liefern; dazu Kopfzeile und
-  Fuß im Browser ansehen, damit das Logo nicht still verschwindet.
-- **Nebenbefund, noch nicht entschieden:** Das Logo ist eine **747 KB** große
-  PNG und wird mit 164 px Breite dargestellt. Das ist unabhängig vom Cache zu
-  viel und trifft jeden Erstbesucher. Nicht Teil dieses Auftrags — ein
-  Neucodieren verändert ein Gestaltungsmittel des Betreibers und wird ihm
-  vorgelegt.
+_Kein laufender Auftrag._ Vorlage: Stand, Datum, Ziel, geplante Schritte,
+betroffene Dateien, Verifikation, Ergebnis.
 
 ---
 
@@ -180,8 +142,21 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
   vollständig aus den vorhandenen Regeln (`--paper`, `--ink`, `--line`,
   `--muted`, `#f8f6f1` wie `.form-card`), sollte also tragen; ein Blick lohnt
   trotzdem.
+- **Schriften und Logo kommen aus dem Build, nicht aus `public/`.** Sie liegen
+  als Quelle in `app/fonts/` und `app/BrandyCards_Logo_transparent.png` und
+  landen mit Inhalts-Hash unter `/assets/`. **Das ist Absicht und kein
+  Schönheitsfehler:** Nur gehashte Dateien bekommen
+  `cache-control: max-age=31536000, immutable`; alles unter `public/` wird mit
+  `max-age=0, must-revalidate` ausgeliefert und bei jedem Seitenaufruf neu
+  angefragt (gemessen: 85 ms je Rundlauf). **Wer eine Schrift oder ein Bild
+  ergänzt, legt sie deshalb nach `app/` und verweist relativ darauf** —
+  `url('./fonts/…')` in der CSS, `import … from "./bild.png"` im TSX. Ein
+  absoluter Pfad `/fonts/…` fasst Vite nicht an.
+  **Achtung beim Bild-Import:** Er liefert ein Objekt `{src, width, height}`,
+  keine Zeichenkette. `<img src={bild}>` bricht **still** zu `[object Object]`;
+  richtig ist `src={bild.src}`. Begründung in `assets.d.ts`.
 - **Die Schriften liegen im Repository und werden selbst ausgeliefert**
-  (`public/fonts/`, 10 Dateien, 228 KB, Schnitte `latin` und `latin-ext`).
+  (10 Dateien, 228 KB, Schnitte `latin` und `latin-ext`).
   Der frühere `@import` von Google Fonts wurde von der eigenen CSP blockiert —
   der Shop lief unbemerkt auf Ersatzschriften. **Wer eine Schrift, einen
   Schnitt oder ein Schriftgewicht ergänzt, muss die Datei mit einchecken**;
@@ -278,6 +253,74 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
 ---
 
 ## Historie
+
+### 2026-08-07 — Schriften und Logo in den Build, mit Inhalts-Hash
+
+- **Stand:** ABGESCHLOSSEN
+- **Datum:** 2026-08-07
+- **Ziel:** Schriften **und** Logo aus `public/` in den Build geben, damit sie
+  einen Inhalts-Hash im Dateinamen bekommen — und damit dauerhaft gecacht
+  werden.
+- **Befund, gemessen:** Der Build vergibt zwei Klassen von Cache-Regeln.
+  Gehashte Bau-Ergebnisse (`/assets/index-CwO5vYEP.css`) bekommen
+  `max-age=31536000, immutable`. **Alles unter `public/` bekommt
+  `max-age=0, must-revalidate`** — Schriften und Logo also auch. Der Browser
+  fragt sie bei jedem Seitenaufruf neu an; die Antwort ist ein 304 ohne Daten,
+  aber der Rundlauf bleibt. Von hier aus dreimal gemessen: **85 ms**. Bis er
+  durch ist, zeigt `font-display: swap` die Ersatzschrift — der Schriftwechsel
+  ist damit bei *jedem* Besuch kurz sichtbar, nicht nur beim ersten.
+- **Warum nicht einfach die Header ändern:** Ohne Hash im Dateinamen würde ein
+  langes `max-age` einen späteren Austausch derselben Datei bei Bestandskunden
+  monatelang blockieren. Der Hash löst beides zugleich — deshalb der Weg über
+  den Build und nicht über eine Cache-Regel daneben.
+- **Geplante Schritte:**
+  1. Die zehn `woff2` von `public/fonts/` nach `app/fonts/` verschieben und in
+     `app/globals.css` die zehn `url('/fonts/…')` auf `url('./fonts/…')`
+     umstellen. Relative Pfade in CSS fasst Vite an, absolute nicht.
+  2. Das Logo aus `public/` in den Build geben und in `app/site-chrome.tsx` an
+     **zwei** Stellen (Kopfzeile und Fuß) darauf verweisen.
+  3. **Offene Frage, die empirisch zu klären ist, nicht durch Annahme:** Was
+     ein Bild-Import in diesem Projekt liefert. Unter Vite ist das eine
+     Zeichenkette, unter Next.js ein `StaticImageData`-Objekt mit `src`,
+     `width` und `height` — und vinext ist beides zugleich. Deshalb erst
+     ausprobieren und `npx tsc --noEmit` sowie das Bauergebnis ansehen, bevor
+     die Form feststeht.
+- **Betroffen:** `app/globals.css`, `app/site-chrome.tsx`, neu `app/fonts/*`,
+  Entfall von `public/fonts/` und `public/BrandyCards_Logo_transparent.png`.
+  **Kein Datenmodell, keine API, keine Datenbank, kein eBay-Aufruf.**
+- **Verifikation:** In Produktion belegen, dass Schriften und Logo gehashte
+  Namen tragen **und** `cache-control: …immutable` liefern; dazu Kopfzeile und
+  Fuß im Browser ansehen, damit das Logo nicht still verschwindet.
+- **Nebenbefund, noch nicht entschieden:** Das Logo ist eine **747 KB** große
+  PNG und wird mit 164 px Breite dargestellt (Original 1264×842). Das ist
+  unabhängig vom Cache zu viel und trifft jeden Erstbesucher. Nicht Teil dieses
+  Auftrags — ein Neucodieren verändert ein Gestaltungsmittel des Betreibers und
+  wird ihm vorgelegt.
+- **Ergebnis: ABGESCHLOSSEN.** Prüfkette grün: `tsc` sauber, Lint 0 Fehler,
+  `npm test` 149/149. Alle elf Dateien tragen jetzt einen Inhalts-Hash und
+  liegen unter `/assets/`, `public/` enthält nur noch die vier SVG-Symbole.
+- **Die offene Frage aus Schritt 3 ist beantwortet — und meine erste Annahme
+  war falsch.** Ich hatte den Bild-Import als Zeichenkette deklariert, wie es
+  unter reinem Vite richtig wäre. **vinext folgt aber Next.js und liefert ein
+  Objekt** `{src, width, height}`. Der Typprüfer schwieg dazu, weil die
+  Deklaration selbst die falsche Behauptung war — `npx tsc --noEmit` lief
+  sauber durch, während die Seite kaputt war.
+  **Sichtbar wurde es erst im Browser:** `src="[object Object]"`, das Logo lud
+  nicht (`naturalWidth` 0), und die Kopfleiste fiel von 126 px auf **59 px**
+  zusammen. JSX verkettet das Objekt still zu `[object Object]`, statt zu
+  klagen. Genau dafür stand der Punkt als „empirisch klären" im Plan.
+  Belegt am Bauergebnis: `a=\`/assets/BrandyCards_Logo_transparent-BAqeCyeB.png\`,
+  o={width:1264,height:842}, c={src:a,…}`. `assets.d.ts` hält die Form und den
+  Grund fest.
+- **Mitgenommen, weil die Maße nun ohnehin zur Hand sind:** `width` und
+  `height` stehen jetzt am `<img>`. Der Browser kann den Platz damit
+  reservieren, bevor das Bild da ist — bei 747 KB im Kopf jeder Seite nicht
+  nebensächlich. Die CSS setzt die Anzeigebreite weiterhin (164 px bzw. 112 px
+  auf schmalen Geräten).
+- **Lokal im Browser gemessen:** beide Logos geladen, 1264×842 natürlich,
+  164×109 dargestellt, Kopfleiste wieder **126 px** und deckungsgleich mit
+  `--header-h`; Schriften laden, kein Fremdhost, keine fehlerhaften Abrufe.
+
 
 ### 2026-08-07 — Schriften selbst ausliefern statt von Google
 
