@@ -56,30 +56,56 @@ sichtbar; ein Lauf in `sync_runs` mit Status `SUCCEEDED` bestätigt.
 
 ---
 
-## 2. Rate-Limiting tatsächlich scharf schalten
+## 2. Sicherheitskorrekturen deployen
 
-**Aufwand:** klein · **Hängt an:** nichts
+**Aufwand:** klein · **Hängt an:** nichts · **Blockiert:** die Wirkung von allem
+aus der Sicherheitsprüfung
 
-**Warum:** `lib/rate-limit.ts` nutzt das Cloudflare-Binding `RATE_LIMITER`, falls
-vorhanden — **in `wrangler.toml` ist es nicht konfiguriert.** Ohne Binding fällt
-der Code auf eine `Map` im Arbeitsspeicher zurück. Workers-Isolate sind aber
-kurzlebig und existieren vielfach parallel; eine solche Map teilt sich nichts
-mit anderen Instanzen. Die Begrenzung auf `/api/inquiries`,
-`/api/card-submissions` und `/api/prelisted-interest` ist damit in Produktion
-sehr wahrscheinlich **wirkungslos** — und das ist genau der Schutz gegen Bots
-und Formularfluten.
+**Warum:** Die Prüfung (früher Punkt 8) ist durch, 15 von 17 Befunden sind
+behoben und gepusht — **aber nichts davon wirkt in Produktion.** Dort läuft der
+Stand davor. Besonders das Rate-Limit: Es lebt vom Cloudflare-Binding, und das
+entsteht erst beim Deploy. Bis dahin steht der Shop genau so da, wie ihn
+[security-findings.md](security-findings.md) beschreibt.
 
-**Wie:** Rate-Limiting-Binding in `wrangler.toml` deklarieren und deployen.
-Zusätzlich sollte das Fehlen des Bindings beim Start protokolliert werden — ein
-stiller Rückfall auf einen wirkungslosen Schutz ist schlimmer als gar keiner,
-weil er Sicherheit vortäuscht.
+**Wie:** Schrittfolge samt Nachprüfung steht in
+[security-findings.md](security-findings.md) unter „E-6 — Deploy". Kurz:
+aus dem **Hauptverzeichnis** (nicht aus einem Worktree), mit `.env.local`,
+`npx tsc --noEmit` + `npm run lint` + `npm test`, dann `npx wrangler deploy`.
 
-**Zusammen mit Punkt 8 zu bewerten:** Ohne Bot-Schutz (Turnstile) bleibt auch
-ein funktionierendes Rate-Limit nur eine halbe Antwort.
+**Fertig, wenn:**
+- `/account` und `/admin` laden (nicht „Supabase ist noch nicht konfiguriert")
+- `curl -sI https://shop.brandycards.de/` zeigt die Sicherheits-Kopfzeilen
+- `curl -sI https://shop.brandycards.de/api/products` zeigt `cache-control`
+- Im Dashboard stehen die Bindings `RATE_LIMITER` und `RATE_LIMITER_STRICT`
 
-**Fertig, wenn:** Das Binding ist deployed, und wiederholte Anfragen an einen
-öffentlichen Endpunkt liefern nachweislich `429` — **lokal geprüft, nicht gegen
-die Produktion.**
+**Nicht** gegen die Produktion nachtesten, ob das Limit greift — lokal ist es
+belegt (10 Anfragen durch, dann `429` mit `retry-after: 60`).
+
+---
+
+## 2a. CSP scharf schalten
+
+**Aufwand:** klein · **Hängt an:** Punkt 2 · **Nicht vor:** ein paar Tagen
+Beobachtung
+
+**Warum:** Die Content-Security-Policy läuft bewusst als
+`Content-Security-Policy-Report-Only` — sie meldet Verstöße und verhindert
+nichts. Erst durchsetzend schützt sie gegen die nächste Lücke der Art SEC-01,
+und weil das Supabase-Token im `localStorage` liegt, ist ein XSS hier direkt
+eine Kontoübernahme.
+
+**Wie:** Nach dem Deploy einige Tage die Browser-Konsole auf
+`Content-Security-Policy-Report-Only`-Meldungen ansehen. Sind sie ruhig, in
+[lib/security-headers.ts](../lib/security-headers.ts) `CSP_HEADER_NAME` auf
+`content-security-policy` umstellen und erneut deployen.
+
+**Achtung:** Eine zu enge Regel legt den Shop lahm. Auffällige Meldungen erst
+verstehen, dann die Regel erweitern — nicht `'unsafe-*'` nachschieben, bis es
+still ist.
+
+**Fertig, wenn:** Der Header heißt `content-security-policy`, und Startseite,
+`/karten`, eine Kartendetailseite, `/checkout`, `/account` und `/admin` sind
+ohne Konsolenfehler bedienbar.
 
 ---
 
@@ -235,27 +261,38 @@ Der Text darf das nicht versprechen.
 
 ---
 
-## 8. Vollständige Sicherheitsprüfung
+## 8. Reste aus der Sicherheitsprüfung
 
-**Aufwand:** groß (reine Analyse) · **Hängt an:** nichts · **Blockiert:** nichts
+**Aufwand:** klein bis mittel · **Hängt an:** nichts
 
-**Warum:** Bisher wurde Sicherheit punktuell mitgedacht, nie systematisch
-geprüft. Der Shop nimmt echtes Geld ein, speichert Adressen und nimmt
-unauthentifizierte Uploads entgegen.
+Die Prüfung selbst ist durch (siehe „Erledigt"). Zwei Befunde blieben bewusst
+offen, weil sie keine reine Codeänderung sind:
 
-**Der Auftrag ist ausformuliert:** [security-audit-brief.md](security-audit-brief.md).
-Er enthält Systemüberblick, Vertrauensgrenzen, Angreifermodelle, zwölf konkrete
-Verdachtsmomente mit Dateiverweisen, Regeln für die Durchführung und das
-Berichtsformat. Gedacht für ein Modell mit hoher Reasoning-Tiefe.
+**SEC-12 — eBay-OAuth-Rückseite zeigt den Refresh-Token ohne Anmeldung.**
+`app/api/admin/ebay/oauth/callback/route.ts` ist die einzige Route unter
+`/api/admin/**` ohne Rollenprüfung. Eine hinzuzufügen wäre **falsch**: eBay
+leitet den *Browser* dorthin um, und eine Navigation trägt keinen
+`Authorization`-Header — dort liegt in diesem Shop die Supabase-Sitzung. Die
+Prüfung würde den eBay-Anschluss blockieren, ohne etwas zu sichern. Die
+Begründung steht als Kommentar an der Route.
 
-**Kann jederzeit laufen** — die Prüfung ändert nichts am System und blockiert
-keinen anderen Punkt. Sinnvoll ist sie, sobald ein längeres Zeitfenster da ist.
+*Richtiger Weg:* Den Token nicht in die Antwort auf die Umleitung schreiben.
+Austausch hinter einer kurzlebigen Anspruchs-Kennung parken, die der angemeldete
+Adminbereich mit seinem Bearer-Token einlöst. Braucht eine Tabelle, also eine
+Migration — **beim nächsten ohnehin nötigen Schemaschritt erledigen** und dabei
+`drizzle/meta/_journal.json` nachziehen (endet bei `0002`).
 
-**Ergebnis:** `docs/security-findings.md`. Daraus abgeleitete Korrekturen kommen
-anschließend nach Schweregrad in diese Liste.
+**SEC-15 — Aufbewahrung und Löschung.** Kartenangebote und ihre Bilder werden
+nie automatisch gelöscht; `cleanupOrphanedCardSubmissionAssets` räumt nur
+verwaiste R2-Objekte auf. Es gibt keinen Selbstbedienungsweg für Auskunft oder
+Löschung, obwohl die Datenschutzerklärung beides zusagt (per E-Mail, das ist
+zulässig). **Das ist zuerst eine Festlegung, keine Programmierarbeit:** Wie
+lange bleiben abgelehnte Kartenangebote liegen? Danach ist die Erweiterung des
+vorhandenen Aufräumlaufs überschaubar.
 
-**Vorgezogen:** Der auffälligste Voranalyse-Fund steckt bereits als Punkt 2 hier
-drin — er ist zu billig zu beheben, um auf den Bericht zu warten.
+**Ebenfalls offen, kein Sicherheitsbefund:** Ein Satz zu den direkt von eBays
+CDN geladenen Bildern gehört in Abschnitt 6 oder 11 der Datenschutzerklärung
+(SEC-16). Die technische Hälfte — `Referrer-Policy` — ist gesetzt.
 
 ---
 
@@ -306,3 +343,27 @@ sind.
 ## Erledigt
 
 _(Erledigte Punkte hierher verschieben, mit Datum und Commit.)_
+
+### Vollständige Sicherheitsprüfung — 2026-08-07
+
+Auftrag: [security-audit-brief.md](security-audit-brief.md).
+Bericht: [security-findings.md](security-findings.md).
+Commits: `4fbde38` (Bericht), `eff5c35` (Korrekturen), `<Phase 3>` (Nachprüfung).
+
+17 Befunde, drei davon hoch: der Beschreibungs-Parser hob die Arbeit des
+HTML-Sanitizers wieder auf und lieferte `&lt;img onerror=…&gt;` als lebendes
+Markup aus; das Rate-Limit war mangels Binding still wirkungslos; ein einzelnes
+Konto konnte den gesamten Bestand hinter unbezahlten Bestellungen blockieren.
+15 behoben, je mit einem Test, der den Angriff nachstellt.
+
+Ausdrücklich als tragfähig bestätigt: keine SQL-Injection, kein IDOR, PayPal-
+Webhook wirklich verifiziert und idempotent, Preisintegrität durchgängig
+serverseitig, Supabase erzwingt E-Mail-Bestätigung, der selbstgeschriebene
+Sanitizer hielt 49 Angriffen stand.
+
+**Der Deploy fehlt noch — er steht als Punkt 2 oben.** Ohne ihn wirkt keine der
+Korrekturen. Zwei Befunde bleiben offen, siehe Punkt 8.
+
+**Nebenbei repariert:** `npm run dev` startete gar nicht — `nodejs_compat` war
+in `vite.config.ts` und `wrangler.toml` doppelt deklariert, und das gebündelte
+`workerd` war zu alt für das `compatibility_date`. Beides war vorbestehend.

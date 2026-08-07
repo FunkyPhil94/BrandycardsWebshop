@@ -21,8 +21,36 @@ was untersucht und für tragfähig befunden wurde. Abschnitt
 [Korrekturen am Prüfauftrag](#korrekturen-am-prüfauftrag) nennt die Stellen, an
 denen der Auftrag selbst irrt.
 
-**Statuszeile je Befund** wird in Phase 3 gefüllt: `behoben`, `offen`,
-`bewusst akzeptiert` oder `wartet auf Entscheidung`.
+**Der Status je Befund** steht in der Übersicht direkt darunter und wurde in
+Phase 3 nachgeprüft.
+
+---
+
+## Statusübersicht (Stand nach Phase 3)
+
+| Befund | Schweregrad | Status | Nachweis der Schließung |
+|---|---|---|---|
+| [SEC-01](#sec-01--der-html-sanitizer-wird-nach-seinem-lauf-wieder-aufgehoben) | hoch | **behoben** | 4 Tests, vorher rot · zusätzlich live über `GET /api/products/[id]` gegen den lokalen Server |
+| [SEC-02](#sec-02--rate-limiting-ist-in-produktion-wirkungslos) | hoch | **behoben, wirkt erst mit dem Deploy** | `wrangler deploy --dry-run` löst beide Bindings auf · lokal 10× 201 dann 429 mit `retry-after: 60` |
+| [SEC-03](#sec-03--ein-einziges-konto-kann-den-gesamten-bestand-blockieren) | hoch | **behoben** | Angriff gegen die Entscheidungslogik nachgestellt: 296 → 50 Einheiten |
+| [SEC-04](#sec-04--jeder-kann-über-apiproductsid-ebay-kontingent-verbrennen) | mittel | **behoben** | eigener Grenzwert nur für den eBay-Abruf; Karte wird weiterhin ausgeliefert |
+| [SEC-05](#sec-05--apiproducts-liefert-128-kb-und-1-725-d1-zeilen-je-aufruf) | mittel | **behoben** | lokal: `cache-control: public, max-age=60, …` im Erfolgsfall, `no-store` im Fehlerfall |
+| [SEC-06](#sec-06--keine-einzige-sicherheits-kopfzeile) | mittel | **behoben, CSP bewusst nur berichtend** | lokal an `/`, `/karten` und `/api/products` gemessen |
+| [SEC-07](#sec-07--die-registrierung-schickt-das-klartextpasswort-an-den-eigenen-server) | mittel | **behoben** | lokal: Anfrage mit Passwort → 400, ohne → 200 |
+| [SEC-08](#sec-08--die-upload-größengrenze-lässt-sich-durch-weglassen-von-content-length-umgehen) | niedrig | **behoben** | lokal: `Transfer-Encoding: chunked` → 411 vor dem Puffern |
+| [SEC-09](#sec-09--jede-angemeldete-anfrage-schreibt-in-users-und-ruft-supabase) | niedrig | **behoben** | 3 Tests |
+| [SEC-10](#sec-10--bestandsbuchung-liest-und-schreibt-absolute-mengen) | niedrig | **behoben** | Test verbietet absolute Mengen in Buchung und Rücknahme |
+| [SEC-11](#sec-11--toter-authentifizierungscode-der-http-kopfzeilen-vertraut) | niedrig | **behoben** | Datei gelöscht, Test schlägt an, falls sie zurückkehrt |
+| [SEC-12](#sec-12--die-ebay-oauth-rückseite-zeigt-den-refresh-token-ohne-anmeldung) | niedrig | **offen** | siehe [Phase 3](#phase-3--nachprüfung) — der naheliegende Fix wäre falsch |
+| [SEC-13](#sec-13--abhängigkeiten-18-offene-meldungen-next-neun-advisories-hinter-dem-patchstand) | mittel | **behoben, wirkt erst mit dem Deploy** | 9 `next`-Advisories weg; verbleibend nur Bauwerkzeug |
+| [SEC-14](#sec-14--ci-prüft-weder-typen-noch-abhängigkeiten-actions-sind-nicht-gepinnt) | niedrig | **behoben** | Workflow prüft Typen, auditiert, Actions auf Commit gepinnt |
+| [SEC-15](#sec-15--kein-selbstbedienungs-auskunfts--oder-löschweg-unbegrenzte-aufbewahrung) | Hinweis | **wartet auf Entscheidung** | Aufbewahrungsfrist ist eine Festlegung, keine Technik |
+| [SEC-16](#sec-16--bilder-kommen-direkt-von-ebays-cdn) | Hinweis | **teilweise behoben** | `Referrer-Policy` gesetzt; der Satz in der Datenschutzerklärung wartet auf Entscheidung |
+| [SEC-17](#sec-17--rate-limit-schlüssel-vertraut-auf-x-forwarded-for) | niedrig | **behoben** | Test belegt, dass `x-forwarded-for` nicht mehr in den Schlüssel gelangt |
+
+Zusätzlich umgesetzt: **E-2** (Honeypot und Zeitschwelle, nach Entscheidung des
+Nutzers statt Turnstile) und zwei vorbestehende Blocker der Entwicklungsumgebung,
+siehe [Phase 3](#phase-3--nachprüfung).
 
 ---
 
@@ -977,6 +1005,132 @@ Ehrlich als ungeklärt markiert, statt eine Entwarnung zu geben:
 
 ---
 
+# Phase 3 — Nachprüfung
+
+Nach den Korrekturen wurde jeder Befund erneut angesehen: greift die Korrektur
+wirklich, und ist ein Umweg offen geblieben?
+
+## Was am laufenden System gemessen wurde
+
+Die Prüfung lief gegen einen **lokalen** Server mit lokaler D1, nie gegen
+Produktion. Dass das überhaupt ging, war selbst Arbeit — siehe
+[Zwei Blocker in der Entwicklungsumgebung](#zwei-blocker-in-der-entwicklungsumgebung).
+
+| Prüfung | Ergebnis |
+|---|---|
+| `wrangler deploy --dry-run` | `env.RATE_LIMITER (10 requests/60s)` und `env.RATE_LIMITER_STRICT (3 requests/60s)` werden als **Rate Limit** aufgelöst — die Konfiguration ist gültig und erreicht den Worker |
+| 14× `POST /api/inquiries` von einer IP | `201 ×10`, dann `429 ×4` mit `retry-after: 60` |
+| 6× `POST /api/card-submissions` | `201 ×3`, dann `429 ×3` — der strenge Tarif greift getrennt |
+| Log auf die Warnung „Binding fehlt" | **0 Treffer** — es zählte das echte Binding, nicht der Rückfall |
+| Honeypot gefüllt | 400 |
+| Formular sofort abgeschickt | 400 |
+| Zeitstempel Tage alt | 400 |
+| normal ausgefülltes Formular | **201** — der Weg für Kunden bleibt offen |
+| `POST /api/account/validate-registration` mit Passwort | 400 |
+| dieselbe Route nur mit Benutzername | 200 |
+| `multipart/form-data` mit `Transfer-Encoding: chunked` | **411**, bevor der Körper gepuffert wird |
+| dasselbe mit `Content-Length` | 400 (normale Feldprüfung) — die Grenze blockiert keinen echten Upload |
+| `GET /`, `/karten` | `content-security-policy-report-only`, `permissions-policy`, `referrer-policy`, `x-content-type-options`, `x-frame-options` |
+| `GET /api/products` mit Daten | `cache-control: public, max-age=60, stale-while-revalidate=300` |
+| `GET /api/products` ohne Datenbank | 503 mit `cache-control: no-store` — ein Ausfall wird **nicht** zwischengespeichert |
+| `GET /api/products/[id]` mit dem SEC-01-Payload in der Beschreibung | `"<p>Karte ist top &lt;img src=x onerror=alert(document.domain)&gt; Ende</p>"` — escaped, Text erhalten |
+
+## Jeder Fix mit einem Test, der ohne ihn rot ist
+
+Verlangt war, das nachzuweisen, nicht zu behaupten. Zurückgenommen und gemessen:
+
+| Korrektur | Ohne die Korrektur |
+|---|---|
+| SEC-01 (`escapeHtml` im Rückfallzweig) | 4 Tests rot, u. a. `script tag rebuilt: <p><script>alert(1)</script> Rest</p>` |
+| SEC-02 (`[[ratelimits]]` in `wrangler.toml`) | `wrangler.toml declares no [[ratelimits]] at all — the limiter is inert in production` |
+| SEC-03 (Obergrenze auf gehaltenen Bestand) | `an attacker still reserved the entire stock (296 of 296)` |
+
+Die übrigen Tests wurden beim Schreiben rot gesehen, bevor die jeweilige
+Korrektur stand.
+
+## Umwege, die geprüft und für geschlossen befunden wurden
+
+- **SEC-01, andere Wege in dieselbe Senke.** `blocks.join("\n")` gibt wörtliche
+  Ausschnitte des *sanitisierten* HTML weiter und bleibt damit sicher;
+  `specs` und `heading` laufen als Text durch React. Der Rückfallzweig war die
+  einzige Stelle, an der aus Text wieder Markup wurde.
+- **SEC-01, andere Kodierungen.** `decode()` arbeitet mit `/gi`, also greift
+  `&LT;` genauso wie `&lt;` — eigener Test. Doppelt kodiertes `&amp;lt;` wird
+  nur eine Ebene aufgelöst und bleibt harmlos.
+- **SEC-02, Umgehung über den Schlüssel.** `x-forwarded-for` fließt nicht mehr
+  ein (SEC-17). Ein Angreifer kann den Zähler damit nicht mehr je Anfrage
+  zurücksetzen.
+- **SEC-03, Freigabe als Umweg.** Ein Angreifer könnte seine Bestellungen über
+  `/api/orders/release` freigeben, um neue anzulegen — das gibt den Bestand
+  aber genau frei und bringt ihm nichts.
+- **SEC-03, Reservierungen ohne Nutzer.** `reservedUnitsForUser` zählt nach
+  `userId`; die Bestellroute setzt ihn immer. Es gibt keinen Pfad, der eine
+  `ACTIVE`-Reservierung ohne `userId` erzeugt.
+- **SEC-03, Restrisiko benannt.** Ein Konto hält weiterhin **bis zu 50 von 296
+  Karten** (17 %) dauerhaft, solange es nachfasst. Mehr Konten heißt mehr
+  Bestand — jedes braucht eine bestätigte E-Mail-Adresse. Wer das enger ziehen
+  will, senkt `MAX_RESERVED_UNITS_PER_USER`; darunter leidet dann aber ein
+  echter Großeinkauf.
+- **E-2, Loch in der eigenen Korrektur.** `useFormSubmit` ruft nach Erfolg
+  `form.reset()`, was den Zeitstempel auf `0` zurücksetzt — die Zeitschwelle
+  hätte nur beim **ersten** Absenden je Seitenaufruf gegriffen. Der Stempel
+  wird jetzt nach jedem `reset` erneuert; ein Test hält das fest.
+- **E-2, keine neue Barriere.** Der Honeypot ist für Bildschirmleser über
+  `aria-hidden` unsichtbar und für Passwortverwalter über `autoComplete="off"`
+  gesperrt. Ein fehlender Zeitstempel — altes Cache-Exemplar, abgeschaltetes
+  JavaScript — wird **nicht** gegen den Absender gewertet.
+
+## SEC-12 bleibt offen, und warum der naheliegende Fix falsch war
+
+Der erste Ansatz war, `requireAdmin` vor die OAuth-Rückseite zu setzen. **Das
+wäre kaputt gewesen:** eBay leitet den *Browser* dorthin um, und eine Navigation
+trägt keinen `Authorization`-Header — dort liegt in diesem Shop aber die
+Supabase-Sitzung. Die Prüfung hätte den einzigen Weg zu einem funktionierenden
+eBay-Token blockiert, ohne irgendetwas zu sichern.
+
+Der richtige Weg wäre, den Token gar nicht erst in die Antwort auf die
+Umleitung zu schreiben: Austausch hinter einer kurzlebigen Anspruchs-Kennung
+parken und ihn den angemeldeten Adminbereich mit seinem Bearer-Token abholen
+lassen. Das braucht einen Ablageort, also eine Migration — und die ist ein
+schreibender Eingriff in die Produktionsdatenbank. Deshalb steht der Befund
+weiter offen, statt halb gebaut zu sein. Die Begründung steht als Kommentar an
+der Route selbst, damit die nächste Sitzung nicht denselben Irrweg nimmt.
+
+## Zwei Blocker in der Entwicklungsumgebung
+
+Beim Versuch, die Korrekturen lokal gegen einen laufenden Server zu prüfen,
+stellte sich heraus: **`npm run dev` startete überhaupt nicht** — und zwar
+schon vor dieser Sitzung, mit unveränderter `wrangler.toml` nachgemessen. Zwei
+unabhängige Ursachen:
+
+1. `vite.config.ts` deklarierte `compatibility_flags: ["nodejs_compat"]`, das
+   `wrangler.toml` ebenfalls. Der Cloudflare-Plugin fügt beide zusammen, und
+   die Laufzeit lehnt `["nodejs_compat", "nodejs_compat"]` ab. Behoben durch
+   Streichen des Duplikats in `vite.config.ts`; `wrangler.toml` bleibt die
+   einzige Quelle, wie es die README beschreibt.
+2. Das in `@cloudflare/vite-plugin@1.37.1` gebündelte `workerd` unterstützte
+   nur Kompatibilitätsdaten bis `2026-05-22`, das Projekt steht auf
+   `2026-08-05`. Behoben durch Anheben auf `1.51.0` (und `wrangler` auf
+   `4.119.0`). **Das `compatibility_date` wurde nicht angefasst** — es
+   bestimmt das Verhalten in Produktion.
+
+Kein Sicherheitsbefund, aber ohne diese beiden Schritte hätte niemand eine
+Korrektur lokal nachstellen können — was der Prüfauftrag ausdrücklich verlangt.
+
+## Was nach den Korrekturen erneut gemessen wurde
+
+- `npx tsc --noEmit` — sauber
+- `npm run lint` — 0 Fehler, 1 vorbestehende Warnung (`<img>` im Adminbereich)
+- `npm test` — **85 Tests, alle grün** (vorher 63)
+- `npm audit` — gesamt von 18 auf 16, *hoch* von 13 auf 8. Produktionsseitig
+  bleiben 3, alle drei Bauwerkzeug, das `next` mitbringt (`postcss`, `sharp`);
+  sie erreichen den Worker nicht
+- Client-Bundle vollständig auf Zugangsdaten durchsucht: **kein einziger Wert
+  aus `.env.local` im Bundle**, und **keine Sourcemaps** im Client-Build. Die
+  Supabase-URL ist erwartungsgemäß enthalten — sie muss es sein
+
+---
+
 # Gesamteinschätzung
 
 **Wo die Plattform steht:** Deutlich besser, als eine selbstgebaute
@@ -1023,6 +1177,39 @@ er greift, ist die Folge Kontoübernahme, nicht ein Schönheitsfehler.
 an den teuren Stellen sorgfältig gebaut. Was fehlt, ist die Bremse. Nichts hier
 verlangt einen Umbau; die drei wichtigsten Korrekturen sind zusammen weniger als
 ein Arbeitstag.
+
+---
+
+## Nachtrag nach Phase 3
+
+Die Bremse ist eingebaut. 15 von 17 Befunden sind geschlossen, einer
+(SEC-15) wartet auf eine Festlegung des Betreibers, einer (SEC-12) bleibt
+bewusst offen, weil die richtige Lösung eine Migration braucht und der
+naheliegende Fix den eBay-Anschluss zerstört hätte.
+
+**Das Bild hat sich damit verschoben.** Vor der Prüfung war das größte Risiko
+die fehlende Mengenbegrenzung — jede öffentliche Route war ohne Bremse
+erreichbar. Danach ist das größte verbleibende Risiko ein anderes, und es ist
+kein Codeproblem:
+
+> **Nichts davon wirkt, bevor deployed wurde.** Das Rate-Limit lebt vom
+> Binding, und das Binding entsteht erst beim Deploy. Bis dahin steht in
+> Produktion exakt der Code, den diese Prüfung als angreifbar beschrieben hat.
+
+Danach bleiben drei Dinge offen, in dieser Reihenfolge:
+
+1. **Die CSP scharf schalten.** Sie läuft berichtend, was heute nichts
+   verhindert. Erst wenn sie durchsetzt, ist SEC-01 auch gegen den nächsten
+   Fehler dieser Art abgesichert — und XSS bedeutet hier Kontoübernahme.
+2. **SEC-12 richtig schließen**, beim nächsten ohnehin nötigen Schemaschritt.
+3. **Aufbewahrungsfristen festlegen** (SEC-15). Das ist keine technische
+   Frage und braucht eine Entscheidung, keine Umsetzung.
+
+Was diese Prüfung **nicht** beantwortet hat, steht unverändert unter
+[Offene Unsicherheiten](#offene-unsicherheiten) — insbesondere der
+Cloudflare-Tarif, das echte eBay-Kontingent und die Supabase-Passwortrichtlinie.
+Drei Fragen, die im Dashboard in fünf Minuten geklärt sind und die die
+Einstufung zweier Befunde schärfen würden.
 
 ---
 
@@ -1086,10 +1273,46 @@ Steht als Punkt 1 in [ai-todo.md](ai-todo.md) und würde das Zeitfenster in
 Abwägung gegen [SEC-04](#sec-04--jeder-kann-über-apiproductsid-ebay-kontingent-verbrennen)
 und gehört gemeinsam entschieden.
 
-### E-6 — Deploy
+### E-6 — Deploy · **entschieden: der Betreiber deployt selbst**
 
 Keine der Korrekturen wirkt in Produktion ohne Deploy — SEC-02 wirkt
-**ausschließlich** durch ihn, weil das Binding zur Laufzeit kommt. Dieser
-Worktree hat kein `.env.local`; ein Build hier würde `/admin` und `/account`
-zerstören (siehe [CLAUDE.md](../CLAUDE.md)). **Der Deploy erfolgt nur nach
-ausdrücklicher Freigabe.**
+**ausschließlich** durch ihn, weil das Binding zur Laufzeit kommt.
+
+Schrittfolge, aus dem **Hauptverzeichnis** (nicht aus einem Worktree — die
+ignorierte `.env.local` wird dorthin nicht vererbt, und genau so ging schon
+ein Deploy schief):
+
+```bash
+git checkout agent/initial-brandycards && git pull && ls .env.local && npm ci && npx tsc --noEmit && npm run lint && npm test && grep -rl "supabase.co" dist/client/assets && npx wrangler deploy
+```
+
+Der `grep` ist die Probe aufs Exempel: Findet er nichts, fehlte `.env.local`
+beim Build, und `/admin` sowie `/account` kommen kaputt heraus, während
+Startseite und `/api/*` gesund aussehen.
+
+**Nach dem Deploy prüfen** — in dieser Reihenfolge, weil die ersten beiden auch
+dann gesund aussehen, wenn das Bundle kaputt ist:
+
+1. `https://shop.brandycards.de/account` lädt und zeigt das Anmeldeformular
+   (**nicht** „Supabase ist noch nicht konfiguriert")
+2. `https://shop.brandycards.de/admin` nach Anmeldung zeigt die Übersicht
+3. Kopfzeilen sind da:
+   ```bash
+   curl -sI https://shop.brandycards.de/ | grep -iE "content-security-policy|referrer-policy|x-content-type|permissions-policy|x-frame"
+   ```
+4. Der Katalog wird zwischengespeichert:
+   ```bash
+   curl -sI https://shop.brandycards.de/api/products | grep -i cache-control
+   ```
+5. Im Cloudflare-Dashboard unter *Workers → brandycards-webshop → Settings →
+   Bindings* stehen **RATE_LIMITER** und **RATE_LIMITER_STRICT**
+
+**Das Rate-Limit nicht gegen Produktion testen.** Es ist lokal nachgewiesen
+(10 Anfragen durch, dann 429 mit `retry-after: 60`); ein Test gegen die
+Produktion wäre genau die Last, gegen die es schützt.
+
+**Danach:** Die CSP läuft berichtend. Nach ein paar Tagen die Browser-Konsole
+auf `Content-Security-Policy-Report-Only`-Meldungen ansehen; sind sie ruhig,
+`CSP_HEADER_NAME` in [lib/security-headers.ts](../lib/security-headers.ts) auf
+`content-security-policy` umstellen und erneut deployen. Erst dann greift der
+Schutz.

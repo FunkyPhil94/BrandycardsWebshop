@@ -158,6 +158,76 @@ Dieses Protokoll hält fest, welche spezialisierten Agents im Projekt eingesetzt
   allen Laeufen davor. Der Parserfix ist damit gegen die echte eBay-API bestaetigt,
   nicht nur gegen den Stub. Es fehlt nur noch ein Lauf, der die Deaktivierung ausfuehrt.
 
+## 2026-08-07 - Vollstaendige Sicherheitspruefung
+
+- Auftrag: [security-audit-brief.md](security-audit-brief.md), drei Phasen
+  (pruefen, beheben, nachpruefen). Bericht: [security-findings.md](security-findings.md).
+- Ergebnis: 17 Befunde, drei hoch. 15 behoben, je mit einem Test, der den
+  Angriff nachstellt und ohne die Korrektur rot ist.
+
+**Warum die Loesungen so aussehen, wie sie aussehen:**
+
+- **Der Sanitizer war nicht das Problem, sein Nachbar war es.** `sanitizeHtml`
+  hielt 49 Umgehungsversuchen stand — verschachtelte und sich neu bildende
+  Tags, `<svg>`/MathML, `&#x6a;avascript:`, Steuerzeichen in URLs, NULL-Bytes,
+  mXSS-Muster. Er ist tragfaehig, weil er Attribute nicht durchreicht, sondern
+  aus einer Allowlist **neu serialisiert**. Der Fehler sass eine Ebene weiter:
+  `parseEbayDescription` rief auf dem sanitisierten Ergebnis `decode()` auf und
+  gab es als HTML zurueck. Aus korrekt escapetem `&lt;img onerror=…&gt;` wurde
+  wieder ein lebendes Tag. Die Lehre ist nicht „kein Eigenbau", sondern:
+  **nach einem Sanitizer darf niemand mehr am Ergebnis arbeiten.** Deshalb
+  escaped der Rueckfallzweig jetzt selbst, statt sich auf die Vorstufe zu
+  verlassen.
+- **Zwei Rate-Limit-Namespaces statt einem.** Ein Cloudflare-Binding traegt
+  genau eine Grenze. Die Parameter `limit`/`windowMs` im Code waren mit Binding
+  wirkungslos — sie sahen aus wie drei verschiedene Grenzen und waeren eine
+  gewesen. Jetzt gibt es `RATE_LIMITER` (10/60s) und `RATE_LIMITER_STRICT`
+  (3/60s), und `tests/rate-limit.test.mjs` vergleicht die Tabelle im Code mit
+  `wrangler.toml`, damit beide nicht auseinanderlaufen.
+- **Die Bestandsgrenze zaehlt Einheiten, nicht Bestellungen.** Drei
+  Bestellungen zu zwanzig richten denselben Schaden an wie eine zu sechzig —
+  was weh tut, ist die Zahl unverkaeuflicher Karten. `MAX_RESERVED_UNITS_PER_USER`
+  ist bewusst auf denselben Wert wie ein voller Warenkorb gesetzt: niemand, der
+  vorher bestellen konnte, wird abgewiesen.
+- **`releaseExpiredReservations` bekam einen `userId`-Parameter**, statt eine
+  zweite Funktion zu bauen. Die Bestellroute gibt damit zuerst die eigenen
+  abgelaufenen Reservierungen des Kunden frei — sonst haette die neue Grenze
+  jemanden bis zu einer Stunde ausgesperrt wegen eines Checkouts, den er vor
+  15 Minuten abgebrochen hat.
+- **Testbarkeit erzwang kleine Schnitte.** `lib/rate-limit.ts`,
+  `lib/app-user.ts` und die Routen importieren `cloudflare:workers` bzw. `../db`
+  und lassen sich im Node-Testrunner nicht laden. Die Entscheidungen wanderten
+  deshalb in `lib/rate-limit-policy.ts`, `lib/order-guard.ts`,
+  `lib/form-bot-guard.ts`, `lib/security-headers.ts` und `lib/user-profile.ts`
+  — dasselbe Muster, das `pickAcceptedPrices` in `lib/price-offers.ts` schon
+  vorgibt.
+- **Honeypot und Zeitschwelle statt Turnstile**, nach Entscheidung des Nutzers:
+  unsichtbar, kostenlos, kein Fremddienst, keine Ergaenzung der
+  Datenschutzerklaerung. Eigenes Loch dabei gefunden und geschlossen:
+  `useFormSubmit` ruft nach Erfolg `form.reset()`, was den Zeitstempel auf `0`
+  zuruecksetzt — die Schwelle haette nur beim ersten Absenden je Seitenaufruf
+  gegriffen.
+- **Die CSP laeuft berichtend**, ebenfalls nach Entscheidung des Nutzers. Eine
+  zu enge Regel legt den Shop lahm, und ohne echten Verkehr laesst sich das
+  nicht unterscheiden.
+- **Ein Fix wurde zurueckgenommen, weil er falsch war.** `requireAdmin` vor der
+  eBay-OAuth-Rueckseite haette den Anschluss zerstoert: eBay leitet den
+  *Browser* dorthin um, und eine Navigation traegt keinen
+  `Authorization`-Header. SEC-12 blieb offen, mit der Begruendung als Kommentar
+  an der Route, statt halb gebaut zu sein.
+- **Nebenbefund, vorbestehend:** `npm run dev` startete nicht. `nodejs_compat`
+  war doppelt deklariert (`vite.config.ts` **und** `wrangler.toml`), und das in
+  `@cloudflare/vite-plugin@1.37.1` gebuendelte `workerd` kannte das
+  `compatibility_date 2026-08-05` nicht. Ohne beides haette sich keine
+  Korrektur lokal nachstellen lassen — was der Auftrag ausdruecklich verlangt.
+
+**Verifikation:** `npm test` 63 → 85 Tests, alle gruen. `npx tsc --noEmit`
+sauber. `npm audit` gesamt 18 → 16, *hoch* 13 → 8. Live gegen einen lokalen
+Server gemessen: 429 nach 10 Anfragen, `411` bei `Transfer-Encoding: chunked`,
+Sicherheits-Kopfzeilen an `/`, `/karten` und `/api/products`,
+`cache-control: public, max-age=60` im Erfolgsfall und `no-store` im Fehlerfall,
+und der SEC-01-Payload kommt escaped aus `GET /api/products/[id]` zurueck.
+
 ## Arbeitsweise
 
 Agents erhalten klar abgegrenzte Prüf- oder Implementierungsaufträge. Ihre Ergebnisse werden vor Übernahme geprüft. Änderungen werden anschließend lokal getestet, committed und nach GitHub gepusht.

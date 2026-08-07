@@ -5,9 +5,15 @@ import { sites } from "./build/sites-vite-plugin";
 // macOS Seatbelt blocks FSEvents, so Codex previews need polling for HMR.
 const isCodexSeatbeltSandbox = process.env.CODEX_SANDBOX === "seatbelt";
 
+// `compatibility_flags` is deliberately absent: wrangler.toml already declares
+// `nodejs_compat`, and the Cloudflare plugin merges the two configs by
+// concatenation. Declaring it here as well produced
+// `["nodejs_compat", "nodejs_compat"]`, which the Workers runtime rejects with
+// "Compatibility flag specified multiple times" — `npm run dev` would not start
+// at all. wrangler.toml stays the single source of truth for the deployed
+// Worker, as the README says.
 const localBindingConfig = {
   main: "./worker/index.ts",
-  compatibility_flags: ["nodejs_compat"],
 };
 
 export default defineConfig(async () => {

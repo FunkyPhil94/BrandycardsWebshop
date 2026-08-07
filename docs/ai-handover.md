@@ -86,7 +86,47 @@ Phase 2 läuft.
 Kartenangebote (SEC-15) und der Satz zu eBay-Bildern in der
 Datenschutzerklärung (SEC-16) — beides kein rein technischer Eingriff.
 
-**Ergebnis:** _(offen — wird nach dem Durchlauf nachgetragen)_
+**Ergebnis: ABGESCHLOSSEN.** Alle drei Phasen durchlaufen.
+
+- Phase 1: 17 Befunde, drei davon hoch. Bericht in
+  [security-findings.md](security-findings.md), Commit `4fbde38`.
+- Phase 2: 15 Befunde behoben, Commit `eff5c35`. Je Korrektur ein Test, der den
+  Angriff nachstellt; SEC-01, SEC-02 und SEC-03 wurden ohne die Korrektur
+  nachweislich rot gesehen.
+- Phase 3: Nachprüfung gegen einen **lokalen** Server, Status je Befund in der
+  Statusübersicht des Berichts, Commit `<dieser>`.
+
+**Zahlen:** `npm test` 63 → 85 Tests, alle grün. `npx tsc --noEmit` sauber.
+`npm run lint` 0 Fehler (1 vorbestehende `<img>`-Warnung).
+`npm audit` gesamt 18 → 16, *hoch* 13 → 8; produktionsseitig verbleiben 3, alle
+Bauwerkzeug aus `next` (`postcss`, `sharp`).
+
+**Nicht geschlossen, mit Absicht:**
+- **SEC-12** (eBay-OAuth-Rückseite ohne Anmeldung). Der naheliegende Fix wäre
+  falsch gewesen — eBay leitet den *Browser* um, eine Navigation trägt keinen
+  `Authorization`-Header, `requireAdmin` hätte den eBay-Anschluss blockiert
+  statt ihn zu sichern. Die richtige Lösung braucht einen Ablageort für eine
+  kurzlebige Anspruchs-Kennung, also eine Migration. Begründung steht als
+  Kommentar an der Route.
+- **SEC-15** (Aufbewahrungsfrist) — Festlegung des Betreibers, keine Technik.
+- **SEC-16**, zweite Hälfte — ein Satz zu eBay-Bildern in der
+  Datenschutzerklärung. `Referrer-Policy` ist gesetzt; den Rechtstext ändert
+  diese Sitzung nicht.
+
+**Nebenbei repariert, war vorbestehend:** `npm run dev` startete gar nicht.
+Zwei Ursachen, beide nachgemessen mit unveränderter `wrangler.toml`:
+`nodejs_compat` war doppelt deklariert (`vite.config.ts` **und**
+`wrangler.toml`), und das in `@cloudflare/vite-plugin@1.37.1` gebündelte
+`workerd` unterstützte das `compatibility_date` `2026-08-05` nicht. Behoben
+durch Streichen des Duplikats in `vite.config.ts` und Anheben von
+`@cloudflare/vite-plugin` auf 1.51.0 sowie `wrangler` auf 4.119.0.
+**Das `compatibility_date` selbst wurde nicht angefasst.**
+
+**WICHTIG für die nächste Sitzung: es ist noch nicht deployed.** In Produktion
+läuft der Stand *vor* diesen Korrekturen. SEC-02 wirkt ausschließlich durch den
+Deploy, weil das Rate-Limit-Binding zur Laufzeit entsteht. Der Nutzer deployt
+selbst; die Schrittfolge samt Nachprüfung steht in
+[security-findings.md](security-findings.md) unter „E-6 — Deploy".
 
 ---
 
@@ -101,18 +141,20 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
   (`startAtAvailable: false`) statt fünf willkürlicher Karten. Nach einem
   Sync-Lauf prüfen: `curl -s https://shop.brandycards.de/api/products/highlights`
   muss `"startAtAvailable": true` melden.
-- **Preisvorschlag hat keine Oberfläche mehr.** `/api/price-offers` verlangt eine
-  `PRELISTED`-Produkt-ID, aber alle 297 Produkte sind `EBAY_SYNCED`. Entweder
-  Prelisted-Produkte pflegbar machen (Admin-Oberfläche fehlt) oder die Route für
-  aktive Listings öffnen. Bis dahin gibt es dafür bewusst kein Formular.
+- ~~**Preisvorschlag hat keine Oberfläche mehr.**~~ **Veraltet, korrigiert am
+  2026-08-07:** `/api/price-offers` verlangt heute ein Produkt mit **aktivem
+  eBay-Listing** und lehnt Auktionen ab, nicht `PRELISTED`
+  (`app/api/price-offers/route.ts:34`). Das Formular existiert und ist auf der
+  Kartendetailseite eingebunden (`app/karten/[id]/page.tsx:138`).
 - **CI hat den aktuellen `main` nie geprüft.** Der Merge lief während des
   GitHub-Actions-Ausfalls vom 2026-08-06 und wurde nur lokal verifiziert. Sobald
   Actions wieder `operational` meldet, einmal den Workflow über `main` laufen
   lassen: `gh workflow run CI --ref main` oder `gh run rerun <id>`. Status prüfen:
   `curl -s https://www.githubstatus.com/api/v2/components.json`
-- **CI prüft keine Typen.** `npm test` baut nur, `npm run lint` sieht keine
-  Typfehler. Ein `tsc --noEmit`-Schritt im Workflow wäre sinnvoll — der reale
-  Typfehler in `D1PreparedStatement` ist durch alle grünen Läufe gerutscht.
+- ~~**CI prüft keine Typen.**~~ **Erledigt am 2026-08-07:** Der Workflow führt
+  jetzt `npx tsc --noEmit` aus, auditiert die Abhängigkeiten und pinnt seine
+  Actions auf Commit-SHAs statt auf bewegliche Tags.
+  **Lokal weiterhin selbst ausführen** — der Workflow läuft erst beim Push.
 - **eBay-Schreibpfad ist unterbrochen.** `mapActiveListing` setzt `ebayOfferId`
   fest auf `null`, weil `GetMyeBaySelling` nur eine ItemID liefert. Dadurch bleibt
   die `ebay_outbox` ohne Auftrag und ein bezahlter Webshop-Kauf beendet das
