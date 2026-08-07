@@ -21,20 +21,35 @@ EBAY_WRITE_ENABLED = "false"
 EBAY_RUNAME = "BrandyCards_GbR-BrandyCa-Brandy-cqibopjv"
 EBAY_OAUTH_CALLBACK_URL = "https://shop.brandycards.de/api/admin/ebay/oauth/callback"
 
-# Alle 10 Minuten statt stündlich. Jede Karte ist ein Einzelstück und steht
-# gleichzeitig hier und auf eBay; wird sie dort verkauft, erfährt der Shop es
-# erst beim nächsten Import und verkauft sie bis dahin weiter. Das Fenster
-# schrumpft damit von bis zu 60 auf bis zu 10 Minuten.
+# VORÜBERGEHEND zurück auf stündlich. Am 2026-08-07 stand hier für ein paar
+# Stunden `*/10 * * * *` — das war ein Fehler.
 #
-# Kosten: ein Lauf sind drei eBay-Aufrufe (ein Token, zwei Seiten à 200
-# Angebote bei 296 Karten). 432 statt 72 am Tag, gegen ein Standardkontingent
-# von 5 000 — unkritisch.
+# Der Grund ist nicht eBay, sondern **D1**. Gemessen mit `wrangler d1 insights`:
+# Ein Sync-Lauf schreibt rund **4 260 Zeilen**. D1 zählt Indexschreibvorgänge
+# mit (ein `update products` kostet 3 Zeilen, ein `update ebay_listings` 5),
+# und der Lauf schreibt **jedes Mal alles neu**, auch wenn sich nichts geändert
+# hat. Gegen das Free-Budget von 100 000 geschriebenen Zeilen pro Tag:
 #
-# Zweite Wirkung: `releaseExpiredReservations` hängt am selben Lauf. Eine
-# abgelaufene Reservierung wird damit nach 15–25 statt nach 15–75 Minuten
-# freigegeben, was die Bestandssperre aus SEC-03 zusätzlich entschärft.
+#   alle  3 Min   480 Läufe/Tag ~2 045 000 Zeilen = 2045 %
+#   alle 10 Min   144 Läufe/Tag  ~613 000 Zeilen  =  613 %   <- war heute aktiv
+#   stündlich      24 Läufe/Tag  ~102 000 Zeilen  =  102 %   <- Stand davor
+#   alle  2 Std    12 Läufe/Tag   ~51 000 Zeilen  =   51 %   <- jetzt
+#
+# **Selbst stündlich war schon über dem Budget.** Deshalb steht hier vorerst
+# zweistündlich — ein Notbehelf, kein Zielzustand, damit Platz für die Schreib-
+# vorgänge echter Bestellungen bleibt.
+#
+# **Die Lösung ist nicht ein langsamerer Takt, sondern ein billigerer Lauf:**
+# Der Sync muss nur schreiben, was sich tatsächlich geändert hat. Danach kostet
+# ein Lauf im Normalfall nahe null Zeilen, und drei Minuten sind problemlos.
+# Siehe docs/ai-todo.md; tests/ebay-stock-check.test.mjs hält die Kopplung
+# fest und schlägt an, wenn jemand den Takt erhöht, ohne den Lauf zu verbilligen.
+#
+# Was die längere Wartezeit erträglich macht: Die Bestandsprüfung gegen eBay
+# vor der Zahlung (lib/ebay-stock-check.ts) sichert den entscheidenden Moment
+# ohnehin ab, unabhängig vom Import-Takt.
 [triggers]
-crons = ["*/10 * * * *"]
+crons = ["0 */2 * * *"]
 
 [assets]
 binding = "ASSETS"

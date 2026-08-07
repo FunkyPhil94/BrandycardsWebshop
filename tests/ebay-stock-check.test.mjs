@@ -9,6 +9,21 @@ const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 const KARTE = (title, ebayItemId, quantity = 1) => ({ title, ebayItemId, quantity });
 const ANTWORT = (quantityAvailable, listingStatus = "Active") => ({ quantityAvailable, listingStatus });
 
+/** Wie oft am Tag ein Cron-Ausdruck feuert.
+ *
+ * Deckt die Formen ab, die hier vorkommen: `* * * * *`, `＊/N * * * *`
+ * (alle N Minuten) und `0 ＊/N * * *` (alle N Stunden). Alles Ungewohnte gilt
+ * als stündlich — lieber zu vorsichtig geschätzt als eine Grenze übersehen.
+ */
+function laeufeProTag(cron) {
+  const [minute, stunde] = cron.trim().split(/\s+/);
+  if (minute.startsWith("*/")) return 1440 / Number(minute.slice(2));
+  if (minute === "*") return 1440;
+  if (stunde?.startsWith("*/")) return 24 / Number(stunde.slice(2));
+  if (stunde === "*") return 24;
+  return 24;
+}
+
 // --- Punkt 3 aus docs/ai-todo.md -------------------------------------------
 // Jede Karte ist ein Einzelstück und steht gleichzeitig hier und auf eBay.
 // Wird sie dort verkauft, verkauft der Shop sie bis zum nächsten Import
@@ -111,9 +126,33 @@ test("der Wächter gibt bei eigenem Fehler frei statt zu blockieren", async () =
     "ein Fehler in der Prüfung selbst darf den Verkauf nicht anhalten");
 });
 
-test("der Import läuft alle zehn Minuten, sonst trägt diese Prüfung die ganze Last", async () => {
+test("der Import-Takt bleibt innerhalb des D1-Schreibbudgets", async () => {
+  // Am 2026-08-07 stand hier für ein paar Stunden `*/10 * * * *`. Das war ein
+  // Fehler: Geprüft worden war nur das eBay-Kontingent und die Laufzeit, nicht
+  // das Schreibbudget von D1.
+  //
+  // Gemessen mit `wrangler d1 insights`: ein Sync-Lauf schreibt ~4 260 Zeilen.
+  // D1 zählt Indexschreibvorgänge mit (ein `update products` kostet 3 Zeilen,
+  // ein `update ebay_listings` 5), und der Lauf schreibt jedes Mal alles neu,
+  // auch Unverändertes. Gegen 100 000 Zeilen/Tag im Free-Tarif ist damit schon
+  // stündlich die Obergrenze.
+  //
+  // Dieser Test ist kein Verbot schnellerer Takte, sondern eine Kopplung: Wer
+  // beschleunigen will, muss zuerst den Lauf billiger machen und dann
+  // ZEILEN_JE_LAUF hier senken. Siehe docs/ai-todo.md.
+  const ZEILEN_JE_LAUF = 4260;
+  const BUDGET_PRO_TAG = 100_000;
+
   const wrangler = await read("wrangler.toml");
   const cron = wrangler.match(/crons\s*=\s*\[\s*"([^"]+)"/)?.[1];
-  assert.equal(cron, "*/10 * * * *",
-    "Punkt 1 und Punkt 3 gehören zusammen: der Import verkleinert das Fenster, die Prüfung schließt den Rest");
+  assert.ok(cron, "wrangler.toml muss einen Cron deklarieren");
+
+  const zeilenProTag = Math.round(laeufeProTag(cron) * ZEILEN_JE_LAUF);
+
+  assert.ok(
+    zeilenProTag <= BUDGET_PRO_TAG,
+    `Takt "${cron}" schreibt ~${zeilenProTag.toLocaleString("de-DE")} Zeilen/Tag ` +
+    `gegen ein Budget von ${BUDGET_PRO_TAG.toLocaleString("de-DE")}. ` +
+    "Erst den Sync billiger machen (nur Änderungen schreiben), dann den Takt erhöhen.",
+  );
 });

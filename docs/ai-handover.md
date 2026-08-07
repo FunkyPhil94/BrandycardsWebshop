@@ -37,8 +37,94 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-_Kein laufender Auftrag._ Vorlage: Stand, Datum, Ziel, geplante Schritte,
-betroffene Dateien, Verifikation, Ergebnis.
+**Stand:** LÄUFT · **Datum:** 2026-08-07
+
+**Anlass:** Der Betreiber fragte, ob der Sync statt alle 10 auch alle 5 oder 3
+Minuten laufen kann. Beim Nachrechnen kam heraus, dass schon der
+10-Minuten-Takt ein Fehler war — **meiner, von heute Vormittag.**
+
+**Gemessen mit `wrangler d1 insights`, letzte 24 h:**
+
+| | |
+|---|---|
+| geschriebene Zeilen | **115 026** |
+| Sync-Läufe darin | ~27 (also im Wesentlichen stündlich) |
+| Kosten je Lauf | **~4 260 Zeilen** |
+
+Hochgerechnet gegen das dokumentierte Free-Budget von **100 000 geschriebenen
+Zeilen pro Tag**:
+
+| Takt | Läufe/Tag | Zeilen/Tag | Anteil |
+|---|---|---|---|
+| stündlich | 24 | 102 000 | **102 %** |
+| alle 10 Min *(heute deployed)* | 144 | 613 000 | **613 %** |
+| alle 5 Min | 288 | 1 227 000 | 1227 % |
+| alle 3 Min | 480 | 2 045 000 | 2045 % |
+
+**Was ich heute früh falsch gemacht habe:** Ich habe das eBay-Kontingent
+nachgerechnet (3 Aufrufe je Lauf, unkritisch) und die Laufzeit gemessen (77 s),
+aber **das D1-Schreibbudget nicht angesehen** — obwohl der Free-Tarif am selben
+Tag als Begründung für die Hochstufung von SEC-05 diente. Der Fehler war,
+*eine* Ressourcengrenze zu prüfen und daraus „unkritisch" zu schließen.
+
+**Warum ein Lauf so teuer ist:** D1 zählt **Indexschreibvorgänge mit**. Ein
+`update products` kostet laut Messung 3 Zeilen, ein `update ebay_listings` 5.
+Vor allem aber schreibt der Sync **jedes Mal alles neu**, auch wenn sich nichts
+geändert hat — 294 Listings mal Produkt, Listing, Bestand, alle Bilder gelöscht
+und neu eingefügt, plus ein `sync_event` je Listing. Die vier teuersten
+Abfragen der letzten 24 h:
+
+```
+31 692  insert sync_events      (ein Ereignis je Listing je Lauf, meist "UPDATED" ohne Änderung)
+26 085  update ebay_listings
+25 491  update products
+18 048  insert product_assets   (jedes Bild jedes Mal geloescht und neu eingefuegt)
+```
+
+**Schritt 1 (dieser Eintrag): Cron sofort zurück auf stündlich.** Nicht die
+Lösung, aber es stoppt das Ausbluten. Das Risiko ist heute klein, weil die
+Bestandsprüfung vor der Zahlung (heute gebaut) den entscheidenden Moment
+ohnehin absichert und der Shop noch keine echten Kunden hat.
+
+**Schritt 2 (danach, die eigentliche Arbeit): Der Sync darf nur schreiben, was
+sich geändert hat.** Dann kostet ein Lauf im Normalfall nahe null Zeilen, und
+**3 Minuten wären problemlos möglich.** Dasselbe Muster wie bei SEC-09.
+Zusätzlich: `sync_events` nur noch bei echten Ereignissen schreiben, nicht bei
+jedem unveränderten Listing — die Tabelle wächst sonst um ~42 000 Zeilen/Tag.
+
+**Unsicherheit, ausdrücklich:** Die 100 000 sind der dokumentierte Free-Wert,
+nicht der im Dashboard abgelesene. Der Betreiber sollte ihn unter *Workers &
+Pages → D1 → brandycards-production → Metrics* bestätigen. Am Verhältnis
+ändert das nichts: 10 Minuten sind das Sechsfache von stündlich.
+
+**Ergebnis: Schritt 1 erledigt, Schritt 2 steht aus.**
+
+Deployed als Version `2557ca3d`, `schedule: 0 */2 * * *` im Protokoll bestätigt.
+**Zweistündlich, nicht stündlich** — beim Schreiben des Tests kam heraus, dass
+auch stündlich mit 102 % schon über dem Budget lag. Zweistündlich sind 51 %
+und lassen Platz für die Schreibvorgänge echter Bestellungen.
+
+`tests/ebay-stock-check.test.mjs` enthält jetzt einen Test, der den Cron gegen
+das Budget rechnet. Gegenprobe gemacht: Er lehnt `0 * * * *`, `*/10 * * * *`
+und `*/3 * * * *` ab und lässt `0 */2 * * *` durch. Er ist bewusst kein Verbot
+schneller Takte, sondern eine **Kopplung**: Wer beschleunigen will, muss zuerst
+`ZEILEN_JE_LAUF` senken — und das geht nur, indem der Lauf wirklich billiger
+wird.
+
+`npm test` 119 Tests grün, `tsc` sauber, Lint 0 Fehler.
+
+**Schritt 2 ist die eigentliche Arbeit und steht als Punkt 1 in
+[ai-todo.md](ai-todo.md):** Der Sync darf nur schreiben, was sich geändert hat.
+Er kostet heute ~4 260 Zeilen je Lauf, obwohl sich zwischen zwei Läufen fast
+nie etwas ändert — 294 Listings werden samt Produkt, Bestand und **allen
+Bildern** gelöscht und neu eingefügt, plus ein `sync_event` je Listing. Danach
+kostet ein Lauf im Normalfall nahe null, und die ursprünglich gewünschten drei
+Minuten sind problemlos.
+
+**Der Betreiber wollte eigentlich mit den Kunden-E-Mails weitermachen.** Diese
+Sache kam dazwischen, weil sie zeitkritisch war — der 10-Minuten-Takt hätte das
+Tagesbudget noch heute Abend aufgebraucht, und dann scheitern auch die
+Schreibvorgänge echter Bestellungen.
 
 ---
 
@@ -97,7 +183,7 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
   Folge: Inline-Eventhandler sind erlaubt, ein künftiges `<img onerror=…>`
   liefe. Was greift, ist die zweite Hälfte — keine fremden Skripte, kein
   Übertragungsziel außer dieser Herkunft und Supabase. Voller Schutz braucht
-  Nonces, Punkt 2a in [ai-todo.md](ai-todo.md).
+  Nonces, Punkt 3a in [ai-todo.md](ai-todo.md).
 - **HSTS ist gesetzt**, als `max-age=31536000` **ohne** `includeSubDomains` und
   **ohne** `preload`. Rückweg, falls je nötig: `max-age=0` setzen und deployen —
   das funktioniert nur, weil `preload` fehlt.
@@ -526,7 +612,7 @@ Inline-Skripte je Seite, `script-src` braucht deshalb `'unsafe-inline'` — und
 damit sind Inline-Eventhandler erlaubt. Ein künftiges `<img onerror=…>` liefe.
 Was greift, ist die zweite Hälfte: keine fremden Skripte, kein Ziel außerhalb
 dieser Herkunft und Supabase. Der Weg zur vollen Wirkung sind Nonces, siehe
-Punkt 2a in [ai-todo.md](ai-todo.md).
+Punkt 3a in [ai-todo.md](ai-todo.md).
 
 **HSTS gesetzt als `max-age=31536000`**, bewusst **ohne** `includeSubDomains`
 (bände fremde Hosts unter `brandycards.de` mit) und **ohne** `preload` (der

@@ -14,32 +14,98 @@ dabei, damit niemand den Gesprächsverlauf braucht.
 ## Warum diese Reihenfolge
 
 **Stand 2026-08-07:** Die Sicherheitsprüfung ist durch und deployed, und die
-beiden billigen Maßnahmen gegen Doppelverkäufe sind gebaut (Import alle zehn
-Minuten, Bestandsprüfung vor der Zahlung). Damit hat sich die Rangfolge
+Bestandsprüfung vor der Zahlung ist gebaut. Damit hat sich die Rangfolge
 verschoben.
 
-Zwei Überlegungen bestimmen sie jetzt:
+Drei Überlegungen bestimmen sie jetzt:
 
-1. **Der Shop konnte bis heute niemandem verkaufen.** Der Checkout verlangt ein
+1. **Etwas läuft gerade an einer Grenze.** Der Sync schreibt rund 4 260
+   D1-Zeilen je Lauf und lag damit selbst stündlich bei 102 % des
+   Free-Budgets. Der Cron steht deshalb notgedrungen auf zweistündlich, was
+   das Doppelverkaufsfenster wieder aufreißt. Solange das so ist, blockiert es
+   jede Beschleunigung — und irgendwann auch die Schreibvorgänge echter
+   Bestellungen. Deshalb steht es ganz oben.
+2. **Der Shop konnte bis heute niemandem verkaufen.** Der Checkout verlangt ein
    Konto, ein Konto verlangt eine bestätigte E-Mail-Adresse — und die
    Bestätigungslinks zeigten auf `localhost` (SEC-18). Diese Tür ist seit
    heute offen. Was jetzt zählt, ist, dass der erste echte Kauf **vollständig**
-   funktioniert. Genau dort klafft die größte Lücke: Wer zahlt, bekommt keine
-   Bestätigung. Deshalb stehen die Kunden-E-Mails ganz oben.
-2. **Was kann Geld kosten?** Alle 296 Karten sind Einzelstücke und stehen
+   funktioniert. Dort klafft die nächste Lücke: Wer zahlt, bekommt keine
+   Bestätigung.
+3. **Was kann Geld kosten?** Alle 296 Karten sind Einzelstücke und stehen
    gleichzeitig hier und auf eBay. Ein Doppelverkauf bedeutet Rückerstattung,
    verärgerte Kunden und — bei eBay-Stornos — eine Verschlechterung des
    Verkäuferstatus. Die Richtung „auf eBay verkauft, Shop weiß es nicht" ist
-   jetzt weitgehend abgedeckt. Die andere Richtung — „im Shop verkauft, eBay
+   am Zahlungsmoment abgedeckt. Die andere Richtung — „im Shop verkauft, eBay
    weiß es nicht" — ist **offen** und wird mit jedem Verkauf wahrscheinlicher.
    Das ist Punkt 6, der große Brocken, und er muss vor jeder Werbung stehen.
 
-Kurz: **erst den Kaufweg zu Ende bauen, dann den eBay-Schreibpfad, dann
-bewerben, zuletzt ausbauen.**
+Kurz: **erst die Grenze entschärfen, dann den Kaufweg zu Ende bauen, dann den
+eBay-Schreibpfad, dann bewerben.**
 
 ---
 
-## 1. Kunden-E-Mails
+## 1. Der Sync darf nur schreiben, was sich geändert hat
+
+**Aufwand:** mittel · **Hängt an:** nichts · **Blockiert:** jeden schnelleren
+Import-Takt
+
+**Warum ganz oben:** Am 2026-08-07 mit `wrangler d1 insights` gemessen — ein
+Sync-Lauf schreibt **~4 260 Zeilen**. Gegen das Free-Budget von 100 000
+geschriebenen Zeilen pro Tag:
+
+| Takt | Läufe/Tag | Zeilen/Tag | Anteil |
+|---|---|---|---|
+| alle 3 Min | 480 | 2 045 000 | 2045 % |
+| alle 10 Min | 144 | 613 000 | 613 % |
+| stündlich | 24 | 102 000 | **102 %** |
+| alle 2 Std *(jetzt)* | 12 | 51 000 | 51 % |
+
+**Auch stündlich war schon über dem Budget.** Der Cron steht deshalb vorerst
+auf zweistündlich — ein Notbehelf, der das Doppelverkaufsfenster wieder
+vergrößert.
+
+**Warum ein Lauf so teuer ist:** D1 zählt Indexschreibvorgänge mit (ein
+`update products` kostet 3 Zeilen, ein `update ebay_listings` 5). Vor allem
+aber schreibt der Lauf **jedes Mal alles neu**, obwohl sich zwischen zwei
+Läufen fast nie etwas ändert. Die vier teuersten Abfragen in 24 Stunden:
+
+```
+31 692  insert sync_events     ein Ereignis je Listing je Lauf, meist "UPDATED" ohne Änderung
+26 085  update ebay_listings   identische Daten neu geschrieben
+25 491  update products        identische Titel und Beschreibungen neu geschrieben
+18 048  insert product_assets  alle Bilder jedes Mal gelöscht und neu eingefügt
+```
+
+**Wie:** In `lib/ebay-sync.ts` je Listing vergleichen, was in `mapped` steht,
+mit dem, was schon in der Datenbank liegt — und den ganzen Batch überspringen,
+wenn nichts abweicht. Dieselbe Bewegung wie bei SEC-09 in `lib/app-user.ts`.
+Im Einzelnen:
+- **`product_assets` nicht blind löschen und neu einfügen.** Sind die
+  `sourceUrl`-Listen gleich, gar nichts anfassen. Das allein sind ~18 000 der
+  gemessenen Zeilen.
+- **`sync_events` nur bei echten Ereignissen** schreiben: `IMPORTED`,
+  `DEACTIVATED`, `FAILED`. Ein `UPDATED` für ein unverändertes Listing hat
+  keinen Aussagewert und kostet ~31 700 Zeilen. Nebenwirkung: Die Tabelle
+  wächst heute um ~42 000 Zeilen pro Tag; sie hatte am 2026-08-07 bereits
+  9 616 Zeilen.
+- **`lastSyncedAt` nicht als Grund zum Schreiben nehmen.** Wenn nur dieses
+  Feld sich ändert, ist der Schreibvorgang die einzige Änderung — und kostet
+  mit Index mehr, als er wert ist. Entweder weglassen oder bewusst seltener
+  aktualisieren.
+
+**Achtung:** Der Vergleich muss `rawData` und `shippingData` einbeziehen oder
+sie bewusst ausklammern — sonst schreibt ein wechselndes JSON-Feld weiter jedes
+Mal alles neu, und die Ersparnis verpufft still.
+
+**Fertig, wenn:** `wrangler d1 insights brandycards-production --timePeriod 1d
+--sort-by writes` zeigt nach einem Tag deutlich weniger geschriebene Zeilen,
+und `ZEILEN_JE_LAUF` in `tests/ebay-stock-check.test.mjs` kann auf den neuen
+Messwert gesenkt werden. **Erst dann** darf der Cron wieder beschleunigt
+werden — der Test dort erzwingt genau diese Reihenfolge.
+
+---
+
+## 2. Kunden-E-Mails
 
 **Aufwand:** mittel · **Hängt an:** nichts · **Blockiert:** Punkt 7
 
@@ -76,7 +142,7 @@ nötig, bei Werbung schon.
 
 ---
 
-## 2. ~~Sicherheitskorrekturen deployen~~ — ERLEDIGT am 2026-08-07
+## 3. ~~Sicherheitskorrekturen deployen~~ — ERLEDIGT am 2026-08-07
 
 Deployed als Version `1cfd52f1`, HSTS nachgezogen als `650c189a`. In Produktion
 nachgeprüft: `/account` und `/admin` laden, alle Kopfzeilen gesetzt, CSP
@@ -116,7 +182,7 @@ belegt (10 Anfragen durch, dann `429` mit `retry-after: 60`).
 
 ---
 
-## 2a. CSP ohne `'unsafe-inline'`: Nonces für die Inline-Skripte
+## 3a. CSP ohne `'unsafe-inline'`: Nonces für die Inline-Skripte
 
 **Aufwand:** mittel · **Hängt an:** nichts · **Nicht nebenbei erledigen**
 
@@ -148,7 +214,7 @@ ohne Konsolenfehler bedienbar — **lokal geprüft, bevor deployed wird.**
 
 ---
 
-## 2b. ~~Bestand live prüfen, bevor Geld fließt~~ — ERLEDIGT am 2026-08-07
+## 3b. ~~Bestand live prüfen, bevor Geld fließt~~ — ERLEDIGT am 2026-08-07
 
 Geprüft wird jetzt an zwei Stellen: in `app/api/paypal/orders/route.ts` vor dem
 Gang zu PayPal (damit der Kunde es früh erfährt) und in
@@ -342,27 +408,35 @@ sind.
 
 _(Erledigte Punkte hierher verschieben, mit Datum und Commit.)_
 
-### Sync alle 10 Minuten statt stündlich — 2026-08-07
+### ~~Sync alle 10 Minuten statt stündlich~~ — 2026-08-07, ZURÜCKGENOMMEN
 
-`wrangler.toml`: `crons = ["0 * * * *"]` → `["*/10 * * * *"]`. Deployed als
-Version `0b25ae0f`, im Deploy-Protokoll als `schedule: */10 * * * *` bestätigt.
+Deployed als `0b25ae0f` (10:45 UTC), **am selben Tag um 12:0x zurückgenommen**
+auf `0 */2 * * *` (Version `2557ca3d`).
 
-Das Fenster „auf eBay verkauft, Shop weiß es nicht" schrumpft von bis zu 60 auf
-bis zu 10 Minuten. Kosten nachgerechnet statt geschätzt: **drei** eBay-Aufrufe
-je Lauf (ein Token, zwei Seiten à 200 Angebote bei 296 Karten), also 432 statt
-72 am Tag gegen ein Standardkontingent von 5 000.
+**Warum zurückgenommen — ein Fehler beim Prüfen, nicht beim Bauen.** Vor dem
+Deploy hatte ich zwei Grenzen nachgerechnet und daraus „unkritisch" geschlossen:
+das eBay-Kontingent (drei Aufrufe je Lauf, 432 statt 72 am Tag gegen 5 000) und
+die Laufzeit (77 Sekunden gegen 600 Sekunden Abstand). Beide Zahlen stimmen.
 
-**Zweite Wirkung, die leicht übersehen wird:** `releaseExpiredReservations`
-hängt am selben Lauf. Eine abgelaufene Reservierung wird jetzt nach 15–25 statt
-nach 15–75 Minuten freigegeben — das entschärft die Bestandssperre aus SEC-03
-zusätzlich zur dort eingebauten Obergrenze.
+**Die dritte Grenze habe ich nicht angesehen: das D1-Schreibbudget.** Gemessen
+mit `wrangler d1 insights` schreibt ein Lauf ~4 260 Zeilen. Der 10-Minuten-Takt
+läge damit bei 613 % des Free-Budgets von 100 000 Zeilen pro Tag — und selbst
+der stündliche Stand davor bei 102 %.
 
-**Nachgemessen und bestätigt:** Erster Lauf im neuen Takt am 2026-08-07 um
-10:50:40 UTC, beendet 10:51:57, `SUCCEEDED`, 294 aktualisiert, 0 Fehler.
-**Korrektur einer Zahl aus dem ursprünglichen Eintrag:** Ein Lauf dauert nicht
-„rund 30 Sekunden", sondern **rund 77**. Für einen 10-Minuten-Takt ist das
-weiterhin unkritisch (77 s gegen 600 s Abstand), aber wer die Frequenz je
-weiter erhöhen will, sollte mit der richtigen Zahl rechnen.
+Besonders ärgerlich, weil der Free-Tarif am selben Tag schon einmal Thema war:
+Er war der Grund, SEC-05 von *mittel* auf *hoch* hochzustufen. Die Lehre ist
+nicht „mehr rechnen", sondern: **Wenn eine Änderung die Frequenz einer Schleife
+erhöht, sind alle Ressourcen dieser Schleife zu prüfen, nicht die
+naheliegendste.**
+
+Was aus dem Eintrag richtig bleibt: Ein Lauf dauert **rund 77 Sekunden**, nicht
+die ursprünglich behaupteten 30. Und `releaseExpiredReservations` hängt am
+selben Cron — bei zweistündlichem Takt kommt eine abgelaufene Reservierung
+jetzt nach 15–135 Minuten zurück statt nach 15–75. Die Obergrenze aus SEC-03
+begrenzt den Schaden weiterhin.
+
+**Der Weg zurück zu schnellen Takten steht als Punkt 1 oben** — er führt über
+einen billigeren Lauf, nicht über einen anderen Cron-Ausdruck.
 
 ### Vollständige Sicherheitsprüfung — 2026-08-07
 
