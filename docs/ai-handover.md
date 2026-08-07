@@ -37,8 +37,38 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-_Kein laufender Auftrag._ Vorlage: Stand, Datum, Ziel, geplante Schritte,
-betroffene Dateien, Verifikation, Ergebnis.
+**Stand:** LÄUFT · **Datum:** 2026-08-07
+
+**Ziel:** Sicherheitsprüfung nach [security-audit-brief.md](security-audit-brief.md)
+in drei Phasen: (1) prüfen und nach `docs/security-findings.md` berichten,
+(2) Befunde nach Schweregrad beheben, (3) nachprüfen und Status je Befund
+eintragen.
+
+**Arbeitsort:** Worktree `.claude/worktrees/brandycards-security-audit-929953`,
+Branch `claude/brandycards-security-audit-929953`, ausgehend von
+`origin/agent/initial-brandycards` (0504567). Commits gehen am Ende nach
+`agent/initial-brandycards`, **nicht** nach `main`.
+
+**Geplante Schritte:**
+1. Phase 1 — Codeprüfung aller Endpunkte, Vertrauensgrenzen und der zwölf
+   Verdachtsmomente; Bericht nach `docs/security-findings.md`.
+2. Phase 1 — Rückmeldung an den Nutzer, **bevor** behoben wird.
+3. Phase 2 — Korrekturen nach Schweregrad, je mit einem Test, der den Angriff
+   nachstellt und ohne die Korrektur rot ist.
+4. Phase 3 — Nachprüfen, Status je Befund, Gesamteinschätzung.
+
+**Betroffene Dateien (erwartet):** `docs/security-findings.md` (neu),
+`lib/ebay-description.ts`, `lib/rate-limit.ts`, `wrangler.toml`,
+`app/api/**`, `tests/**`.
+
+**Verifikation:** `npx tsc --noEmit`, `npm run lint`, `npm test`. Kein Deploy
+ohne ausdrückliche Freigabe — dieser Worktree hat **kein** `.env.local`, ein
+Build hier liefert ein Bundle, in dem `/admin` und `/account` brechen.
+
+**Grenzen:** keine Angriffe, Lasttests oder schreibenden Eingriffe gegen die
+Produktion. Lesende D1-Abfragen und normale Seitenaufrufe sind erlaubt.
+
+**Ergebnis:** _(offen — wird nach dem Durchlauf nachgetragen)_
 
 ---
 
