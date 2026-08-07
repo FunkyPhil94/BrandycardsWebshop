@@ -37,8 +37,24 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-_Kein laufender Auftrag._ Vorlage: Stand, Datum, Ziel, geplante Schritte,
-betroffene Dateien, Verifikation, Ergebnis.
+- **Stand:** LÄUFT
+- **Datum:** 2026-08-07
+- **Ziel:** Die drei verbliebenen „Fußballkarten"-Stellen auf **„Sammelkarten"**
+  umstellen: die beiden Seitenbeschreibungen (`app/layout.tsx:6`,
+  `app/ueber-uns/page.tsx:7`) und den Absatz über die beiden Brüder
+  (`app/ueber-uns/page.tsx:17`). Der Betreiber hat das ausdrücklich für alle
+  drei angeordnet, also auch für die Tatsachenaussage, bei der ich vorher
+  nachgefragt hatte.
+- **Sprachlich zu beachten:** Die Beschreibung in `layout.tsx` lautet heute
+  „Ausgewählte Fußball-Trading-Cards **für Sammler**". Ein bloßes Ersetzen
+  ergäbe „Sammelkarten für Sammler" — die Dopplung wird beim Umbau aufgelöst.
+- **Bleibt bewusst stehen:** „Sportkarten" im Banner und „THE HOME OF SPORTS
+  CARDS" darüber. Der Auftrag galt den drei genannten Stellen. Dass der Shop
+  damit an einer Stelle von Sportkarten und sonst von Sammelkarten spricht,
+  wird dem Betreiber genannt.
+- **Betroffen:** `app/layout.tsx`, `app/ueber-uns/page.tsx`. Nur Text.
+- **Verifikation:** Kein „Fußball" mehr in sichtbarem Text oder in den
+  Beschreibungen; die Über-uns-Seite im Browser ansehen.
 
 ---
 
