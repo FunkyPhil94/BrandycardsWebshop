@@ -49,7 +49,7 @@ Minuten laufen kann. Beim Nachrechnen kam heraus, dass schon der
 |---|---|
 | geschriebene Zeilen | **115 026** |
 | Sync-Läufe darin | ~27 (also im Wesentlichen stündlich) |
-| Kosten je Lauf | **~4 260 Zeilen** |
+| Kosten je Lauf | **~5 396 Zeilen** |
 
 Hochgerechnet gegen das dokumentierte Free-Budget von **100 000 geschriebenen
 Zeilen pro Tag**:
@@ -115,7 +115,7 @@ wird.
 
 **Schritt 2 ist die eigentliche Arbeit und steht als Punkt 1 in
 [ai-todo.md](ai-todo.md):** Der Sync darf nur schreiben, was sich geändert hat.
-Er kostet heute ~4 260 Zeilen je Lauf, obwohl sich zwischen zwei Läufen fast
+Er kostet heute ~5 396 Zeilen je Lauf, obwohl sich zwischen zwei Läufen fast
 nie etwas ändert — 294 Listings werden samt Produkt, Bestand und **allen
 Bildern** gelöscht und neu eingefügt, plus ein `sync_event` je Listing. Danach
 kostet ein Lauf im Normalfall nahe null, und die ursprünglich gewünschten drei

@@ -19,7 +19,7 @@ verschoben.
 
 Drei Überlegungen bestimmen sie jetzt:
 
-1. **Etwas läuft gerade an einer Grenze.** Der Sync schreibt rund 4 260
+1. **Etwas läuft gerade an einer Grenze.** Der Sync schreibt rund 5 400
    D1-Zeilen je Lauf und lag damit selbst stündlich bei 102 % des
    Free-Budgets. Der Cron steht deshalb notgedrungen auf zweistündlich, was
    das Doppelverkaufsfenster wieder aufreißt. Solange das so ist, blockiert es
@@ -50,19 +50,32 @@ eBay-Schreibpfad, dann bewerben.**
 Import-Takt
 
 **Warum ganz oben:** Am 2026-08-07 mit `wrangler d1 insights` gemessen — ein
-Sync-Lauf schreibt **~4 260 Zeilen**. Gegen das Free-Budget von 100 000
+Sync-Lauf schreibt **~5 396 Zeilen**. Gegen das Free-Budget von 100 000
 geschriebenen Zeilen pro Tag:
 
 | Takt | Läufe/Tag | Zeilen/Tag | Anteil |
 |---|---|---|---|
-| alle 3 Min | 480 | 2 045 000 | 2045 % |
-| alle 10 Min | 144 | 613 000 | 613 % |
-| stündlich | 24 | 102 000 | **102 %** |
-| alle 2 Std *(jetzt)* | 12 | 51 000 | 51 % |
+| alle 3 Min | 480 | 2 590 000 | 2590 % |
+| alle 10 Min | 144 | 777 000 | 777 % |
+| stündlich | 24 | 130 000 | **130 %** |
+| alle 2 Std *(jetzt)* | 12 | 65 000 | 65 % |
 
 **Auch stündlich war schon über dem Budget.** Der Cron steht deshalb vorerst
 auf zweistündlich — ein Notbehelf, der das Doppelverkaufsfenster wieder
 vergrößert.
+
+**Nach der Korrektur ist das Budget kein Thema mehr.** Bleiben nur noch die
+beiden `sync_runs`-Schreibvorgänge je Lauf (Anlegen und Abschließen, mit Index
+~6 Zeilen), kostet ein Lauf ohne Änderungen fast nichts:
+
+| Takt | Zeilen geschrieben/Tag | Anteil | Zeilen gelesen/Tag | Anteil |
+|---|---|---|---|---|
+| alle 3 Min | ~2 900 | **3 %** | ~960 000 | **19 %** |
+
+Der begrenzende Faktor kippt dabei von den Schreib- auf die **Lesevorgänge** —
+die bleiben, weil der Lauf zum Vergleichen weiter alles lesen muss (~2 000
+Zeilen: 538 Listings zweimal, 539 Bestände, 302 Bilder). 19 % von 5 Mio. lassen
+reichlich Raum für den Shop selbst.
 
 **Warum ein Lauf so teuer ist:** D1 zählt Indexschreibvorgänge mit (ein
 `update products` kostet 3 Zeilen, ein `update ebay_listings` 5). Vor allem
@@ -419,7 +432,7 @@ das eBay-Kontingent (drei Aufrufe je Lauf, 432 statt 72 am Tag gegen 5 000) und
 die Laufzeit (77 Sekunden gegen 600 Sekunden Abstand). Beide Zahlen stimmen.
 
 **Die dritte Grenze habe ich nicht angesehen: das D1-Schreibbudget.** Gemessen
-mit `wrangler d1 insights` schreibt ein Lauf ~4 260 Zeilen. Der 10-Minuten-Takt
+mit `wrangler d1 insights` schreibt ein Lauf ~5 396 Zeilen. Der 10-Minuten-Takt
 läge damit bei 613 % des Free-Budgets von 100 000 Zeilen pro Tag — und selbst
 der stündliche Stand davor bei 102 %.
 

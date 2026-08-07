@@ -131,7 +131,7 @@ test("der Import-Takt bleibt innerhalb des D1-Schreibbudgets", async () => {
   // Fehler: Geprüft worden war nur das eBay-Kontingent und die Laufzeit, nicht
   // das Schreibbudget von D1.
   //
-  // Gemessen mit `wrangler d1 insights`: ein Sync-Lauf schreibt ~4 260 Zeilen.
+  // Gemessen mit `wrangler d1 insights`: ein Sync-Lauf schreibt ~5 396 Zeilen.
   // D1 zählt Indexschreibvorgänge mit (ein `update products` kostet 3 Zeilen,
   // ein `update ebay_listings` 5), und der Lauf schreibt jedes Mal alles neu,
   // auch Unverändertes. Gegen 100 000 Zeilen/Tag im Free-Tarif ist damit schon
@@ -140,7 +140,7 @@ test("der Import-Takt bleibt innerhalb des D1-Schreibbudgets", async () => {
   // Dieser Test ist kein Verbot schnellerer Takte, sondern eine Kopplung: Wer
   // beschleunigen will, muss zuerst den Lauf billiger machen und dann
   // ZEILEN_JE_LAUF hier senken. Siehe docs/ai-todo.md.
-  const ZEILEN_JE_LAUF = 4260;
+  const ZEILEN_JE_LAUF = 5396;
   const BUDGET_PRO_TAG = 100_000;
 
   const wrangler = await read("wrangler.toml");

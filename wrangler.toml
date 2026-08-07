@@ -25,15 +25,15 @@ EBAY_OAUTH_CALLBACK_URL = "https://shop.brandycards.de/api/admin/ebay/oauth/call
 # Stunden `*/10 * * * *` — das war ein Fehler.
 #
 # Der Grund ist nicht eBay, sondern **D1**. Gemessen mit `wrangler d1 insights`:
-# Ein Sync-Lauf schreibt rund **4 260 Zeilen**. D1 zählt Indexschreibvorgänge
+# Ein Sync-Lauf schreibt rund **5 396 Zeilen**. D1 zählt Indexschreibvorgänge
 # mit (ein `update products` kostet 3 Zeilen, ein `update ebay_listings` 5),
 # und der Lauf schreibt **jedes Mal alles neu**, auch wenn sich nichts geändert
 # hat. Gegen das Free-Budget von 100 000 geschriebenen Zeilen pro Tag:
 #
-#   alle  3 Min   480 Läufe/Tag ~2 045 000 Zeilen = 2045 %
-#   alle 10 Min   144 Läufe/Tag  ~613 000 Zeilen  =  613 %   <- war heute aktiv
-#   stündlich      24 Läufe/Tag  ~102 000 Zeilen  =  102 %   <- Stand davor
-#   alle  2 Std    12 Läufe/Tag   ~51 000 Zeilen  =   51 %   <- jetzt
+#   alle  3 Min   480 Läufe/Tag ~2 590 000 Zeilen = 2590 %
+#   alle 10 Min   144 Läufe/Tag  ~777 000 Zeilen  =  777 %   <- war heute aktiv
+#   stündlich      24 Läufe/Tag  ~130 000 Zeilen  =  130 %   <- Stand davor
+#   alle  2 Std    12 Läufe/Tag   ~65 000 Zeilen  =   65 %   <- jetzt
 #
 # **Selbst stündlich war schon über dem Budget.** Deshalb steht hier vorerst
 # zweistündlich — ein Notbehelf, kein Zielzustand, damit Platz für die Schreib-
