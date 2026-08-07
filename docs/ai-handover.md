@@ -186,11 +186,11 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
   eBay-Listing** und lehnt Auktionen ab, nicht `PRELISTED`
   (`app/api/price-offers/route.ts:34`). Das Formular existiert und ist auf der
   Kartendetailseite eingebunden (`app/karten/[id]/page.tsx:138`).
-- **CI hat den aktuellen `main` nie geprüft.** Der Merge lief während des
-  GitHub-Actions-Ausfalls vom 2026-08-06 und wurde nur lokal verifiziert. Sobald
-  Actions wieder `operational` meldet, einmal den Workflow über `main` laufen
-  lassen: `gh workflow run CI --ref main` oder `gh run rerun <id>`. Status prüfen:
-  `curl -s https://www.githubstatus.com/api/v2/components.json`
+- ~~**CI hat den aktuellen `main` nie geprüft.**~~ **Erledigt am 2026-08-07:**
+  `main` wurde auf `c4abc9c` vorgespult und zeigt damit auf einen Commit, dessen
+  CI-Lauf grün war (130/130). `main` und `agent/initial-brandycards` stehen auf
+  demselben Baum. **Deployt wird weiterhin aus `agent/initial-brandycards`** —
+  das Hauptverzeichnis steht darauf ausgecheckt, und dort liegt `.env.local`.
 - ~~**CI prüft keine Typen.**~~ **Erledigt am 2026-08-07:** Der Workflow führt
   jetzt `npx tsc --noEmit` aus, auditiert die Abhängigkeiten und pinnt seine
   Actions auf Commit-SHAs statt auf bewegliche Tags.
@@ -222,6 +222,41 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
 ---
 
 ## Historie
+
+### 2026-08-07 — main auf den Arbeitsstand vorgespult (53 Commits)
+
+- **Stand:** ABGESCHLOSSEN
+- **Datum:** 2026-08-07
+- **Ziel:** `main` auf den Arbeitsstand bringen. Der Branch hängt **53 Commits**
+  zurück (`a36e626`, der Merge von heute Mittag), während
+  `agent/initial-brandycards` auf `c4abc9c` steht.
+- **Ausgangslage:** `main` ist ein **direkter Vorfahr** — keine Divergenz, kein
+  Konflikt, ein reiner Fast-Forward. `main` ist **nicht** branch-protected, aber
+  **Default-Branch**: Wer das Repository klont, bekommt derzeit den Stand von
+  heute Mittag. Die Spitze `c4abc9c` ist **grün durch die CI**
+  (Lauf zu `c4abc9c`, 130/130).
+  Produktion ist nicht betroffen — deployt wird aus
+  `agent/initial-brandycards`.
+- **Warum jetzt und nicht wie beim letzten Mal:** Derselbe Schritt stand am
+  2026-08-06 schon einmal an und scheiterte damals an der Berechtigungsprüfung
+  der Umgebung, nicht am Inhalt. Zusätzlich lief die CI damals gar nicht
+  (GitHub-Actions-Ausfall); diesmal ist die Spitze geprüft.
+- **Geplante Schritte:** `git push origin origin/agent/initial-brandycards:main`
+  (Fast-Forward, kein Merge-Commit, keine Historie umgeschrieben).
+- **Betroffen:** Branch `main` auf GitHub. **Kein Code, kein Deployment, keine
+  Datenbank.** Der Branch `agent/initial-brandycards` bleibt bestehen — das
+  Hauptverzeichnis steht darauf ausgecheckt.
+- **Verifikation:** `main` und `agent/initial-brandycards` zeigen anschließend
+  auf **denselben Baum** (`git rev-parse <branch>^{tree}` vergleichen).
+- **Rückweg:** `git push --force origin a36e626:main` stellt den alten Stand
+  wieder her. Möglich, weil nichts umgeschrieben, nur vorgespult wird.
+- **Ergebnis: ABGESCHLOSSEN.** `a36e626..c4abc9c` als Fast-Forward auf `main`
+  gepusht. Nachgeprüft: Abstand zwischen `origin/main` und
+  `origin/agent/initial-brandycards` ist **0/0**, beide zeigen auf denselben
+  Baum `c4dafc9`, und die GitHub-API meldet für `main` ebenfalls `c4abc9c`.
+  Damit ist der Punkt geschlossen, der seit dem 2026-08-06 offen war.
+  `agent/initial-brandycards` wurde **nicht** gelöscht — das Hauptverzeichnis
+  steht darauf ausgecheckt, und von dort wird deployed.
 
 ### 2026-08-07 — CI wieder grün, Kopfleiste verschlankt (21bd0667)
 
