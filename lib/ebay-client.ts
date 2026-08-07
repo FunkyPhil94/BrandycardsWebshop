@@ -33,13 +33,36 @@ function apiBase(environment: EbayEnvironment) {
   return environment === "sandbox" ? "https://api.sandbox.ebay.com" : "https://api.ebay.com";
 }
 
+/** Obergrenze für einen einzelnen eBay-Aufruf.
+ *
+ * Großzügiger als die 10 s bei PayPal: Ein `GetMyeBaySelling` über ~300
+ * Angebote ist eine schwere Antwort, und ein Importlauf darf länger dauern als
+ * ein Kunde am Bezahlknopf. Entscheidend ist nicht die Höhe, sondern dass es
+ * die Grenze überhaupt gibt — ohne sie wartet ein Lauf unbegrenzt und nimmt
+ * die Sperre mit ins Grab (siehe `lib/sync-lock.ts`).
+ *
+ * Über `EBAY_FETCH_TIMEOUT_MS` übersteuerbar, damit Tests nicht 30 s warten
+ * müssen, um zu belegen, dass abgebrochen wird.
+ */
+export const EBAY_FETCH_TIMEOUT_MS = 30_000;
+
+function fetchTimeoutMs() {
+  const configured = Number(process.env.EBAY_FETCH_TIMEOUT_MS);
+  return Number.isFinite(configured) && configured > 0 ? configured : EBAY_FETCH_TIMEOUT_MS;
+}
+
+/** Wie `fetch`, nur dass es garantiert zurückkommt. Vorbild: `lib/paypal/client.ts`. */
+function fetchWithTimeout(input: string, init: RequestInit = {}) {
+  return fetch(input, { ...init, signal: AbortSignal.timeout(fetchTimeoutMs()) });
+}
+
 async function getAccessToken(config: EbayConfig, scope = process.env.EBAY_OAUTH_SCOPE || "https://api.ebay.com/oauth/api_scope/sell.inventory.readonly") {
   const form = new URLSearchParams({
     grant_type: "refresh_token",
     refresh_token: config.refreshToken,
   });
   if (scope && scope !== "https://api.ebay.com/oauth/api_scope/sell.inventory.readonly") form.set("scope", scope);
-  const response = await fetch(`${apiBase(config.environment)}/identity/v1/oauth2/token`, {
+  const response = await fetchWithTimeout(`${apiBase(config.environment)}/identity/v1/oauth2/token`, {
     method: "POST",
     headers: {
       Authorization: `Basic ${btoa(`${config.clientId}:${config.clientSecret}`)}`,
@@ -178,7 +201,7 @@ export async function getActiveEbayListings() {
     // Those containers must stay off - they cost response size and previously
     // leaked sold items into the shop.
     const request = `<?xml version="1.0" encoding="utf-8"?><GetMyeBaySellingRequest xmlns="urn:ebay:apis:eBLBaseComponents"><ActiveList><Include>true</Include><Pagination><EntriesPerPage>200</EntriesPerPage><PageNumber>${page}</PageNumber></Pagination></ActiveList><SoldList><Include>false</Include></SoldList><UnsoldList><Include>false</Include></UnsoldList><ScheduledList><Include>false</Include></ScheduledList><BidList><Include>false</Include></BidList><DeletedFromSoldList><Include>false</Include></DeletedFromSoldList><DeletedFromUnsoldList><Include>false</Include></DeletedFromUnsoldList><DetailLevel>ReturnAll</DetailLevel></GetMyeBaySellingRequest>`;
-    const response = await fetch(`${apiBase(config.environment)}/ws/api.dll`, {
+    const response = await fetchWithTimeout(`${apiBase(config.environment)}/ws/api.dll`, {
       method: "POST",
       headers: { "Content-Type": "text/xml", "X-EBAY-API-CALL-NAME": "GetMyeBaySelling", "X-EBAY-API-SITEID": config.siteId, "X-EBAY-API-COMPATIBILITY-LEVEL": "1231", "X-EBAY-API-IAF-TOKEN": accessToken },
       body: request,
@@ -211,7 +234,7 @@ export async function getEbayItemDescription(ebayItemId: string): Promise<string
   const config = getConfig();
   const accessToken = await getAccessToken(config);
   const request = `<?xml version="1.0" encoding="utf-8"?><GetItemRequest xmlns="urn:ebay:apis:eBLBaseComponents"><ItemID>${ebayItemId.replace(/[^0-9]/g, "")}</ItemID><DetailLevel>ReturnAll</DetailLevel><IncludeItemSpecifics>false</IncludeItemSpecifics></GetItemRequest>`;
-  const response = await fetch(`${apiBase(config.environment)}/ws/api.dll`, {
+  const response = await fetchWithTimeout(`${apiBase(config.environment)}/ws/api.dll`, {
     method: "POST",
     headers: {
       "Content-Type": "text/xml",
@@ -273,7 +296,7 @@ export async function getEbayAvailability(ebayItemIds: string[]): Promise<Map<st
   const accessToken = await getAccessToken(config);
   for (const ebayItemId of ids) {
     try {
-      const response = await fetch(`${apiBase(config.environment)}/ws/api.dll`, {
+      const response = await fetchWithTimeout(`${apiBase(config.environment)}/ws/api.dll`, {
         method: "POST",
         headers: {
           "Content-Type": "text/xml",
@@ -310,7 +333,7 @@ export async function getEbayAvailability(ebayItemIds: string[]): Promise<Map<st
 export async function withdrawEbayOffer(offerId: string) {
   const config = getConfig();
   const accessToken = await getAccessToken(config, process.env.EBAY_WRITE_OAUTH_SCOPE || "https://api.ebay.com/oauth/api_scope/sell.inventory");
-  const response = await fetch(`${apiBase(config.environment)}/sell/inventory/v1/offer/${encodeURIComponent(offerId)}/withdraw`, {
+  const response = await fetchWithTimeout(`${apiBase(config.environment)}/sell/inventory/v1/offer/${encodeURIComponent(offerId)}/withdraw`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${accessToken}`,

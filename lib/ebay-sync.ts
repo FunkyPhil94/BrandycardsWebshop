@@ -5,11 +5,12 @@ import { getDb } from "../db";
 import { ebayListings, inventory, productAssets, products, syncEvents, syncRuns } from "../db/schema";
 import { getActiveEbayListings, type EbayActiveListing } from "./ebay-client";
 import { D1_SAFE_ID_LIST, maxInsertRows } from "./d1-limits";
+import { ExpiringLock, isSyncRunStale, SYNC_RUN_DEADLINE_MS, withDeadline } from "./sync-lock";
 
 /** syncRunId, ebayItemId, productId, status, message, createdAt */
 const SYNC_EVENT_INSERT_COLUMNS = 6;
 
-let localSyncLock: Promise<unknown> | null = null;
+const syncLock = new ExpiringLock();
 const newEntityId = () => crypto.randomUUID().replaceAll("-", "");
 
 function mapActiveListing(listing: EbayActiveListing) {
@@ -34,22 +35,44 @@ function mapActiveListing(listing: EbayActiveListing) {
   };
 }
 
+/** Gibt `sync_runs`-Zeilen frei, die kein lebender Lauf mehr halten kann.
+ *
+ * Steht bewusst als eigene Funktion da, weil sie **vor** der Sperrprüfung
+ * laufen muss. Früher stand sie hinter ihr, mitten im Lauf — und wurde damit
+ * in genau dem Fall nie erreicht, für den sie gebaut war: Sperre verklemmt,
+ * jeder weitere Aufruf fliegt vorher heraus, niemand räumt auf. Am 2026-08-07
+ * musste deshalb eine `RUNNING`-Zeile von Hand freigegeben werden.
+ */
+async function releaseStaleSyncRuns() {
+  const db = getDb();
+  const now = new Date();
+  const activeRuns = await db.query.syncRuns.findMany({ where: eq(syncRuns.status, "RUNNING"), limit: 20 });
+  for (const activeRun of activeRuns) {
+    if (activeRun.source === "EBAY" && isSyncRunStale(activeRun.startedAt, now)) {
+      await db.update(syncRuns).set({ status: "FAILED", finishedAt: now.toISOString(), errorMessage: "Veralteter Sync-Lauf automatisch geschlossen." }).where(eq(syncRuns.id, activeRun.id));
+    }
+  }
+}
+
 export async function runEbaySync() {
-  if (localSyncLock) throw new Error("eBay-Synchronisierung läuft bereits.");
-  const task = runEbaySyncInternal();
-  localSyncLock = task;
-  try { return await task; } finally { localSyncLock = null; }
+  // Reihenfolge ist hier die eigentliche Korrektur: erst aufräumen, dann
+  // sperren. Ein abgestürzter Vorgänger wird so vom nächsten Cron-Schlag
+  // eingesammelt, statt auf einen Eingriff von Hand zu warten.
+  await releaseStaleSyncRuns();
+  if (!syncLock.tryAcquire()) throw new Error("eBay-Synchronisierung läuft bereits.");
+  try {
+    return await withDeadline(
+      runEbaySyncInternal(),
+      SYNC_RUN_DEADLINE_MS,
+      "eBay-Synchronisierung hat die Zeitgrenze überschritten und wurde abgebrochen.",
+    );
+  } finally {
+    syncLock.release();
+  }
 }
 
 async function runEbaySyncInternal() {
   const db = getDb();
-  const staleBefore = new Date(Date.now() - 30 * 60_000).toISOString();
-  const activeRuns = await db.query.syncRuns.findMany({ where: eq(syncRuns.status, "RUNNING"), limit: 20 });
-  for (const activeRun of activeRuns) {
-    if (activeRun.source === "EBAY" && activeRun.startedAt < staleBefore) {
-      await db.update(syncRuns).set({ status: "FAILED", finishedAt: new Date().toISOString(), errorMessage: "Veralteter Sync-Lauf automatisch geschlossen." }).where(eq(syncRuns.id, activeRun.id));
-    }
-  }
   const run = await env.DB.prepare(`
     INSERT INTO sync_runs (id, source, status, started_at, imported_count, updated_count, deactivated_count, failed_count)
     SELECT lower(hex(randomblob(16))), 'EBAY', 'RUNNING', CURRENT_TIMESTAMP, 0, 0, 0, 0
