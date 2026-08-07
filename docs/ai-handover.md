@@ -37,20 +37,8 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-- **Stand:** LÄUFT
-- **Datum:** 2026-08-07
-- **Ziel:** Im Banner der Startseite „Fußballkarten" durch „Sportkarten"
-  ersetzen (`app/page.tsx`, `.hero-text`).
-- **Passt zur Vorzeile darüber**, die schon „THE HOME OF SPORTS CARDS" sagt.
-- **Bewusst nur diese eine Stelle.** Drei weitere nennen ebenfalls
-  „Fußballkarten": die beiden Seitenbeschreibungen (`app/layout.tsx:6`,
-  `app/ueber-uns/page.tsx:7`) und der Absatz über die beiden Brüder
-  (`app/ueber-uns/page.tsx:17`). Der Auftrag lautete „hier", und der
-  Brüder-Absatz ist eine **Tatsachenaussage** darüber, was die beiden sammeln —
-  die zu ändern steht mir nicht zu. Wird dem Betreiber vorgelegt.
-- **Betroffen:** `app/page.tsx`. Nur Text.
-- **Verifikation:** Im Browser prüfen, dass der Satz weiterhin auf zwei Zeilen
-  passt und die Knöpfe darunter nicht verrutschen.
+_Kein laufender Auftrag._ Vorlage: Stand, Datum, Ziel, geplante Schritte,
+betroffene Dateien, Verifikation, Ergebnis.
 
 ---
 
@@ -265,6 +253,34 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
 ---
 
 ## Historie
+
+### 2026-08-07 — Banner: Fußballkarten wird zu Sportkarten
+
+- **Stand:** ABGESCHLOSSEN
+- **Datum:** 2026-08-07
+- **Ziel:** Im Banner der Startseite „Fußballkarten" durch „Sportkarten"
+  ersetzen (`app/page.tsx`, `.hero-text`).
+- **Passt zur Vorzeile darüber**, die schon „THE HOME OF SPORTS CARDS" sagt.
+- **Bewusst nur diese eine Stelle.** Drei weitere nennen ebenfalls
+  „Fußballkarten": die beiden Seitenbeschreibungen (`app/layout.tsx:6`,
+  `app/ueber-uns/page.tsx:7`) und der Absatz über die beiden Brüder
+  (`app/ueber-uns/page.tsx:17`). Der Auftrag lautete „hier", und der
+  Brüder-Absatz ist eine **Tatsachenaussage** darüber, was die beiden sammeln —
+  die zu ändern steht mir nicht zu. Wird dem Betreiber vorgelegt.
+- **Betroffen:** `app/page.tsx`. Nur Text.
+- **Verifikation:** Im Browser prüfen, dass der Satz weiterhin auf zwei Zeilen
+  passt und die Knöpfe darunter nicht verrutschen.
+- **Ergebnis: ABGESCHLOSSEN.** Prüfkette grün (`tsc`, Lint 0 Fehler, 149/149).
+  Im Browser nachgemessen: bei 1280 px weiterhin **zwei** Zeilen, die
+  Knopfleiste steht unverändert bei 581 px; bei 375 px drei Zeilen wie zuvor,
+  kein waagerechter Überlauf.
+- **Offen für den Betreiber:** Drei Stellen sagen weiter „Fußballkarten":
+  `app/layout.tsx:6`, `app/ueber-uns/page.tsx:7` und
+  `app/ueber-uns/page.tsx:17`. Die ersten beiden sind Seitenbeschreibungen für
+  Suchmaschinen, die dritte eine Aussage darüber, was die beiden Brüder
+  sammeln. **Ob sie mitziehen, entscheidet der Betreiber** — der Banner spricht
+  seit heute von Sportkarten, die Über-uns-Seite von Fußballkarten.
+
 
 ### 2026-08-07 — Gedankenstriche raus, Verkaufen-Kachel korrigiert
 

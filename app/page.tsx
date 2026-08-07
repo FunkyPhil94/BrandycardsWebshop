@@ -45,7 +45,7 @@ export default function Home() {
       <div className="hero-copy">
         <p className="eyebrow">THE HOME OF SPORTS CARDS</p>
         <h1>Cards with<br /><em>character.</em></h1>
-        <p className="hero-text">Ausgewählte Fußballkarten für Sammler und Liebhaber, sicher verpackt und mit Liebe zum Detail.</p>
+        <p className="hero-text">Ausgewählte Sportkarten für Sammler und Liebhaber, sicher verpackt und mit Liebe zum Detail.</p>
         <div className="hero-actions">
           <Link className="button button-primary" href="/karten">Kollektion entdecken <span>↘</span></Link>
           <Link className="text-link" href="/ueber-uns">Mehr über BrandyCards <span>→</span></Link>
