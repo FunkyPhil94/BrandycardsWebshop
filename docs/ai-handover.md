@@ -37,49 +37,8 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-**Stand:** LÄUFT · **Datum:** 2026-08-07
-
-**Ziel:** Zwei Fehler beheben, die der Betreiber beim Durchklicken gefunden hat.
-
-**Fehler 1 — Passwort-Zurücksetzen führt auf `localhost:3000`. Ernst.**
-Der Link aus der Reset-Mail zeigt auf `http://localhost:3000/#access_token=…`.
-Entscheidend ist die **Form** der URL: Wurzelpfad, kein `/account`, kein
-`?next=`. Der Code setzt aber `redirectTo: ${origin}/account?next=…`
-([app/account/page.tsx](../app/account/page.tsx)). Supabase hat das `redirectTo`
-also **verworfen** und ist auf die **Site URL** zurückgefallen — und die steht
-offenbar auf `http://localhost:3000`.
-
-Folge: **Passwort-Zurücksetzen und E-Mail-Bestätigung sind für echte Kunden
-kaputt**, weil `emailRedirectTo` beim `signUp` derselben Allowlist unterliegt.
-Kein Einbruch, aber eine unbrauchbare Kontowiederherstellung. Zu beheben im
-Supabase-Dashboard, nicht im Code — **das kann nur der Betreiber.**
-
-**Fehler 2 — Profilfelder nicht bearbeitbar, Gestaltung passt nicht.**
-`.form-field input` ist global `background:#fff` — gedacht für die hellen
-Formularkarten, nicht für die dunkle Kontokarte. Dazu sind die Felder
-`readOnly`, solange nicht „Profil bearbeiten" geklickt wurde: Sie sehen
-bearbeitbar aus, nehmen den Fokus an und verweigern dann die Eingabe.
-
-**Geplante Schritte:**
-1. Befund SEC-18 (Supabase-URL-Konfiguration) im Bericht aufnehmen, mit der
-   genauen Anleitung für das Dashboard.
-2. `app/account/page.tsx`: die `readOnly`-Umschaltung entfernen, Felder immer
-   bearbeitbar, ein Knopf „Profil speichern".
-3. `app/globals.css`: Formularfelder und Beschriftungen innerhalb von
-   `.account-card` an die dunkle Fläche anpassen, `.profile-panel` gestalten.
-4. `npx tsc --noEmit`, `npm run lint`, `npm test`, lokal im Browser ansehen.
-
-**Deploy:** ~~nicht ohne erneute Freigabe~~ — **Freigabe erteilt** („Deploye
-jetzt das neue Formular"). Der Betreiber hat zuvor die Supabase-URLs
-angepasst, SEC-18 sollte damit erledigt sein.
-
-**Was nach dem Deploy nur der Betreiber prüfen kann:**
-- Das Profilformular selbst — dafür wäre eine Anmeldung nötig, und das
-  Passwort des Betreibers fasse ich nicht an.
-- Der Reset-Ablauf — die Bestätigungsmail geht an sein Postfach. Ein Aufruf
-  von „Passwort vergessen" von hier aus wäre eine Nachricht in seinem Namen.
-
-**Ergebnis:** _(offen — wird nach dem Durchlauf nachgetragen)_
+_Kein laufender Auftrag._ Vorlage: Stand, Datum, Ziel, geplante Schritte,
+betroffene Dateien, Verifikation, Ergebnis.
 
 ---
 
@@ -88,11 +47,19 @@ angepasst, SEC-18 sollte damit erledigt sein.
 Kein Auftrag, sondern der Zustand, den die nächste Sitzung kennen muss.
 Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
 
-- **Produktion ist auf dem Stand nach der Sicherheitsprüfung.** Deployed am
-  2026-08-07 als Version `1cfd52f1`, HSTS nachgezogen als `650c189a`. Das
-  Rate-Limit hat seine Bindings, der Katalog wird am Rand zwischengespeichert,
-  alle Sicherheits-Kopfzeilen sind gesetzt, die CSP setzt durch. Nachprüfung in
+- **Produktion ist aktuell.** Drei Deploys am 2026-08-07: `1cfd52f1` (alle
+  Sicherheitskorrekturen), `650c189a` (HSTS), `81c6422d` (Profilformular und
+  Gestaltung der Kontoseite). Das Rate-Limit hat seine Bindings, der Katalog
+  wird am Rand zwischengespeichert, alle sechs Sicherheits-Kopfzeilen sind
+  gesetzt, die CSP setzt durch. Nachprüfung in
   [security-findings.md](security-findings.md) unter „Deploy am 2026-08-07".
+- **SEC-18 wartet auf eine Bestätigung durch den Betreiber.** Er hat die
+  Supabase-URLs angepasst; ob Reset- und Bestätigungslinks jetzt auf
+  `https://shop.brandycards.de/account?next=…#access_token=…` zeigen statt auf
+  `localhost:3000`, konnte diese Sitzung nicht prüfen — die Mail geht an sein
+  Postfach, ein Auslösen von hier wäre eine Nachricht in seinem Namen gewesen.
+  Ebenso ungeprüft: das Profilformular im angemeldeten Zustand, dafür wäre sein
+  Passwort nötig.
 - **Die CSP trägt `'unsafe-inline'` für Skripte.** vinext liefert acht
   Inline-`<script>`-Blöcke je Seite; ohne Nonces bliebe die Seite sonst leer.
   Folge: Inline-Eventhandler sind erlaubt, ein künftiges `<img onerror=…>`
@@ -154,6 +121,75 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
 ---
 
 ## Historie
+
+### 2026-08-07 — Profilformular und SEC-18 (Reset-Link auf localhost)
+
+- **Stand:** ABGESCHLOSSEN
+
+**Ziel:** Zwei Fehler beheben, die der Betreiber beim Durchklicken gefunden hat.
+
+**Fehler 1 — Passwort-Zurücksetzen führt auf `localhost:3000`. Ernst.**
+Der Link aus der Reset-Mail zeigt auf `http://localhost:3000/#access_token=…`.
+Entscheidend ist die **Form** der URL: Wurzelpfad, kein `/account`, kein
+`?next=`. Der Code setzt aber `redirectTo: ${origin}/account?next=…`
+([app/account/page.tsx](../app/account/page.tsx)). Supabase hat das `redirectTo`
+also **verworfen** und ist auf die **Site URL** zurückgefallen — und die steht
+offenbar auf `http://localhost:3000`.
+
+Folge: **Passwort-Zurücksetzen und E-Mail-Bestätigung sind für echte Kunden
+kaputt**, weil `emailRedirectTo` beim `signUp` derselben Allowlist unterliegt.
+Kein Einbruch, aber eine unbrauchbare Kontowiederherstellung. Zu beheben im
+Supabase-Dashboard, nicht im Code — **das kann nur der Betreiber.**
+
+**Fehler 2 — Profilfelder nicht bearbeitbar, Gestaltung passt nicht.**
+`.form-field input` ist global `background:#fff` — gedacht für die hellen
+Formularkarten, nicht für die dunkle Kontokarte. Dazu sind die Felder
+`readOnly`, solange nicht „Profil bearbeiten" geklickt wurde: Sie sehen
+bearbeitbar aus, nehmen den Fokus an und verweigern dann die Eingabe.
+
+**Geplante Schritte:**
+1. Befund SEC-18 (Supabase-URL-Konfiguration) im Bericht aufnehmen, mit der
+   genauen Anleitung für das Dashboard.
+2. `app/account/page.tsx`: die `readOnly`-Umschaltung entfernen, Felder immer
+   bearbeitbar, ein Knopf „Profil speichern".
+3. `app/globals.css`: Formularfelder und Beschriftungen innerhalb von
+   `.account-card` an die dunkle Fläche anpassen, `.profile-panel` gestalten.
+4. `npx tsc --noEmit`, `npm run lint`, `npm test`, lokal im Browser ansehen.
+
+**Deploy:** ~~nicht ohne erneute Freigabe~~ — **Freigabe erteilt** („Deploye
+jetzt das neue Formular"). Der Betreiber hat zuvor die Supabase-URLs
+angepasst, SEC-18 sollte damit erledigt sein.
+
+**Was nach dem Deploy nur der Betreiber prüfen kann:**
+- Das Profilformular selbst — dafür wäre eine Anmeldung nötig, und das
+  Passwort des Betreibers fasse ich nicht an.
+- Der Reset-Ablauf — die Bestätigungsmail geht an sein Postfach. Ein Aufruf
+  von „Passwort vergessen" von hier aus wäre eine Nachricht in seinem Namen.
+
+**Ergebnis: ABGESCHLOSSEN. Deployed als Version `81c6422d`.**
+
+Vor dem Deploy: `tsc` sauber, Lint 0 Fehler, 98 Tests grün, Bundle-Probe traf.
+Danach in Produktion geprüft:
+
+- Die neue Gestaltung ist im ausgelieferten CSS
+  (`.account-card .form-field input{color:#f5f1e8;background:#0b0c0fbf;…}`,
+  `.profile-panel` vorhanden) und greift im Browser: Feldhintergrund
+  `rgba(11,12,15,.75)`, Schrift `#f5f1e8`, Beschriftung `#b7b0a1`.
+- `/admin` meldet **nicht** „Supabase ist noch nicht konfiguriert" — das
+  Bundle ist gesund.
+- Alle sechs Sicherheits-Kopfzeilen weiterhin gesetzt, `cache-control` auf dem
+  Katalog unverändert.
+- 0 fehlerhafte Ressourcen auf `/account`.
+
+**Zwei Dinge konnte diese Sitzung nicht selbst prüfen, bewusst:**
+1. **Das Profilformular im angemeldeten Zustand** — dafür wäre das Passwort des
+   Betreibers nötig gewesen.
+2. **Der Reset-Ablauf (SEC-18)** — der Betreiber hat die Supabase-URLs
+   angepasst, aber die Bestätigung wäre eine Mail in seinem Namen gewesen.
+   **SEC-18 bleibt deshalb formal offen, bis er einmal „Passwort vergessen"
+   durchgespielt hat.** Erwartete Ziel-URL:
+   `https://shop.brandycards.de/account?next=…#access_token=…`
+
 
 ### 2026-08-07 — Deploy der Sicherheitskorrekturen
 
