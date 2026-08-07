@@ -37,44 +37,8 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-**Stand:** LÄUFT · **Datum:** 2026-08-07
-
-**Ziel:** Einen Deploy-Workflow bauen, damit das Ausliefern nicht mehr am
-Rechner des Betreibers hängt.
-
-**Warum:** `npx wrangler deploy` baut **lokal** und lädt das Ergebnis hoch. Der
-Grund ist `.env.local`: `NEXT_PUBLIC_SUPABASE_*` wird zur Buildzeit ins
-Client-Bundle eingebacken, und die Datei liegt absichtlich nicht im
-Repository. Wäre der Rechner weg, liefe der Shop weiter — aber niemand könnte
-etwas ändern, bis die Datei rekonstruiert ist. Kein Sicherheitsproblem, ein
-Klumpenrisiko.
-
-**Entwurfsentscheidungen:**
-- **Nur `workflow_dispatch`**, kein Auto-Deploy bei jedem Push. In diesem
-  Repository landen laufend reine Dokumentcommits; jeder davon würde sonst
-  ausliefern. Ein Knopf in der GitHub-Oberfläche erfüllt den Zweck und geht
-  auch vom Telefon.
-- **Kein `pull_request`-Auslöser.** Ein Fork darf niemals deployen können.
-  `workflow_dispatch` kann ohnehin nur auslösen, wer Schreibrechte hat.
-- **Die vollständige Prüfkette vor dem Deploy** — Lint, `tsc --noEmit`,
-  `npm test` — und danach dieselbe Bundle-Probe, die CLAUDE.md verlangt:
-  Findet `grep supabase.co dist/client/assets` nichts, bricht der Lauf ab,
-  statt ein Bundle auszuliefern, in dem `/admin` und `/account` kaputt sind.
-- **Nachprüfung nach dem Deploy im Workflow selbst**, wieder nach der Regel aus
-  CLAUDE.md: eine Seite prüfen, die Client-Konfiguration braucht. Startseite
-  und `/api/*` sähen auch dann gesund aus, wenn das Bundle kaputt ist.
-- **Actions auf Commit-SHA gepinnt**, wie im CI-Workflow.
-- `concurrency`, damit zwei Deploys sich nicht überholen.
-
-**Was der Betreiber selbst tun muss:** drei Repository-Secrets anlegen. Ich
-lege keine Zugangsdaten an und fasse keine an. Stand jetzt sind **keine**
-Secrets im Repository hinterlegt (`gh secret list` ist leer).
-
-**Verifikation:** Der Workflow lässt sich erst nach dem Anlegen der Secrets
-ausführen. Bis dahin bleibt der bisherige Weg (`npx wrangler deploy` lokal)
-gültig — der neue Weg ist eine Ergänzung, kein Ersatz.
-
-**Ergebnis:** _(offen — wird nach dem Durchlauf nachgetragen)_
+_Kein laufender Auftrag._ Vorlage: Stand, Datum, Ziel, geplante Schritte,
+betroffene Dateien, Verifikation, Ergebnis.
 
 ---
 
@@ -89,6 +53,14 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
   mehr. **Nicht** eingeschlossen und weiterhin abzusprechen: schreibende
   Eingriffe in Produktionsdaten, Migrationen, Änderungen am eBay-Angebots-
   bestand und alles, was Kosten oder Fremddienste hinzufügt.
+- **Der GitHub-Deploy-Workflow wartet auf drei Secrets.**
+  [.github/workflows/deploy.yml](../.github/workflows/deploy.yml) ist gebaut,
+  aber `gh secret list` war am 2026-08-07 leer. Nötig sind
+  `CLOUDFLARE_API_TOKEN`, `NEXT_PUBLIC_SUPABASE_URL` und
+  `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`; Anleitung in
+  [security-findings.md](security-findings.md) unter „Alternativ: Deploy über
+  GitHub". Bis dahin ist der lokale `npx wrangler deploy` der einzige Weg —
+  und damit hängt das Ausliefern weiterhin an einer Maschine.
 - **Produktion ist aktuell.** Fünf Deploys am 2026-08-07: `1cfd52f1` (alle
   Sicherheitskorrekturen), `650c189a` (HSTS), `81c6422d` (Profilformular),
   `d893527a` (Konto- und Adminfläche in der Sprache des Shops), `0b25ae0f`
@@ -168,6 +140,73 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
 ---
 
 ## Historie
+
+### 2026-08-07 — Deploy-Workflow, damit das Ausliefern nicht an einem Rechner hängt
+
+- **Stand:** ABGESCHLOSSEN
+
+**Ziel:** Einen Deploy-Workflow bauen, damit das Ausliefern nicht mehr am
+Rechner des Betreibers hängt.
+
+**Warum:** `npx wrangler deploy` baut **lokal** und lädt das Ergebnis hoch. Der
+Grund ist `.env.local`: `NEXT_PUBLIC_SUPABASE_*` wird zur Buildzeit ins
+Client-Bundle eingebacken, und die Datei liegt absichtlich nicht im
+Repository. Wäre der Rechner weg, liefe der Shop weiter — aber niemand könnte
+etwas ändern, bis die Datei rekonstruiert ist. Kein Sicherheitsproblem, ein
+Klumpenrisiko.
+
+**Entwurfsentscheidungen:**
+- **Nur `workflow_dispatch`**, kein Auto-Deploy bei jedem Push. In diesem
+  Repository landen laufend reine Dokumentcommits; jeder davon würde sonst
+  ausliefern. Ein Knopf in der GitHub-Oberfläche erfüllt den Zweck und geht
+  auch vom Telefon.
+- **Kein `pull_request`-Auslöser.** Ein Fork darf niemals deployen können.
+  `workflow_dispatch` kann ohnehin nur auslösen, wer Schreibrechte hat.
+- **Die vollständige Prüfkette vor dem Deploy** — Lint, `tsc --noEmit`,
+  `npm test` — und danach dieselbe Bundle-Probe, die CLAUDE.md verlangt:
+  Findet `grep supabase.co dist/client/assets` nichts, bricht der Lauf ab,
+  statt ein Bundle auszuliefern, in dem `/admin` und `/account` kaputt sind.
+- **Nachprüfung nach dem Deploy im Workflow selbst**, wieder nach der Regel aus
+  CLAUDE.md: eine Seite prüfen, die Client-Konfiguration braucht. Startseite
+  und `/api/*` sähen auch dann gesund aus, wenn das Bundle kaputt ist.
+- **Actions auf Commit-SHA gepinnt**, wie im CI-Workflow.
+- `concurrency`, damit zwei Deploys sich nicht überholen.
+
+**Was der Betreiber selbst tun muss:** drei Repository-Secrets anlegen. Ich
+lege keine Zugangsdaten an und fasse keine an. Stand jetzt sind **keine**
+Secrets im Repository hinterlegt (`gh secret list` ist leer).
+
+**Verifikation:** Der Workflow lässt sich erst nach dem Anlegen der Secrets
+ausführen. Bis dahin bleibt der bisherige Weg (`npx wrangler deploy` lokal)
+gültig — der neue Weg ist eine Ergänzung, kein Ersatz.
+
+**Ergebnis: ABGESCHLOSSEN, aber noch nicht lauffähig.**
+
+[.github/workflows/deploy.yml](../.github/workflows/deploy.yml) ist gebaut:
+10 Schritte, nur `workflow_dispatch`, `permissions: contents: read`,
+`concurrency`, Actions auf Commit-SHA gepinnt. Beide Workflow-Dateien wurden
+als YAML geparst, nicht nur per Textsuche geprüft. Reihenfolge belegt:
+Bundle-Probe → Deploy → Nachprüfung.
+
+**Der Workflow kann erst laufen, wenn der Betreiber drei Repository-Secrets
+angelegt hat** (`gh secret list` war leer):
+`CLOUDFLARE_API_TOKEN`, `NEXT_PUBLIC_SUPABASE_URL`,
+`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. Anleitung in
+[security-findings.md](security-findings.md) unter „Alternativ: Deploy über
+GitHub". Ohne sie bricht der Lauf mit einer klaren Meldung ab, statt ein
+halbes Bundle auszuliefern.
+
+**Nicht geprüft, weil es ohne die Secrets nicht geht:** ein echter Durchlauf.
+Die nächste Sitzung sollte nach dem ersten manuellen Start nachsehen, ob die
+Nachprüfungsschritte greifen — besonders die Kopfzeilen-Zählung (`6 von 6`)
+und die `cache-control`-Prüfung, die beide gegen die Live-Antwort laufen.
+
+**Ein Hinweis, der leicht untergeht:** Der Workflow ersetzt den lokalen Deploy
+**nicht**. Wer weiter mit `npx wrangler deploy` arbeitet, muss weiterhin
+`.env.local` im Build-Verzeichnis haben. Der Workflow ist die Versicherung
+gegen den Ausfall einer Maschine, nicht der neue Normalweg — solange die
+Dauerfreigabe gilt, ist der lokale Weg schneller.
+
 
 ### 2026-08-07 — Doppelverkaufsschutz: 10-Minuten-Import und Bestandsprüfung
 

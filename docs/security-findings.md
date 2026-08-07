@@ -1580,3 +1580,34 @@ auf `Content-Security-Policy-Report-Only`-Meldungen ansehen; sind sie ruhig,
 `CSP_HEADER_NAME` in [lib/security-headers.ts](../lib/security-headers.ts) auf
 `content-security-policy` umstellen und erneut deployen. Erst dann greift der
 Schutz.
+
+### Alternativ: Deploy über GitHub
+
+Seit dem 2026-08-07 gibt es
+[.github/workflows/deploy.yml](../.github/workflows/deploy.yml) — derselbe
+Ablauf, nur auf GitHubs Rechnern statt auf einem bestimmten Arbeitsplatz.
+Auszulösen über *Actions → „Deploy nach Produktion" → Run workflow*.
+
+**Warum es das gibt:** `npx wrangler deploy` baut **lokal**. `NEXT_PUBLIC_SUPABASE_*`
+wird zur Buildzeit ins Client-Bundle eingebacken, und `.env.local` liegt
+absichtlich nicht im Repository. Damit hängt das Ausliefern an einer einzelnen
+Maschine. Kein Sicherheitsproblem, aber ein Klumpenrisiko: Wäre der Rechner
+weg, liefe der Shop weiter, ließe sich aber nicht mehr ändern.
+
+**Einmalig anzulegen** unter *Settings → Secrets and variables → Actions*:
+
+| Secret | Woher |
+|---|---|
+| `CLOUDFLARE_API_TOKEN` | Cloudflare-Dashboard → *My Profile → API Tokens → Create Token*, Vorlage **„Edit Cloudflare Workers"** |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase → *Project Settings → API*. Steht ohnehin im Client-Bundle |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | ebenda. Ebenfalls öffentlich — er wird an jeden Browser ausgeliefert |
+
+Die **Cloudflare-Secrets** (`PAYPAL_*`, `EBAY_*`, `ADMIN_EMAILS`) gehören
+**nicht** dazu: Die liest der Worker zur Laufzeit aus seiner eigenen
+Konfiguration, nicht aus dem Build. Sie bleiben, wo sie sind.
+
+**Der Workflow bricht von selbst ab, wenn etwas nicht stimmt:** Er prüft vor
+dem Deploy mit derselben Bundle-Probe, ob die Supabase-URL im Client gelandet
+ist, und danach, ob `/account` und `/admin` wirklich laden statt „Supabase ist
+noch nicht konfiguriert" zu melden. Genau der Fehler, der schon einmal
+durchgerutscht ist, weil Startseite und `/api/*` dabei gesund aussehen.

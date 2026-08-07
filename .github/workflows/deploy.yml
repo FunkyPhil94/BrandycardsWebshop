@@ -1,0 +1,143 @@
+name: Deploy nach Produktion
+
+# Bewusst nur von Hand auslösbar.
+#
+# Kein Auslöser bei `push`: In diesem Repository landen laufend reine
+# Dokumentcommits, und jeder davon würde sonst ausliefern. Kein Auslöser bei
+# `pull_request`: Ein Fork darf niemals deployen können. `workflow_dispatch`
+# kann ohnehin nur starten, wer Schreibrechte auf das Repository hat.
+#
+# Zweck: Der Deploy soll nicht am Rechner einer einzelnen Person hängen.
+# `npx wrangler deploy` baut lokal, weil `NEXT_PUBLIC_SUPABASE_*` zur Buildzeit
+# ins Client-Bundle eingebacken wird und `.env.local` absichtlich nicht im
+# Repository liegt. Dieser Workflow stellt dieselbe Datei aus Secrets her.
+on:
+  workflow_dispatch:
+    inputs:
+      grund:
+        description: "Warum wird deployed? (erscheint im Protokoll)"
+        required: false
+        default: "Manueller Deploy"
+
+permissions:
+  contents: read
+
+# Zwei gleichzeitige Deploys würden sich überholen. Laufende nicht abbrechen —
+# ein halb hochgeladener Worker ist schlimmer als ein Deploy zu viel.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      # Auf Commit gepinnt, nicht auf ein Tag: Ein Tag lässt sich verschieben,
+      # und dieser Workflow hat Zugriff auf das Cloudflare-Token.
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      # `npm test` baut nur, es sieht keine Typfehler.
+      - name: Type check
+        run: npx tsc --noEmit
+
+      # Der Build liest `.env.local` von der Platte und backt
+      # NEXT_PUBLIC_SUPABASE_* ins Client-Bundle ein. Ohne diese Datei entsteht
+      # ein Bundle, in dem /admin und /account mit "Supabase ist noch nicht
+      # konfiguriert" abbrechen, während Startseite und /api/* gesund aussehen.
+      # Der Publishable Key ist öffentlich — er landet ohnehin im Bundle.
+      - name: Build-Konfiguration bereitstellen
+        env:
+          SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_KEY" ]; then
+            echo "::error::NEXT_PUBLIC_SUPABASE_URL oder NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY fehlt als Repository-Secret."
+            exit 1
+          fi
+          printf 'NEXT_PUBLIC_SUPABASE_URL=%s\n' "$SUPABASE_URL" > .env.local
+          printf 'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=%s\n' "$SUPABASE_KEY" >> .env.local
+
+      - name: Test and build
+        run: npm test
+
+      # Die Probe aus CLAUDE.md. Sie ist der Grund, warum hier überhaupt eine
+      # Datei geschrieben wird — greift sie nicht, wäre der Deploy still kaputt.
+      - name: Bundle-Probe — trägt der Client seine Konfiguration?
+        run: |
+          if ! grep -rl "supabase.co" dist/client/assets >/dev/null 2>&1; then
+            echo "::error::Die Supabase-URL steht nicht im Client-Bundle. /admin und /account würden mit 'Supabase ist noch nicht konfiguriert' abbrechen. Deploy abgebrochen."
+            exit 1
+          fi
+          echo "Client-Bundle trägt die Konfiguration."
+
+      - name: Deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::error::CLOUDFLARE_API_TOKEN fehlt als Repository-Secret."
+            exit 1
+          fi
+          echo "Grund: ${{ inputs.grund }}"
+          npx wrangler deploy
+
+      # Die Regel aus CLAUDE.md: Ein Deploy ist erst verifiziert, wenn eine
+      # Seite geprüft wurde, die Client-Konfiguration braucht. Startseite und
+      # /api/* waren schon einmal durchgehend gesund, während /admin kaputt war.
+      - name: Deploy nachprüfen
+        run: |
+          set -u
+          sleep 10
+          fehler=0
+
+          for pfad in / /karten /account /admin; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" "https://shop.brandycards.de${pfad}")
+            if [ "$code" != "200" ]; then
+              echo "::error::${pfad} antwortet mit ${code}"
+              fehler=1
+            else
+              echo "${pfad} -> ${code}"
+            fi
+          done
+
+          # Der eigentliche Test: Diese Meldung erscheint genau dann, wenn das
+          # Bundle ohne Supabase-Konfiguration gebaut wurde.
+          for pfad in /account /admin; do
+            if curl -s "https://shop.brandycards.de${pfad}" | grep -q "Supabase ist noch nicht konfiguriert"; then
+              echo "::error::${pfad} meldet 'Supabase ist noch nicht konfiguriert' — das Bundle ist kaputt."
+              fehler=1
+            fi
+          done
+
+          kopfzeilen=$(curl -sI "https://shop.brandycards.de/" | grep -icE "strict-transport-security|content-security-policy|referrer-policy|x-content-type-options|permissions-policy|x-frame-options" || true)
+          echo "Sicherheits-Kopfzeilen: ${kopfzeilen} von 6"
+          if [ "$kopfzeilen" -lt 6 ]; then
+            echo "::error::Es fehlen Sicherheits-Kopfzeilen."
+            fehler=1
+          fi
+
+          if ! curl -sI "https://shop.brandycards.de/api/products" | grep -qi "^cache-control:.*max-age=60"; then
+            echo "::error::Der Katalog wird nicht mehr am Rand zwischengespeichert."
+            fehler=1
+          fi
+
+          if [ "$fehler" -ne 0 ]; then
+            echo "::error::Der Deploy ist durchgelaufen, die Nachprüfung nicht. Bitte sofort ansehen."
+            exit 1
+          fi
+          echo "Deploy verifiziert."
