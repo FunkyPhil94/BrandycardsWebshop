@@ -37,7 +37,105 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-**Stand:** LÄUFT · **Datum:** 2026-08-07
+_Kein laufender Auftrag._ Vorlage: Stand, Datum, Ziel, geplante Schritte,
+betroffene Dateien, Verifikation, Ergebnis.
+
+---
+
+## Offene Punkte
+
+Kein Auftrag, sondern der Zustand, den die nächste Sitzung kennen muss.
+Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
+
+- **Dauerfreigabe für Deploys.** Der Betreiber am 2026-08-07: „Deploy. Dafür
+  brauchst du nicht fragen." Ein `npx wrangler deploy` nach grüner Prüfkette
+  (`tsc`, Lint, `npm test`, Bundle-Probe) braucht **keine** Einzelrücksprache
+  mehr. **Nicht** eingeschlossen und weiterhin abzusprechen: schreibende
+  Eingriffe in Produktionsdaten, Migrationen, Änderungen am eBay-Angebots-
+  bestand und alles, was Kosten oder Fremddienste hinzufügt.
+- **Produktion ist aktuell.** Fünf Deploys am 2026-08-07: `1cfd52f1` (alle
+  Sicherheitskorrekturen), `650c189a` (HSTS), `81c6422d` (Profilformular),
+  `d893527a` (Konto- und Adminfläche in der Sprache des Shops), `0b25ae0f`
+  (Import alle 10 Minuten, Bestandsprüfung vor der Zahlung). Das Rate-Limit
+  hat seine Bindings, der Katalog wird am Rand zwischengespeichert, alle sechs
+  Sicherheits-Kopfzeilen sind gesetzt, die CSP setzt durch. Nachprüfung in
+  [security-findings.md](security-findings.md) unter „Deploy am 2026-08-07".
+- **Der Import läuft alle 10 Minuten und ist belegt.** Erster Lauf im neuen
+  Takt am 2026-08-07 um 10:50:40 UTC, `SUCCEEDED`, 294 aktualisiert. Ein Lauf
+  dauert **rund 77 Sekunden** — nicht die 30, die früher in der Aufgabenliste
+  standen. Für 10 Minuten Abstand unkritisch, aber die richtige Zahl, falls
+  jemand die Frequenz je weiter erhöhen will.
+- **Die Kontofläche im angemeldeten Zustand hat niemand geprüft.** Weder das
+  Profilformular noch die Adminübersicht mit echten Zahlen — dafür wäre eine
+  Anmeldung mit dem Passwort des Betreibers nötig. Die Gestaltung stammt
+  vollständig aus den vorhandenen Regeln (`--paper`, `--ink`, `--line`,
+  `--muted`, `#f8f6f1` wie `.form-card`), sollte also tragen; ein Blick lohnt
+  trotzdem.
+- **Die CSP trägt `'unsafe-inline'` für Skripte.** vinext liefert acht
+  Inline-`<script>`-Blöcke je Seite; ohne Nonces bliebe die Seite sonst leer.
+  Folge: Inline-Eventhandler sind erlaubt, ein künftiges `<img onerror=…>`
+  liefe. Was greift, ist die zweite Hälfte — keine fremden Skripte, kein
+  Übertragungsziel außer dieser Herkunft und Supabase. Voller Schutz braucht
+  Nonces, Punkt 2a in [ai-todo.md](ai-todo.md).
+- **HSTS ist gesetzt**, als `max-age=31536000` **ohne** `includeSubDomains` und
+  **ohne** `preload`. Rückweg, falls je nötig: `max-age=0` setzen und deployen —
+  das funktioniert nur, weil `preload` fehlt.
+- **Cloudflare-Tarif ist Free** (vom Betreiber bestätigt, 2026-08-07). Das
+  heißt: 5 Mio. gelesene D1-Zeilen pro Tag für **alles zusammen** — jeden
+  Seitenaufruf und jeden stündlichen eBay-Import. SEC-05 wurde deshalb auf
+  *hoch* hochgestuft. Sollte der Shop wachsen, ist Workers Paid (5 $/Monat) die
+  einfachere Antwort als weiteres Sparen an Abfragen.
+- **Der eBay-Token in der lokalen `.env.local` ist abgelaufen.** eBay lehnt ihn
+  mit „invalid or was issued to another client" ab. **Produktion ist nicht
+  betroffen** — dort liegt er als Cloudflare-Secret, und der Import läuft
+  (09:00-Lauf: 294 aktualisiert). Folge ist nur, dass lokale Entwicklung nicht
+  mit eBay sprechen kann und sich das API-Kontingent von hier aus nicht
+  abfragen lässt. Beim nächsten OAuth-Durchlauf im Adminbereich mit erneuern.
+- **Eine Nachschlagearbeit bleibt offen:** die Supabase-Passwortrichtlinie und
+  Token-Laufzeit (*Authentication → Policies*). Über keinen öffentlichen
+  Endpunkt lesbar; die Alternative wäre gewesen, mit schwachen Passwörtern
+  Konten in der Produktions-Instanz anzulegen — deshalb unterlassen.
+- **Sync-Lauf nötig, damit „Neu dabei" echt wird.** `ebay_listings.start_at` ist
+  noch überall NULL; der Mapper füllt es erst ab Version `a1cdd14f`. Solange
+  liefert `/api/products/highlights` für „neueste" bewusst die Importreihenfolge
+  (`startAtAvailable: false`) statt fünf willkürlicher Karten. Nach einem
+  Sync-Lauf prüfen: `curl -s https://shop.brandycards.de/api/products/highlights`
+  muss `"startAtAvailable": true` melden.
+- ~~**Preisvorschlag hat keine Oberfläche mehr.**~~ **Veraltet, korrigiert am
+  2026-08-07:** `/api/price-offers` verlangt heute ein Produkt mit **aktivem
+  eBay-Listing** und lehnt Auktionen ab, nicht `PRELISTED`
+  (`app/api/price-offers/route.ts:34`). Das Formular existiert und ist auf der
+  Kartendetailseite eingebunden (`app/karten/[id]/page.tsx:138`).
+- **CI hat den aktuellen `main` nie geprüft.** Der Merge lief während des
+  GitHub-Actions-Ausfalls vom 2026-08-06 und wurde nur lokal verifiziert. Sobald
+  Actions wieder `operational` meldet, einmal den Workflow über `main` laufen
+  lassen: `gh workflow run CI --ref main` oder `gh run rerun <id>`. Status prüfen:
+  `curl -s https://www.githubstatus.com/api/v2/components.json`
+- ~~**CI prüft keine Typen.**~~ **Erledigt am 2026-08-07:** Der Workflow führt
+  jetzt `npx tsc --noEmit` aus, auditiert die Abhängigkeiten und pinnt seine
+  Actions auf Commit-SHAs statt auf bewegliche Tags.
+  **Lokal weiterhin selbst ausführen** — der Workflow läuft erst beim Push.
+- **eBay-Schreibpfad ist unterbrochen.** `mapActiveListing` setzt `ebayOfferId`
+  fest auf `null`, weil `GetMyeBaySelling` nur eine ItemID liefert. Dadurch bleibt
+  die `ebay_outbox` ohne Auftrag und ein bezahlter Webshop-Kauf beendet das
+  eBay-Angebot nicht. Entschärft nur durch `EBAY_WRITE_ENABLED=false`. Umstellung
+  auf `EndItem`/`EndFixedPriceItem` steht aus.
+- **Migrationsjournal ist veraltet.** `drizzle/meta/_journal.json` endet bei
+  `0002`, `0003`–`0005` kamen handgeschrieben dazu. `npm run db:generate` würde
+  gegen den alten Snapshot diffen. Vor dem nächsten Schemaschritt nachziehen.
+- **Build braucht `.env.local`.** `NEXT_PUBLIC_SUPABASE_*` wird zur Buildzeit
+  eingebacken. Ein Build ohne die Datei liefert ein Bundle aus, in dem `/admin`
+  und `/account` mit „Supabase ist noch nicht konfiguriert" abbrechen, während der
+  Rest gesund aussieht. Git-Worktrees erben die ignorierte Datei nicht. Details in
+  der README unter „Before the first production deployment".
+
+---
+
+## Historie
+
+### 2026-08-07 — Doppelverkaufsschutz: 10-Minuten-Import und Bestandsprüfung
+
+- **Stand:** ABGESCHLOSSEN
 
 **Ziel:** Punkt 1 und Punkt 3 aus [ai-todo.md](ai-todo.md) — die beiden
 billigen Maßnahmen gegen Doppelverkäufe, bevor der erste echte Verkauf läuft.
@@ -107,97 +205,20 @@ ist ohnehin abgelaufen.
 **Nach dem Deploy geprüft:** `/`, `/karten` und `/account` gesund, keine
 Supabase-Fehlermeldung, alle sechs Sicherheits-Kopfzeilen gesetzt.
 
+**Der neue Takt ist in der Datenbank belegt:** erster Lauf am 2026-08-07 um
+**10:50:40** UTC, beendet **10:51:57**, `SUCCEEDED`, 294 aktualisiert, 0
+Fehler. Damit ist auch das Abnahmekriterium von Punkt 1 erfüllt.
+
+**Eine Zahl aus dem alten Eintrag war falsch:** Ein Sync-Lauf dauert nicht
+„rund 30 Sekunden", sondern **rund 77**. Für einen 10-Minuten-Takt bleibt das
+unkritisch (77 s gegen 600 s Abstand), aber wer die Frequenz je weiter erhöhen
+will, sollte mit der richtigen Zahl rechnen.
+
 **Eine Falle beim Nachprüfen, für die nächste Sitzung:** Ich habe zuerst um
 10:47 in `sync_runs` geschaut und keinen neuen Lauf gefunden — der Deploy war
 aber erst um 10:45:18, der erste `*/10`-Lauf also frühestens um 10:50. **Erst
 die Deploy-Zeit nachsehen (`npx wrangler deployments list`), dann urteilen.**
 
----
-
-## Offene Punkte
-
-Kein Auftrag, sondern der Zustand, den die nächste Sitzung kennen muss.
-Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
-
-- **Dauerfreigabe für Deploys.** Der Betreiber am 2026-08-07: „Deploy. Dafür
-  brauchst du nicht fragen." Ein `npx wrangler deploy` nach grüner Prüfkette
-  (`tsc`, Lint, `npm test`, Bundle-Probe) braucht **keine** Einzelrücksprache
-  mehr. **Nicht** eingeschlossen und weiterhin abzusprechen: schreibende
-  Eingriffe in Produktionsdaten, Migrationen, Änderungen am eBay-Angebots-
-  bestand und alles, was Kosten oder Fremddienste hinzufügt.
-- **Produktion ist aktuell.** Vier Deploys am 2026-08-07: `1cfd52f1` (alle
-  Sicherheitskorrekturen), `650c189a` (HSTS), `81c6422d` (Profilformular),
-  `d893527a` (Konto- und Adminfläche in der Sprache des Shops). Das Rate-Limit
-  hat seine Bindings, der Katalog wird am Rand zwischengespeichert, alle sechs
-  Sicherheits-Kopfzeilen sind gesetzt, die CSP setzt durch. Nachprüfung in
-  [security-findings.md](security-findings.md) unter „Deploy am 2026-08-07".
-- **Die Kontofläche im angemeldeten Zustand hat niemand geprüft.** Weder das
-  Profilformular noch die Adminübersicht mit echten Zahlen — dafür wäre eine
-  Anmeldung mit dem Passwort des Betreibers nötig. Die Gestaltung stammt
-  vollständig aus den vorhandenen Regeln (`--paper`, `--ink`, `--line`,
-  `--muted`, `#f8f6f1` wie `.form-card`), sollte also tragen; ein Blick lohnt
-  trotzdem.
-- **Die CSP trägt `'unsafe-inline'` für Skripte.** vinext liefert acht
-  Inline-`<script>`-Blöcke je Seite; ohne Nonces bliebe die Seite sonst leer.
-  Folge: Inline-Eventhandler sind erlaubt, ein künftiges `<img onerror=…>`
-  liefe. Was greift, ist die zweite Hälfte — keine fremden Skripte, kein
-  Übertragungsziel außer dieser Herkunft und Supabase. Voller Schutz braucht
-  Nonces, Punkt 2a in [ai-todo.md](ai-todo.md).
-- **HSTS ist gesetzt**, als `max-age=31536000` **ohne** `includeSubDomains` und
-  **ohne** `preload`. Rückweg, falls je nötig: `max-age=0` setzen und deployen —
-  das funktioniert nur, weil `preload` fehlt.
-- **Cloudflare-Tarif ist Free** (vom Betreiber bestätigt, 2026-08-07). Das
-  heißt: 5 Mio. gelesene D1-Zeilen pro Tag für **alles zusammen** — jeden
-  Seitenaufruf und jeden stündlichen eBay-Import. SEC-05 wurde deshalb auf
-  *hoch* hochgestuft. Sollte der Shop wachsen, ist Workers Paid (5 $/Monat) die
-  einfachere Antwort als weiteres Sparen an Abfragen.
-- **Der eBay-Token in der lokalen `.env.local` ist abgelaufen.** eBay lehnt ihn
-  mit „invalid or was issued to another client" ab. **Produktion ist nicht
-  betroffen** — dort liegt er als Cloudflare-Secret, und der Import läuft
-  (09:00-Lauf: 294 aktualisiert). Folge ist nur, dass lokale Entwicklung nicht
-  mit eBay sprechen kann und sich das API-Kontingent von hier aus nicht
-  abfragen lässt. Beim nächsten OAuth-Durchlauf im Adminbereich mit erneuern.
-- **Eine Nachschlagearbeit bleibt offen:** die Supabase-Passwortrichtlinie und
-  Token-Laufzeit (*Authentication → Policies*). Über keinen öffentlichen
-  Endpunkt lesbar; die Alternative wäre gewesen, mit schwachen Passwörtern
-  Konten in der Produktions-Instanz anzulegen — deshalb unterlassen.
-- **Sync-Lauf nötig, damit „Neu dabei" echt wird.** `ebay_listings.start_at` ist
-  noch überall NULL; der Mapper füllt es erst ab Version `a1cdd14f`. Solange
-  liefert `/api/products/highlights` für „neueste" bewusst die Importreihenfolge
-  (`startAtAvailable: false`) statt fünf willkürlicher Karten. Nach einem
-  Sync-Lauf prüfen: `curl -s https://shop.brandycards.de/api/products/highlights`
-  muss `"startAtAvailable": true` melden.
-- ~~**Preisvorschlag hat keine Oberfläche mehr.**~~ **Veraltet, korrigiert am
-  2026-08-07:** `/api/price-offers` verlangt heute ein Produkt mit **aktivem
-  eBay-Listing** und lehnt Auktionen ab, nicht `PRELISTED`
-  (`app/api/price-offers/route.ts:34`). Das Formular existiert und ist auf der
-  Kartendetailseite eingebunden (`app/karten/[id]/page.tsx:138`).
-- **CI hat den aktuellen `main` nie geprüft.** Der Merge lief während des
-  GitHub-Actions-Ausfalls vom 2026-08-06 und wurde nur lokal verifiziert. Sobald
-  Actions wieder `operational` meldet, einmal den Workflow über `main` laufen
-  lassen: `gh workflow run CI --ref main` oder `gh run rerun <id>`. Status prüfen:
-  `curl -s https://www.githubstatus.com/api/v2/components.json`
-- ~~**CI prüft keine Typen.**~~ **Erledigt am 2026-08-07:** Der Workflow führt
-  jetzt `npx tsc --noEmit` aus, auditiert die Abhängigkeiten und pinnt seine
-  Actions auf Commit-SHAs statt auf bewegliche Tags.
-  **Lokal weiterhin selbst ausführen** — der Workflow läuft erst beim Push.
-- **eBay-Schreibpfad ist unterbrochen.** `mapActiveListing` setzt `ebayOfferId`
-  fest auf `null`, weil `GetMyeBaySelling` nur eine ItemID liefert. Dadurch bleibt
-  die `ebay_outbox` ohne Auftrag und ein bezahlter Webshop-Kauf beendet das
-  eBay-Angebot nicht. Entschärft nur durch `EBAY_WRITE_ENABLED=false`. Umstellung
-  auf `EndItem`/`EndFixedPriceItem` steht aus.
-- **Migrationsjournal ist veraltet.** `drizzle/meta/_journal.json` endet bei
-  `0002`, `0003`–`0005` kamen handgeschrieben dazu. `npm run db:generate` würde
-  gegen den alten Snapshot diffen. Vor dem nächsten Schemaschritt nachziehen.
-- **Build braucht `.env.local`.** `NEXT_PUBLIC_SUPABASE_*` wird zur Buildzeit
-  eingebacken. Ein Build ohne die Datei liefert ein Bundle aus, in dem `/admin`
-  und `/account` mit „Supabase ist noch nicht konfiguriert" abbrechen, während der
-  Rest gesund aussieht. Git-Worktrees erben die ignorierte Datei nicht. Details in
-  der README unter „Before the first production deployment".
-
----
-
-## Historie
 
 ### 2026-08-07 — Konto- und Adminfläche in die Sprache des Shops
 

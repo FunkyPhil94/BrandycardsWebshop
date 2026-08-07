@@ -357,6 +357,13 @@ hängt am selben Lauf. Eine abgelaufene Reservierung wird jetzt nach 15–25 sta
 nach 15–75 Minuten freigegeben — das entschärft die Bestandssperre aus SEC-03
 zusätzlich zur dort eingebauten Obergrenze.
 
+**Nachgemessen und bestätigt:** Erster Lauf im neuen Takt am 2026-08-07 um
+10:50:40 UTC, beendet 10:51:57, `SUCCEEDED`, 294 aktualisiert, 0 Fehler.
+**Korrektur einer Zahl aus dem ursprünglichen Eintrag:** Ein Lauf dauert nicht
+„rund 30 Sekunden", sondern **rund 77**. Für einen 10-Minuten-Takt ist das
+weiterhin unkritisch (77 s gegen 600 s Abstand), aber wer die Frequenz je
+weiter erhöhen will, sollte mit der richtigen Zahl rechnen.
+
 ### Vollständige Sicherheitsprüfung — 2026-08-07
 
 Auftrag: [security-audit-brief.md](security-audit-brief.md).
