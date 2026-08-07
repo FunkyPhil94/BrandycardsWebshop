@@ -37,34 +37,8 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-- **Stand:** LÄUFT
-- **Datum:** 2026-08-07
-- **Ziel:** Punkt 1 aus [ai-todo.md](ai-todo.md) — Zeitgrenzen für eBay und eine
-  Sperre, die sich nicht verklemmt.
-- **Befund vorab (Diagnose ist durch, siehe unten „Ergebnis"):** Die in der
-  Aufgabenliste genannte Ursachenkette stimmt in ihren ersten beiden Gliedern
-  und ist im dritten **falsch**. Zusätzlich ein zweiter, unabhängiger Fehler
-  gefunden: Die Veraltet-Prüfung `activeRun.startedAt < staleBefore` vergleicht
-  zwei unterschiedliche Zeitformate als Zeichenketten und ist damit
-  **immer wahr**.
-- **Geplante Schritte:**
-  1. `fetchWithTimeout` in `lib/ebay-client.ts`, an allen fünf Aufrufen
-  2. Neues, netzfreies Modul `lib/sync-lock.ts`: Sperre mit Verfallszeit statt
-     Wahrheitswert, Veraltet-Prüfung über `parseDbTimestamp`, `withDeadline`
-  3. `lib/ebay-sync.ts`: Aufräumcode für verwaiste `sync_runs`-Zeilen **vor**
-     die Sperrprüfung ziehen; ganzen Lauf unter eine Frist stellen
-  4. Test `tests/ebay-sync-timeout.test.mjs`, in `npm test` aufnehmen
-  5. Korrektur testweise zurücknehmen, Test rot sehen
-  6. `npx tsc --noEmit`, `npm run lint`, `npm test`, Build mit `.env.local`,
-     `npx wrangler deploy`, `/admin` prüfen
-- **Betroffen:** `lib/ebay-client.ts`, `lib/ebay-sync.ts`, neu `lib/sync-lock.ts`,
-  neu `tests/ebay-sync-timeout.test.mjs`, `package.json`. Kein Schema, keine
-  Migration, keine Produktionsdaten.
-- **Verifikation:** Test stellt eine nicht antwortende eBay-API nach; der Lauf
-  endet mit Fehler statt zu hängen, und der nächste Lauf startet wieder.
-- **Risiko:** gering. Der Cron-Takt bleibt in diesem Schritt unverändert bei
-  `0 */2 * * *` — Beschleunigung erst nach Punkt 2.
-- **Ergebnis:** _(wird nachgetragen)_
+_Kein laufender Auftrag._ Vorlage: Stand, Datum, Ziel, geplante Schritte,
+betroffene Dateien, Verifikation, Ergebnis.
 
 ---
 
@@ -135,11 +109,12 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
   ist auf 10 000 gestiegen. Letzteres betraf die Bestandsprüfung vor der
   Zahlung: Sie macht einen eBay-Aufruf je Karte, und bei 50 Karten wäre sie auf
   Free an die Grenze gestoßen.
-- **Ein Sync-Lauf blieb am 2026-08-07 um 13:20 auf `RUNNING` hängen und legte
-  den Import über eine Stunde still.** Die Zeile wurde gegen 15:00 von Hand
-  freigegeben (`UPDATE sync_runs SET status='FAILED' WHERE status='RUNNING'`),
-  nach Rücksprache mit dem Betreiber. Ursache und Korrektur: Punkt 1 in
-  [ai-todo.md](ai-todo.md).
+- **Der hängende Sync-Lauf vom 2026-08-07 ist behoben** (Version `07da6e9b`,
+  siehe Historie). Was davon zu wissen bleibt: Ein Lauf ist jetzt nach
+  5 Minuten in jedem Fall beendet, und eine `RUNNING`-Zeile wird vom nächsten
+  Cron-Schlag danach eingesammelt — ein Eingriff von Hand sollte nie wieder
+  nötig sein. Bleibt der Import trotzdem stehen, ist die Ursache **nicht**
+  mehr die Sperre und die Suche fängt woanders an.
 - **Zwei Messfehler von mir an diesem Tag, damit sie sich nicht wiederholen:**
   1. `wrangler d1 insights` liefert standardmäßig nur die **Top 5** Abfragen.
      Das Flag heißt **`--limit`**, nicht `--count`. Mit `--limit 100` meldet die
@@ -197,6 +172,64 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
 ---
 
 ## Historie
+
+### 2026-08-07 — Zeitgrenzen für eBay, und eine Sperre, die sich nicht verklemmt
+
+- **Stand:** ABGESCHLOSSEN
+- **Ziel:** Punkt 1 aus [ai-todo.md](ai-todo.md). Der Import blieb an diesem Tag
+  dreimal auf `RUNNING` hängen; einmal über eine Stunde, bis von Hand
+  eingegriffen wurde.
+- **Diagnose zuerst, wie beauftragt — die vermutete Ursache stimmt nur zur
+  Hälfte:**
+  - **Bestätigt:** `lib/ebay-client.ts` setzte an keinem der fünf `fetch`-Aufrufe
+    eine Zeitgrenze. Und `localSyncLock` wurde nur im `finally` eines `await`
+    zurückgesetzt — kommt das `await` nie zurück, bleibt die Sperre für die
+    Lebensdauer des Isolates gesetzt.
+  - **Widerlegt:** Glied 3 der Kette („weil zusätzlich die Datenbankzeile auf
+    `RUNNING` steht, verweigern auch andere Isolates den Start"). Die
+    Produktionsdaten sagen etwas anderes. Der 04:00-Lauf wurde erst um 09:00
+    freigegeben, der 11:50-Lauf erst um 12:30 — beide durch „Veralteter
+    Sync-Lauf automatisch geschlossen", also durch genau den Aufräumcode, der
+    laut Vermutung nie erreicht wird. Er *wird* erreicht, nur sporadisch: immer
+    dann, wenn ein frisches Isolate an die Reihe kommt. Die Cron-Schläge
+    dazwischen (05:00–08:00, 12:00–12:20) hinterließen keine Zeile — die
+    Signatur eines Abbruchs **vor** dem `INSERT`. Der dauerhafte Blocker war
+    also allein die Sperre im Isolate, nicht die Datenbankzeile. Die Korrektur
+    daraus: Der Aufräumcode gehört **vor** die Sperrprüfung, nicht dahinter.
+  - **Neu gefunden, unabhängig davon:** Die Veraltet-Prüfung
+    `activeRun.startedAt < staleBefore` verglich `2026-08-07 13:20:40` aus
+    SQLites `CURRENT_TIMESTAMP` mit ISO-8601 als Zeichenketten. An Stelle 10
+    steht links ein Leerzeichen (0x20), rechts ein `T` (0x54) — der Vergleich
+    war **unabhängig vom Alter immer wahr**. Jeder laufende Import galt als
+    verwaist, auch ein drei Sekunden alter. Die 30-Minuten-Frist gab es nur auf
+    dem Papier. Genau die Falle, vor der `lib/retention.ts` seit SEC-15 warnt.
+  - **Nicht belegbar und deshalb nicht behauptet:** *welcher* `await` am
+    2026-08-07 hängen blieb. Ein stehengebliebenes `db.batch` — 294 Stück je
+    Lauf, ebenfalls unbegrenzt — oder ein von Cloudflare abgeräumter Aufruf
+    erzeugt dieselbe Signatur. Zeitgrenzen an den `fetch`-Aufrufen sind daher
+    **notwendig, aber nicht hinreichend**; der ganze Lauf braucht eine Frist.
+- **Ergebnis:** Gebaut und deployed als Version `07da6e9b`.
+  - `fetchWithTimeout` an allen fünf eBay-Aufrufen, 30 s, über
+    `EBAY_FETCH_TIMEOUT_MS` übersteuerbar.
+  - Neu `lib/sync-lock.ts` (netzfrei, ohne D1, damit prüfbar): `ExpiringLock`
+    mit Verfallszeit statt Wahrheitswert, `isSyncRunStale` über
+    `parseDbTimestamp`, `withDeadline` für den ganzen Lauf. Frist und
+    Verfallszeit stehen bei 5 Minuten gegen einen Lauf von ~77 Sekunden.
+  - `lib/ebay-sync.ts`: `releaseStaleSyncRuns()` läuft jetzt vor der
+    Sperrprüfung.
+  - `tests/ebay-sync-timeout.test.mjs`, 11 Tests, in `npm test` aufgenommen.
+    Rot-Nachweis geführt: Ohne die Korrekturen laufen die drei `fetch`-Tests in
+    ihr Zeitlimit („hängt", genau das Abnahmekriterium), und die Tests zur
+    Zeitstempelfalle und zur verfallenden Sperre schlagen fehl.
+  - Prüfkette grün: `npx tsc --noEmit` sauber, `npm run lint` 0 Fehler (die
+    bekannte `img`-Warnung), `npm test` 130/130, Bundle-Probe bestanden,
+    `/admin`, `/account` und `/` nach dem Deploy mit 200 und ohne
+    „Supabase ist noch nicht konfiguriert".
+  - **Cron unverändert** bei `0 */2 * * *`. Beschleunigung erst nach Punkt 2.
+- **Noch nicht gesehen:** ein echter Lauf unter dem neuen Code. Deploy war um
+  15:1x UTC, der nächste Cron-Schlag um 16:00 UTC. Beim nächsten Arbeitsschritt
+  nachsehen: `SELECT started_at, status, updated_count FROM sync_runs ORDER BY
+  started_at DESC LIMIT 3`.
 
 ### 2026-08-07 — Sync-Takt, D1-Budget und ein hängengebliebener Lauf
 

@@ -49,7 +49,21 @@ eBay-Schreibpfad, dann bewerben.**
 
 ---
 
-## 1. Zeitgrenzen für eBay, und eine Sperre, die sich nicht verklemmt
+## 1. ~~Zeitgrenzen für eBay, und eine Sperre, die sich nicht verklemmt~~ — ERLEDIGT am 2026-08-07
+
+Deployed als Version `07da6e9b`. Die vermutete Ursachenkette stimmte in den
+ersten beiden Gliedern und war im dritten falsch; dazu kam ein unabhängiger
+Fehler in der Veraltet-Prüfung. Diagnose und Belege stehen in
+[ai-agent-log.md](ai-agent-log.md), der Durchlauf in
+[ai-handover.md](ai-handover.md) unter Historie.
+
+Kurz: `fetchWithTimeout` an allen fünf eBay-Aufrufen; neues Modul
+`lib/sync-lock.ts` mit Sperre auf Verfallszeit, `isSyncRunStale` über
+`parseDbTimestamp` und `withDeadline` für den ganzen Lauf; der Aufräumcode für
+verwaiste `sync_runs`-Zeilen läuft jetzt **vor** der Sperrprüfung.
+11 Tests in `tests/ebay-sync-timeout.test.mjs`, Rot-Nachweis geführt.
+
+<details><summary>Ursprünglicher Eintrag, zur Nachvollziehbarkeit</summary>
 
 **Aufwand:** klein · **Hängt an:** nichts · **Blockiert:** die Verlässlichkeit
 jedes Imports
@@ -100,6 +114,8 @@ jemand von Hand eingreift. Genau das war am 2026-08-07 nötig.
 gestubbtem `fetch`, wie in `tests/ebay-availability.test.mjs`) und belegt, dass
 der Lauf mit einem Fehler endet statt zu hängen — und dass der **nächste** Lauf
 danach wieder startet. Ohne die Korrektur muss der Test hängen bzw. rot sein.
+
+</details>
 
 ---
 

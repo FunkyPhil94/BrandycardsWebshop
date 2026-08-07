@@ -339,3 +339,42 @@ nachweislich rot gesehen.
 ## Arbeitsweise
 
 Agents erhalten klar abgegrenzte Prüf- oder Implementierungsaufträge. Ihre Ergebnisse werden vor Übernahme geprüft. Änderungen werden anschließend lokal getestet, committed und nach GitHub gepusht.
+
+## 2026-08-07 - Warum der Import haengenblieb, und was daran nicht stimmte
+
+- Ausloeser: Drei Sync-Laeufe blieben an diesem Tag auf `RUNNING` haengen (04:00,
+  11:50, 13:20). Der letzte legte den Import ueber eine Stunde still, bis die
+  Zeile von Hand freigegeben wurde.
+- Vermutete Ursache laut Aufgabenliste: `lib/ebay-client.ts` setzt an keinem
+  `fetch` eine Zeitgrenze; die Sperre `localSyncLock` bleibt deshalb haengen;
+  und weil zusaetzlich die `sync_runs`-Zeile auf `RUNNING` steht, koennen auch
+  andere Isolates nicht starten.
+- Pruefung an den Produktionsdaten statt am Verdacht: Die fehlende Zeitgrenze
+  und die haengende Sperre sind im Code belegt. Das dritte Glied ist **falsch**.
+  Der 04:00-Lauf wurde um 09:00 freigegeben, der 11:50-Lauf um 12:30 — beide mit
+  „Veralteter Sync-Lauf automatisch geschlossen", also durch genau den
+  Aufraeumcode, der laut Vermutung nie erreicht wird. Er wird erreicht, aber nur
+  von einem frischen Isolate. Die Cron-Schlaege dazwischen hinterliessen gar
+  keine Zeile — die Signatur eines Abbruchs vor dem `INSERT`. Der dauerhafte
+  Blocker war also die Sperre im Isolate, und der eigentliche Konstruktions-
+  fehler ist die **Reihenfolge**: Aufraeumen stand hinter der Sperrpruefung.
+- Nebenbefund, unabhaengig und aelter: Die Veraltet-Pruefung verglich
+  `2026-08-07 13:20:40` aus SQLites `CURRENT_TIMESTAMP` mit ISO-8601 als
+  Zeichenketten. Das Leerzeichen (0x20) sortiert vor dem `T` (0x54), der
+  Vergleich war damit immer wahr — die 30-Minuten-Frist existierte nur auf dem
+  Papier, jeder gerade gestartete Lauf galt als verwaist. Dieselbe Falle ist in
+  `lib/retention.ts` seit SEC-15 dokumentiert; sie war hier nur nicht angewandt.
+- Was bewusst offen bleibt: Welcher `await` konkret haengenblieb, laesst sich
+  nicht mehr feststellen. Ein stehengebliebenes `db.batch` — 294 je Lauf,
+  ebenfalls unbegrenzt — oder ein von Cloudflare abgeraeumter Aufruf erzeugt
+  dieselbe Signatur. Deshalb reicht es nicht, die `fetch`-Aufrufe zu begrenzen:
+  der ganze Lauf bekommt eine Frist (`withDeadline`), unabhaengig davon, wo er
+  steckenbleibt.
+- Umsetzung: `fetchWithTimeout` an allen fuenf eBay-Aufrufen; neues Modul
+  `lib/sync-lock.ts` mit `ExpiringLock` (Verfallszeit statt Wahrheitswert),
+  `isSyncRunStale` ueber `parseDbTimestamp` und `withDeadline`; Aufraeumcode
+  laeuft vor der Sperrpruefung.
+- Verifikation: `tests/ebay-sync-timeout.test.mjs`, 11 Tests. Rot-Nachweis
+  gefuehrt — ohne die Korrekturen laufen die drei `fetch`-Tests in ihr
+  Zeitlimit, statt einen Fehler zu liefern. `npx tsc --noEmit` sauber,
+  `npm run lint` 0 Fehler, `npm test` 130/130. Deployed als `07da6e9b`.
