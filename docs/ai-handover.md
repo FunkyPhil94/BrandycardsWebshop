@@ -37,7 +37,36 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-*(leer — bereit für den nächsten Auftrag.)*
+### 2026-08-08 — Der große Block: Migration, manuelle Karten, Handmarkierungen, SEC-12
+
+- **Stand:** LÄUFT
+- **Warum zusammen:** ai-todo Punkt 12.1, Punkt 11 und SEC-12 aus Punkt 8
+  brauchen **dieselbe Migration**. Einzeln erledigt hieße dreimal am Schema
+  arbeiten und dreimal `drizzle/meta/_journal.json` nachziehen, das bei `0002`
+  endet, während `0003`–`0006` handgeschrieben sind.
+- **Drei Entscheidungen des Betreibers vom 2026-08-08:**
+  1. Manuelle Karten sind **verhandelbar** wie eBay-Karten.
+  2. Stellt der Betreiber dieselbe Karte später bei eBay ein, führt der Sync
+     **automatisch zusammen**. *Einwand ist ausgesprochen und überstimmt:*
+     Titel sind Freitext, ein Treffer bleibt eine Vermutung. Deshalb so eng wie
+     möglich — zeichengenau nach Normalisierung, **nie löschen, nur
+     stilllegen**, jeder Fall als `syncEvent` sichtbar, und Karten mit
+     angenommenem Preisvorschlag oder aktiver Reservierung werden übersprungen.
+  3. Manuelle Karten bekommen einen **eigenen Bereich in der Navigation**.
+- **Reihenfolge:** Migration `0006` → Katalog/Detailseite (`leftJoin` statt
+  `innerJoin`, Preis aus dem Produkt) → Sync respektiert Handmarkierungen und
+  führt zusammen → Adminkonsole zum Anlegen und Bearbeiten → Navigationsbereich
+  → SEC-12 (Anspruchs-Kennung statt Token in der Umleitung).
+- **Fallen, die schon dastehen** (ai-todo Punkt 11): Der Waisen-Sweep setzt jedes
+  `EBAY_SYNCED`-Produkt ohne Listing auf `INACTIVE` — manuelle Karten brauchen
+  deshalb eine eigene `kind`. Die Detailseite verknüpft `ebay_listings` per
+  `innerJoin` und liefert sonst 404. Preis und Menge stehen heute im Listing,
+  nicht am Produkt.
+- **Abbruchfall:** Bleibt hier etwas liegen, ist der gefährliche Zustand eine
+  **angewandte Migration ohne den zugehörigen Code**. `products.kind` bekäme
+  dann einen Wert, den niemand schreibt — harmlos. Umgekehrt (Code ohne
+  Migration) brechen Katalog und Adminkonsole. Also: **Migration zuerst
+  anwenden, Code danach deployen.**
 
 **Eine Abnahme steht noch aus, die nur der Betreiber machen kann:** Die neue
 Bestellansicht in `/admin` ist deployed, aber **hinter der Anmeldung** — von
