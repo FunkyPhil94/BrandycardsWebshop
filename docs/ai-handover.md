@@ -37,7 +37,27 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-*(leer — bereit für den nächsten Auftrag.)*
+### 2026-08-08 — Auskunft und Kontolöschung zur Selbstbedienung (ai-todo Punkt 8)
+
+- **Stand:** LÄUFT
+- **Ziel:** Ein Kunde soll seine Daten selbst herunterladen und sein Konto selbst
+  löschen können. Heute geht beides nur per E-Mail an den Betreiber — der Rest
+  aus SEC-15, der laut Arbeitsvorrat vor dem Verkaufsstart stehen soll.
+- **Geplant:** `GET /api/account/data` (Auskunft als JSON) und
+  `POST /api/account/delete` (Löschung), dazu ein Bereich „Meine Daten" in
+  `app/account/page.tsx`.
+- **Entscheidung des Betreibers vom 2026-08-08:** Die Löschung soll **auch das
+  Supabase-Anmeldekonto** entfernen. Dafür braucht der Worker einen
+  **Service-Role-Key als Cloudflare-Secret** (`SUPABASE_SERVICE_ROLE_KEY`), den
+  der Betreiber anlegt. Fehlt er, muss die Route **abbrechen statt halb zu
+  löschen** — sonst stünde ein Kunde ohne Shopdaten, aber mit funktionierendem
+  Login da.
+- **Was bewusst NICHT gelöscht wird:** Bestellungen. Rechnungsdaten unterliegen
+  der Aufbewahrungspflicht (Art. 17 Abs. 3 lit. b DSGVO); sie verlieren nur die
+  Verknüpfung zum Konto. Das muss dem Kunden vor dem Klick klar dastehen.
+- **Risiko:** Diese Route löscht unwiderruflich. Kein Löschlauf gegen
+  Produktionsdaten zum Ausprobieren — geprüft wird gegen einen eigens
+  angelegten Testnutzer.
 
 **Eine Abnahme steht noch aus, die nur der Betreiber machen kann:** Die neue
 Bestellansicht in `/admin` ist deployed, aber **hinter der Anmeldung** — von
