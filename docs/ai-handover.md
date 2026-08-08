@@ -37,8 +37,18 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-_Kein laufender Auftrag._ Vorlage: Stand, Datum, Ziel, geplante Schritte,
-betroffene Dateien, Verifikation, Ergebnis.
+- **Stand:** LÄUFT
+- **Datum:** 2026-08-07
+- **Ziel:** „Sammelkarten" wieder auf **„Sportkarten"** umstellen. Der Betreiber
+  hatte den Begriff im vorigen Durchlauf verwechselt und korrigiert das jetzt.
+  Damit spricht der Shop **einen** Begriff, statt wie seit einer Stunde zwei.
+- **Betroffen:** `app/layout.tsx:6`, `app/ueber-uns/page.tsx:7`,
+  `app/ueber-uns/page.tsx:17` — dieselben drei Stellen wie im Durchlauf davor.
+  Der Banner sagt bereits „Sportkarten" und bleibt unangetastet.
+- **Verifikation:** Kein „Sammelkarten" und kein „Fußball" mehr in sichtbarem
+  Text oder in den Beschreibungen, in Produktion nachgeprüft. **Dabei mit einer
+  frisch geladenen Seite arbeiten** — beim letzten Mal zeigte der Browser
+  minutenlang den alten Text, während `curl` schon den neuen lieferte.
 
 ---
 
