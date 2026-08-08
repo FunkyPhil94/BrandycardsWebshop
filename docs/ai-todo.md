@@ -56,7 +56,7 @@ eBay-Schreibpfad, dann bewerben.**
 
 ---
 
-## 0. ~~PayPal auf Live umstellen~~ — UMGESETZT am 2026-08-08, Abnahme steht aus
+## 0. ~~PayPal auf Live umstellen~~ — ERLEDIGT und ABGENOMMEN am 2026-08-08
 
 Der Betreiber hat Live-App, Live-Webhook auf
 `https://shop.brandycards.de/api/paypal/webhook` und die drei Secrets
