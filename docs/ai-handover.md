@@ -37,14 +37,25 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-*(leer — bereit für den nächsten Auftrag.)*
+### 2026-08-08 — Adminkonsole, Teilschritt „Bestellungen sehen" (Punkt 12.2)
 
-**Angefangen und bewusst nicht begonnen:** Der Betreiber hat am 2026-08-08
-„Fang mit Punkt 12 an" gesagt. Ich bin bis zum Lesen des Bestands gekommen und
-habe dabei einen Befund gemacht, der die Aufgabe verkleinert — er steht in
-ai-todo Punkt 12 unter Nummer 3. **Geschrieben wurde kein Code**, es liegt also
-nichts halbfertig herum. Wer weitermacht, fängt bei Schritt 1 der dortigen
-Liste an: eine Oberfläche für Preisvorschläge, **keine** neue API.
+- **Stand:** LÄUFT
+- **Ziel:** Der Betreiber soll Bestellungen samt Positionen, Zahlung und
+  Lieferadresse in `/admin` sehen, statt sie über `wrangler d1 execute` zu
+  erfragen. Neue Route `app/api/admin/orders/route.ts` (nur `GET`, `requireAdmin`
+  aus `lib/admin-access.ts`), neue Oberfläche `app/admin/orders-panel.tsx` nach
+  dem Muster von `offers-panel.tsx`, Stile in `app/globals.css`.
+- **Vorbefund, der die Aufgabe verkleinert hat:** Punkt 12.3 (Preisvorschläge
+  entscheiden) ist **komplett fertig** — nicht nur die API. `offers-panel.tsx`
+  existiert seit `a0d4367`, wird in `app/admin/page.tsx` gerendert, Stile stehen
+  in `globals.css`. Die Notiz im Arbeitsvorrat („die Oberfläche fehlt") war
+  veraltet und wird in diesem Lauf richtiggestellt.
+- **Ausgewählt vom Betreiber** aus vier Teilschritten; 12.1 (Angebote einzeln
+  bearbeiten) bleibt liegen, weil dort die Entwurfsfrage „Sync überschreibt
+  Handeingaben" noch offen ist.
+- **Abnahme:** `npx tsc --noEmit`, `npm run lint`, `npm test` grün; danach Deploy
+  aus dem **Hauptverzeichnis** (Worktree hat keine `.env.local`) und `/admin` im
+  Browser prüfen.
 
 Zwei Entscheidungen hat der Betreiber am selben Tag ausdrücklich vertagt:
 **PayPal-Gebühren** („gerade erstmal egal") und die **Bestandsprüfung**
