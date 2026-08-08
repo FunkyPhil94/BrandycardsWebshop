@@ -762,24 +762,47 @@ sind.
 
 ## 10. Kleine Anpassungen an Texten und Inhalten
 
-**Aufwand:** klein · **Hängt an:** einer Liste des Betreibers
+**Aufwand:** klein je Punkt · **Hängt an:** einer Liste des Betreibers ·
+**Laufende Sammelstelle**, kein Punkt mit Ende
 
-**Sammelstelle, noch nicht abarbeitbar.** Der Betreiber hat den Bedarf am
-2026-08-08 genannt, ohne die Stellen zu benennen. Wer hier anfängt, ohne die
-Liste zu haben, rät — und Texte, die niemand angefordert hat, zu ändern ist
-schlimmer als sie zu lassen.
+Dieser Punkt wird nie „fertig". Er sammelt Text- und Inhaltswünsche, die der
+Betreiber im Vorbeigehen nennt. **Wer hier ohne benannte Stelle anfängt, rät** —
+und Texte zu ändern, die niemand angefordert hat, ist schlimmer als sie zu
+lassen.
 
-**Zu sammeln sind:** Seite, genaue Stelle, alter Text, gewünschter Text.
+**Format je Wunsch:** Seite, genaue Stelle, alter Text, gewünschter Text.
 
-**Bekannte Kandidaten** (von der KI beim Arbeiten gesehen, **nicht** vom
-Betreiber bestätigt — vor dem Ändern fragen):
+### Erledigt
 
-- `app/karten/page.tsx` beschriftet Karten weiterhin mit „eBay synchronisiert ·
-  Sofort-Kaufen". Für Kundschaft ist „eBay synchronisiert" eine Innensicht.
-- Die Auktionszweige in `meta()` und `badge()` derselben Datei sind seit dem
-  2026-08-08 tot — Auktionen erscheinen nicht mehr im Katalog.
-- `/verkaufen` und `/anfragen` sind seit dem 2026-08-06 unverändert; ob ihre
-  Texte noch zum heutigen Shop passen, hat niemand geprüft.
+- ~~**`/ueber-uns`, „Warum auch eBay", letzter Satz.**~~ Erledigt am
+  2026-08-08, deployed als `42cabc7a`. Aus „damit dir nichts doppelt oder gar
+  nicht angeboten wird" wurde **„damit dir auch nichts entgeht."** Der alte
+  Satz erklärte ein technisches Problem, das den Kunden nichts angeht.
+- ~~**`/ueber-uns`, Signatur.**~~ Erledigt am 2026-08-08, gleicher Deploy. Aus
+  dem gesetzten Kürzel `B×B` wurde das **echte Wappen**, die drei Wörter
+  („BRÜDER · BRANDY · BALL") sind weg. Die verwaiste CSS-Regel
+  `.about-signature` wurde mit entfernt.
+- ~~**`/karten`, Zeile unter dem Ausweis.**~~ Erledigt am 2026-08-08.
+  „eBay synchronisiert · Sofort-Kaufen" ist **ersatzlos** gestrichen: Die
+  zweite Hälfte wiederholte den Ausweis darüber, die erste war eine Innensicht.
+
+### Offen — vom Betreiber bestätigt
+
+*(derzeit keine)*
+
+### Kandidaten — von der KI gesehen, **nicht** bestätigt
+
+Vor dem Ändern fragen. Sie stehen hier, damit sie nicht verlorengehen, **nicht**
+als Auftrag.
+
+- **Die Auktionszweige in `meta()` und `badge()`** (`app/karten/page.tsx`) sind
+  seit dem 2026-08-08 unerreichbar — Auktionen erscheinen nicht mehr im
+  Katalog. Toter Code, der beim Lesen den falschen Eindruck erweckt, der Shop
+  zeige Auktionen. Dasselbe gilt für den Auktionszweig in
+  `app/api/products/route.ts`, falls dort noch einer steht.
+- **`/verkaufen` und `/anfragen`** sind seit dem 2026-08-06 unverändert. Ob
+  ihre Texte noch zum heutigen Shop passen — der inzwischen echtes Geld
+  einnimmt und Verhandeln bewirbt —, hat niemand geprüft.
 
 ---
 

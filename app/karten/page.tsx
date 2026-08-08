@@ -20,10 +20,21 @@ type Product = {
   imageUrls: string[];
 };
 
+/** Die Zeile unter dem Ausweis — oder nichts.
+ *
+ * **Für Festpreiskarten steht hier absichtlich nichts mehr.** Bis zum
+ * 2026-08-08 stand dort „eBay synchronisiert · Sofort-Kaufen": Die zweite
+ * Hälfte wiederholte den Ausweis darüber, die erste war eine Innensicht, die
+ * Kundschaft bestenfalls nichts sagt und schlimmstenfalls zu der Frage führt,
+ * ob man nun zu eBay müsse. Ersatzlos gestrichen statt durch eine andere
+ * Behauptung ersetzt.
+ *
+ * Die Vormerkliste behält ihren Hinweis — dort steht echte Information.
+ */
 function meta(category: Product["category"]) {
   if (category === "Auktion") return "Auktion auf eBay · Kauf direkt bei eBay";
   if (category === "Vormerkliste") return "Noch nicht im Verkauf · Interesse vormerken";
-  return "eBay synchronisiert · Sofort-Kaufen";
+  return null;
 }
 
 function badge(category: Product["category"]) {
@@ -165,7 +176,9 @@ export default function KartenPage() {
                 <span className="product-badge">{badge(product.category)}</span>
               </div>
               <div className="product-info">
-                <p className="product-meta">{meta(product.category)}</p>
+                {/* Nur zeichnen, wenn es etwas zu sagen gibt — ein leerer
+                    Absatz hinterließe seinen Abstand und risse ein Loch. */}
+                {meta(product.category) && <p className="product-meta">{meta(product.category)}</p>}
                 <h2><Link href={`/karten/${product.id}`}>{product.title}</Link></h2>
                 {product.description && <p className="product-description">{product.description}</p>}
                 <div className="product-footer">
