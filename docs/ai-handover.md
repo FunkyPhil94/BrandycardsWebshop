@@ -152,8 +152,35 @@ Quere kommen.
 - **Was hiermit ausdrücklich noch NICHT belegt ist: dass Geld ankommt.** Ob die
   hinterlegten Live-Zugangsdaten gültig sind und der Live-Webhook zustellt,
   zeigt allein ein echter Kauf. Der steht beim Betreiber und ist das
-  Abnahmekriterium aus ai-todo Punkt 0. **Bis dahin gilt Punkt 0 als
-  umgesetzt, aber nicht als abgenommen.**
+  Abnahmekriterium aus ai-todo Punkt 0.
+
+#### ABGENOMMEN — der erste echte Kauf ist durch
+
+Bestellung **`BC-20260808-89309FCA`**, 2026-08-08 08:29:48 UTC. **Der Shop hat
+zum ersten Mal echtes Geld eingenommen.**
+
+| Prüfung | Ergebnis |
+|---|---|
+| Bestellung | `PAID`, 1 Cent Ware + 345 Cent Versand = **346 Cent** |
+| Zahlung | `CAPTURED`, Capture-ID `1LC23949C0153504L`, 346 Cent EUR |
+| Bestand | verfügbar 0, reserviert 0, **verkauft 1**, `SOLD` |
+| eBay-Outbox | leer (Schreibpfad ist aus, erwartet) |
+| Webhook | `PAYMENT.CAPTURE.COMPLETED`, **`PROCESSED`** um 08:29:53.925Z |
+| Bestellbestätigung | vom Betreiber bestätigt |
+
+**Damit ist auch die Webhook-Korrektur an echten Daten belegt — und meine
+Einschätzung dazu war zu pessimistisch.** Ich hatte notiert, dafür müsse PayPal
+dasselbe Ereignis ein zweites Mal zustellen, was sich nicht herbeiführen lasse.
+**Falsch:** Der Dubletten-Pfad wird bei *jeder* Zahlung durchlaufen, weil immer
+beide Wege feuern — die Rückkehr des Kunden aus PayPal (08:29:48) und der
+Webhook fünf Sekunden später (08:29:53). Der Kunde gewann den Übergang, der
+Webhook fand `CAPTURED` vor und lief in den Dubletten-Pfad. Genau dieselbe Lage
+wie um 06:10 — nur steht die Zeile jetzt auf `PROCESSED` statt auf `RECEIVED`.
+Ein direkterer Vergleich ist kaum zu bekommen.
+
+Die alte Zeile `WH-4MD290111R3948627-…` steht weiterhin auf `RECEIVED` und ist
+damit die einzige verbliebene im ganzen Bestand — sie taugt als Beleg, wie es
+vorher aussah.
 
 ### 2026-08-08 — Der Dubletten-Webhook hinterlässt keine falsche Spur mehr
 

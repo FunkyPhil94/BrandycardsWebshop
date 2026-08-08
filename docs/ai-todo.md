@@ -62,11 +62,17 @@ antwortet mit 400 statt 503 — die Webhook-ID liegt also vor.
 und genau dieser Zustand blieb vom 2026-08-06 bis zum 2026-08-08 unbemerkt —
 der Shop sah gesund aus und konnte kein Geld einnehmen.
 
-**🔴 Die Abnahme fehlt noch, und sie liegt beim Betreiber:** ein echter Kauf
-über einen kleinen Betrag. Fertig, wenn die Bestellung auf `PAID` steht und die
-Bestellbestätigung ankommt; danach erstatten. **Ob die Live-Zugangsdaten gültig
-sind, ist bis dahin nicht belegt** — das lässt sich ohne echte Zahlung nicht
-prüfen.
+**✅ ABGENOMMEN am 2026-08-08:** Bestellung `BC-20260808-89309FCA` über 3,46 €
+(1 Cent Ware + 3,45 € Versand) steht auf `PAID`, die Zahlung auf `CAPTURED` mit
+Capture-ID `1LC23949C0153504L`, der Bestand auf `SOLD`, die Webhook-Zeile auf
+`PROCESSED`, und die Bestellbestätigung ist angekommen. **Der Shop nimmt echtes
+Geld ein.**
+
+PayPal hat dabei **0,49 € Transaktionsgebühr** einbehalten (2,97 € netto von
+3,46 €). Das entspricht 2,99 % + 0,39 € und trifft bei kleinen Beträgen
+überproportional — bei einer 5-€-Karte bleiben rund 4,46 €. **Vor dem
+Verkaufsstart einmal durchrechnen**, ob Versandpauschale und Mindestpreis das
+tragen.
 
 <details><summary>Ursprünglicher Eintrag, zur Nachvollziehbarkeit</summary>
 
