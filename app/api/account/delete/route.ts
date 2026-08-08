@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, or, sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { getAssetBucket, getDb } from "../../../../db";
 import { orders } from "../../../../db/schema";
@@ -45,7 +45,7 @@ export async function POST(request: Request) {
 
   try {
     const db = getDb();
-    const blocking = await blockingOrders(db, appUser.id);
+    const blocking = await blockingOrders(db, appUser.id, appUser.email);
     if (blocking.length) {
       return NextResponse.json({
         error: `Zu deinem Konto läuft gerade eine Bestellung (${blocking.map((order) => order.orderNumber).join(", ")}). Warte bitte, bis sie abgeschlossen oder abgebrochen ist — danach lässt sich das Konto löschen.`,
@@ -56,9 +56,10 @@ export async function POST(request: Request) {
     // noch die Verknüpfung zu den Bestellungen.
     const empfaenger = appUser.email;
     const authSubject = appUser.authSubject;
-    const bestellungen = await db.select({ id: orders.id }).from(orders).where(eq(orders.userId, appUser.id));
+    const bestellungen = await db.select({ id: orders.id }).from(orders)
+      .where(or(eq(orders.userId, appUser.id), sql`lower(${orders.guestEmail}) = lower(${appUser.email})`));
 
-    const geloescht = await deleteAccountData(db, getAssetBucket(), appUser.id);
+    const geloescht = await deleteAccountData(db, getAssetBucket(), appUser.id, empfaenger);
 
     // Erst jetzt das Anmeldekonto. Schlägt es fehl, sind die Shopdaten bereits
     // weg — das ist der gewollte Teil; offen bleibt nur die Anmeldung, und

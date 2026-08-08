@@ -1,4 +1,5 @@
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, or, sql } from "drizzle-orm";
+import type { SQLiteColumn } from "drizzle-orm/sqlite-core";
 import type { getAssetBucket, getDb } from "../db";
 import {
   cardSubmissionAssets,
@@ -22,6 +23,25 @@ type Bucket = ReturnType<typeof getAssetBucket>;
  * Fällen würde eine Löschung mitten in einen Geldvorgang schneiden. */
 export const BLOCKING_ORDER_STATUSES = ["PENDING", "PROCESSING"] as const;
 
+/** Was zu einem Konto gehört — und warum die Kontokennung allein nicht reicht.
+ *
+ * Am 2026-08-08 an echten Daten aufgefallen: `/anfragen` und `/verkaufen` sind
+ * **öffentliche** Formulare. Sie schreiben `guest_email` und lassen `user_id`
+ * leer, auch wenn der Absender angemeldet ist. Eine Auskunft nur über `user_id`
+ * verschwieg die Anfrage, und eine Löschung nur über `user_id` ließ die
+ * E-Mail-Adresse stehen — beides sah dabei erfolgreich aus.
+ *
+ * Die Adresse ist hier ein zulässiger Schlüssel: Ein Konto entsteht erst nach
+ * bestätigter E-Mail (`findOrCreateAppUser`), wer also unter einer Adresse
+ * angemeldet ist, hat den Zugriff auf dieses Postfach nachgewiesen. Verglichen
+ * wird über `lower()` auf beiden Seiten, weil die Kontoadresse normalisiert
+ * gespeichert wird, die Formularadresse aber so, wie sie getippt wurde.
+ */
+function zuordnung(userId: string, email: string) {
+  return (spalteUserId: SQLiteColumn, spalteGuestEmail: SQLiteColumn) =>
+    or(eq(spalteUserId, userId), sql`lower(${spalteGuestEmail}) = lower(${email})`);
+}
+
 /** Alles, was der Shop über einen angemeldeten Kunden weiß.
  *
  * Bewusst aus den Tabellen zusammengesucht statt aus einer Sicht: Wer später
@@ -32,12 +52,13 @@ export const BLOCKING_ORDER_STATUSES = ["PENDING", "PROCESSING"] as const;
 export async function collectAccountData(db: Db, userId: string) {
   const user = await db.query.users.findFirst({ where: eq(users.id, userId) });
   if (!user) return null;
+  const gehoertZu = zuordnung(user.id, user.email);
 
   const [orderRows, offerRows, inquiryRows, submissionRows] = await Promise.all([
-    db.select().from(orders).where(eq(orders.userId, userId)),
-    db.select().from(priceOffers).where(eq(priceOffers.userId, userId)),
-    db.select().from(inquiries).where(eq(inquiries.userId, userId)),
-    db.select().from(cardSubmissions).where(eq(cardSubmissions.userId, userId)),
+    db.select().from(orders).where(gehoertZu(orders.userId, orders.guestEmail)),
+    db.select().from(priceOffers).where(gehoertZu(priceOffers.userId, priceOffers.guestEmail)),
+    db.select().from(inquiries).where(gehoertZu(inquiries.userId, inquiries.guestEmail)),
+    db.select().from(cardSubmissions).where(gehoertZu(cardSubmissions.userId, cardSubmissions.guestEmail)),
   ]);
 
   const orderIds = orderRows.map((order) => order.id);
@@ -111,8 +132,14 @@ export async function collectAccountData(db: Db, userId: string) {
  * ein Objekt ab, ist es verwaist und wird binnen 24 Stunden eingesammelt;
  * andersherum bliebe ein Bild ohne Zeile für immer liegen.
  */
-export async function deleteAccountData(db: Db, bucket: Bucket, userId: string) {
-  const submissionRows = await db.select({ id: cardSubmissions.id }).from(cardSubmissions).where(eq(cardSubmissions.userId, userId));
+export async function deleteAccountData(db: Db, bucket: Bucket, userId: string, email: string) {
+  // Dieselbe Zuordnung wie in der Auskunft. Über `user_id` allein blieben
+  // Anfragen und Kartenangebote aus den öffentlichen Formularen stehen — siehe
+  // die Begründung an `zuordnung`.
+  const gehoertZu = zuordnung(userId, email);
+
+  const submissionRows = await db.select({ id: cardSubmissions.id }).from(cardSubmissions)
+    .where(gehoertZu(cardSubmissions.userId, cardSubmissions.guestEmail));
   let deletedObjects = 0;
   for (const submission of submissionRows) {
     const assets = await db.select({ storageKey: cardSubmissionAssets.storageKey })
@@ -121,9 +148,9 @@ export async function deleteAccountData(db: Db, bucket: Bucket, userId: string) 
     deletedObjects += results.filter((result) => result.status === "fulfilled").length;
   }
 
-  const submissions = await db.delete(cardSubmissions).where(eq(cardSubmissions.userId, userId));
-  const offers = await db.delete(priceOffers).where(eq(priceOffers.userId, userId));
-  const inquiryResult = await db.delete(inquiries).where(eq(inquiries.userId, userId));
+  const submissions = await db.delete(cardSubmissions).where(gehoertZu(cardSubmissions.userId, cardSubmissions.guestEmail));
+  const offers = await db.delete(priceOffers).where(gehoertZu(priceOffers.userId, priceOffers.guestEmail));
+  const inquiryResult = await db.delete(inquiries).where(gehoertZu(inquiries.userId, inquiries.guestEmail));
   // Freigegebene und abgelaufene Reservierungen halten keinen Bestand mehr;
   // aktive kann es hier nicht geben, die Route lehnt vorher ab.
   await db.delete(reservations).where(eq(reservations.userId, userId));
@@ -138,10 +165,10 @@ export async function deleteAccountData(db: Db, bucket: Bucket, userId: string) 
 }
 
 /** Bestellungen, die eine Löschung blockieren. Leer heißt: Weg ist frei. */
-export async function blockingOrders(db: Db, userId: string) {
+export async function blockingOrders(db: Db, userId: string, email: string) {
   return db.select({ orderNumber: orders.orderNumber, status: orders.status })
     .from(orders)
-    .where(and(eq(orders.userId, userId), inArray(orders.status, [...BLOCKING_ORDER_STATUSES])));
+    .where(and(zuordnung(userId, email)(orders.userId, orders.guestEmail), inArray(orders.status, [...BLOCKING_ORDER_STATUSES])));
 }
 
 /** D1 begrenzt gebundene Parameter je Statement — siehe lib/d1-limits.ts. */

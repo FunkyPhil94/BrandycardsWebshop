@@ -63,6 +63,24 @@ test("jede Tabelle mit Nutzerbezug wird gelöscht oder steht begründet in den A
   assert.ok(geloescht.at(-1) === "users", "die users-Zeile muss als Letztes gelöscht werden");
 });
 
+test("Auskunft und Löschung greifen auch über die E-Mail-Adresse", () => {
+  // **Der Fehler, den dieser Test verhindert, ist am 2026-08-08 wirklich
+  // passiert.** `/anfragen` und `/verkaufen` sind öffentliche Formulare: Sie
+  // schreiben `guest_email` und lassen `user_id` leer, auch wenn der Absender
+  // angemeldet ist. Eine Auskunft nur über `user_id` verschwieg die Anfrage,
+  // eine Löschung nur über `user_id` ließ die E-Mail-Adresse stehen — und
+  // beides sah dabei erfolgreich aus. Aufgefallen ist es nur, weil vor dem
+  // Löschlauf in die Produktionsdatenbank gesehen wurde.
+  const tabellenMitGast = ["inquiries", "cardSubmissions", "priceOffers", "orders"];
+  for (const tabelle of tabellenMitGast) {
+    assert.match(accountData, new RegExp(`${tabelle}\\.guestEmail`, "u"),
+      `${tabelle} wird nicht über guestEmail zugeordnet — Zeilen aus den öffentlichen Formularen fielen durch`);
+  }
+  // Ohne `lower()` auf beiden Seiten träfe „Max@Example.com" die normalisierte
+  // Kontoadresse nicht.
+  assert.match(accountData, /lower\(\$\{spalteGuestEmail\}\) = lower\(\$\{email\}\)/u);
+});
+
 test("Bestellungen werden nie gelöscht", () => {
   assert.ok(!/db\.delete\(orders\)/u.test(accountData),
     "Rechnungsbelege unterliegen der Aufbewahrungspflicht und dürfen nicht gelöscht werden");
