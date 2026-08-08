@@ -271,6 +271,32 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
   4. Eingangsbestätigung für eine Kartenanfrage
   5. Eingangsbestätigung für ein Ankaufsangebot
 
+### Nachtrag: CI war rot, lokal gruen -- dieselbe Falle wie am Vortag
+
+Der Deploy ging auf gruener **lokaler** Kette raus, der CI-Lauf danach war
+**rot**: vier Tests mit `cancelledByParent` und
+`Promise resolution is still pending but the event loop has already resolved`.
+
+**Ursache, wortwoertlich die vom 2026-08-07:** `AbortSignal.timeout()` benutzt
+einen unref'd Timer und haelt Node nicht am Leben. Ist die stumme Zusage des
+`fetch`-Stubs das einzige offene Handle, raeumt Node den Test ab, **bevor** die
+Zeitgrenze greift. Node 24 gewinnt dieses Rennen meist, Node 22 verliert es --
+und die CI laeuft auf 22. Ich hatte den haltenden Timer nur in den eigenen
+Zeitgrenzen-Test gesetzt, nicht in den „haengt“-Fall des Sammeltests.
+
+**Behoben** mit einer gemeinsamen Hilfsfunktion `stummeGegenstelle()`, die den
+ref'd Timer traegt, samt Begruendung im Code. **Nachgewiesen durch den gruenen
+CI-Lauf** (169/169, 0 abgebrochen) -- lokal ist der Nachweis nicht fuehrbar, ein
+echtes Node 22 steht hier nicht zur Verfuegung.
+
+**Kein zweiter Deploy noetig:** Geaendert wurde nur `tests/email.test.mjs`, und
+Tests werden nicht ausgeliefert. Produktion steht auf `e0b191bd` und enthaelt
+denselben Anwendungscode wie `main`.
+
+**Die Lehre steht seit gestern in dieser Datei und hat trotzdem nicht
+gegriffen:** „Vor dem Push in die CI sehen.“ Diesmal habe ich sie zumindest
+sofort nach dem Push gelesen.
+
 ### Die drei Entwurfsentscheidungen, die zählen
 
 - **Ein fehlgeschlagener Versand darf nie die auslösende Aktion scheitern
