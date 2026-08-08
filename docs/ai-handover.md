@@ -37,49 +37,8 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-- **Stand:** LÄUFT
-- **Datum:** 2026-08-08
-- **Ziel:** Zwei **schreibende Eingriffe in Produktionsdaten**, beide vom
-  Betreiber ausdrücklich beauftragt.
-  1. Die zwei Zeilen der Zustellproben aus `inquiries` löschen.
-  2. Einen kaufbaren **Testartikel** anlegen, damit sich der Bestellpfad samt
-     Bestellbestätigung einmal echt durchspielen lässt.
-- **Kein Code, keine Migration, kein Deploy.** Nur Daten.
-
-### Was vorher geprüft wurde, damit der Testkauf nicht am Bezahlen scheitert
-
-- **Die Bestandsprüfung vor der Zahlung blockiert nicht.** Sie ruft für jede
-  Karte `GetItem` bei eBay auf. Unsere erfundene ItemID kennt eBay nicht, eBay
-  antwortet mit `Ack=FAILURE`, `getEbayAvailability` verschluckt das und legt
-  **keinen** Eintrag an — und ohne Eintrag gilt die Karte als „unbekannt", was
-  den Kauf durchlässt (`lib/ebay-stock-check.ts`). Nachgelesen, nicht gehofft.
-- **Der Import räumt den Testartikel von selbst wieder ab.** `runEbaySync`
-  setzt jedes `ACTIVE`-Listing, dessen ItemID nicht in der eBay-Aktivliste
-  steht, auf `ENDED`, das Produkt auf `INACTIVE` und den Bestand auf
-  `UNAVAILABLE`. Der Cron läuft `0 */2 * * *`. **Das ist erwünscht** — der
-  Artikel verschwindet ohne Zutun. Es begrenzt aber das Zeitfenster für den
-  Kauf auf die Zeit bis zum nächsten geraden UTC-Stundenschlag.
-- **Der Artikel ist öffentlich sichtbar**, solange er lebt. Einen versteckten
-  Weg gibt es nicht: `/api/products` liefert nur, was `ACTIVE` ist, und nur
-  ein aktives Listing ist kaufbar. Gegenmaßnahmen: unmissverständlicher Titel
-  und ein niedriger Preis.
-
-### Anzulegen
-
-- `products`: `kind = EBAY_SYNCED`, `status = ACTIVE`, Titel unmissverständlich
-  als Testartikel.
-- `ebay_listings`: `status = ACTIVE`, `listing_type = FIXED_PRICE`,
-  `quantity = 1`, Preis **1,00 €**, erfundene `ebay_item_id`.
-- `inventory`: `available_quantity = 1`, `status = AVAILABLE` — ohne diese
-  Zeile lehnt `app/api/orders/route.ts` die Bestellung ab (`innerJoin`).
-
-- **Verifikation:** Der Artikel taucht in `/api/products` und auf `/karten`
-  auf; die zwei `inquiries`-Zeilen sind weg; die Zählung vorher/nachher wird
-  festgehalten.
-- **Rückweg:** Der Testartikel lässt sich jederzeit löschen; die gelöschten
-  Anfragen **nicht** — sie sind weg. Ihr Inhalt ist in dieser Datei
-  dokumentiert (Titel „ZUSTELLPROBE …", Empfänger der Betreiber selbst), es
-  geht also nichts Unwiederbringliches verloren.
+_Kein laufender Auftrag._ Vorlage: Stand, Datum, Ziel, geplante Schritte,
+betroffene Dateien, Verifikation, Ergebnis.
 
 ---
 
@@ -196,6 +155,38 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
   **Achtung beim Bild-Import:** Er liefert ein Objekt `{src, width, height}`,
   keine Zeichenkette. `<img src={bild}>` bricht **still** zu `[object Object]`;
   richtig ist `src={bild.src}`. Begründung in `assets.d.ts`.
+- 🔴 **Der Shop kann kein echtes Geld einnehmen: PayPal läuft in der Sandbox.**
+  `PAYPAL_ENVIRONMENT` ist **nirgends gesetzt** — weder in `[vars]` der
+  `wrangler.toml` noch als Secret. `lib/paypal/config.ts` fällt damit auf
+  `sandbox` zurück, der Shop spricht mit `api-m.sandbox.paypal.com`. Ein echter
+  Kunde kann nicht bezahlen. **Ob die hinterlegten `PAYPAL_CLIENT_ID`/`SECRET`
+  Sandbox- oder Live-Daten sind, weiß nur der Betreiber** — Secrets lassen sich
+  nur dem Namen nach auflisten.
+  **Für echtes Geld nötig:** Live-App bei PayPal anlegen, Live-Webhook auf
+  `https://shop.brandycards.de/api/paypal/webhook`, die drei Secrets ersetzen
+  und `PAYPAL_ENVIRONMENT = "production"` in `[vars]` eintragen (kein
+  Geheimnis, gehört nicht zu den Secrets). Dann deployen.
+  Der Testkauf am 2026-08-08 lief bewusst in der Sandbox; der Code-Pfad ist
+  derselbe, nur der Endpunkt unterscheidet sich.
+- **Ein als Dublette abgewiesener Webhook bleibt auf `RECEIVED` stehen.**
+  `app/api/paypal/webhook/route.ts` steigt bei `payment.status === "CAPTURED"`
+  vorzeitig mit `duplicate: true` aus — **bevor** die Zeile in `webhook_events`
+  auf `PROCESSED` gesetzt wird. Am 2026-08-08 so beobachtet
+  (`PAYMENT.CAPTURE.COMPLETED`, 06:10:22).
+  **Funktional harmlos:** Ein erneuter Zustellversuch wird ebenfalls sauber
+  abgewiesen, weil die Eingangsprüfung `RECEIVED` genauso behandelt wie
+  `PROCESSED`. **Aber die Zeile behauptet etwas Falsches** — sie sieht aus wie
+  ein Ereignis, das mitten in der Verarbeitung hängen geblieben ist, und führt
+  jede spätere Suche nach hängenden Webhooks in die Irre. Zwei Zeilen Arbeit:
+  auf dem Dubletten-Pfad ebenfalls `PROCESSED` setzen.
+- **Ein Testartikel liegt in Produktion**
+  (`ec6c212e96332bdcc93612848694b907`, „TESTARTIKEL BrandyCards, bitte nicht
+  kaufen"). Nach dem Testkauf ist der Bestand `SOLD`, **die Listing-Menge steht
+  aber weiter auf 1** — und `/api/products` liest die Menge aus dem *Listing*,
+  nicht aus dem Bestand. Der Artikel wirkt im Katalog also kaufbar und
+  scheitert erst im Checkout. Der nächste Sync-Lauf räumt ihn ab (er steht
+  nicht in der eBay-Aktivliste). **Bei echten Karten tritt das nicht auf**,
+  dort hält der Import beide Werte zusammen.
 - **Die Schriften liegen im Repository und werden selbst ausgeliefert**
   (10 Dateien, 228 KB, Schnitte `latin` und `latin-ext`).
   Der frühere `@import` von Google Fonts wurde von der eigenen CSP blockiert —
@@ -294,6 +285,90 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
 ---
 
 ## Historie
+
+### 2026-08-08 — Testkauf: die Bestellbestätigung ist belegt
+
+- **Stand:** ABGESCHLOSSEN
+- **Datum:** 2026-08-08
+- **Ziel:** Zwei **schreibende Eingriffe in Produktionsdaten**, beide vom
+  Betreiber ausdrücklich beauftragt.
+  1. Die zwei Zeilen der Zustellproben aus `inquiries` löschen.
+  2. Einen kaufbaren **Testartikel** anlegen, damit sich der Bestellpfad samt
+     Bestellbestätigung einmal echt durchspielen lässt.
+- **Kein Code, keine Migration, kein Deploy.** Nur Daten.
+
+### Was vorher geprüft wurde, damit der Testkauf nicht am Bezahlen scheitert
+
+- **Die Bestandsprüfung vor der Zahlung blockiert nicht.** Sie ruft für jede
+  Karte `GetItem` bei eBay auf. Unsere erfundene ItemID kennt eBay nicht, eBay
+  antwortet mit `Ack=FAILURE`, `getEbayAvailability` verschluckt das und legt
+  **keinen** Eintrag an — und ohne Eintrag gilt die Karte als „unbekannt", was
+  den Kauf durchlässt (`lib/ebay-stock-check.ts`). Nachgelesen, nicht gehofft.
+- **Der Import räumt den Testartikel von selbst wieder ab.** `runEbaySync`
+  setzt jedes `ACTIVE`-Listing, dessen ItemID nicht in der eBay-Aktivliste
+  steht, auf `ENDED`, das Produkt auf `INACTIVE` und den Bestand auf
+  `UNAVAILABLE`. Der Cron läuft `0 */2 * * *`. **Das ist erwünscht** — der
+  Artikel verschwindet ohne Zutun. Es begrenzt aber das Zeitfenster für den
+  Kauf auf die Zeit bis zum nächsten geraden UTC-Stundenschlag.
+- **Der Artikel ist öffentlich sichtbar**, solange er lebt. Einen versteckten
+  Weg gibt es nicht: `/api/products` liefert nur, was `ACTIVE` ist, und nur
+  ein aktives Listing ist kaufbar. Gegenmaßnahmen: unmissverständlicher Titel
+  und ein niedriger Preis.
+
+### Anzulegen
+
+- `products`: `kind = EBAY_SYNCED`, `status = ACTIVE`, Titel unmissverständlich
+  als Testartikel.
+- `ebay_listings`: `status = ACTIVE`, `listing_type = FIXED_PRICE`,
+  `quantity = 1`, Preis **1,00 €**, erfundene `ebay_item_id`.
+- `inventory`: `available_quantity = 1`, `status = AVAILABLE` — ohne diese
+  Zeile lehnt `app/api/orders/route.ts` die Bestellung ab (`innerJoin`).
+
+- **Verifikation:** Der Artikel taucht in `/api/products` und auf `/karten`
+  auf; die zwei `inquiries`-Zeilen sind weg; die Zählung vorher/nachher wird
+  festgehalten.
+- **Rückweg:** Der Testartikel lässt sich jederzeit löschen; die gelöschten
+  Anfragen **nicht** — sie sind weg. Ihr Inhalt ist in dieser Datei
+  dokumentiert (Titel „ZUSTELLPROBE …", Empfänger der Betreiber selbst), es
+  geht also nichts Unwiederbringliches verloren.
+- **Ergebnis: ABGESCHLOSSEN.**
+  - **Die zwei Zustellproben sind gelöscht** (`changes: 2`); `inquiries` ist
+    danach leer.
+  - **Testartikel angelegt** (`ec6c212e96332bdcc93612848694b907`,
+    „TESTARTIKEL BrandyCards, bitte nicht kaufen", 1,00 €). Vor der ersten
+    Deaktivierung nachgeprüft: im Katalog (295 statt 294), Detailseite mit
+    „1 verfügbar" und aktivem Kaufknopf.
+- **Fehler beim Timing, den die nächste Sitzung nicht wiederholen muss:** Ich
+  habe den Artikel um **06:00:07 UTC** angelegt — der Cron-Lauf startete um
+  **06:00:38** und hat ihn erwartungsgemäß sofort auf `ENDED`/`INACTIVE`
+  gesetzt. Dass das passieren *würde*, stand vorher in diesem Eintrag; ich habe
+  nur den schlechtesten Zeitpunkt erwischt. **Wer einen Testartikel anlegt,
+  macht das kurz *nach* einer geraden UTC-Stunde, nicht davor.**
+- **Reaktiviert hat der Betreiber selbst.** Meine schreibenden D1-Befehle
+  wurden zweimal von der Berechtigungsprüfung abgelehnt (einmal als Befehl,
+  einmal als SQL-Datei). Statt Umwege zu suchen, habe ich ihm die drei
+  `UPDATE`-Befehle gegeben.
+
+### Der Testkauf: der Beleg, der bisher fehlte
+
+Bestellung `BC-20260808-55246326`, 4,45 €, `PAID` um 06:10:12 UTC.
+
+| Prüfung | Ergebnis |
+|---|---|
+| Zahlung | `CAPTURED` mit Capture-ID |
+| Position | „TESTARTIKEL…", 1 Stück, 1,00 € |
+| Bestand nach dem Kauf | verfügbar 0, reserviert 0, **verkauft 1**, `SOLD` |
+| eBay-Outbox | leer (Schreibpfad ist aus, erwartet) |
+| **Bestellbestätigung** | **genau eine**, vom Betreiber im Postfach belegt |
+
+**Der Einmal-Riegel ist damit an echten Daten bewiesen, nicht nur im Test:**
+Beide Zahlungspfade haben gefeuert — die Rückkehr aus PayPal um 06:10:12, der
+Webhook `PAYMENT.CAPTURE.COMPLETED` um 06:10:22 — und es kam **eine**
+Bestätigung an.
+
+**Bezahlt wurde in der PayPal-Sandbox**, siehe den offenen Punkt dazu. Der
+Code-Pfad ist derselbe, nur der Endpunkt unterscheidet sich.
+
 
 ### 2026-08-08 — Erfolgreicher Versand hinterlässt eine Spur
 
