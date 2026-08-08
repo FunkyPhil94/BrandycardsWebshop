@@ -37,7 +37,52 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-*(leer — bereit für den nächsten Auftrag.)*
+### 2026-08-08 — eBay-Schreibpfad: verkaufte Karten von eBay nehmen (ai-todo Punkt 6)
+
+- **Stand:** LÄUFT
+- **Datum:** 2026-08-08
+- **Ziel:** Die zweite Richtung des Doppelverkaufs schließen — im Shop verkauft,
+  eBay weiß es nicht. Ein Storno bei eBay verschlechtert den Verkäuferstatus,
+  das wirkt über den Einzelfall hinaus.
+- **Der Befund, bestätigt statt angenommen:** `mapActiveListing`
+  (`lib/ebay-sync.ts:23`) setzt `ebayOfferId` fest auf `null`, weil
+  `GetMyeBaySelling` eine **ItemID** liefert und keine Inventory-API-Offer-ID.
+  `enqueueEbayWithdraw` (`lib/ebay-outbox.ts:13`) steigt genau darauf aus und
+  protokolliert nur. **Die Outbox hat noch nie einen Auftrag bekommen** — der
+  gesamte Schreibpfad ist unerprobt, nicht nur abgeschaltet.
+- **Wie, und warum so:** Nicht die Offer-ID nachrüsten, sondern die Operation
+  auf die ItemID umstellen — `ReviseInventoryStatus` (Trading API) mit Menge 0
+  statt `withdrawEbayOffer`. `EndItem` wäre der falsche Weg: Es beendet das
+  Angebot endgültig, Wiedereinstellen ginge nur als neues Listing mit neuer
+  ItemID, und damit bräche die lokale Zuordnung. Menge 0 ist **umkehrbar**.
+- **Zwei Dinge, die ich beim Lesen gefunden habe und die im ai-todo nicht
+  stehen:**
+  1. **Auktionen vertragen `ReviseInventoryStatus` nicht.** Der Aufruf gilt für
+     Festpreisangebote; bei einer laufenden Auktion mit Geboten ist eine
+     Mengenänderung gar nicht vorgesehen. `ebay_listings.listing_type`
+     unterscheidet beides. Auktionen dürfen deshalb **gar nicht erst** in die
+     Outbox — sonst erzeugen sie dauerhaft rote Aufträge, die niemand beheben
+     kann. Sie werden protokolliert statt eingereiht.
+  2. **Es liegen Alt-Aufträge im Format `WITHDRAW_OFFER` vor** — jedenfalls dem
+     Code nach; erzeugt wurden nie welche. Der Verarbeiter muss beide
+     Operationen kennen, sonst schlägt eine alte Zeile dauerhaft fehl.
+- **Der Scope ist das eigentliche Risiko:** Lesend läuft alles mit
+  `sell.inventory.readonly`. `ReviseInventoryStatus` braucht den
+  Schreib-Scope `sell.inventory`. Ob der vorhandene `EBAY_REFRESH_TOKEN` diesen
+  Scope überhaupt umfasst, entscheidet sich bei der Zustimmung — **das lässt
+  sich nur am echten Aufruf feststellen**, nicht am Code. Fällt es aus, muss der
+  Betreiber die eBay-Zustimmung mit dem Schreib-Scope erneuern.
+- **Was ich ausdrücklich NICHT tue:** `EBAY_WRITE_ENABLED` bleibt auf `false`.
+  Der Schalter greift auf **echte** Angebote zu; ai-todo Punkt 6 schreibt vor,
+  die Umstellung zuerst an einer einzelnen Testkarte nachzuweisen. Bauen und
+  ausliefern ist freigegeben, Eingriffe in Fremdsysteme sind es nicht.
+- **Betroffen:** `lib/ebay-client.ts` (neuer Trading-Aufruf),
+  `lib/ebay-outbox.ts` (Einreihen über ItemID, beide Operationen verarbeiten),
+  neu `tests/ebay-outbox.test.mjs`. **Keine Migration** — `ebay_outbox` hat
+  `ebay_item_id` bereits, und auf `operation` liegt keine Prüfbedingung.
+- **Verifikation:** Tests mit Rot-Nachweis, Prüfkette (`tsc`, Lint, `npm test`),
+  Deploy aus dem Hauptverzeichnis. **Der Beweis am echten eBay-Angebot steht
+  danach aus** und ist der nächste Schritt, der dem Betreiber gehört.
 
 ---
 
