@@ -4,6 +4,7 @@ import { getDb } from "../../../db";
 import { ebayListings, inventory, orderItems, orders, products, reservations } from "../../../db/schema";
 import { getAuthenticatedAppUser } from "../../../lib/app-user";
 import { checkReservationCapacity, MAX_ORDER_POSITIONS, RESERVATION_MINUTES } from "../../../lib/order-guard";
+import { effectiveUnitPrice } from "../../../lib/offer-price";
 import { acceptedOfferPrices } from "../../../lib/price-offers";
 import { releaseExpiredReservations, reservedUnitsForUser } from "../../../lib/paypal/settle-order";
 import { enforcePublicRateLimit } from "../../../lib/rate-limit";
@@ -75,8 +76,10 @@ export async function POST(request: Request) {
         if (!listing.priceAmountCents || listing.priceAmountCents < 1 || stock.availableQuantity < quantity || stock.status === "UNAVAILABLE" || stock.status === "SOLD") throw new OrderIssue(`Artikel nicht mehr verfügbar: ${product.title}`);
         // An accepted offer only ever lowers the price; should the list price
         // have dropped below it in the meantime, the customer pays the lower one.
-        const agreed = negotiated.get(product.id);
-        const unitPrice = agreed !== undefined ? Math.min(agreed, listing.priceAmountCents) : listing.priceAmountCents;
+        // Die Regel steht in `lib/price-offers.ts`, weil der Checkout sie seit
+        // dem 2026-08-08 zum Anzeigen ebenfalls braucht — zweimal geschrieben
+        // wäre sie zweimal zu pflegen.
+        const unitPrice = effectiveUnitPrice(listing.priceAmountCents, negotiated.get(product.id));
         return { product, listing, stock, quantity, unitPrice, total: unitPrice * quantity };
     });
     const subtotal = lineItems.reduce((sum, item) => sum + item.total, 0);

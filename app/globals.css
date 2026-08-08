@@ -326,6 +326,16 @@ footer { background:var(--ink); color:#fff; padding:52px max(48px,calc((100vw - 
 .checkout-total strong { color:#fff; font-size:13px; }
 .checkout-total .total-line { border-top:1px solid #ffffff55; color:#fff; font-size:15px; margin-top:12px; padding-top:18px; }
 .checkout-total .total-line strong { color:var(--gold); font-size:21px; }
+/* Ausgehandelter Preis im Checkout. Der Listenpreis bleibt sichtbar, sonst ist
+   der Vorteil nicht zu erkennen. `display:inline` muss sein: `.checkout-item
+   span` steht weiter oben auf `block` und trifft auch die verschachtelten
+   Spannen — ohne die Rücknahme stünden Listen- und Verhandlungspreis
+   untereinander statt nebeneinander. */
+.checkout-item .checkout-listenpreis,.checkout-item .checkout-verhandelt { display:inline; margin-top:0; }
+.checkout-item .checkout-listenpreis { color:#8f8c86; }
+.checkout-item .checkout-verhandelt { color:var(--gold); }
+.checkout-item .checkout-verhandelt-hinweis { color:var(--gold); font-size:10px; letter-spacing:.08em; margin-top:4px; text-transform:uppercase; }
+.checkout-total .checkout-ersparnis strong { color:var(--gold); }
 .checkout-hint { color:#8f8c86; font-size:10px; line-height:1.6; margin:28px 0 0; }
 .checkout-empty { background:#f8f6f1; border:1px solid var(--line); padding:60px 30px; text-align:center; }
 .checkout-empty h2 { font-size:32px; letter-spacing:-.05em; margin:0 0 10px; }

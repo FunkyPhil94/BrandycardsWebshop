@@ -395,7 +395,26 @@ gilt nie als ausverkauft — ein eBay-Ausfall darf den Shop nicht anhalten.
 `tests/ebay-availability.test.mjs`.
 
 ---
-## 5. Checkout zeigt den ausgehandelten Preis
+## 5. ~~Checkout zeigt den ausgehandelten Preis~~ — ERLEDIGT am 2026-08-08
+
+Gebaut: `GET /api/account/offers` liefert dem angemeldeten Kunden seine
+angenommenen, unverfallenen Angebote; der Checkout zeigt je Position den
+ausgehandelten Preis, den durchgestrichenen Listenpreis und die Ersparnis.
+
+**Der Kern war nicht die Anzeige, sondern die eine Regel.** Sie steht jetzt in
+`lib/offer-price.ts` (`effectiveUnitPrice`) und wird von der Anzeige **und** von
+`app/api/orders/route.ts` benutzt — nachgebaut wäre sie die Stelle, an der
+Anzeige und Abrechnung auseinanderlaufen und der Kunde einen anderen Betrag
+sieht als den abgebuchten. `pickAcceptedOffers` in `lib/price-offers.ts` ist
+entsprechend die eine Quelle, aus der sich `pickAcceptedPrices` ableitet.
+
+Am verbindlichen Preis ändert sich **nichts**: Er entsteht weiterhin allein
+serverseitig, der Checkout schickt nach wie vor nur Produkt-Kennungen.
+6 neue Tests, Rot-Nachweis geführt, im Browser an drei Fällen belegt (ohne
+Angebot, mit Angebot, Angebot über dem Listenpreis). Durchlauf in
+[ai-handover.md](ai-handover.md).
+
+<details><summary>Ursprünglicher Eintrag, zur Nachvollziehbarkeit</summary>
 
 **Aufwand:** klein · **Hängt an:** nichts
 
@@ -423,6 +442,8 @@ ausschließlich serverseitig bestimmt — niemals einen Betrag aus dem Browser
 
 **Fertig, wenn:** Ein Konto mit angenommenem Angebot sieht im Checkout exakt den
 Betrag, den die Bestellung anschließend berechnet.
+
+</details>
 
 ---
 

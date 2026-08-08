@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { effectiveUnitPrice } from "../../lib/offer-price";
 import { getSupabaseBrowserClient } from "../../lib/supabase-browser";
 
 type Product = {
@@ -29,6 +30,7 @@ export default function CheckoutPage() {
   const [address, setAddress] = useState<Address>({ name: "", street: "", postalCode: "", city: "", country: "DE" });
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [offers, setOffers] = useState<Record<string, number>>({});
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -41,6 +43,35 @@ export default function CheckoutPage() {
     return () => window.clearTimeout(timer);
   }, []);
 
+  // Die ausgehandelten Preise sind reine Anzeige. Was am Ende berechnet wird,
+  // entscheidet allein der Server (`app/api/orders/route.ts`) — er schlägt die
+  // Angebote selbst nach und übernimmt nie einen Betrag aus dem Browser.
+  //
+  // Deshalb wird hier auch **kein Fehler** gezeigt, wenn die Abfrage
+  // fehlschlägt oder niemand angemeldet ist (401): Dann stehen die
+  // Listenpreise da, und der Kunde zahlt trotzdem den ausgehandelten Preis.
+  // Eine Fehlermeldung würde einen Schaden behaupten, den es nicht gibt.
+  useEffect(() => {
+    let abgemeldet = false;
+    (async () => {
+      try {
+        const session = (await getSupabaseBrowserClient().auth.getSession()).data.session;
+        if (!session || abgemeldet) return;
+        const response = await fetch("/api/account/offers", { headers: { Authorization: `Bearer ${session.access_token}` } });
+        if (!response.ok || abgemeldet) return;
+        const data = await response.json() as { offers?: Array<{ productId?: string; amountCents?: number }> };
+        const gefunden: Record<string, number> = {};
+        for (const offer of data.offers ?? []) {
+          if (typeof offer.productId === "string" && typeof offer.amountCents === "number") gefunden[offer.productId] = offer.amountCents;
+        }
+        setOffers(gefunden);
+      } catch {
+        // Siehe oben: stillschweigend bei den Listenpreisen bleiben.
+      }
+    })();
+    return () => { abgemeldet = true; };
+  }, []);
+
   // Auf den verfügbaren Bestand begrenzt. Der Warenkorb liegt im
   // sessionStorage und kann eine Menge aus einer Zeit tragen, in der es die
   // Karte noch mehrfach gab — oder von Hand gesetzt worden sein. Der Server
@@ -48,8 +79,15 @@ export default function CheckoutPage() {
   // dass jemand erst nach der Adresseingabe davon erfährt.
   const items = useMemo(() => products
     .filter((product) => product.category === "Festpreis" && cart[product.id] > 0 && product.quantity > 0)
-    .map((product) => ({ product, quantity: Math.min(cart[product.id], product.quantity) })), [cart, products]);
-  const subtotal = items.reduce((sum, item) => sum + (item.product.priceAmountCents ?? 0) * item.quantity, 0);
+    .map((product) => {
+      const listPrice = product.priceAmountCents ?? 0;
+      // Dieselbe Regel wie auf dem Bestellweg, aus derselben Datei — ein
+      // angenommenes Angebot senkt nur.
+      const unitPrice = effectiveUnitPrice(listPrice, offers[product.id]);
+      return { product, quantity: Math.min(cart[product.id], product.quantity), listPrice, unitPrice, ausgehandelt: unitPrice < listPrice };
+    }), [cart, products, offers]);
+  const subtotal = items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
+  const ersparnis = items.reduce((sum, item) => sum + (item.listPrice - item.unitPrice) * item.quantity, 0);
   const shipping = address.country === "DE" ? 345 : 1449;
   const total = subtotal + shipping;
 
@@ -123,7 +161,10 @@ export default function CheckoutPage() {
               <button className="button button-primary checkout-submit" disabled={busy}>{busy ? "Weiterleitung zu PayPal …" : "Mit PayPal fortfahren"}<span>→</span></button>
             </form>
 
-            <aside className="checkout-summary"><p className="eyebrow">DEINE AUSWAHL</p><h2>Bestellübersicht</h2><div className="checkout-items">{items.map(({ product, quantity }) => <div className="checkout-item" key={product.id}><div><strong>{product.title}</strong><span>{formatMoney(product.priceAmountCents ?? 0, product.priceCurrency)} × {quantity}</span></div><button type="button" onClick={() => updateQuantity(product.id, quantity - 1)}>Entfernen</button></div>)}</div><div className="checkout-total"><div><span>Zwischensumme</span><strong>{formatMoney(subtotal)}</strong></div><div><span>Versand</span><strong>{formatMoney(shipping)}</strong></div><div className="total-line"><span>Gesamt</span><strong>{formatMoney(total)}</strong></div></div><p className="checkout-hint">Mit dem Klick auf „Mit PayPal fortfahren“ stimmst du den Bestellbedingungen zu.</p></aside>
+            <aside className="checkout-summary"><p className="eyebrow">DEINE AUSWAHL</p><h2>Bestellübersicht</h2><div className="checkout-items">{items.map(({ product, quantity, listPrice, unitPrice, ausgehandelt }) => <div className="checkout-item" key={product.id}><div><strong>{product.title}</strong><span>{ausgehandelt ? <>
+              <s className="checkout-listenpreis">{formatMoney(listPrice, product.priceCurrency)}</s>{" "}
+              <span className="checkout-verhandelt">{formatMoney(unitPrice, product.priceCurrency)}</span>
+            </> : formatMoney(unitPrice, product.priceCurrency)} × {quantity}</span>{ausgehandelt && <span className="checkout-verhandelt-hinweis">Dein ausgehandelter Preis</span>}</div><button type="button" onClick={() => updateQuantity(product.id, quantity - 1)}>Entfernen</button></div>)}</div><div className="checkout-total"><div><span>Zwischensumme</span><strong>{formatMoney(subtotal)}</strong></div>{ersparnis > 0 && <div className="checkout-ersparnis"><span>Deine Ersparnis</span><strong>−{formatMoney(ersparnis)}</strong></div>}<div><span>Versand</span><strong>{formatMoney(shipping)}</strong></div><div className="total-line"><span>Gesamt</span><strong>{formatMoney(total)}</strong></div></div><p className="checkout-hint">Mit dem Klick auf „Mit PayPal fortfahren“ stimmst du den Bestellbedingungen zu.</p></aside>
           </div>
         )}
       </div>

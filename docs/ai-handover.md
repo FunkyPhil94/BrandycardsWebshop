@@ -93,7 +93,42 @@ Quere kommen.
   angenommenen Angebot gibt es nicht, und eines anzulegen wäre ein schreibender
   Eingriff in Produktionsdaten. Der Fall wird deshalb über die Tests und über
   eine untergeschobene Antwort im Browser belegt, nicht an echten Daten.
-- **Ergebnis:** _(wird nach dem Durchlauf eingetragen)_
+- **Ergebnis: ABGESCHLOSSEN.** Prüfkette grün: `tsc` sauber, Lint 0 Fehler,
+  `npm test` **195/195** (6 neue Tests).
+- **Gebaut:** neu `lib/offer-price.ts` (`effectiveUnitPrice`) und
+  `app/api/account/offers/route.ts`; in `lib/price-offers.ts` wurde
+  `pickAcceptedOffers` die eine Quelle, aus der sich `pickAcceptedPrices`
+  ableitet.
+- **Eine eigene Datei für eine einzige Zeile, und der Grund gehört behalten:**
+  `effectiveUnitPrice` konnte **nicht** in `lib/price-offers.ts` bleiben. Der
+  Checkout ist eine `"use client"`-Komponente, und diese Datei zieht Drizzle
+  samt Datenbankschema mit — der Import hätte beides ins Client-Bundle gepackt.
+  Wer die Regel später „aufräumt" und zurückschiebt, baut sich das ein.
+- **`app/api/orders/route.ts` benutzt jetzt dieselbe Funktion**, statt die Regel
+  ein zweites Mal zu schreiben. Das war der eigentliche Zweck: Anzeige und
+  Abrechnung können nicht mehr auseinanderdriften.
+- **Rot-Nachweis:** Mit `Math.min` ausgebaut fällt genau der Test „ein unter das
+  Angebot gefallener Listenpreis gewinnt" (14/15). Der Test misst also etwas.
+- **Im Browser an drei Fällen belegt** (lokaler Server, Produkte und Angebote
+  untergeschoben, weil die lokale Datenbank leer ist):
+  1. **Ohne Angebot unverändert:** 45,00 € und 29,00 €, Zwischensumme 74,00 €,
+     keine Ersparnis-Zeile, kein Durchgestrichenes.
+  2. **Mit Angebot:** „45,00 € 32,00 €" mit `line-through` auf dem Listenpreis
+     und Gold auf dem ausgehandelten, dazu „DEIN AUSGEHANDELTER PREIS",
+     Zwischensumme 61,00 €, „Deine Ersparnis −13,00 €", Gesamt 64,45 €. Die
+     zweite Karte ohne Angebot blieb bei 29,00 €.
+  3. **Angebot über dem Listenpreis** (50,00 € gegen 45,00 €): **nichts**
+     angezeigt, keine Ersparnis, 45,00 € bleibt stehen — die Regel „senkt nur"
+     greift auch in der Anzeige.
+- **Nachgemessen statt angenommen:** `display` beider Preise ist `inline`.
+  `.checkout-item span` steht auf `block` und trifft auch verschachtelte
+  Spannen; ohne die Rücknahme in der CSS stünden die beiden Preise
+  untereinander.
+- **Die echte Route wurde gegen den laufenden Server geprüft:** ohne Anmeldung
+  `401 {"error":"Nicht authentifiziert."}`.
+- **Vorbestehend und nicht von diesem Auftrag:** Lokal antwortet
+  `/api/products` mit 503, weil die lokale D1 leer ist. Auf der Produktion
+  liefert dieselbe Route 200.
 
 ### 2026-08-08 — Der Sync schreibt nur noch, was sich geändert hat (ai-todo Punkt 2)
 
