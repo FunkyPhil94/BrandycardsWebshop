@@ -49,7 +49,28 @@ eBay-Schreibpfad, dann bewerben.**
 
 ---
 
-## 0. PayPal auf Live umstellen — SCHLÄGT ALLES ANDERE
+## 0. ~~PayPal auf Live umstellen~~ — UMGESETZT am 2026-08-08, Abnahme steht aus
+
+Der Betreiber hat Live-App, Live-Webhook auf
+`https://shop.brandycards.de/api/paypal/webhook` und die drei Secrets
+eingerichtet; `PAYPAL_ENVIRONMENT = "production"` steht in `[vars]`, deployed
+als Version `4a6b7a46`. `wrangler deploy` bestätigt die Bindung, und der Webhook
+antwortet mit 400 statt 503 — die Webhook-ID liegt also vor.
+
+**Ein Test hält den Wert jetzt fest** (`tests/hardening.test.mjs`). Der Grund:
+`lib/paypal/config.ts` fällt bei fehlendem Wert **still** auf `sandbox` zurück,
+und genau dieser Zustand blieb vom 2026-08-06 bis zum 2026-08-08 unbemerkt —
+der Shop sah gesund aus und konnte kein Geld einnehmen.
+
+**🔴 Die Abnahme fehlt noch, und sie liegt beim Betreiber:** ein echter Kauf
+über einen kleinen Betrag. Fertig, wenn die Bestellung auf `PAID` steht und die
+Bestellbestätigung ankommt; danach erstatten. **Ob die Live-Zugangsdaten gültig
+sind, ist bis dahin nicht belegt** — das lässt sich ohne echte Zahlung nicht
+prüfen.
+
+<details><summary>Ursprünglicher Eintrag, zur Nachvollziehbarkeit</summary>
+
+### PayPal auf Live umstellen — SCHLÄGT ALLES ANDERE
 
 **Aufwand:** klein · **Hängt an:** einer Handlung des Betreibers ·
 **Blockiert:** jeden Verkauf
@@ -83,6 +104,8 @@ Bestellung steht auf `PAID`, und die Bestellbestätigung kommt an. Danach
 erstatten. Der Weg ist am 2026-08-08 in der Sandbox vollständig
 durchgespielt worden — der Code-Pfad ist derselbe, nur der Endpunkt
 unterscheidet sich.
+
+</details>
 
 ---
 

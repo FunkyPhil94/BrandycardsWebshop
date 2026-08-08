@@ -80,7 +80,24 @@ Quere kommen.
   ohne die Geheimnisse anzufassen.
 - **Rückweg:** Die Zeile entfernen und deployen — der Shop spricht dann wieder
   mit der Sandbox.
-- **Ergebnis:** _(wird nach dem Durchlauf eingetragen)_
+- **Ergebnis: ABGESCHLOSSEN.** Prüfkette grün: `tsc` sauber, Lint 0 Fehler,
+  `npm test` **212/212** (2 neue Tests). Deployed als Version **`4a6b7a46`**,
+  Commit `bfa479d`, CI vorher grün.
+- **`wrangler deploy` bestätigt die Bindung:**
+  `env.PAYPAL_ENVIRONMENT ("production")`.
+- **In Produktion nachgeprüft:** `/`, `/karten`, `/checkout`, `/account`,
+  `/admin` je 200; `/account` ohne „noch nicht konfiguriert";
+  `/api/orders` ohne Anmeldung 401; der Webhook antwortet mit **400** und nicht
+  mit 503 — 503 hieße, `PAYPAL_WEBHOOK_ID` sei leer. Die neue Webhook-ID liegt
+  also vor.
+- **Rot-Nachweis:** Mit `PAYPAL_ENVIRONMENT = "sandbox"` fällt genau der neue
+  Test (33/34). Ein stiller Rückfall in die Sandbox kann also nicht mehr
+  unbemerkt eingecheckt werden.
+- **Was hiermit ausdrücklich noch NICHT belegt ist: dass Geld ankommt.** Ob die
+  hinterlegten Live-Zugangsdaten gültig sind und der Live-Webhook zustellt,
+  zeigt allein ein echter Kauf. Der steht beim Betreiber und ist das
+  Abnahmekriterium aus ai-todo Punkt 0. **Bis dahin gilt Punkt 0 als
+  umgesetzt, aber nicht als abgenommen.**
 
 ### 2026-08-08 — Der Dubletten-Webhook hinterlässt keine falsche Spur mehr
 
