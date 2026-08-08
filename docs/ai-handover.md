@@ -37,7 +37,31 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-*(leer — bereit für den nächsten Auftrag.)*
+### 2026-08-08 — Zwei Textänderungen auf /ueber-uns (ai-todo Punkt 10)
+
+- **Stand:** LÄUFT
+- **Datum:** 2026-08-08
+- **Vom Betreiber wörtlich vorgegeben**, mit Bildausschnitten belegt. Damit hat
+  Punkt 10 seine ersten konkreten Einträge — bisher war er eine Sammelstelle.
+- **Erstens, `app/ueber-uns/page.tsx:31`:** Der letzte Satz unter „Warum auch
+  eBay" wird zu **„Beides ist synchronisiert, damit dir auch nichts entgeht."**
+  Der alte Satz („damit dir nichts doppelt oder gar nicht angeboten wird")
+  erklärte ein technisches Problem, das den Kunden nichts angeht.
+- **Zweitens, `app/ueber-uns/page.tsx:39`:** Aus dem gesetzten Kürzel
+  `B×B` wird das **echte Logo**, und die drei Wörter darunter
+  („BRÜDER · BRANDY · BALL") fallen weg.
+- **Vorher geprüft, weil es hier schiefgehen kann:** Der Abschnitt
+  `.about-section` hat einen **goldenen** Hintergrund. Ein Logo mit weißem
+  Grund klebte dort als weißer Kasten. Die PNG-Blöcke zeigen `tRNS` — das Bild
+  ist **transparent** und steht frei. 500×333 px, 30 KB, wird schon im
+  Kopfbereich über `app/brand/brandycards-logo.png` eingebunden.
+- **Das CSS braucht eine Ergänzung:** `.about-signature` ist auf Schrift
+  ausgelegt (`font:italic 26px Georgia`), `small` darin ist die Zeile mit den
+  drei Wörtern. Für ein Bild fehlt eine Breitenangabe, sonst stünde es in
+  Originalgröße da.
+- **Betroffen:** `app/ueber-uns/page.tsx`, `app/globals.css`. Kein API-Eingriff.
+- **Verifikation:** Prüfkette am Exit-Code, lokal im Browser ansehen (es ist
+  eine reine Sichtsache), danach Deploy und Nachprüfung in Produktion.
 
 ---
 
