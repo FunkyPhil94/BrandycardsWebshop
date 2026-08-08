@@ -73,6 +73,29 @@ export async function sendEmail(empfaenger: string, nachricht: Nachricht): Promi
   }
 }
 
+/** Beide Ausgänge eines Versands protokollieren.
+ *
+ * **Warum auch der Erfolg eine Zeile bekommt:** Vorher meldete sich nur der
+ * Fehlerfall. Aus dem Protokoll ließ sich damit ablesen, dass nichts
+ * schiefging — nicht, dass etwas hinausging. Wer Wochen später wissen will, ob
+ * ein Kunde seine Bestätigung bekam, fand nichts. Sichtbar wurde das bei der
+ * ersten echten Zustellung am 2026-08-08.
+ *
+ * **Was bewusst *nicht* im Protokoll steht: die Empfängeradresse.** Sie läge
+ * sonst dauerhaft in den Cloudflare-Protokollen, ohne dass sie dort einen
+ * Zweck erfüllt. Die Resend-Kennung genügt: Über sie lässt sich der Einzelfall
+ * in der Oberfläche von Resend nachschlagen, wo die Adresse ohnehin steht.
+ * `kennung` nimmt fachliche Bezüge auf (`orderId`, `offerId`) — die sind
+ * intern und nicht personenbezogen.
+ */
+export function protokolliereVersand(anlass: string, ergebnis: VersandErgebnis, kennung: Record<string, string> = {}): void {
+  if (ergebnis.ok) {
+    console.log(`[email] ${anlass} zugestellt.`, { resendId: ergebnis.id, ...kennung });
+    return;
+  }
+  console.error(`[email] ${anlass} nicht zugestellt.`, { grund: ergebnis.grund, ...kennung });
+}
+
 /** Versand als Nebensache: baut die Nachricht, verschickt sie und schluckt
  *  jeden Fehler — auch die aus dem Zusammenbauen.
  *

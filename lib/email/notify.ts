@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import type { getDb } from "../../db";
 import { orderItems, orders, priceOffers, products, users } from "../../db/schema";
 import { getEmailConfig } from "./config.ts";
-import { sendEmail, versucheVersand } from "./send.ts";
+import { protokolliereVersand, sendEmail, versucheVersand } from "./send.ts";
 import { cardSubmissionReceived, inquiryReceived, offerAccepted, offerRejected, orderConfirmation } from "./templates.ts";
 
 /** Die Brücke zwischen Datenbank und Vorlagen.
@@ -69,8 +69,7 @@ export async function notifyOrderPaid(db: Db, orderId: string): Promise<void> {
       shopUrl: shopUrl(),
     });
 
-    const ergebnis = await sendEmail(empfaenger, nachricht);
-    if (!ergebnis.ok) console.error("[email] Bestellbestätigung nicht zugestellt.", { orderId, grund: ergebnis.grund });
+    protokolliereVersand("Bestellbestätigung", await sendEmail(empfaenger, nachricht), { orderId });
   });
 }
 
@@ -108,23 +107,24 @@ export async function notifyOfferDecision(db: Db, offerId: string, entscheidung:
         })
       : offerRejected({ title: titel, productUrl, shopUrl: basis });
 
-    const ergebnis = await sendEmail(empfaenger, nachricht);
-    if (!ergebnis.ok) console.error("[email] Angebotsnachricht nicht zugestellt.", { offerId, grund: ergebnis.grund });
+    protokolliereVersand(
+      entscheidung === "accept" ? "Preisvorschlag angenommen" : "Preisvorschlag abgelehnt",
+      await sendEmail(empfaenger, nachricht),
+      { offerId },
+    );
   });
 }
 
 /** Eingangsbestätigung für eine Kartenanfrage. */
 export async function notifyInquiryReceived(empfaenger: string, gesucht: string): Promise<void> {
   await versucheVersand("Anfragebestätigung", async () => {
-    const ergebnis = await sendEmail(empfaenger, inquiryReceived({ title: gesucht, shopUrl: shopUrl() }));
-    if (!ergebnis.ok) console.error("[email] Anfragebestätigung nicht zugestellt.", { grund: ergebnis.grund });
+    protokolliereVersand("Anfragebestätigung", await sendEmail(empfaenger, inquiryReceived({ title: gesucht, shopUrl: shopUrl() })));
   });
 }
 
 /** Eingangsbestätigung für ein Ankaufsangebot. */
 export async function notifyCardSubmissionReceived(empfaenger: string, karte: string): Promise<void> {
   await versucheVersand("Ankaufbestätigung", async () => {
-    const ergebnis = await sendEmail(empfaenger, cardSubmissionReceived({ title: karte, shopUrl: shopUrl() }));
-    if (!ergebnis.ok) console.error("[email] Ankaufbestätigung nicht zugestellt.", { grund: ergebnis.grund });
+    protokolliereVersand("Ankaufbestätigung", await sendEmail(empfaenger, cardSubmissionReceived({ title: karte, shopUrl: shopUrl() })));
   });
 }

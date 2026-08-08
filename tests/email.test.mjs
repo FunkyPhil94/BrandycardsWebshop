@@ -276,6 +276,65 @@ test("versucheVersand schluckt auch Fehler beim Zusammenbauen", async () => {
   assert.equal(danach, true, "der Aufrufer wurde gerissen");
 });
 
+// --- Protokollierung -------------------------------------------------------
+
+/** Fängt ab, was auf die Konsole geht, damit sich die Zeilen prüfen lassen. */
+function mitProtokoll(aufgabe) {
+  const echteLog = console.log;
+  const echterError = console.error;
+  const zeilen = [];
+  console.log = (...teile) => zeilen.push({ art: "log", teile });
+  console.error = (...teile) => zeilen.push({ art: "error", teile });
+  try {
+    aufgabe();
+  } finally {
+    console.log = echteLog;
+    console.error = echterError;
+  }
+  return zeilen;
+}
+
+test("ein erfolgreicher Versand hinterlaesst eine Zeile mit Kennung", async () => {
+  const { protokolliereVersand } = await import("../lib/email/send.ts");
+  const zeilen = mitProtokoll(() => {
+    protokolliereVersand("Bestellbestätigung", { ok: true, id: "msg_42" }, { orderId: "abc123" });
+  });
+  assert.equal(zeilen.length, 1);
+  assert.equal(zeilen[0].art, "log");
+  assert.match(zeilen[0].teile[0], /Bestellbestätigung zugestellt/u);
+  assert.deepEqual(zeilen[0].teile[1], { resendId: "msg_42", orderId: "abc123" });
+});
+
+/** Die Adresse gehoert nicht in die Cloudflare-Protokolle: Sie laege dort
+ *  dauerhaft, ohne einen Zweck zu erfuellen. Die Resend-Kennung genuegt. */
+test("die Empfaengeradresse steht in keiner Protokollzeile", async () => {
+  await mitUmgebung({ RESEND_API_KEY: "re_test" }, async () => {
+    const { sendEmail, protokolliereVersand } = await import("../lib/email/send.ts");
+    const echtesFetch = globalThis.fetch;
+    globalThis.fetch = async () => new Response(JSON.stringify({ id: "msg_7" }), { status: 200 });
+    try {
+      const ergebnis = await sendEmail("kunde@example.com", inquiryReceived({ title: "K", shopUrl: SHOP }));
+      const zeilen = mitProtokoll(() => protokolliereVersand("Anfragebestätigung", ergebnis));
+      const alles = JSON.stringify(zeilen);
+      assert.ok(!alles.includes("kunde@example.com"), "die Adresse steht im Protokoll");
+      assert.ok(alles.includes("msg_7"), "die Resend-Kennung fehlt");
+    } finally {
+      globalThis.fetch = echtesFetch;
+    }
+  });
+});
+
+test("ein Fehlschlag wird weiterhin als Fehler protokolliert", async () => {
+  const { protokolliereVersand } = await import("../lib/email/send.ts");
+  const zeilen = mitProtokoll(() => {
+    protokolliereVersand("Ankaufbestätigung", { ok: false, grund: "unerreichbar", detail: "timeout" });
+  });
+  assert.equal(zeilen.length, 1);
+  assert.equal(zeilen[0].art, "error");
+  assert.match(zeilen[0].teile[0], /nicht zugestellt/u);
+  assert.equal(zeilen[0].teile[1].grund, "unerreichbar");
+});
+
 test("der Versand schickt Betreff, Text und HTML an Resend", async () => {
   await mitUmgebung({ RESEND_API_KEY: "re_test", EMAIL_FROM: "BrandyCards <post@example.com>" }, async () => {
     const { sendEmail } = await import("../lib/email/send.ts");

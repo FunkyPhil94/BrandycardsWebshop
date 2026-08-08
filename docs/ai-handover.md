@@ -37,25 +37,8 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-- **Stand:** LÄUFT
-- **Datum:** 2026-08-08
-- **Ziel:** Ein erfolgreicher Versand soll eine Protokollzeile hinterlassen.
-  Bisher meldet sich nur der Fehlerfall; ein geglückter Versand ist unsichtbar,
-  und damit lässt sich im Nachhinein nicht belegen, ob ein Kunde seine
-  Bestätigung bekommen hat.
-- **Wie:** Eine gemeinsame Funktion `protokolliereVersand(anlass, ergebnis,
-  kennung)` in `lib/email/send.ts`, die beide Ausgänge schreibt und die vier
-  wiederholten `if (!ergebnis.ok) console.error(...)` in `notify.ts` ersetzt.
-- **Bei Erfolg wird die Resend-Kennung protokolliert**, nicht die
-  Empfängeradresse. Damit lässt sich ein Einzelfall in der Oberfläche von
-  Resend nachschlagen, ohne dass personenbezogene Daten in den
-  Cloudflare-Protokollen liegen — die stünden dort sonst dauerhaft und ohne
-  Zweck. Dazu die fachliche Kennung (`orderId`, `offerId`), die intern ist.
-- **Betroffen:** `lib/email/send.ts`, `lib/email/notify.ts`,
-  `tests/email.test.mjs`. Kein Datenmodell, keine API, keine Datenbank.
-- **Verifikation:** Ein Test fängt die Protokollausgabe ab und belegt beides:
-  dass eine Erfolgszeile mit Kennung entsteht **und** dass die
-  Empfängeradresse nicht darin vorkommt.
+_Kein laufender Auftrag._ Vorlage: Stand, Datum, Ziel, geplante Schritte,
+betroffene Dateien, Verifikation, Ergebnis.
 
 ---
 
@@ -270,6 +253,46 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
 ---
 
 ## Historie
+
+### 2026-08-08 — Erfolgreicher Versand hinterlässt eine Spur
+
+- **Stand:** ABGESCHLOSSEN
+- **Datum:** 2026-08-08
+- **Ziel:** Ein erfolgreicher Versand soll eine Protokollzeile hinterlassen.
+  Bisher meldet sich nur der Fehlerfall; ein geglückter Versand ist unsichtbar,
+  und damit lässt sich im Nachhinein nicht belegen, ob ein Kunde seine
+  Bestätigung bekommen hat.
+- **Wie:** Eine gemeinsame Funktion `protokolliereVersand(anlass, ergebnis,
+  kennung)` in `lib/email/send.ts`, die beide Ausgänge schreibt und die vier
+  wiederholten `if (!ergebnis.ok) console.error(...)` in `notify.ts` ersetzt.
+- **Bei Erfolg wird die Resend-Kennung protokolliert**, nicht die
+  Empfängeradresse. Damit lässt sich ein Einzelfall in der Oberfläche von
+  Resend nachschlagen, ohne dass personenbezogene Daten in den
+  Cloudflare-Protokollen liegen — die stünden dort sonst dauerhaft und ohne
+  Zweck. Dazu die fachliche Kennung (`orderId`, `offerId`), die intern ist.
+- **Betroffen:** `lib/email/send.ts`, `lib/email/notify.ts`,
+  `tests/email.test.mjs`. Kein Datenmodell, keine API, keine Datenbank.
+- **Verifikation:** Ein Test fängt die Protokollausgabe ab und belegt beides:
+  dass eine Erfolgszeile mit Kennung entsteht **und** dass die
+  Empfängeradresse nicht darin vorkommt.
+- **Ergebnis: ABGESCHLOSSEN.** Prüfkette grün: `tsc` sauber, Lint 0 Fehler,
+  `npm test` **172/172** (3 neue Tests).
+- **Die Zeilen sehen jetzt so aus:**
+  - Erfolg: `[email] Bestellbestätigung zugestellt. { resendId: 'msg_…',
+    orderId: '…' }`
+  - Fehlschlag: `[email] Ankaufbestätigung nicht zugestellt. { grund:
+    'unerreichbar', … }`
+- **Belegt durch Tests, die die Konsolenausgabe abfangen:** Der Erfolgsfall
+  erzeugt genau eine Zeile mit Kennung; der Fehlerfall bleibt ein `console.error`.
+  Und ein eigener Test prüft, dass die **Empfängeradresse in keiner Zeile
+  vorkommt** — dafür wird ein echter Versand mit gestubbtem `fetch` gefahren und
+  die gesamte Protokollausgabe nach der Adresse durchsucht.
+- **Nebenbei aufgeräumt:** Die vier wiederholten `if (!ergebnis.ok)
+  console.error(...)` in `notify.ts` sind weg; alle vier Anlässe gehen durch
+  dieselbe Funktion. Die Angebotsnachricht nennt dabei jetzt auch, welche
+  Entscheidung verschickt wurde („Preisvorschlag angenommen" statt nur
+  „Angebotsnachricht").
+
 
 ### 2026-08-08 — Erste echt zugestellte E-Mail
 
