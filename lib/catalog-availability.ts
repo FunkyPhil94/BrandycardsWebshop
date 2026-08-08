@@ -31,7 +31,15 @@ export type BestandsZeile = { availableQuantity: number; status: string } | null
  * 3. **Vormerkliste (`PRELISTED`)** → hat weder Listing noch Bestand und wird
  *    hier gar nicht erst gefragt, siehe `istImKatalogSichtbar`.
  */
-export function verfuegbareMenge(listingQuantity: number | null | undefined, bestand: BestandsZeile): number {
+export function verfuegbareMenge(listingQuantity: number | null | undefined, bestand: BestandsZeile, origin: string = "EBAY"): number {
+  // **Bei manuellen Karten dreht sich Fall 2 um.** Sie haben kein Listing, auf
+  // das man zurückfallen könnte — fehlt die Bestandszeile, gibt es nichts zu
+  // verkaufen. „Im Zweifel anzeigen" wäre hier „im Zweifel etwas anbieten, das
+  // wir nie eingebucht haben".
+  if (origin === "MANUAL") {
+    if (!bestand || bestand.status === "SOLD" || bestand.status === "UNAVAILABLE") return 0;
+    return Number.isFinite(bestand.availableQuantity) && bestand.availableQuantity > 0 ? bestand.availableQuantity : 0;
+  }
   const ausListing = Number.isFinite(listingQuantity) && (listingQuantity ?? 0) > 0 ? (listingQuantity as number) : 0;
   if (!bestand) return ausListing;
   if (bestand.status === "SOLD" || bestand.status === "UNAVAILABLE") return 0;
@@ -63,7 +71,14 @@ export function istImKatalogSichtbar(
   listingType: string | null | undefined,
   listingQuantity: number | null | undefined,
   bestand: BestandsZeile,
+  origin: string = "EBAY",
 ): boolean {
+  // **`origin` wird vor `kind` gefragt, und das ist keine Kosmetik.** Manuelle
+  // Karten tragen `kind = 'PRELISTED'`, weil die CHECK-Bedingung auf `kind`
+  // keinen dritten Wert zuließ (siehe `drizzle/0006_…`). Käme die
+  // PRELISTED-Zeile zuerst, gälte jede von Hand eingestellte Karte als
+  // Ankündigung — immer sichtbar, auch wenn sie längst verkauft ist.
+  if (origin === "MANUAL") return verfuegbareMenge(listingQuantity, bestand, origin) > 0;
   if (kind === "PRELISTED") return true;
   if (listingType === "AUCTION") return false;
   return verfuegbareMenge(listingQuantity, bestand) > 0;

@@ -21,6 +21,20 @@ const json = (name: string) => text(name, { mode: "json" });
 
 export const userRoleValues = ["CUSTOMER", "ADMIN"] as const;
 export const productKindValues = ["EBAY_SYNCED", "PRELISTED"] as const;
+/** Woher eine Karte stammt — und **der** Schalter für „von Hand eingestellt".
+ *
+ * `kind` ließ sich nicht erweitern: Die CHECK-Bedingung darauf ist auf D1
+ * unveränderlich. Die Begründung samt der beiden verworfenen Versuche steht in
+ * `drizzle/0006_manual_cards_and_oauth_claims.sql` — kurz: `DROP TABLE` löst
+ * die Kaskaden der Kindtabellen aus, `PRAGMA foreign_keys = OFF` greift auf D1
+ * nicht, und ein `RENAME` scheitert an der qualifiziert geschriebenen
+ * CHECK-Bedingung.
+ *
+ * Manuelle Karten tragen deshalb `kind = 'PRELISTED'` **und**
+ * `origin = 'MANUAL'`. Wer `kind` liest, um „ist das käuflich?" zu beantworten,
+ * liest die falsche Spalte: `kind` sagt nur noch, ob der Waisen-Sweep die Zeile
+ * abräumt (`EBAY_SYNCED` ja, alles andere nein). */
+export const productOriginValues = ["EBAY", "MANUAL"] as const;
 export const productStatusValues = ["ACTIVE", "INACTIVE", "SOLD"] as const;
 export const listingStatusValues = ["ACTIVE", "ENDED", "HIDDEN"] as const;
 export const inventoryStatusValues = ["AVAILABLE", "RESERVED", "SOLD", "UNAVAILABLE"] as const;
@@ -55,16 +69,26 @@ export const users = sqliteTable("users", {
 export const products = sqliteTable("products", {
   id: id(),
   kind: text("kind", { enum: productKindValues }).notNull(),
+  origin: text("origin", { enum: productOriginValues }).notNull().default("EBAY"),
   status: text("status", { enum: productStatusValues }).notNull().default("ACTIVE"),
   title: text("title").notNull(),
   // Only eBay-synchronised products need extended offer data. PRELISTED
   // products intentionally remain title-first with optional assets.
   description: text("description"),
+  // Preis am Produkt. Bei eBay-Karten steht er im Listing und bleibt hier leer;
+  // eine manuelle Karte hat kein Listing und trägt ihn deshalb bei sich.
+  priceAmountCents: integer("price_amount_cents"),
+  priceCurrency: text("price_currency").notNull().default("EUR"),
+  // Welche Felder von Hand gesetzt wurden, als JSON-Liste von Feldnamen. Der
+  // Sync lässt genau diese Felder in Ruhe und überschreibt alle anderen.
+  manualOverrides: json("manual_overrides").$type<string[]>(),
   createdByUserId: text("created_by_user_id").references(() => users.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at"),
   updatedAt: timestamp("updated_at"),
 }, (table) => [
   index("products_kind_status_idx").on(table.kind, table.status),
+  index("products_origin_status_idx").on(table.origin, table.status),
+  index("products_origin_title_idx").on(table.origin, table.title),
   index("products_title_idx").on(table.title),
   check("products_kind_check", sql`${table.kind} IN ('EBAY_SYNCED', 'PRELISTED')`),
   check("products_status_check", sql`${table.status} IN ('ACTIVE', 'INACTIVE', 'SOLD')`),
@@ -332,6 +356,16 @@ export const auditEvents = sqliteTable("audit_events", {
   ipHash: text("ip_hash"),
   createdAt: timestamp("created_at"),
 }, (table) => [index("audit_entity_idx").on(table.entityType, table.entityId), index("audit_actor_idx").on(table.actorUserId, table.createdAt)]);
+
+/** SEC-12: kurzlebige Ablage für den eBay-Refresh-Token zwischen der
+ *  Browser-Umleitung von eBay und dem angemeldeten Adminbereich. Die Zeile wird
+ *  beim Abholen gelöscht; abgelaufene räumt der geplante Lauf ab. */
+export const ebayOauthClaims = sqliteTable("ebay_oauth_claims", {
+  id: id(),
+  refreshToken: text("refresh_token").notNull(),
+  expiresAt: text("expires_at").notNull(),
+  createdAt: timestamp("created_at"),
+}, (table) => [index("ebay_oauth_claims_expiry_idx").on(table.expiresAt)]);
 
 export type User = typeof users.$inferSelect;
 export type Product = typeof products.$inferSelect;

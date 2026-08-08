@@ -572,3 +572,50 @@ wird normalisiert gespeichert, die Formularadresse so, wie sie getippt wurde.
 `user_id`. Über die Adresse ist der Fall abgedeckt, und ein Bearer-Token durch
 ein öffentliches Formular zu schleusen wäre Aufwand ohne Gewinn — zumal Gäste
 ohne Konto einreichen dürfen und ihre Zeilen ohnehin nur an der Adresse hängen.
+
+## 2026-08-08 – Warum manuelle Karten keine eigene `kind` bekommen haben
+
+Der Arbeitsvorrat verlangte für Punkt 11 eine **dritte Produktart**
+(`kind = 'MANUAL'`). Auf D1 ist das nicht erreichbar, und der Weg dorthin
+zeigte zwei Fallen, die beide erst im lokalen Probelauf sichtbar wurden.
+
+**Erster Versuch: Tabelle neu bauen.** Neue Tabelle mit erweiterter
+CHECK-Bedingung, Daten kopieren, `DROP TABLE products`, umbenennen — das
+Standardrezept. Danach waren `ebay_listings` und `inventory` **leer**. Grund:
+Bei aktiver Fremdschlüsselprüfung führt `DROP TABLE` intern ein `DELETE FROM`
+aus, und das löst jede `ON DELETE CASCADE`-Aktion aus. In Produktion hätte das
+543 Angebote und den gesamten Bestand mitgenommen — und zwar **stillschweigend
+und erfolgreich gemeldet**.
+
+**`defer_foreign_keys` hilft dagegen nicht.** Es verschiebt
+Verletzungsmeldungen ans Transaktionsende; es schaltet keine Aktionen ab. Das
+war die eigentliche Fehlannahme.
+
+**Zweiter Versuch: `legacy_alter_table` + Umbenennen.** Die alte Tabelle zur
+Seite schieben, damit die `REFERENCES`-Klauseln der Kinder auf den Namen
+`products` zeigen bleiben und die Kaskade später ins Leere läuft. Scheitert
+hart: Die bestehende CHECK-Bedingung ist qualifiziert geschrieben
+(`"products"."kind"`), nach dem Umbenennen zeigt sie ins Nichts —
+`no such column: products.kind`.
+
+**Und `PRAGMA foreign_keys = OFF` greift auf D1 nicht.** Gemessen statt
+vermutet: Nach dem Setzen liefert `PRAGMA foreign_keys` weiterhin `1`.
+
+**Ergebnis:** Die CHECK-Bedingung auf `kind` ist auf dieser Datenbank
+unveränderlich. Die Unterscheidung zieht deshalb eine neue Spalte `origin`
+ohne CHECK ein. Manuelle Karten sind `kind = 'PRELISTED'` **und**
+`origin = 'MANUAL'`. Der Preis ist dabei, dass `kind` seine Aussagekraft
+verliert: Es beantwortet nur noch „räumt der Waisen-Sweep diese Zeile ab?".
+
+**Die Falle, die daraus entsteht, und wie sie festgenagelt ist.**
+`PRELISTED` bedeutet an anderer Stelle „Ankündigung, immer sichtbar, Menge 0".
+Würde `istImKatalogSichtbar` die PRELISTED-Zeile vor der `origin`-Zeile prüfen,
+wäre **jede verkaufte Handkarte unsterblich** — sie bliebe mit Kaufknopf im
+Schaufenster. `tests/manual-cards.test.mjs` prüft genau diesen Fall.
+
+**Umgekehrte Regel beim Bestand.** Bei eBay-Karten gilt: keine Bestandszeile →
+Listing-Menge zählt („im Zweifel anzeigen", weil ein halb geschriebener Import
+sonst den Katalog leert). Bei manuellen Karten gibt es kein Listing, auf das
+man zurückfallen könnte — ohne Bestandszeile also **nichts anbieten**. Dieselbe
+Funktion, zwei entgegengesetzte Vorzeichen; deshalb steht die Begründung an
+beiden Stellen im Code.

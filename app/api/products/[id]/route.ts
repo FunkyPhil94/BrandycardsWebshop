@@ -27,27 +27,38 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
 
   try {
     const db = getDb();
+    // **`leftJoin` auf das Listing, nicht `innerJoin`.** Von Hand eingestellte
+    // Karten haben keine Listing-Zeile; mit `innerJoin` lieferte ihre
+    // Detailseite 404, obwohl sie im Katalog steht. Die Statusprüfung des
+    // Listings wandert deshalb aus der `where`-Bedingung nach unten — in der
+    // `where`-Bedingung hätte sie jede manuelle Karte wieder herausgefiltert.
     const rows = await db.select({ product: products, listing: ebayListings, stock: inventory })
       .from(products)
-      .innerJoin(ebayListings, eq(ebayListings.productId, products.id))
+      .leftJoin(ebayListings, eq(ebayListings.productId, products.id))
       // `leftJoin`: Fehlt die Bestandszeile, soll die Karte trotzdem erscheinen
       // (die Listing-Menge gilt dann), statt eine 404 zu liefern.
       .leftJoin(inventory, eq(inventory.productId, products.id))
-      .where(and(eq(products.id, id), eq(products.status, "ACTIVE"), eq(ebayListings.status, "ACTIVE")))
+      .where(and(eq(products.id, id), eq(products.status, "ACTIVE")))
       .limit(1);
 
     const row = rows[0];
     if (!row) return NextResponse.json({ error: "Diese Karte ist nicht verfügbar." }, { status: 404 });
+    const manuell = row.product.origin === "MANUAL";
+    // Eine eBay-Karte ohne aktives Listing steht nicht im Verkauf. Bei einer
+    // manuellen Karte gibt es kein Listing, das aktiv sein könnte.
+    if (!manuell && row.listing?.status !== "ACTIVE") {
+      return NextResponse.json({ error: "Diese Karte ist nicht verfügbar." }, { status: 404 });
+    }
     // Verkauft ist wie nicht vorhanden — dieselbe Antwort wie für eine Karte,
     // die es nie gab. Sonst stünde hier weiter „1 verfügbar" mit aktivem
     // Kaufknopf, und der Kunde liefe erst an der Kasse auf. **Auktionen fallen
     // hier ebenfalls heraus**, weil sich ihre Menge bei eBay nicht
     // zurücknehmen lässt; dieselbe Entscheidung wie im Katalog, deshalb
     // dieselbe Funktion.
-    if (!istImKatalogSichtbar(row.product.kind, row.listing.listingType, row.listing.quantity, row.stock)) {
+    if (!istImKatalogSichtbar(row.product.kind, row.listing?.listingType, row.listing?.quantity, row.stock, row.product.origin)) {
       return NextResponse.json({ error: "Diese Karte ist nicht verfügbar." }, { status: 404 });
     }
-    const menge = verfuegbareMenge(row.listing.quantity, row.stock);
+    const menge = verfuegbareMenge(row.listing?.quantity ?? null, row.stock, row.product.origin);
 
     const assets = await db.select({ sourceUrl: productAssets.sourceUrl })
       .from(productAssets)
@@ -65,8 +76,8 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
     // loop — and a stalled quota stalls the import, which is what keeps sold
     // cards off the shop. Exceeding the limit costs the description, not the
     // card. See docs/security-findings.md, SEC-04.
-    let descriptionHtml = row.listing.descriptionHtml;
-    if (!descriptionHtml && row.listing.ebayItemId && await withinEbayFetchBudget(request)) {
+    let descriptionHtml = row.listing?.descriptionHtml ?? null;
+    if (!descriptionHtml && row.listing?.ebayItemId && await withinEbayFetchBudget(request)) {
       try {
         const fetched = await getEbayItemDescription(row.listing.ebayItemId);
         if (fetched) {
@@ -94,11 +105,13 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
         return { specs: structured?.specs ?? [], sections: structured?.sections ?? [], descriptionHtml: structured ? null : safe };
       })(),
       // Immer Festpreis: Auktionen sind oben schon mit 404 abgewiesen worden.
-      category: "Festpreis",
-      priceAmountCents: row.listing.priceAmountCents,
-      priceCurrency: row.listing.priceCurrency,
+      category: manuell ? "Direkt bei uns" : "Festpreis",
+      origin: row.product.origin,
+      // Bei manuellen Karten trägt das Produkt den Preis, es gibt kein Listing.
+      priceAmountCents: manuell ? row.product.priceAmountCents : row.listing?.priceAmountCents ?? null,
+      priceCurrency: manuell ? row.product.priceCurrency : row.listing?.priceCurrency ?? "EUR",
       quantity: menge,
-      listingUrl: row.listing.listingUrl,
+      listingUrl: row.listing?.listingUrl ?? null,
       imageUrls: assets.map((asset) => asset.sourceUrl).filter((url): url is string => Boolean(url)),
     });
   } catch (error) {

@@ -41,24 +41,31 @@ export async function GET() {
       .leftJoin(ebayListings, eq(ebayListings.productId, products.id))
       .leftJoin(productAssets, eq(productAssets.productId, products.id))
       .leftJoin(inventory, eq(inventory.productId, products.id))
-      .where(and(eq(products.status, "ACTIVE"), or(eq(products.kind, "PRELISTED"), eq(ebayListings.status, "ACTIVE"))))
+      // Von Hand eingestellte Karten haben nie ein Listing und müssen deshalb
+      // ausdrücklich durchgelassen werden — sonst zeigt der Katalog sie nie an.
+      .where(and(eq(products.status, "ACTIVE"), or(eq(products.origin, "MANUAL"), eq(products.kind, "PRELISTED"), eq(ebayListings.status, "ACTIVE"))))
       .orderBy(desc(products.createdAt));
     const byId = new Map<string, {
       id: string; title: string; description: string | null;
-      category: "Festpreis" | "Auktion" | "Vormerkliste"; priceAmountCents: number | null;
-      priceCurrency: string; quantity: number; listingUrl: string | null; imageUrls: string[];
+      category: "Festpreis" | "Auktion" | "Vormerkliste" | "Direkt bei uns"; priceAmountCents: number | null;
+      priceCurrency: string; quantity: number; listingUrl: string | null; imageUrls: string[]; origin: string;
     }>();
     for (const row of rows) {
-      if (!row.listing && row.product.kind !== "PRELISTED") continue;
+      const manuell = row.product.origin === "MANUAL";
+      if (!row.listing && !manuell && row.product.kind !== "PRELISTED") continue;
       // Verkauft heißt weg — sofort, nicht erst beim nächsten Import.
-      if (!istImKatalogSichtbar(row.product.kind, row.listing?.listingType, row.listing?.quantity, row.stock)) continue;
+      if (!istImKatalogSichtbar(row.product.kind, row.listing?.listingType, row.listing?.quantity, row.stock, row.product.origin)) continue;
       const current = byId.get(row.product.id) ?? {
         id: row.product.id, title: row.product.title, description: row.product.description,
         // Kein „Auktion" mehr: Auktionen sind oben schon ausgefiltert.
-        category: row.product.kind === "PRELISTED" ? "Vormerkliste" : "Festpreis",
-        priceAmountCents: row.listing?.priceAmountCents ?? null, priceCurrency: row.listing?.priceCurrency ?? "EUR",
-        quantity: row.product.kind === "PRELISTED" ? 0 : verfuegbareMenge(row.listing?.quantity, row.stock),
-        listingUrl: row.listing?.listingUrl ?? null, imageUrls: [],
+        category: manuell ? "Direkt bei uns" : row.product.kind === "PRELISTED" ? "Vormerkliste" : "Festpreis",
+        // Bei manuellen Karten steht der Preis am Produkt, es gibt kein Listing.
+        priceAmountCents: manuell ? row.product.priceAmountCents : row.listing?.priceAmountCents ?? null,
+        priceCurrency: manuell ? row.product.priceCurrency : row.listing?.priceCurrency ?? "EUR",
+        quantity: manuell
+          ? verfuegbareMenge(null, row.stock, "MANUAL")
+          : row.product.kind === "PRELISTED" ? 0 : verfuegbareMenge(row.listing?.quantity, row.stock),
+        listingUrl: row.listing?.listingUrl ?? null, imageUrls: [], origin: row.product.origin,
       };
       if (row.asset?.sourceUrl) current.imageUrls.push(row.asset.sourceUrl);
       byId.set(row.product.id, current);
