@@ -37,7 +37,77 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-*(leer — bereit für den nächsten Auftrag.)*
+### 2026-08-08 — Drei Verstärkungen gegen Doppelverkäufe
+
+- **Stand:** LÄUFT
+- **Datum:** 2026-08-08
+- **Vom Betreiber beauftragt**, nachdem er gefragt hatte, wie man sich weiter
+  schützen kann. Punkte 1 und 2 ausdrücklich freigegeben; Punkt 3 hat er selbst
+  entschieden, indem er die Regel nannte: **Auktionen bleiben ausschließlich bei
+  eBay und sollen gar nicht erst im Shop landen.**
+
+#### 1. Die Rücknahme sofort anstoßen statt auf den Cron zu warten
+
+`processEbayOutbox` hängt ausschließlich im geplanten Lauf. Der Auftrag entsteht
+zwar sofort beim Abrechnen, wird aber erst beim nächsten Schlag ausgeführt —
+**bis zu 3 Minuten**, in denen ein eBay-Käufer dieselbe Karte kaufen kann. Das
+ist die einzige verbleibende Lücke, die ein echtes Risiko trägt.
+
+- **Wie:** Am Ende von `settlePaidOrder` — dort, wo der Auftrag entsteht —
+  `waitUntil(processEbayOutbox(db))`. **Nicht `await`:** Der Kunde soll nicht
+  auf einen eBay-Aufruf warten, dessen Zeitgrenze bei 30 Sekunden liegt.
+  `waitUntil` aus `cloudflare:workers` ist verfügbar, vorher am Typprüfer
+  belegt. **Nicht einfach ohne `await` feuern** — eine nicht angemeldete Zusage
+  wird abgebrochen, sobald die Antwort steht.
+- **Der Cron bleibt** als Netz für Fehlschläge und Wiederholungen.
+- **In `settlePaidOrder`, nicht in den Routen:** Beide Zahlungswege (Capture und
+  Webhook) laufen dort hindurch. In den Routen müsste es zweimal stehen, und
+  eine der beiden Stellen würde irgendwann vergessen.
+
+#### 2. Sichtbar machen, wenn die Bestandsprüfung nicht laufen konnte
+
+`ebaySoldOutMessage` gibt bei einem eigenen Fehler `null` zurück und lässt den
+Verkauf durch — **richtig so**, sonst hielte eine eBay-Störung den ganzen Shop
+an. Aber es geschieht **lautlos**: Der Verkäufer packt die Karte ein, ohne zu
+wissen, dass niemand nachgesehen hat, ob sie noch da ist.
+
+- **Wie:** Der Wächter unterscheidet künftig „geprüft, alles da" von „konnte
+  nicht prüfen". Das Ergebnis wandert in die **Verkäufernachricht** — dort, wo
+  der Betreiber noch handeln kann, bevor er das Paket packt.
+- **Drei Zustände, weil es drei gibt:** `OK`, `FEHLGESCHLAGEN` (Prüfung lief,
+  aber eBay antwortete nicht) und `NICHT_GELAUFEN` — letzteres für über den
+  **Webhook** abgerechnete Bestellungen, denn dieser Weg ruft den Wächter gar
+  nicht auf. Das war mir vor dem Lesen nicht klar und ist der Grund, warum
+  zwei Zustände zu wenig wären.
+- **Nur bei Abweichung wird gewarnt.** Eine Zeile „alles geprüft" in jeder Mail
+  stumpft ab; eine Warnung, die selten kommt, wird gelesen.
+
+#### 3. Auktionen erscheinen nicht mehr im Katalog
+
+**Ein Fund, kein Vorsorgeriegel:** Der Katalog filtert Auktionen **nicht**, er
+beschriftet sie nur (`app/api/products/route.ts:57`). Eine Auktion würde also
+im Shop erscheinen **und kaufbar sein** — während die Warteschlange sie beim
+Verkauf bewusst überspringt, weil ihre Menge nicht änderbar ist. Der Shop könnte
+sie verkaufen, eBay böte sie weiter an, und der Vorgang stünde nur als Warnung
+im Protokoll.
+
+- **Dass es heute nicht auffällt, ist Zufall:** Alle 294 aktiven Angebote sind
+  Festpreis. Am Tag der ersten Auktion wäre das Loch da.
+- **Wie:** `istImKatalogSichtbar` bekommt den Angebotstyp und weist `AUCTION`
+  ab. Liste und Detailseite ziehen nach; die Detailseite antwortet dann mit 404
+  wie bei jeder anderen nicht verfügbaren Karte.
+- **`PRELISTED` bleibt unangetastet** — die Vormerkliste hat weder Listing noch
+  Bestand und wird vor der Typprüfung durchgelassen. Dieselbe Falle wie beim
+  letzten Umbau dieser Datei.
+
+- **Betroffen:** `lib/paypal/settle-order.ts`, `lib/ebay-stock-guard.ts`,
+  `lib/email/notify.ts`, `lib/email/templates.ts`,
+  `lib/catalog-availability.ts`, `app/api/paypal/capture/route.ts`,
+  `app/api/paypal/orders/route.ts`, `app/api/paypal/webhook/route.ts`,
+  `app/api/products/route.ts`, `app/api/products/[id]/route.ts`, dazu die
+  Tests `catalog-availability`, `email`. **Keine Migration.**
+- **Verifikation:** Tests mit Rot-Nachweis je Teil, Prüfkette, Deploy aus dem
+  Hauptverzeichnis, danach `/admin` und `/account` prüfen.
 
 ---
 
