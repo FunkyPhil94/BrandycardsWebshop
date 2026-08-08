@@ -560,18 +560,20 @@ Anmeldung, Anfrageformat, Fehlerzuordnung und Outbox-Lauf nachgewiesen.
 `EBAY_WRITE_ENABLED` steht auf `true` und wird von einem Test dort gehalten —
 ein Rückfall auf `false` wäre **lautlos**.
 
-**Zwei Dinge bleiben offen, beide klein:**
+**Ein Rest bleibt offen, und er ist klein:**
 
 1. **Der Erfolgsfall ist unbewiesen.** Dass die Menge eines *laufenden*
    Angebots wirklich auf 0 fällt, hat niemand gesehen — der Test lief gegen ein
    beendetes. Dafür bräuchte es ein Wegwerf-Angebot (siehe Warnung unten).
    **Der nächste echte Verkauf beweist es ohnehin**, und dann steht es im
    Protokoll.
-2. **`ALREADY_ENDED_CODES` (`291`, `21916750`, `1047`) sind geraten.** Ob eBay
-   diese Nummern schickt, ist ungeprüft. Läge die Liste falsch, ginge ein
-   Auftrag gegen ein bereits beendetes Angebot auf `RETRY_WAIT` statt
-   `SUCCEEDED` — Lärm, kein Schaden. `processEbayOutbox` protokolliert seit dem
-   2026-08-08, welchen Weg ein Aufruf nahm; die Antwort kommt von selbst.
+2. ~~**`ALREADY_ENDED_CODES` sind geraten.**~~ **Bestätigt am 2026-08-08.** Das
+   Worker-Protokoll meldet für den Testauftrag
+   `[ebay-outbox] Auftrag erledigt. { ergebnis: 'ALREADY_ENDED' }` — eBay
+   antwortet also mit einer der drei Nummern, und die Zuordnung greift. Offen
+   bleibt nur, **welche** der drei es war; die Zeile hält den Zweig fest, nicht
+   den Fehlercode. Wer es genauer braucht, ergänzt `tradingErrorCodes(xml)`
+   in der Protokollzeile.
 
 **Nach dem nächsten Verkauf einmal nachsehen:** `ebay_outbox` auf `SUCCEEDED`
 ohne `FAILED`, und im Worker-Protokoll die Zeile `[ebay-outbox] Auftrag

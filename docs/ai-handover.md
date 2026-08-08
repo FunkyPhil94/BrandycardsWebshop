@@ -496,16 +496,28 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
      **nicht** zwischen „eBay hat die Menge geändert" und „eBay meldete bereits
      beendet, und die geratene Fehlernummer hat gegriffen". Beim Test war
      deshalb nicht feststellbar, welcher Fall eintrat.
-- **Was offen bleibt, und warum ich es nicht weiterverfolgt habe:** Ob
-  `ALREADY_ENDED_CODES` (`291`, `21916750`, `1047`) die richtigen Nummern
-  enthält, ist **weiterhin ungeprüft**. Ein zweiter Lauf mit mitlaufendem
-  `wrangler tail` fing nichts ein — die Filterkette schreibt gepuffert, die
-  Datei blieb leer; ein Fehler im Aufbau, nicht im Code. **Der Einsatz lohnt
-  nicht:** Beide Läufe haben nicht geworfen, also griff entweder die
-  Nummernliste oder eBay nahm den Aufruf an. Läge die Liste falsch, wäre die
-  Folge ein Auftrag auf `RETRY_WAIT` statt `SUCCEEDED` — Lärm, kein Schaden,
-  und der Verkauf bleibt unberührt. Der nächste echte Verkauf schreibt die
-  Antwort dank der neuen Protokollzeile von selbst.
+- **Nachtrag, und er räumt den offenen Punkt ab:** `wrangler tail` **hat** die
+  Zeile doch eingefangen — nur schrieb die Filterkette gepuffert und gab sie
+  erst beim Beenden des Prozesses aus, weshalb die Datei zwischendurch leer
+  aussah und ich den Versuch als gescheitert abgehakt hatte. Das Protokoll
+  sagt:
+
+  ```
+  [ebay-outbox] Auftrag erledigt. { ergebnis: 'ALREADY_ENDED' }
+  ```
+
+  **Die geratenen `ALREADY_ENDED_CODES` greifen.** eBay hat mit „bereits
+  beendet" geantwortet, `reviseEbayItemQuantity` hat das erkannt und als Erfolg
+  gewertet — an echten eBay-Daten bestätigt, ohne Wegwerf-Angebot.
+- **Lehre für den nächsten Hintergrundlauf:** Eine Pipe mit `grep … | head`
+  schreibt gepuffert. Eine leere Ausgabedatei bedeutet **nicht**, dass nichts
+  ankam — sie bedeutet, dass der Puffer noch nicht geleert wurde. Ich habe
+  daraus zu früh einen Fehlschlag gemacht. Entweder ohne Filter mitschreiben
+  oder das Ende des Prozesses abwarten, bevor man urteilt.
+- **Was dadurch immer noch offen ist, aber kaum wiegt:** **welche** der drei
+  Nummern gegriffen hat, steht nicht im Protokoll — die Zeile hält nur den Zweig
+  fest, nicht den Fehlercode. Wer das genauer wissen will, ergänzt
+  `tradingErrorCodes(xml)` in der Protokollzeile.
 - **Zwei Testzeilen bleiben in `ebay_outbox` stehen** (beide `SUCCEEDED`,
   ItemID `398200679813`, erkennbar am `reason` im Payload). Sie zu löschen wäre
   ein weiterer schreibender Eingriff ohne Nutzen.
