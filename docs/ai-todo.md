@@ -205,7 +205,29 @@ werden — der Test dort erzwingt genau diese Reihenfolge.
 
 ---
 
-## 3. Kunden-E-Mails
+## 3. ~~Kunden-E-Mails~~ — GEBAUT am 2026-08-08, wartet auf den Schlüssel
+
+Alle fünf Anlässe sind gebaut und verdrahtet: Bestellbestätigung,
+Preisvorschlag angenommen, Preisvorschlag abgelehnt, Eingangsbestätigung für
+Anfrage und für Kartenankauf. Anbieter ist Resend, die Wortlaute stehen als
+reine Funktionen in `lib/email/templates.ts` und sind ohne Versand prüfbar
+(20 Tests in `tests/email.test.mjs`).
+
+**Es wird noch nichts verschickt, und das ist Absicht.** Ohne
+`RESEND_API_KEY` protokolliert der Versand eine Zeile und kehrt zurück; der
+Shop läuft unverändert. **Zwei Schritte fehlen, beide beim Betreiber:**
+
+1. Die Absenderdomain bei Resend verifizieren. Ohne das prallt jede Nachricht
+   ab, was schlechter wäre als gar nichts zu verschicken.
+2. `npx wrangler secret put RESEND_API_KEY`
+
+Danach eine Testbestellung durchspielen und den Posteingang prüfen.
+Begründung der Bauweise in [ai-agent-log.md](ai-agent-log.md), Durchlauf in
+[ai-handover.md](ai-handover.md).
+
+<details><summary>Ursprünglicher Eintrag, zur Nachvollziehbarkeit</summary>
+
+### Kunden-E-Mails
 
 **Aufwand:** mittel · **Hängt an:** nichts · **Blockiert:** Punkt 7
 
@@ -239,6 +261,8 @@ scheitern lassen. Muster wie bei der Beschreibungsabfrage in
 `app/api/products/[id]/route.ts`: Fehler protokollieren, Ablauf fortsetzen.
 Impressum-Link in den Fuß; bei rein transaktionalen Mails ist keine Abmeldung
 nötig, bei Werbung schon.
+
+</details>
 
 ---
 

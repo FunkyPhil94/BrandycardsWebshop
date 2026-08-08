@@ -11,6 +11,7 @@ import {
   requiredEmail,
   requiredString,
 } from "../../../lib/public-form";
+import { notifyInquiryReceived } from "../../../lib/email/notify.ts";
 import { enforcePublicRateLimit } from "../../../lib/rate-limit";
 
 export async function POST(request: Request) {
@@ -30,6 +31,9 @@ export async function POST(request: Request) {
       name,
       message: formMetadata(title, message),
     }).returning({ id: inquiries.id });
+    // Nach dem Speichern, nie davor: Die Anfrage ist auch dann angekommen,
+    // wenn die Bestätigung nicht hinausgeht.
+    await notifyInquiryReceived(email, title);
     return NextResponse.json({ ok: true, inquiryId: row?.id }, { status: 201 });
   } catch (error) {
     return jsonError(error);

@@ -37,70 +37,8 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-- **Stand:** LÄUFT
-- **Datum:** 2026-08-08
-- **Ziel:** Punkt 3 aus [ai-todo.md](ai-todo.md) — **Kunden-E-Mails**. Heute gibt
-  es **keinen** eigenen Versand; nur Supabase verschickt seine Anmeldemails.
-  Wer im Shop zahlt, bekommt keine Bestellbestätigung.
-- **Anbieter: Resend.** Steht bereits in Abschnitt 5 der Datenschutzerklärung,
-  ist also keine neue Offenlegung. Der Schlüssel gehört als
-  Cloudflare-Secret `RESEND_API_KEY` hinterlegt, **niemals** ins Repository.
-- **Fünf Anlässe, nach Wichtigkeit:**
-  1. Bestellbestätigung nach erfolgreichem Zahlungseinzug
-  2. Preisvorschlag angenommen (Betrag, Gültigkeit, Link zur Karte)
-  3. Preisvorschlag abgelehnt
-  4. Eingangsbestätigung für eine Kartenanfrage
-  5. Eingangsbestätigung für ein Ankaufsangebot
-
-### Die drei Entwurfsentscheidungen, die zählen
-
-- **Ein fehlgeschlagener Versand darf nie die auslösende Aktion scheitern
-  lassen.** `sendEmail` wirft grundsätzlich nicht, sondern meldet `false` und
-  protokolliert. Zusätzlich liegt jeder Aufruf in einem eigenen `try/catch`,
-  weil auch das *Zusammenbauen* der Nachricht fehlschlagen kann (fehlende
-  Verknüpfung, unerwartete Daten). Muster wie bei der Beschreibungsabfrage in
-  `app/api/products/[id]/route.ts`.
-- **Genau einmal senden, ohne neue Datenbankspalte.** Eine Bestellung wird auf
-  **zwei** Wegen bezahlt: über `app/api/paypal/capture/route.ts` (Kunde wartet
-  im Browser) und über `app/api/paypal/webhook/route.ts` (PayPal meldet
-  nach). Laufen beide, gäbe es zwei Bestätigungen. Eine Migration wäre
-  rücksprachepflichtig und ist unnötig: **Der Übergang der Zahlung auf
-  `CAPTURED` ist der Einmal-Moment.** Beide Stellen schreiben ihn künftig mit
-  `WHERE status IN ('CREATED','APPROVED')` und prüfen `meta.changes === 1` —
-  wer den Übergang gewinnt, verschickt. Das ist zugleich eine echte Korrektur:
-  Heute schreiben **beide** Stellen ungeschützt, ein Wettlauf überschreibt
-  stillschweigend. Bei den Preisvorschlägen existiert dieser Riegel schon
-  (`app/api/admin/offers/route.ts`, `meta.changes !== 1`).
-- **Der Versand wird abgewartet, nicht nebenher gestartet.** `waitUntil` gibt
-  es nur im Worker-Einstieg (`worker/index.ts`), nicht in den Route-Handlern;
-  eine nicht abgewartete Zusage kann Cloudflare abräumen — genau die Falle aus
-  dem hängenden Sync-Lauf. Preis: Die Antwort an den Kunden dauert um die
-  Versanddauer länger, begrenzt auf **5 Sekunden**.
-
-### Weitere Festlegungen
-
-- **Kartentitel kommen von eBay**, sind also Fremdeingabe. Sie werden für HTML
-  maskiert, und aus Betreffzeilen werden Zeilenumbrüche entfernt — sonst ließe
-  sich über einen präparierten Titel eine Kopfzeile einschleusen.
-- **Ohne `RESEND_API_KEY` ist der Versand ein stiller Leerlauf** mit einer
-  Protokollzeile. Der Shop funktioniert dadurch vor und nach dem Hinterlegen
-  des Schlüssels gleich; nichts bricht, solange er fehlt.
-- **Ton:** geduzt wie der übrige Shop, persönlich, knapp. Kein „Sehr geehrte
-  Damen und Herren". Impressum-Link im Fuß, keine Abmeldung (rein
-  transaktional).
-- **Nicht Teil dieses Auftrags:** eine Absenderadresse einzurichten und die
-  Domain bei Resend zu verifizieren. Das sind Zugänge zu Fremddiensten und
-  gehört dem Betreiber.
-- **Betroffen:** neu `lib/email/config.ts`, `lib/email/send.ts`,
-  `lib/email/templates.ts`, `tests/email.test.mjs`; geändert
-  `app/api/paypal/capture/route.ts`, `app/api/paypal/webhook/route.ts`,
-  `app/api/admin/offers/route.ts`, `app/api/inquiries/route.ts`,
-  `app/api/card-submissions/route.ts`, `package.json` (Test), README und
-  `.env.example`. **Keine Migration, keine Änderung an Produktionsdaten.**
-- **Verifikation:** Tests für die Vorlagen und für die Zusage „wirft nie" ohne
-  Netz; Prüfkette; im Browser belegen, dass Anfrage und Ankauf **ohne**
-  hinterlegten Schlüssel weiterhin fehlerfrei durchlaufen. **Es wird keine
-  E-Mail an echte Empfänger verschickt.**
+_Kein laufender Auftrag._ Vorlage: Stand, Datum, Ziel, geplante Schritte,
+betroffene Dateien, Verifikation, Ergebnis.
 
 ---
 
@@ -315,6 +253,114 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
 ---
 
 ## Historie
+
+### 2026-08-08 — Kunden-E-Mails gebaut (ai-todo Punkt 3)
+
+- **Stand:** ABGESCHLOSSEN
+- **Datum:** 2026-08-08
+- **Ziel:** Punkt 3 aus [ai-todo.md](ai-todo.md) — **Kunden-E-Mails**. Heute gibt
+  es **keinen** eigenen Versand; nur Supabase verschickt seine Anmeldemails.
+  Wer im Shop zahlt, bekommt keine Bestellbestätigung.
+- **Anbieter: Resend.** Steht bereits in Abschnitt 5 der Datenschutzerklärung,
+  ist also keine neue Offenlegung. Der Schlüssel gehört als
+  Cloudflare-Secret `RESEND_API_KEY` hinterlegt, **niemals** ins Repository.
+- **Fünf Anlässe, nach Wichtigkeit:**
+  1. Bestellbestätigung nach erfolgreichem Zahlungseinzug
+  2. Preisvorschlag angenommen (Betrag, Gültigkeit, Link zur Karte)
+  3. Preisvorschlag abgelehnt
+  4. Eingangsbestätigung für eine Kartenanfrage
+  5. Eingangsbestätigung für ein Ankaufsangebot
+
+### Die drei Entwurfsentscheidungen, die zählen
+
+- **Ein fehlgeschlagener Versand darf nie die auslösende Aktion scheitern
+  lassen.** `sendEmail` wirft grundsätzlich nicht, sondern meldet `false` und
+  protokolliert. Zusätzlich liegt jeder Aufruf in einem eigenen `try/catch`,
+  weil auch das *Zusammenbauen* der Nachricht fehlschlagen kann (fehlende
+  Verknüpfung, unerwartete Daten). Muster wie bei der Beschreibungsabfrage in
+  `app/api/products/[id]/route.ts`.
+- **Genau einmal senden, ohne neue Datenbankspalte.** Eine Bestellung wird auf
+  **zwei** Wegen bezahlt: über `app/api/paypal/capture/route.ts` (Kunde wartet
+  im Browser) und über `app/api/paypal/webhook/route.ts` (PayPal meldet
+  nach). Laufen beide, gäbe es zwei Bestätigungen. Eine Migration wäre
+  rücksprachepflichtig und ist unnötig: **Der Übergang der Zahlung auf
+  `CAPTURED` ist der Einmal-Moment.** Beide Stellen schreiben ihn künftig mit
+  `WHERE status IN ('CREATED','APPROVED')` und prüfen `meta.changes === 1` —
+  wer den Übergang gewinnt, verschickt. Das ist zugleich eine echte Korrektur:
+  Heute schreiben **beide** Stellen ungeschützt, ein Wettlauf überschreibt
+  stillschweigend. Bei den Preisvorschlägen existiert dieser Riegel schon
+  (`app/api/admin/offers/route.ts`, `meta.changes !== 1`).
+- **Der Versand wird abgewartet, nicht nebenher gestartet.** `waitUntil` gibt
+  es nur im Worker-Einstieg (`worker/index.ts`), nicht in den Route-Handlern;
+  eine nicht abgewartete Zusage kann Cloudflare abräumen — genau die Falle aus
+  dem hängenden Sync-Lauf. Preis: Die Antwort an den Kunden dauert um die
+  Versanddauer länger, begrenzt auf **5 Sekunden**.
+
+### Weitere Festlegungen
+
+- **Kartentitel kommen von eBay**, sind also Fremdeingabe. Sie werden für HTML
+  maskiert, und aus Betreffzeilen werden Zeilenumbrüche entfernt — sonst ließe
+  sich über einen präparierten Titel eine Kopfzeile einschleusen.
+- **Ohne `RESEND_API_KEY` ist der Versand ein stiller Leerlauf** mit einer
+  Protokollzeile. Der Shop funktioniert dadurch vor und nach dem Hinterlegen
+  des Schlüssels gleich; nichts bricht, solange er fehlt.
+- **Ton:** geduzt wie der übrige Shop, persönlich, knapp. Kein „Sehr geehrte
+  Damen und Herren". Impressum-Link im Fuß, keine Abmeldung (rein
+  transaktional).
+- **Nicht Teil dieses Auftrags:** eine Absenderadresse einzurichten und die
+  Domain bei Resend zu verifizieren. Das sind Zugänge zu Fremddiensten und
+  gehört dem Betreiber.
+- **Betroffen:** neu `lib/email/config.ts`, `lib/email/send.ts`,
+  `lib/email/templates.ts`, `tests/email.test.mjs`; geändert
+  `app/api/paypal/capture/route.ts`, `app/api/paypal/webhook/route.ts`,
+  `app/api/admin/offers/route.ts`, `app/api/inquiries/route.ts`,
+  `app/api/card-submissions/route.ts`, `package.json` (Test), README und
+  `.env.example`. **Keine Migration, keine Änderung an Produktionsdaten.**
+- **Verifikation:** Tests für die Vorlagen und für die Zusage „wirft nie" ohne
+  Netz; Prüfkette; im Browser belegen, dass Anfrage und Ankauf **ohne**
+  hinterlegten Schlüssel weiterhin fehlerfrei durchlaufen. **Es wird keine
+  E-Mail an echte Empfänger verschickt.**
+- **Ergebnis: ABGESCHLOSSEN.** Prüfkette grün: `tsc` sauber, Lint 0 Fehler,
+  `npm test` **169/169** (20 neue in `tests/email.test.mjs`).
+- **Gebaut:** `lib/email/config.ts` (Schlüssel und Absender),
+  `lib/email/templates.ts` (die Wortlaute als reine Funktionen),
+  `lib/email/send.ts` (der Versand, wirft nie), `lib/email/notify.ts` (die
+  Brücke zur Datenbank). Verdrahtet an allen fünf Anlässen.
+- **Rot-Nachweis geführt:** Mit ausgebauter HTML-Maskierung fallen genau die
+  zwei Tests, die sie prüfen (18/20 statt 20/20). Der Test misst also etwas.
+- **Im Browser belegt, dass der Shop ohne Schlüssel unverändert läuft:** Eine
+  echte Anfrage über `/anfragen` abgeschickt → `POST /api/inquiries 201`, die
+  Zeile steht in der Datenbank (`guest_email`, Status `NEW`), und im Protokoll
+  steht nur `[email] RESEND_API_KEY fehlt, es wird nichts verschickt`. **Keine
+  E-Mail an echte Empfänger verschickt.**
+- **Der Einmal-Riegel:** Beide Zahlungspfade schreiben den Übergang auf
+  `CAPTURED` jetzt bedingt (`WHERE status IN ('CREATED','APPROVED')`) und
+  verschicken nur bei `meta.changes === 1`. Das ist zugleich eine Korrektur am
+  Zahlungspfad selbst: Vorher schrieben **beide** Stellen ungeschützt, ein
+  Wettlauf zwischen Rückkehr aus PayPal und Webhook hätte sich still
+  überschrieben.
+
+### Dabei einen eigenen Fehler gefunden, der seit dem Nachmittag live war
+
+**`@import "tailwindcss"` stand seit der Schriftumstellung nicht mehr an erster
+Stelle** in `app/globals.css` — die zehn `@font-face`-Blöcke waren davorgesetzt
+worden. CSS verlangt für `@import` die erste Position, und ein Verstoß ist
+**still**: Der Browser verwirft die Zeile kommentarlos.
+
+- **Gefunden** nicht durch eine Prüfung, sondern durch eine Warnung im
+  Protokoll des Vorschau-Servers, die beim Starten für diesen Auftrag auffiel.
+- **Belegt:** Die gebaute CSS enthielt **null** Treffer für `--tw-`. Nach der
+  Korrektur wächst sie von 43 359 auf **49 542 Bytes**.
+- **Wirkung, gemessen statt vermutet:** Das Projekt benutzt kaum
+  Tailwind-Utilities, verlor also keine Layoutklassen — wohl aber den
+  **Reset**, auf dem das ganze handgeschriebene Stylesheet aufbaut. Nachweis:
+  Die Kacheln auf der Startseite sind mit Reset **286 px** hoch, ohne ihn
+  waren es 278 px, und `box-sizing` steht wieder auf `border-box`.
+- **Lehre, als Kommentar an der Stelle hinterlegt:** Der Tailwind-Import muss
+  die erste Anweisung bleiben; Ergänzungen gehören darunter. **Und: Die
+  Warnungen des Vorschau-Servers gehören gelesen.** Sie standen seit dem
+  Nachmittag da; drei Deploys sind darüber hinweggegangen.
+
 
 ### 2026-08-08 — Seitentitel: Sports Cards statt Football Collectibles
 

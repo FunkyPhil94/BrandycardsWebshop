@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { cardSubmissionAssets, cardSubmissions } from "../../../db/schema";
 import { getAssetBucket, getDb } from "../../../db";
 import { eq } from "drizzle-orm";
+import { notifyCardSubmissionReceived } from "../../../lib/email/notify.ts";
 import { enforcePublicRateLimit } from "../../../lib/rate-limit";
 import { HONEYPOT_FIELD, RENDERED_AT_FIELD } from "../../../lib/form-bot-guard";
 import {
@@ -95,6 +96,10 @@ async function handleMultipartSubmission(request: Request) {
     await db.delete(cardSubmissions).where(eq(cardSubmissions.id, submission.id));
     throw new PublicFormError(503, "UPLOAD_FAILED", "Die Bilder konnten nicht sicher gespeichert werden.");
   }
+  // Erst hier, nachdem auch die Bilder sicher liegen: Der Pfad darüber räumt
+  // das Angebot bei einem Uploadfehler wieder ab — eine Bestätigung für etwas,
+  // das gleich wieder gelöscht wird, wäre schlimmer als keine.
+  await notifyCardSubmissionReceived(email, title);
   return NextResponse.json({ ok: true, cardSubmissionId: submission.id, uploads: uploads.length }, { status: 201 });
 }
 

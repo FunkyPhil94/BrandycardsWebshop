@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { getDb } from "../../../../db";
 import { orders, payments } from "../../../../db/schema";
 import { getAuthenticatedAppUser } from "../../../../lib/app-user";
+import { notifyOrderPaid } from "../../../../lib/email/notify.ts";
 import { ebaySoldOutMessage } from "../../../../lib/ebay-stock-guard";
 import { capturePayPalOrder } from "../../../../lib/paypal/client";
 import { assertValidMoney, centsToPayPalValue } from "../../../../lib/paypal/money";
@@ -84,9 +85,16 @@ export async function POST(request: Request) {
     }
 
     const now = new Date().toISOString();
-    await db.update(payments).set({ providerCaptureId: capture.id, status: "CAPTURED", rawData: paypalCapture, updatedAt: now }).where(eq(payments.id, payment.id));
+    // Der Übergang auf CAPTURED ist bewusst **bedingt** geschrieben: Dieselbe
+    // Zahlung kann gleichzeitig über den Webhook eintreffen. Wer den Übergang
+    // gewinnt (`changes === 1`), verschickt die Bestellbestätigung — so bekommt
+    // der Kunde sie genau einmal, ohne dass es dafür eine neue Spalte braucht.
+    const captureClaim = await db.batch([db.update(payments)
+      .set({ providerCaptureId: capture.id, status: "CAPTURED", rawData: paypalCapture, updatedAt: now })
+      .where(and(eq(payments.id, payment.id), inArray(payments.status, ["CREATED", "APPROVED"])))]);
     await db.update(orders).set({ status: "PAID", paidAt: now, updatedAt: now }).where(and(eq(orders.id, order.id), inArray(orders.status, ["PENDING", "PROCESSING"])));
     await settlePaidOrder(db, order.id, now);
+    if (captureClaim[0].meta.changes === 1) await notifyOrderPaid(db, order.id);
     return NextResponse.json({ ok: true, idempotent: false, orderId: order.id, captureId: capture.id, status: "CAPTURED" });
   } catch (error) {
     console.error("PayPal capture failed", error);

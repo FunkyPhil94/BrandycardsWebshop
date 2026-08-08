@@ -83,6 +83,24 @@ Before the first production deployment:
 4. Add the server-only eBay, Supabase, admin, and PayPal values with
    `npx wrangler secret put NAME`. Never put those values in `wrangler.toml`,
    `.env.example`, GitHub, or the frontend.
+
+### Customer emails (optional, off until configured)
+
+Order confirmations and offer decisions are sent through
+[Resend](https://resend.com). **The shop runs fine without it**: when
+`RESEND_API_KEY` is absent the send step logs one line and returns, and no
+customer-facing action fails because of it.
+
+To switch it on:
+
+1. Verify the sending domain at Resend. Skipping this makes every message
+   bounce, which is worse than sending nothing.
+2. `npx wrangler secret put RESEND_API_KEY`
+3. Optionally override `EMAIL_FROM`, `EMAIL_REPLY_TO` and `SHOP_BASE_URL` in
+   `wrangler.toml` — these are not secrets, only the API key is.
+
+The wording lives in `lib/email/templates.ts` as plain functions, so it can be
+changed and tested without sending anything (`tests/email.test.mjs`).
 5. Deploy with `npx wrangler deploy`.
 6. Attach the custom domain in Cloudflare under the Worker’s **Domains &
    Routes** settings. Do not add a route until the Worker deployment exists.

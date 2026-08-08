@@ -393,3 +393,59 @@ Agents erhalten klar abgegrenzte Prüf- oder Implementierungsaufträge. Ihre Erg
   gefuehrt — ohne die Korrekturen laufen die drei `fetch`-Tests in ihr
   Zeitlimit, statt einen Fehler zu liefern. `npx tsc --noEmit` sauber,
   `npm run lint` 0 Fehler, `npm test` 130/130. Deployed als `07da6e9b`.
+
+## 2026-08-08 - Kunden-E-Mails: warum genau so
+
+**Anlass:** Punkt 3 aus `ai-todo.md`. Der Shop hatte keinen eigenen Versand;
+wer bezahlte, hörte nichts.
+
+**Anbieter Resend, nicht MailChannels.** Die Datenschutzerklärung nennt Resend
+in Abschnitt 5 bereits für die Supabase-Anmeldemails. Denselben Auftrags-
+verarbeiter ein zweites Mal zu nutzen heißt: keine neue Offenlegung, kein
+zweiter Vertrag, keine Textänderung. Das wog schwerer als jeder technische
+Unterschied zwischen den beiden.
+
+**Warum der Versand abgewartet wird, obwohl er den Checkout verlangsamt.**
+Naheliegend wäre `ctx.waitUntil`, damit die Antwort sofort hinausgeht. Das
+gibt es aber nur im Worker-Einstieg (`worker/index.ts`), nicht in den
+Route-Handlern. Eine einfach nicht abgewartete Zusage ist keine Alternative:
+Cloudflare räumt sie nach der Antwort ab, und der Versand fiele unvorhersehbar
+mal aus, mal nicht. Genau diese Klasse von Fehler hat am 2026-08-07 den
+eBay-Import stundenlang lahmgelegt. Also: abwarten, aber mit einer Zeitgrenze
+von 5 Sekunden.
+
+**Warum es keine neue Datenbankspalte für "Bestätigung verschickt" gibt.**
+Eine Bestellung wird auf zwei Wegen bezahlt: durch die Rückkehr des Kunden aus
+PayPal und durch den Webhook. Laufen beide, gäbe es zwei Bestätigungen. Der
+naheliegende Weg wäre eine Spalte `confirmation_sent_at` - das hieße Migration,
+und Migrationen sind rücksprachepflichtig.
+
+Nicht nötig: **Der Übergang der Zahlung von `CREATED/APPROVED` auf `CAPTURED`
+ist bereits der Einmal-Moment.** Beide Stellen schreiben ihn jetzt bedingt und
+prüfen `meta.changes === 1`; wer gewinnt, verschickt. Dieselbe Bewegung, die
+`app/api/admin/offers/route.ts` für Preisvorschläge schon macht.
+
+**Nebenwirkung, die den Ausschlag gab:** Vorher schrieben beide Stellen den
+Übergang **ungeschützt**. Ein Wettlauf hätte sich still überschrieben. Die
+Bedingung ist also nicht nur die Grundlage für den Versand, sondern eine
+Korrektur am Zahlungspfad selbst.
+
+**Warum Ausfälle folgenlos bleiben müssen, und wie.** `sendEmail` wirft
+grundsätzlich nicht, sondern meldet ein Ergebnis. Zusätzlich liegt jeder
+Aufruf in `versucheVersand`, weil auch das *Zusammenbauen* der Nachricht
+fehlschlagen kann - eine fehlende Verknüpfung, ein unerwarteter Wert. Ein
+Kunde, der bezahlt hat, bekommt seine Karten auch dann, wenn Resend gerade
+nicht erreichbar ist; er bekommt nur keine Bestätigung.
+
+**Warum Kartentitel maskiert werden.** Sie kommen von eBay, sind also
+Fremdeingabe. Im HTML-Teil wird maskiert, aus der Betreffzeile fliegen
+Zeilenumbrüche. Resend nimmt den Betreff zwar als JSON-Feld und setzt die
+Kopfzeilen selbst - sich darauf zu verlassen wäre eine Wette auf fremdes
+Verhalten. Rot-Nachweis geführt: Ohne Maskierung fallen genau die zwei Tests,
+die sie prüfen.
+
+**Ohne Schlüssel ist alles ein Leerlauf.** `getEmailConfig()` liefert dann
+`null`, der Versand protokolliert eine Zeile und kehrt zurück. Der Shop
+verhält sich vor und nach dem Hinterlegen des Secrets gleich. Belegt: Eine
+echte Anfrage über `/anfragen` lief mit 201 durch, die Zeile steht in der
+Datenbank, im Protokoll steht nur der Hinweis auf den fehlenden Schlüssel.

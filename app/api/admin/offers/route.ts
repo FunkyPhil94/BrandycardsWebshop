@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { getDb } from "../../../../db";
 import { ebayListings, priceOffers, products, users } from "../../../../db/schema";
 import { getAuthenticatedAppUser } from "../../../../lib/app-user";
+import { notifyOfferDecision } from "../../../../lib/email/notify.ts";
 import { offerExpiry } from "../../../../lib/price-offers";
 
 const OPEN = ["NEW", "IN_REVIEW"] as const;
@@ -74,6 +75,10 @@ export async function POST(request: Request) {
     if (result.meta.changes !== 1) {
       return NextResponse.json({ error: "Dieser Vorschlag wurde bereits entschieden." }, { status: 409 });
     }
+    // Erst hinter dem Riegel: Ein Doppelklick im Adminbereich löst damit auch
+    // nur eine Nachricht aus. Der Versand kann die Entscheidung nicht mehr
+    // rückgängig machen und darf sie deshalb auch nicht scheitern lassen.
+    await notifyOfferDecision(db, offerId, action);
     return NextResponse.json({ ok: true, status: action === "accept" ? "ACCEPTED" : "REJECTED" });
   } catch (error) {
     console.error("admin offer decision failed", error);
