@@ -119,15 +119,20 @@ export function OfferForm({ productId, listPriceCents, currency }: { productId: 
         ? <p>Für diese Karte hast du alle Vorschläge genutzt. Der reguläre Preis gilt weiterhin.</p>
         : <>
             {/* Der Mindestabstand muss vor dem Absenden sichtbar sein, sonst
-                bekommt der Kunde eine Ablehnung, die er nicht versteht. Er stand
-                bis zum 2026-08-08 als eigener Absatz in Versalien darüber — das
-                erschlug den Kasten optisch. Jetzt läuft er als kleiner Hinweis
-                am Eingabefeld mit, wo er gebraucht wird. */}
-            <p>Nenn uns deinen Preis. {listPriceCents ? <>Aktuell kostet die Karte {formatPrice(listPriceCents, currency)}.</> : null} Nehmen wir an, gilt dein Preis 48 Stunden und wird im Checkout automatisch verrechnet.</p>
+                bekommt der Kunde eine Ablehnung, die er nicht versteht. Er hatte
+                am 2026-08-08 erst einen eigenen Absatz in Versalien, dann eine
+                graue Zeile am Feld — beides hat der Betreiber verworfen. Jetzt
+                steht er als halber Satz im Fließtext, ohne eigene Gestaltung. */}
+            <p>
+              Nenn uns deinen Preis
+              {listPriceCents
+                ? <> — mindestens 50 Cent unter den {formatPrice(listPriceCents, currency)}, die die Karte aktuell kostet</>
+                : <> — mindestens 50 Cent unter dem Kartenpreis</>}.
+              {" "}Nehmen wir an, gilt dein Preis 48 Stunden und wird im Checkout automatisch verrechnet.
+            </p>
             <form onSubmit={submit}>
               <label className="form-field">
                 <span>Dein Preis in €<b aria-hidden="true"> *</b></span>
-                <small>Mindestens 50 Cent unter dem Kartenpreis.</small>
                 <input name="price" type="number" step="0.01" min="0.5" required
                   max={listPriceCents ? ((listPriceCents - 50) / 100).toFixed(2) : undefined} />
               </label>
