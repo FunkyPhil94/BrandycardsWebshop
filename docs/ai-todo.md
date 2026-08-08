@@ -17,8 +17,10 @@ dabei, damit niemand den Gesprächsverlauf braucht.
 PayPal steht auf Live und hat echtes Geld eingenommen, der Sync schreibt nur
 noch Änderungen, die Kunden-E-Mails sind scharf, die Sicherheitskorrekturen
 samt CSP ohne `'unsafe-inline'` sind in Produktion, und der Checkout zeigt den
-ausgehandelten Preis. **Der nächste ungebaute Punkt dieser Liste ist Punkt 6,
-der eBay-Schreibpfad.**
+ausgehandelten Preis. **Punkt 6 (eBay-Schreibpfad) ist seit dem 2026-08-08
+gebaut und deployed, aber nicht abgenommen** — der Schalter steht noch auf
+`false`, und der Nachweis an einer Testkarte fehlt. **Der nächste ungebaute
+Punkt dieser Liste ist Punkt 7.**
 
 **Seit 2026-08-07 läuft das Projekt auf Workers Paid (5 $/Monat).** Damit sind
 die harten Tagesdeckel weg (D1 wird nach Verbrauch abgerechnet), `Email
@@ -531,38 +533,43 @@ Betrag, den die Bestellung anschließend berechnet.
 
 ---
 
-## 6. eBay-Schreibpfad reparieren
+## 6. eBay-Schreibpfad — GEBAUT am 2026-08-08, Abnahme steht aus
 
-**Aufwand:** groß · **Hängt an:** nichts · **Blockiert:** Punkt 7
+**Der Code ist fertig und deployed** (Version `b4421267`, Commit `63df714`).
+Die Warteschlange adressiert jetzt über die **ItemID** statt über die
+Inventory-API-OfferID und setzt die Menge per `ReviseInventoryStatus` auf 0.
+Das war der eigentliche Fehler: `GetMyeBaySelling` liefert nie eine OfferID,
+also stieg **jeder** Aufruf an der fehlenden Kennung aus — die Outbox hat seit
+ihrem Bau **keinen einzigen Auftrag** bekommen. Der Schreibpfad war nicht nur
+abgeschaltet, er war unerprobt.
 
-**Warum:** Die zweite Richtung des Doppelverkaufs — im Shop verkauft, eBay weiß
-es nicht. Sie ist die unangenehmere: Ein Storno bei eBay verschlechtert den
-Verkäuferstatus, das wirkt über den einzelnen Fall hinaus. Und sie wird mit
-jedem zusätzlichen Shop-Verkauf wahrscheinlicher — weshalb dieser Punkt vor der
-Bewerbung stehen muss.
+Dazu zwei Dinge, die beim Bauen dazukamen: **Auktionen** werden gar nicht erst
+eingereiht (ihre Menge ist nicht änderbar, ein solcher Auftrag würde ewig
+scheitern), und ein **bereits beendetes Angebot gilt als Erfolg**, erkannt an
+der `ErrorCode`-Nummer statt am übersetzbaren Fließtext. 15 Tests in
+`tests/ebay-outbox.test.mjs`, Rot-Nachweis je einzeln geführt.
 
-**Stand:** `mapActiveListing` in `lib/ebay-sync.ts` setzt `ebayOfferId` fest auf
-`null`, weil `GetMyeBaySelling` nur eine ItemID liefert und keine
-Inventory-API-Offer-ID. Dadurch bricht `enqueueEbayWithdraw` in
-`lib/ebay-outbox.ts` sofort ab und die Outbox bekommt nie einen Auftrag. Aktuell
-nur dadurch entschärft, dass `EBAY_WRITE_ENABLED=false` steht.
+**`EBAY_WRITE_ENABLED` steht weiterhin auf `false`.** Aufträge entstehen ab
+jetzt bei jedem bezahlten Verkauf, werden aber nicht ausgeführt. `PENDING`-
+Zeilen in `ebay_outbox` sind deshalb der Normalzustand und kein Fehler.
 
-**Wie:** Die Outbox ist fertig — Dedupe-Key, Lease, Backoff, Fehlerstatus — und
-wartet nur auf Aufträge. Zu ändern sind Operation und Identifikator: statt
-Inventory-API `offer/{offerId}/withdraw` die Trading-API mit der ItemID.
+**Was noch fehlt — und es liegt beim Betreiber:**
 
-**Empfehlung: `ReviseInventoryStatus` mit Menge 0, nicht `EndItem`.** Der erste
-Weg ist **umkehrbar** — läuft eine Bestellung ins Leere oder verfällt die
-Reservierung, lässt sich die Menge zurücksetzen. `EndItem` beendet das Angebot
-endgültig; Wiedereinstellen geht nur als neues Listing mit neuer ItemID, wodurch
-die lokale Zuordnung bricht.
-
-**Vorgehen:**
-1. Benötigten OAuth-Scope für den Schreibzugriff prüfen
-2. Umstellung an **einer** Testkarte nachweisen
-3. Erst dann `EBAY_WRITE_ENABLED=true` setzen — der Schalter existiert genau dafür
+1. **Den Schreib-Scope bestätigen.** `EBAY_WRITE_OAUTH_SCOPE` steht korrekt auf
+   `…/sell.inventory`. Ob der in Produktion hinterlegte `EBAY_REFRESH_TOKEN`
+   diesen Scope umfasst, entscheidet sich bei der eBay-Zustimmung und lässt
+   sich **nur am ersten echten Schreibaufruf** feststellen. Der Token trägt
+   nachweislich **lesend** (Sync-Läufe `SUCCEEDED`); das sagt über den
+   Schreib-Scope nichts. Scheitert es mit `invalid_scope` oder Fehler `931`,
+   muss die Zustimmung mit `sell.inventory` erneuert werden.
+   *(Die lokalen Zugangsdaten in `.env.local` taugen zum Prüfen nicht — ihr
+   Refresh-Token ist veraltet und scheitert für **jeden** Scope gleich.)*
+2. **An einer Testkarte nachweisen**, dass die Menge bei eBay wirklich auf 0
+   geht — an einer, deren Verschwinden nicht wehtut.
+3. **Erst dann `EBAY_WRITE_ENABLED=true`** setzen. Der Schalter existiert genau
+   für diese Reihenfolge.
 4. Nach dem ersten echten Verkauf `ebay_outbox` kontrollieren: Status
-   `SUCCEEDED`, kein `FAILED`
+   `SUCCEEDED`, kein `FAILED`.
 
 **Fertig, wenn:** Ein bezahlter Shop-Verkauf setzt die eBay-Menge nachweislich
 auf 0, und die Outbox zeigt den Auftrag als erfolgreich.

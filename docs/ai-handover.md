@@ -37,52 +37,7 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-### 2026-08-08 — eBay-Schreibpfad: verkaufte Karten von eBay nehmen (ai-todo Punkt 6)
-
-- **Stand:** LÄUFT
-- **Datum:** 2026-08-08
-- **Ziel:** Die zweite Richtung des Doppelverkaufs schließen — im Shop verkauft,
-  eBay weiß es nicht. Ein Storno bei eBay verschlechtert den Verkäuferstatus,
-  das wirkt über den Einzelfall hinaus.
-- **Der Befund, bestätigt statt angenommen:** `mapActiveListing`
-  (`lib/ebay-sync.ts:23`) setzt `ebayOfferId` fest auf `null`, weil
-  `GetMyeBaySelling` eine **ItemID** liefert und keine Inventory-API-Offer-ID.
-  `enqueueEbayWithdraw` (`lib/ebay-outbox.ts:13`) steigt genau darauf aus und
-  protokolliert nur. **Die Outbox hat noch nie einen Auftrag bekommen** — der
-  gesamte Schreibpfad ist unerprobt, nicht nur abgeschaltet.
-- **Wie, und warum so:** Nicht die Offer-ID nachrüsten, sondern die Operation
-  auf die ItemID umstellen — `ReviseInventoryStatus` (Trading API) mit Menge 0
-  statt `withdrawEbayOffer`. `EndItem` wäre der falsche Weg: Es beendet das
-  Angebot endgültig, Wiedereinstellen ginge nur als neues Listing mit neuer
-  ItemID, und damit bräche die lokale Zuordnung. Menge 0 ist **umkehrbar**.
-- **Zwei Dinge, die ich beim Lesen gefunden habe und die im ai-todo nicht
-  stehen:**
-  1. **Auktionen vertragen `ReviseInventoryStatus` nicht.** Der Aufruf gilt für
-     Festpreisangebote; bei einer laufenden Auktion mit Geboten ist eine
-     Mengenänderung gar nicht vorgesehen. `ebay_listings.listing_type`
-     unterscheidet beides. Auktionen dürfen deshalb **gar nicht erst** in die
-     Outbox — sonst erzeugen sie dauerhaft rote Aufträge, die niemand beheben
-     kann. Sie werden protokolliert statt eingereiht.
-  2. **Es liegen Alt-Aufträge im Format `WITHDRAW_OFFER` vor** — jedenfalls dem
-     Code nach; erzeugt wurden nie welche. Der Verarbeiter muss beide
-     Operationen kennen, sonst schlägt eine alte Zeile dauerhaft fehl.
-- **Der Scope ist das eigentliche Risiko:** Lesend läuft alles mit
-  `sell.inventory.readonly`. `ReviseInventoryStatus` braucht den
-  Schreib-Scope `sell.inventory`. Ob der vorhandene `EBAY_REFRESH_TOKEN` diesen
-  Scope überhaupt umfasst, entscheidet sich bei der Zustimmung — **das lässt
-  sich nur am echten Aufruf feststellen**, nicht am Code. Fällt es aus, muss der
-  Betreiber die eBay-Zustimmung mit dem Schreib-Scope erneuern.
-- **Was ich ausdrücklich NICHT tue:** `EBAY_WRITE_ENABLED` bleibt auf `false`.
-  Der Schalter greift auf **echte** Angebote zu; ai-todo Punkt 6 schreibt vor,
-  die Umstellung zuerst an einer einzelnen Testkarte nachzuweisen. Bauen und
-  ausliefern ist freigegeben, Eingriffe in Fremdsysteme sind es nicht.
-- **Betroffen:** `lib/ebay-client.ts` (neuer Trading-Aufruf),
-  `lib/ebay-outbox.ts` (Einreihen über ItemID, beide Operationen verarbeiten),
-  neu `tests/ebay-outbox.test.mjs`. **Keine Migration** — `ebay_outbox` hat
-  `ebay_item_id` bereits, und auf `operation` liegt keine Prüfbedingung.
-- **Verifikation:** Tests mit Rot-Nachweis, Prüfkette (`tsc`, Lint, `npm test`),
-  Deploy aus dem Hauptverzeichnis. **Der Beweis am echten eBay-Angebot steht
-  danach aus** und ist der nächste Schritt, der dem Betreiber gehört.
+*(leer — bereit für den nächsten Auftrag.)*
 
 ---
 
@@ -407,6 +362,93 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
 ---
 
 ## Historie
+
+### 2026-08-08 — eBay-Schreibpfad: verkaufte Karten von eBay nehmen (ai-todo Punkt 6)
+
+- **Stand:** ABGESCHLOSSEN
+- **Datum:** 2026-08-08
+- **Ziel:** Die zweite Richtung des Doppelverkaufs schließen — im Shop verkauft,
+  eBay weiß es nicht. Ein Storno bei eBay verschlechtert den Verkäuferstatus,
+  das wirkt über den Einzelfall hinaus.
+- **Der Befund, bestätigt statt angenommen:** `mapActiveListing`
+  (`lib/ebay-sync.ts:23`) setzt `ebayOfferId` fest auf `null`, weil
+  `GetMyeBaySelling` eine **ItemID** liefert und keine Inventory-API-Offer-ID.
+  `enqueueEbayWithdraw` (`lib/ebay-outbox.ts:13`) steigt genau darauf aus und
+  protokolliert nur. **Die Outbox hat noch nie einen Auftrag bekommen** — der
+  gesamte Schreibpfad ist unerprobt, nicht nur abgeschaltet.
+- **Wie, und warum so:** Nicht die Offer-ID nachrüsten, sondern die Operation
+  auf die ItemID umstellen — `ReviseInventoryStatus` (Trading API) mit Menge 0
+  statt `withdrawEbayOffer`. `EndItem` wäre der falsche Weg: Es beendet das
+  Angebot endgültig, Wiedereinstellen ginge nur als neues Listing mit neuer
+  ItemID, und damit bräche die lokale Zuordnung. Menge 0 ist **umkehrbar**.
+- **Zwei Dinge, die ich beim Lesen gefunden habe und die im ai-todo nicht
+  stehen:**
+  1. **Auktionen vertragen `ReviseInventoryStatus` nicht.** Der Aufruf gilt für
+     Festpreisangebote; bei einer laufenden Auktion mit Geboten ist eine
+     Mengenänderung gar nicht vorgesehen. `ebay_listings.listing_type`
+     unterscheidet beides. Auktionen dürfen deshalb **gar nicht erst** in die
+     Outbox — sonst erzeugen sie dauerhaft rote Aufträge, die niemand beheben
+     kann. Sie werden protokolliert statt eingereiht.
+  2. **Es liegen Alt-Aufträge im Format `WITHDRAW_OFFER` vor** — jedenfalls dem
+     Code nach; erzeugt wurden nie welche. Der Verarbeiter muss beide
+     Operationen kennen, sonst schlägt eine alte Zeile dauerhaft fehl.
+- **Der Scope ist das eigentliche Risiko:** Lesend läuft alles mit
+  `sell.inventory.readonly`. `ReviseInventoryStatus` braucht den
+  Schreib-Scope `sell.inventory`. Ob der vorhandene `EBAY_REFRESH_TOKEN` diesen
+  Scope überhaupt umfasst, entscheidet sich bei der Zustimmung — **das lässt
+  sich nur am echten Aufruf feststellen**, nicht am Code. Fällt es aus, muss der
+  Betreiber die eBay-Zustimmung mit dem Schreib-Scope erneuern.
+- **Was ich ausdrücklich NICHT tue:** `EBAY_WRITE_ENABLED` bleibt auf `false`.
+  Der Schalter greift auf **echte** Angebote zu; ai-todo Punkt 6 schreibt vor,
+  die Umstellung zuerst an einer einzelnen Testkarte nachzuweisen. Bauen und
+  ausliefern ist freigegeben, Eingriffe in Fremdsysteme sind es nicht.
+- **Betroffen:** `lib/ebay-client.ts` (neuer Trading-Aufruf),
+  `lib/ebay-outbox.ts` (Einreihen über ItemID, beide Operationen verarbeiten),
+  neu `tests/ebay-outbox.test.mjs`. **Keine Migration** — `ebay_outbox` hat
+  `ebay_item_id` bereits, und auf `operation` liegt keine Prüfbedingung.
+- **Verifikation:** Tests mit Rot-Nachweis, Prüfkette (`tsc`, Lint, `npm test`),
+  Deploy aus dem Hauptverzeichnis. **Der Beweis am echten eBay-Angebot steht
+  danach aus** und ist der nächste Schritt, der dem Betreiber gehört.
+- **Ergebnis: ABGESCHLOSSEN, mit einer ausdrücklichen Grenze.** Prüfkette grün:
+  `tsc` sauber, Lint 0 Fehler (die eine Warnung in `app/admin/page.tsx` ist alt),
+  `npm test` **244/244** (15 neue Tests). Deployed als Version
+  **`b4421267`**, Commit `63df714`. Nach dem Deploy geprüft: `/`, `/admin`,
+  `/account`, `/api/products` und `/karten` je **200** — `/admin` und
+  `/account` bewusst dabei, weil nur sie die Client-Konfiguration brauchen.
+  Die Bundle-Probe vor dem Deploy fand die Supabase-Konfiguration in
+  `dist/client/assets`.
+- **Rot-Nachweis, drei Mal einzeln geführt** — jeder von einem sauberen Stand
+  aus, damit sich die Eingriffe nicht überlagern: Auktionsfilter ausgehebelt →
+  genau 1 Test fällt; „bereits beendet" wieder als Fehler gewertet → 1 Test;
+  nur den Lese-Scope angefordert → 1 Test. Beim ersten Anlauf hatte ich zwei
+  Eingriffe übereinandergelegt und 4 Ausfälle gemessen — die Zahl sagte dann
+  nichts mehr darüber, welcher Test welchen Fehler fängt.
+- **Der Scope ist geprüft, soweit es ohne Schreibzugriff geht — und das
+  Ergebnis ist ehrlich gesagt: unentschieden.** `EBAY_WRITE_OAUTH_SCOPE` steht
+  bereits korrekt auf `…/sell.inventory` in der `wrangler.toml`. Ein
+  Token-Tausch verändert bei eBay nichts, taugt also als Probe; mit den
+  **lokalen** Zugangsdaten aus `.env.local` scheitert er aber mit
+  `invalid_grant` — **und zwar für Lese- wie Schreib-Scope gleichermaßen.**
+  Damit ist nicht der Scope das Problem, sondern der lokale Refresh-Token ist
+  schlicht veraltet; die Produktion nutzt eigene Cloudflare-Secrets. Die Probe
+  sagt über sie nichts.
+- **Was über die Produktion belegt ist:** Ihr Token trägt **lesend** — der
+  Sync-Lauf um 08:00 UTC steht auf `SUCCEEDED` ohne Fehlermeldung. Ob derselbe
+  Token den **Schreib**-Scope umfasst, entscheidet sich bei der eBay-Zustimmung
+  und lässt sich **nur am ersten echten Schreibaufruf** feststellen. Fällt er
+  mit `invalid_scope` oder `931` aus, muss der Betreiber die Zustimmung mit
+  `sell.inventory` erneuern.
+- **`EBAY_WRITE_ENABLED` steht weiterhin auf `false`**, und das ist kein
+  Versehen. Der Schalter greift auf echte Angebote zu; ai-todo Punkt 6 schreibt
+  den Nachweis an einer einzelnen Testkarte davor. Die Freigabe des Betreibers
+  deckt Deployen, Committen und Pushen — nicht Eingriffe in Fremdsysteme.
+- **Was der Code jetzt kann, ohne dass es jemand sieht:** Nichts. Solange der
+  Schalter steht, verarbeitet `processEbayOutbox` keinen einzigen Auftrag. Die
+  Aufträge **entstehen** aber ab jetzt — jeder bezahlte Verkauf legt eine Zeile
+  in `ebay_outbox` an. Das ist erwünscht: Wird der Schalter später umgelegt,
+  arbeitet die Warteschlange nach, statt bei null anzufangen. **Wer in den
+  nächsten Tagen `ebay_outbox` ansieht, findet dort `PENDING`-Zeilen — das ist
+  der Normalzustand, kein Fehler.**
 
 ### 2026-08-08 — Den Protokollstand bereinigen: sieben Einträge auf `LÄUFT`, alle sieben fertig
 
