@@ -20,8 +20,10 @@ samt CSP ohne `'unsafe-inline'` sind in Produktion, und der Checkout zeigt den
 ausgehandelten Preis. **Punkt 6 (eBay-Schreibpfad) ist am 2026-08-08 abgenommen
 worden** — der Schalter steht auf `true`, ein Auftrag ist an echten Daten
 durchgelaufen; offen bleibt nur der Erfolgsfall am laufenden Angebot, den der
-nächste Verkauf ohnehin beweist. **Der nächste ungebaute Punkt dieser Liste ist
-Punkt 7.**
+nächste Verkauf ohnehin beweist. **Punkt 7 (Verhandeln bewerben) ist am
+2026-08-08 erledigt.** Damit ist der nächste offene Punkt **Punkt 8** — die
+Reste der Sicherheitsprüfung, von denen der Selbstbedienungsweg für Auskunft
+und Kontolöschung vor dem Verkaufsstart stehen sollte.
 
 **Seit 2026-08-07 läuft das Projekt auf Workers Paid (5 $/Monat).** Damit sind
 die harten Tagesdeckel weg (D1 wird nach Verbrauch abgerechnet), `Email
@@ -644,7 +646,28 @@ auf 0, und die Outbox zeigt den Auftrag als erfolgreich.
 
 ---
 
-## 7. Verhandeln auf der Seite bewerben
+## 7. ~~Verhandeln auf der Seite bewerben~~ — ERLEDIGT am 2026-08-08
+
+Drei Stellen tragen es jetzt: ein eigener Abschnitt auf der Startseite zwischen
+Galerie und Verweiskacheln, ein Satz über dem Kartenraster, und ein deutlicher
+einladendes Angebotsformular auf der Detailseite. Deployed als `9fa8404f`.
+
+**Die Regeln im Text kommen aus `lib/price-offers.ts`**, nicht aus dem
+Gedächtnis — drei Vorschläge je Karte, 48 Stunden Gültigkeit, Kundenkonto
+nötig, **mindestens 50 Cent unter dem Preis**. Die letzte Regel stand bisher
+nur im `max`-Attribut des Eingabefelds und in der Fehlermeldung der API; wer
+sie nicht kannte, lief in eine Ablehnung, die er nicht verstand.
+
+**Ohne eine Zeile neues CSS:** `.split-section` und Geschwister lagen seit dem
+Entschlacken der Startseite ungenutzt im Stylesheet.
+
+**Nebenbei korrigiert:** Die Kachel „Alle Karten" versprach „Festpreis,
+Auktion und Vormerkliste" — Auktionen erscheinen seit dem 2026-08-08 nicht mehr
+im Shop.
+
+<details><summary>Ursprünglicher Eintrag, zur Nachvollziehbarkeit</summary>
+
+### Verhandeln auf der Seite bewerben
 
 **Aufwand:** klein · **Hängt an:** Punkt 4, 5 und 6
 
@@ -666,6 +689,8 @@ drei Vorschläge je Karte, angenommene Preise gelten 48 Stunden.
 
 **Achtung:** Bei Auktionen gibt es kein Verhandeln, dort wird auf eBay geboten.
 Der Text darf das nicht versprechen.
+
+</details>
 
 ---
 
