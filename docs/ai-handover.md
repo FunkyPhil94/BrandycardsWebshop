@@ -86,9 +86,13 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
   Migration und damit rücksprachepflichtig — die Zahl geht deshalb nur in den
   Rückgabewert, nicht in die Datenbank.
 - **Betroffen:** neu `lib/ebay-sync-diff.ts` und `tests/ebay-sync-diff.test.mjs`;
-  geändert `lib/ebay-sync.ts`, `tests/ebay-stock-check.test.mjs`
-  (`ZEILEN_JE_LAUF`). **Keine Migration, kein Schemaschritt, kein Eingriff in
-  Produktionsdaten.**
+  geändert `lib/ebay-sync.ts`, `app/admin/page.tsx` (Meldung um „unverändert"
+  ergänzt), `package.json` (Testliste). **Keine Migration, kein Schemaschritt,
+  kein Eingriff in Produktionsdaten.**
+  **`ZEILEN_JE_LAUF` in `tests/ebay-stock-check.test.mjs` bleibt vorerst bei
+  5 396** — der Wert wird erst gesenkt, wenn die Ersparnis an der Produktion
+  gemessen ist. Eine Schätzung dort einzutragen hieße, die Kopplung
+  auszuhebeln, die dieser Test herstellt.
 - **Der Cron-Takt bleibt bei `0 */2 * * *`.** Beschleunigt wird erst, wenn die
   Ersparnis **an der Produktion gemessen** ist, nicht auf Grundlage einer
   Schätzung. Genau diese Reihenfolge erzwingt der Test in
@@ -98,7 +102,35 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
   abwarten und `wrangler d1 insights --timePeriod 1d --sort-by writes`
   gegenprüfen.
 - **Rückweg:** Eine Datei und ein Commit. Der Lauf schreibt danach wieder alles.
-- **Ergebnis:** _(wird nach dem Durchlauf eingetragen)_
+
+#### Zwischenstand — gebaut und deployed, die Messung fehlt noch
+
+- **Gebaut und in Produktion**, deployed als Version **`6f33f7f1`** um
+  ~07:00 UTC. Commit `500054a` auf `main` und `agent/initial-brandycards`.
+- **Prüfkette grün:** `tsc` sauber, Lint 0 Fehler (nur die vorbestehende
+  `<img>`-Warnung), `npm test` **189/189** (17 neue Tests). **CI grün
+  abgewartet, erst dann deployed** — die Lehre aus zwei Sitzungen, in denen ein
+  Deploy auf grüner *lokaler* Kette rausging, während CI rot war.
+- **Rot-Nachweis in beide Richtungen geführt**, weil ein zu großzügiger
+  Vergleich der gefährlichere Fehler wäre:
+  - Ohne die `undefined`-Ausnahme fallen 4 Tests (der Zwischenspeicher der
+    Beschreibung würde überschrieben).
+  - Ohne die Zeitstempel-Ausnahme fallen 5 Tests (der Vergleich wäre wirkungslos).
+  - Mit abgeschaltetem Vergleich fallen **8** Tests — die Richtung „Geändertes
+    **muss** geschrieben werden" ist damit ebenso belegt wie die Ersparnis.
+- **Deploy nachgeprüft:** `/`, `/account`, `/admin` und `/api/products` je 200,
+  und `/account` enthält **nicht** „noch nicht konfiguriert" — die
+  Bundle-Probe vor dem Deploy fand die Supabase-Konfiguration im Client-Bundle.
+- **Offen: die Messung an der Produktion.** Der nächste Cron-Lauf ist
+  **08:00 UTC**. Erst danach lässt sich sagen, ob die Ersparnis eintritt.
+  Zu prüfen: `updated_count` des Laufs (erwartet: **0** statt 294) und
+  `npx wrangler d1 insights brandycards-production --timePeriod 1d --sort-by writes`
+  (**mit `--limit 100`**, sonst kommen nur die Top 5). **Bleibt die Zahl hoch,
+  ist die Aufgabe nicht erledigt** — dann schreibt ein Feld weiter jedes Mal,
+  und der nächste Schritt ist, herauszufinden welches, nicht die Zahl schön zu
+  reden.
+- **Der Cron-Takt bleibt unangetastet**, bis diese Messung vorliegt.
+- **Ergebnis:** _(wird nach der Messung eingetragen)_
 
 ---
 
