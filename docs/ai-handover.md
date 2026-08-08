@@ -42,6 +42,52 @@ betroffene Dateien, Verifikation, Ergebnis.
 
 ---
 
+## Stand am Ende der Sitzung vom 2026-08-08
+
+Kurzfassung für den Einstieg. Einzelheiten stehen unter „Offene Punkte" und in
+der Historie.
+
+**Alles ist committet, gepusht und deployed.** `main` und
+`agent/initial-brandycards` stehen auf demselben Commit, CI grün, Produktion
+auf Version `9a2d28f2`. Kein Auftrag steht auf `LÄUFT`.
+
+**In dieser Sitzung fertig geworden:**
+
+- **Kunden-E-Mails (ai-todo Punkt 3) — gebaut, scharf und belegt.** Alle fünf
+  Anlässe. Resend ist eingerichtet, Domain verifiziert, `RESEND_API_KEY` liegt
+  als Secret. Zwei Anlässe sind durch **echte Zustellung** nachgewiesen
+  (Anfragebestätigung, Bestellbestätigung), die übrigen drei durch Tests.
+- **Warenkorb:** Karten lassen sich wieder herausnehmen (Umschalter).
+- **`/karten` blättert** mit 10/20/50/100 je Seite, Zustand in der URL.
+- **Schriften und Logo** kommen aus dem Build mit Inhalts-Hash und
+  `immutable`; Logo von 730 KB auf 30 KB.
+- **Texte:** keine Gedankenstriche mehr, durchgängig „Sportkarten",
+  Seitentitel „BrandyCards — Sports Cards".
+- **Banner:** Kartengrafik und Überschrift sind nicht mehr markierbar.
+- **Zwei eigene Fehler gefunden und behoben:** der verworfene
+  Tailwind-Import (war Stunden live) und ein roter CI-Lauf durch die
+  Node-22-Falle mit `AbortSignal.timeout()`.
+
+**Was als Nächstes ansteht:** siehe [ai-todo.md](ai-todo.md). Der neue Punkt 0
+(PayPal auf Live) steht dort ganz oben und schlägt alles andere — solange er
+offen ist, kann der Shop kein Geld einnehmen.
+
+### Diese drei Punkte liegen beim Betreiber, nicht bei der KI
+
+1. **PayPal auf Live umstellen** (Live-App, Live-Webhook, drei Secrets
+   ersetzen). Die vierte Zeile — `PAYPAL_ENVIRONMENT = "production"` in
+   `[vars]` — macht die KI, sobald der Betreiber meldet, dass die
+   Zugangsdaten stehen. Einzelheiten unter „Offene Punkte".
+2. **Testartikel entfernen**, falls der Sync-Lauf es nicht schon getan hat:
+   `UPDATE ebay_listings SET status='ENDED' WHERE product_id='ec6c212e96332bdcc93612848694b907'`.
+   **Hinweis für die KI:** Schreibende D1-Befehle wurden in dieser Sitzung
+   zweimal von der Berechtigungsprüfung abgelehnt — im Zweifel dem Betreiber
+   den Befehl geben, statt Umwege zu suchen.
+3. **Entscheiden, ob der Webhook-Dublettenpfad korrigiert wird** (zwei Zeilen,
+   siehe „Offene Punkte"). Die KI hat es angeboten, es kam keine Antwort.
+
+---
+
 ## Offene Punkte
 
 Kein Auftrag, sondern der Zustand, den die nächste Sitzung kennen muss.

@@ -49,6 +49,43 @@ eBay-Schreibpfad, dann bewerben.**
 
 ---
 
+## 0. PayPal auf Live umstellen — SCHLÄGT ALLES ANDERE
+
+**Aufwand:** klein · **Hängt an:** einer Handlung des Betreibers ·
+**Blockiert:** jeden Verkauf
+
+**Warum ganz oben, vor allem anderen:** `PAYPAL_ENVIRONMENT` ist **nirgends
+gesetzt** — weder in `[vars]` der `wrangler.toml` noch als Secret.
+`lib/paypal/config.ts` fällt damit auf `sandbox` zurück, und der Shop spricht
+mit `api-m.sandbox.paypal.com`. **Ein echter Kunde kann nicht bezahlen.**
+
+Alle anderen Punkte dieser Liste verbessern einen Shop, der nichts einnehmen
+kann. Am 2026-08-08 beim Testkauf gefunden.
+
+**Was der Betreiber tun muss (die KI kann es nicht):**
+1. Auf `developer.paypal.com` eine **Live**-App anlegen → Live Client ID und
+   Secret
+2. Einen **Live**-Webhook auf `https://shop.brandycards.de/api/paypal/webhook`
+   → Webhook-ID
+3. Die drei Secrets ersetzen: `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`,
+   `PAYPAL_WEBHOOK_ID`
+
+**Was die KI tut, sobald 1–3 gemeldet sind:**
+`PAYPAL_ENVIRONMENT = "production"` in `[vars]` der `wrangler.toml` eintragen.
+**Das ist kein Geheimnis** und gehört nicht zu den Secrets. Danach deployen.
+
+**Unbekannt und nur vom Betreiber zu beantworten:** ob die *heute*
+hinterlegten `PAYPAL_CLIENT_ID`/`SECRET` Sandbox- oder Live-Daten sind.
+Secrets lassen sich nur dem Namen nach auflisten.
+
+**Fertig, wenn:** Ein echter Kauf über einen kleinen Betrag geht durch, die
+Bestellung steht auf `PAID`, und die Bestellbestätigung kommt an. Danach
+erstatten. Der Weg ist am 2026-08-08 in der Sandbox vollständig
+durchgespielt worden — der Code-Pfad ist derselbe, nur der Endpunkt
+unterscheidet sich.
+
+---
+
 ## 1. ~~Zeitgrenzen für eBay, und eine Sperre, die sich nicht verklemmt~~ — ERLEDIGT am 2026-08-07
 
 Deployed als Version `07da6e9b`. Die vermutete Ursachenkette stimmte in den
