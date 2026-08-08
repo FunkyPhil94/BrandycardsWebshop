@@ -37,20 +37,8 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-- **Stand:** LÄUFT
-- **Datum:** 2026-08-08
-- **Ziel:** Der Seitentitel „BrandyCards — Football Collectibles" wird zu
-  „BrandyCards — Sports Cards". Letzte Stelle im Projekt, die noch von Fußball
-  spricht; sie steht in der Registerkarte, im Lesezeichen und in der
-  Suchmaschinen-Trefferliste.
-- **Betroffen:** `app/layout.tsx:5`. Sonst nichts — `grep` auf `football` und
-  `collectibles` findet im ganzen Projekt nur diese eine Zeile.
-- **Der Gedankenstrich bleibt.** Er war beim Entfernen der Gedankenstriche
-  bewusst ausgenommen: Registerkartentext, kein Fließtext, und dort ist er ein
-  üblicher Trenner. Der Auftrag betrifft nur die Wortwahl.
-- **Verifikation:** Titel in Produktion prüfen, **und zwar mit `curl` und
-  mehreren Abrufen** — der Rand lieferte beim letzten Durchlauf minutenlang
-  gemischt alte und neue Fassung.
+_Kein laufender Auftrag._ Vorlage: Stand, Datum, Ziel, geplante Schritte,
+betroffene Dateien, Verifikation, Ergebnis.
 
 ---
 
@@ -265,6 +253,32 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
 ---
 
 ## Historie
+
+### 2026-08-08 — Seitentitel: Sports Cards statt Football Collectibles
+
+- **Stand:** ABGESCHLOSSEN
+- **Datum:** 2026-08-08
+- **Ziel:** Der Seitentitel „BrandyCards — Football Collectibles" wird zu
+  „BrandyCards — Sports Cards". Letzte Stelle im Projekt, die noch von Fußball
+  spricht; sie steht in der Registerkarte, im Lesezeichen und in der
+  Suchmaschinen-Trefferliste.
+- **Betroffen:** `app/layout.tsx:5`. Sonst nichts — `grep` auf `football` und
+  `collectibles` findet im ganzen Projekt nur diese eine Zeile.
+- **Der Gedankenstrich bleibt.** Er war beim Entfernen der Gedankenstriche
+  bewusst ausgenommen: Registerkartentext, kein Fließtext, und dort ist er ein
+  üblicher Trenner. Der Auftrag betrifft nur die Wortwahl.
+- **Verifikation:** Titel in Produktion prüfen, **und zwar mit `curl` und
+  mehreren Abrufen** — der Rand lieferte beim letzten Durchlauf minutenlang
+  gemischt alte und neue Fassung.
+- **Ergebnis: ABGESCHLOSSEN.** Prüfkette grün (`tsc`, Lint 0 Fehler, 149/149).
+  Der Titel lautet jetzt „BrandyCards — Sports Cards".
+- **Damit ist die Umbenennung vollständig.** `grep -rni` auf `app/` und `lib/`
+  findet weder `football` noch `collectibles`, weder „Fußball" noch
+  „Sammelkarten". Der Shop spricht durchgängig von **Sportkarten** bzw.
+  **Sports Cards**.
+- **In Produktion nachgeprüft, mehrfach hintereinander** statt mit einer
+  einzelnen Stichprobe — siehe den Eintrag darunter, warum das nötig ist.
+
 
 ### 2026-08-07 — Doch Sportkarten, nicht Sammelkarten
 

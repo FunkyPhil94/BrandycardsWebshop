@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "BrandyCards — Football Collectibles",
+  title: "BrandyCards — Sports Cards",
   description: "Ausgewählte Sportkarten, persönlich ausgesucht und sicher verpackt.",
   icons: { icon: "/favicon.svg", shortcut: "/favicon.svg" },
 };
