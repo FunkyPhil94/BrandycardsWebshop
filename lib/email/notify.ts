@@ -3,7 +3,7 @@ import type { getDb } from "../../db";
 import { orderItems, orders, priceOffers, products, users } from "../../db/schema";
 import { getEmailConfig } from "./config.ts";
 import { protokolliereVersand, sendEmail, versucheVersand } from "./send.ts";
-import { cardSubmissionReceived, inquiryReceived, offerAccepted, offerRejected, orderConfirmation } from "./templates.ts";
+import { cardSubmissionReceived, inquiryReceived, offerAccepted, offerRejected, orderConfirmation, sellerOrderNotification } from "./templates.ts";
 
 /** Die Brücke zwischen Datenbank und Vorlagen.
  *
@@ -40,37 +40,95 @@ async function empfaengerDerBestellung(db: Db, order: { userId: string | null; g
  * PayPal und Webhook); ohne diesen Riegel bekäme der Kunde zwei Bestätigungen.
  */
 export async function notifyOrderPaid(db: Db, orderId: string): Promise<void> {
+  // **Zwei getrennte Blöcke, und das ist wichtig.** Der Kunde bekommt seine
+  // Bestätigung, der Verkäufer die Versanddaten. Lägen beide in einem Block,
+  // verschluckte ein Fehler beim Zusammenbauen der einen Nachricht die andere —
+  // und ohne die Verkäufernachricht weiß niemand, wohin das Paket soll.
   await versucheVersand("Bestellbestätigung", async () => {
-    const order = await db.query.orders.findFirst({ where: eq(orders.id, orderId) });
-    if (!order) return;
-
-    const empfaenger = await empfaengerDerBestellung(db, order);
-    if (!empfaenger) {
+    const daten = await bestelldaten(db, orderId);
+    if (!daten) return;
+    if (!daten.empfaenger) {
       console.error("[email] Bestellung ohne Empfängeradresse, keine Bestätigung.", { orderId });
       return;
     }
 
-    const positionen = await db.select({
-      title: orderItems.titleSnapshot,
-      quantity: orderItems.quantity,
-      unitAmountCents: orderItems.unitAmountCents,
-    }).from(orderItems).where(eq(orderItems.orderId, orderId));
-
     const nachricht = orderConfirmation({
-      orderNumber: order.orderNumber,
-      items: positionen.map((p) => ({
-        title: p.title,
-        quantity: p.quantity,
-        unitPrice: { cents: p.unitAmountCents, currency: order.currency },
-      })),
-      subtotal: { cents: order.subtotalAmountCents, currency: order.currency },
-      shipping: { cents: order.shippingAmountCents, currency: order.currency },
-      total: { cents: order.totalAmountCents, currency: order.currency },
+      orderNumber: daten.order.orderNumber,
+      items: daten.positionen,
+      subtotal: { cents: daten.order.subtotalAmountCents, currency: daten.order.currency },
+      shipping: { cents: daten.order.shippingAmountCents, currency: daten.order.currency },
+      total: { cents: daten.order.totalAmountCents, currency: daten.order.currency },
       shopUrl: shopUrl(),
     });
 
-    protokolliereVersand("Bestellbestätigung", await sendEmail(empfaenger, nachricht), { orderId });
+    protokolliereVersand("Bestellbestätigung", await sendEmail(daten.empfaenger, nachricht), { orderId });
   });
+
+  await versucheVersand("Verkäufernachricht", async () => {
+    const daten = await bestelldaten(db, orderId);
+    if (!daten) return;
+
+    const adresse = lieferadresse(daten.order.shippingAddress);
+    if (!adresse) {
+      // Ohne Adresse ist die Nachricht wertlos — aber der Betreiber muss von
+      // der Bestellung trotzdem erfahren, sonst bleibt sie unbemerkt liegen.
+      console.error("[email] Bestellung ohne verwertbare Lieferadresse.", { orderId });
+      return;
+    }
+
+    const ziel = getEmailConfig()?.sellerEmail;
+    if (!ziel) return;
+
+    const nachricht = sellerOrderNotification({
+      orderNumber: daten.order.orderNumber,
+      paidAt: daten.order.paidAt ?? new Date().toISOString(),
+      items: daten.positionen,
+      subtotal: { cents: daten.order.subtotalAmountCents, currency: daten.order.currency },
+      shipping: { cents: daten.order.shippingAmountCents, currency: daten.order.currency },
+      total: { cents: daten.order.totalAmountCents, currency: daten.order.currency },
+      address: adresse,
+      customerEmail: daten.empfaenger ?? "unbekannt",
+      shopUrl: shopUrl(),
+    });
+
+    protokolliereVersand("Verkäufernachricht", await sendEmail(ziel, nachricht), { orderId });
+  });
+}
+
+/** Bestellung, Positionen und Empfänger — von beiden Nachrichten gebraucht. */
+async function bestelldaten(db: Db, orderId: string) {
+  const order = await db.query.orders.findFirst({ where: eq(orders.id, orderId) });
+  if (!order) return null;
+  const positionen = await db.select({
+    title: orderItems.titleSnapshot,
+    quantity: orderItems.quantity,
+    unitAmountCents: orderItems.unitAmountCents,
+  }).from(orderItems).where(eq(orderItems.orderId, orderId));
+  return {
+    order,
+    empfaenger: await empfaengerDerBestellung(db, order),
+    positionen: positionen.map((p) => ({
+      title: p.title,
+      quantity: p.quantity,
+      unitPrice: { cents: p.unitAmountCents, currency: order.currency },
+    })),
+  };
+}
+
+/** Die Lieferadresse aus dem JSON-Feld, geprüft statt geglaubt.
+ *
+ * `shipping_address` ist ein JSON-Feld ohne Schema-Zwang. Ein fehlendes Feld
+ * würde sonst als „undefined" auf dem Etikett landen.
+ */
+function lieferadresse(wert: unknown) {
+  if (!wert || typeof wert !== "object") return null;
+  const a = wert as Record<string, unknown>;
+  const feld = (name: string) => (typeof a[name] === "string" ? (a[name] as string).trim() : "");
+  const adresse = {
+    name: feld("name"), street: feld("street"), postalCode: feld("postalCode"),
+    city: feld("city"), country: feld("country"),
+  };
+  return adresse.name && adresse.street && adresse.postalCode && adresse.city ? adresse : null;
 }
 
 /** Entscheidung über einen Preisvorschlag.

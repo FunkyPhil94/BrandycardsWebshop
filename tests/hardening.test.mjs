@@ -250,7 +250,14 @@ test("the worker actually applies them to every response", async () => {
 
 test("the catalogue is cacheable at the edge, failures are not", async () => {
   const route = await read("app/api/products/route.ts");
-  assert.match(route, /max-age=60/, "128 KB and ~1 725 D1 rows per call must not be served from the database every time");
+  // Untergrenze statt fester Wert. Am 2026-08-08 wurde die Frist von 60 auf 30
+  // gesenkt, damit eine verkaufte Karte schneller aus dem Schaufenster
+  // verschwindet — die Obergrenze prüft `tests/catalog-availability.test.mjs`.
+  // **Hier geht es um die andere Richtung:** Ganz ohne Zwischenspeicher liest
+  // jeder Aufruf ~1 725 Zeilen aus D1, bei 128 KB Antwort und ohne Anmeldung
+  // davor. Das war SEC-05.
+  const maxAge = Number(route.match(/max-age=(\d+)/)?.[1]);
+  assert.ok(maxAge >= 15, `max-age=${maxAge} ist zu kurz: ~1 725 D1-Zeilen je Aufruf dürfen nicht bei jedem Seitenaufruf anfallen`);
   assert.match(route, /stale-while-revalidate/);
   const failure = route.slice(route.indexOf("catch (error)"));
   assert.match(failure, /"cache-control": "no-store"/, "a cached 503 turns one bad moment into a minute-long outage");

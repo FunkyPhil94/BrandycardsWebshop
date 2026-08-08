@@ -1,7 +1,8 @@
 import { desc, eq, and, or } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { getDb } from "../../../db";
-import { ebayListings, productAssets, products } from "../../../db/schema";
+import { ebayListings, inventory, productAssets, products } from "../../../db/schema";
+import { istImKatalogSichtbar, verfuegbareMenge } from "../../../lib/catalog-availability";
 
 /** The catalogue changes when the eBay sync runs, not between two page views.
  *
@@ -13,15 +14,33 @@ import { ebayListings, productAssets, products } from "../../../db/schema";
  * request after expiry fast instead of making it wait.
  * See docs/security-findings.md, SEC-05.
  */
-export const CATALOGUE_CACHE_CONTROL = "public, max-age=60, stale-while-revalidate=300";
+/**
+ * **Am 2026-08-08 von 60/300 auf 30/60 gesenkt.** Der Anlass: Eine im Shop
+ * verkaufte Karte verschwindet jetzt sofort aus den Daten — aber der Rand
+ * lieferte sie im schlechtesten Fall noch gut sechs Minuten aus (60 Sekunden
+ * frisch, danach bis zu 300 Sekunden „stale while revalidate"). Jetzt sind es
+ * höchstens **90 Sekunden**.
+ *
+ * **Ganz ohne Zwischenspeicher ginge es nicht ohne Weiteres:** Er ist als
+ * SEC-05 eingebaut worden, weil jeder Abruf ~1 725 Zeilen aus D1 liest und der
+ * Endpunkt ohne Anmeldung erreichbar ist. Halbierte Frist heißt doppelte Last —
+ * auf dem Paid-Tarif eine Rechnung, kein Ausfallrisiko.
+ */
+export const CATALOGUE_CACHE_CONTROL = "public, max-age=30, stale-while-revalidate=60";
 
 export async function GET() {
   try {
     const db = getDb();
-    const rows = await db.select({ product: products, listing: ebayListings, asset: productAssets })
+    // `inventory` muss mit hinein: Ein Verkauf im Shop bucht den Bestand und
+    // rührt das Listing nicht an. Ohne diese Verknüpfung stand eine verkaufte
+    // Karte bis zum nächsten eBay-Import mit „1 VERFÜGBAR" im Schaufenster.
+    // **`leftJoin`, nicht `innerJoin`** — Karten der Vormerkliste haben keine
+    // Bestandszeile und dürfen nicht verschwinden.
+    const rows = await db.select({ product: products, listing: ebayListings, asset: productAssets, stock: inventory })
       .from(products)
       .leftJoin(ebayListings, eq(ebayListings.productId, products.id))
       .leftJoin(productAssets, eq(productAssets.productId, products.id))
+      .leftJoin(inventory, eq(inventory.productId, products.id))
       .where(and(eq(products.status, "ACTIVE"), or(eq(products.kind, "PRELISTED"), eq(ebayListings.status, "ACTIVE"))))
       .orderBy(desc(products.createdAt));
     const byId = new Map<string, {
@@ -31,11 +50,14 @@ export async function GET() {
     }>();
     for (const row of rows) {
       if (!row.listing && row.product.kind !== "PRELISTED") continue;
+      // Verkauft heißt weg — sofort, nicht erst beim nächsten Import.
+      if (!istImKatalogSichtbar(row.product.kind, row.listing?.quantity, row.stock)) continue;
       const current = byId.get(row.product.id) ?? {
         id: row.product.id, title: row.product.title, description: row.product.description,
         category: row.product.kind === "PRELISTED" ? "Vormerkliste" : row.listing?.listingType === "AUCTION" ? "Auktion" : "Festpreis",
         priceAmountCents: row.listing?.priceAmountCents ?? null, priceCurrency: row.listing?.priceCurrency ?? "EUR",
-        quantity: row.listing?.quantity ?? 0, listingUrl: row.listing?.listingUrl ?? null, imageUrls: [],
+        quantity: row.product.kind === "PRELISTED" ? 0 : verfuegbareMenge(row.listing?.quantity, row.stock),
+        listingUrl: row.listing?.listingUrl ?? null, imageUrls: [],
       };
       if (row.asset?.sourceUrl) current.imageUrls.push(row.asset.sourceUrl);
       byId.set(row.product.id, current);

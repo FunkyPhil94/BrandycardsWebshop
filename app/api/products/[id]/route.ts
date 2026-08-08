@@ -1,7 +1,8 @@
 import { and, asc, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { getDb } from "../../../../db";
-import { ebayListings, productAssets, products } from "../../../../db/schema";
+import { ebayListings, inventory, productAssets, products } from "../../../../db/schema";
+import { verfuegbareMenge } from "../../../../lib/catalog-availability";
 import { getEbayItemDescription } from "../../../../lib/ebay-client";
 import { parseEbayDescription } from "../../../../lib/ebay-description";
 import { enforcePublicRateLimit } from "../../../../lib/rate-limit";
@@ -26,14 +27,22 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
 
   try {
     const db = getDb();
-    const rows = await db.select({ product: products, listing: ebayListings })
+    const rows = await db.select({ product: products, listing: ebayListings, stock: inventory })
       .from(products)
       .innerJoin(ebayListings, eq(ebayListings.productId, products.id))
+      // `leftJoin`: Fehlt die Bestandszeile, soll die Karte trotzdem erscheinen
+      // (die Listing-Menge gilt dann), statt eine 404 zu liefern.
+      .leftJoin(inventory, eq(inventory.productId, products.id))
       .where(and(eq(products.id, id), eq(products.status, "ACTIVE"), eq(ebayListings.status, "ACTIVE")))
       .limit(1);
 
     const row = rows[0];
     if (!row) return NextResponse.json({ error: "Diese Karte ist nicht verfügbar." }, { status: 404 });
+    // Verkauft ist wie nicht vorhanden — dieselbe Antwort wie für eine Karte,
+    // die es nie gab. Sonst stünde hier weiter „1 verfügbar" mit aktivem
+    // Kaufknopf, und der Kunde liefe erst an der Kasse auf.
+    const menge = verfuegbareMenge(row.listing.quantity, row.stock);
+    if (menge < 1) return NextResponse.json({ error: "Diese Karte ist nicht verfügbar." }, { status: 404 });
 
     const assets = await db.select({ sourceUrl: productAssets.sourceUrl })
       .from(productAssets)
@@ -82,7 +91,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
       category: row.listing.listingType === "AUCTION" ? "Auktion" : "Festpreis",
       priceAmountCents: row.listing.priceAmountCents,
       priceCurrency: row.listing.priceCurrency,
-      quantity: row.listing.quantity,
+      quantity: menge,
       listingUrl: row.listing.listingUrl,
       imageUrls: assets.map((asset) => asset.sourceUrl).filter((url): url is string => Boolean(url)),
     });

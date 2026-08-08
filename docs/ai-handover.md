@@ -123,7 +123,31 @@ Ohne sie kein Etikett.
 - **Verifikation:** Tests mit Rot-Nachweis für beide Teile; Prüfkette; nach dem
   Deploy die Lieferadresse an einer echten Bestellung belegen — der Betreiber
   kauft dafür erneut.
-- **Ergebnis:** _(wird nach dem Durchlauf eingetragen)_
+- **Ergebnis: ABGESCHLOSSEN.** Prüfkette grün: `tsc` sauber, Lint 0 Fehler,
+  `npm test` **229/229** (17 neue Tests).
+- **Rot-Nachweis, beide Teile:** Lässt man die Bestandsprüfung wieder auf die
+  Listing-Menge zurückfallen, fallen **6** Tests; entfernt man die
+  HTML-Maskierung aus der Verkäufernachricht, fällt genau der Test, der den
+  präparierten Namen prüft.
+- **Am echten Produktionsbau belegt**, nicht nur in Tests: `npm run build`,
+  dann `npx wrangler dev --local` mit drei nachgebauten Karten in einer lokalen
+  Datenbank (Tabellendefinitionen lesend aus der Produktion geholt).
+  - **Katalog:** Die verkaufte Karte ist **weg**, die verfügbare da, und die
+    Karte der **Vormerkliste ist geblieben** — der Fallstrick, den ich mir
+    selbst gestellt hatte.
+  - **Detailseite:** verfügbar → `200` mit `quantity: 1`; verkauft → `404`
+    mit „Diese Karte ist nicht verfügbar."
+  - **`cache-control`:** `public, max-age=30, stale-while-revalidate=60`.
+- **Ein eigener Fehler beim Prüfen, der fast als Befund durchgegangen wäre:**
+  Die Detailseite lieferte zuerst auch für die *verfügbare* Karte 404. Ursache
+  war **nicht** der Code, sondern meine Testdaten: Die Route verlangt eine
+  32-stellige Hex-Kennung (`/^[a-f0-9]{32}$/`) und lehnt vorher ab; meine
+  IDs waren zwölf Zeichen lang. **Wer hier prüft, muss echte Kennungsformate
+  verwenden** — sonst misst er den Türsteher statt die Wohnung.
+- **Was ausdrücklich noch aussteht:** Die Verkäufernachricht ist **nicht** an
+  echten Daten belegt. Dafür braucht es einen weiteren echten Kauf; erst dann
+  ist bewiesen, dass die Nachricht bei `brandycards@gmx.de` ankommt und die
+  Adresse trägt.
 
 ### 2026-08-08 — Testartikel für den Live-Abnahmekauf (1 Cent)
 

@@ -13,10 +13,16 @@ export type EmailConfig = {
   replyTo: string;
   /** Für Links in den Nachrichten. */
   shopUrl: string;
+  /** Wohin die Verkäufernachricht mit den Versanddaten geht. */
+  sellerEmail: string;
 };
 
 const STANDARD_FROM = "BrandyCards <post@brandycards.de>";
 const STANDARD_SHOP_URL = "https://shop.brandycards.de";
+/** Ohne diese Nachricht weiß niemand, wohin das Paket soll — die Lieferadresse
+ *  steht sonst nur in der Datenbank. Überschreibbar über
+ *  `SELLER_NOTIFICATION_EMAIL` in `[vars]` der `wrangler.toml`. */
+const STANDARD_SELLER_EMAIL = "brandycards@gmx.de";
 
 /** Die Konfiguration — oder `null`, wenn kein Schlüssel hinterlegt ist.
  *
@@ -36,6 +42,7 @@ export function getEmailConfig(): EmailConfig | null {
     from,
     replyTo: process.env.EMAIL_REPLY_TO?.trim() || "post@brandycards.de",
     shopUrl,
+    sellerEmail: process.env.SELLER_NOTIFICATION_EMAIL?.trim() || STANDARD_SELLER_EMAIL,
   };
 }
 

@@ -3,7 +3,7 @@ import test from "node:test";
 
 const {
   cardSubmissionReceived, escapeHtml, formatMoney, inquiryReceived,
-  offerAccepted, offerRejected, orderConfirmation, sanitizeSubject,
+  offerAccepted, offerRejected, orderConfirmation, sanitizeSubject, sellerOrderNotification,
 } = await import("../lib/email/templates.ts");
 
 const SHOP = "https://shop.brandycards.de";
@@ -359,4 +359,62 @@ test("der Versand schickt Betreff, Text und HTML an Resend", async () => {
       globalThis.fetch = echtesFetch;
     }
   });
+});
+
+// --- Die Verkäufernachricht: ohne sie kein Versandetikett -------------------
+//
+// Bis zum 2026-08-08 verschickte der Shop nur eine Bestätigung an den Kunden.
+// Die Lieferadresse stand ausschließlich in der Datenbank; der Betreiber erfuhr
+// von einer Bestellung nur über PayPal — ohne zu wissen, wohin das Paket soll.
+
+const VERKAUF = {
+  orderNumber: "BC-20260808-89309FCA",
+  paidAt: "2026-08-08T08:29:48.098Z",
+  items: [{ title: "Panini Prizm Bellingham", quantity: 1, unitPrice: EUR(4500) }],
+  subtotal: EUR(4500),
+  shipping: EUR(345),
+  total: EUR(4845),
+  address: { name: "Erika Mustermann", street: "Musterweg 12", postalCode: "51373", city: "Leverkusen", country: "DE" },
+  customerEmail: "kundin@example.org",
+  shopUrl: SHOP,
+};
+
+test("die Verkäufernachricht trägt die vollständige Lieferadresse", () => {
+  const nachricht = sellerOrderNotification(VERKAUF);
+  for (const teil of ["Erika Mustermann", "Musterweg 12", "51373", "Leverkusen"]) {
+    assert.ok(nachricht.text.includes(teil), `fehlt im Text: ${teil}`);
+    assert.ok(nachricht.html.includes(teil), `fehlt im HTML: ${teil}`);
+  }
+});
+
+test("der Betreff nennt Bestellnummer und Empfänger", () => {
+  const nachricht = sellerOrderNotification(VERKAUF);
+  assert.ok(nachricht.subject.includes("BC-20260808-89309FCA"));
+  assert.ok(nachricht.subject.includes("Erika Mustermann"));
+});
+
+test("die Verkäufernachricht nennt Inhalt, Beträge und den Kunden", () => {
+  const nachricht = sellerOrderNotification(VERKAUF);
+  assert.ok(nachricht.text.includes("Panini Prizm Bellingham"));
+  assert.ok(nachricht.text.includes("48,45"), "der Gesamtbetrag gehört hinein");
+  assert.ok(nachricht.text.includes("kundin@example.org"), "für Rückfragen");
+});
+
+test("auch der Name auf dem Etikett wird maskiert", () => {
+  // Der Name kommt aus einem Formular und ist damit Fremdeingabe.
+  const nachricht = sellerOrderNotification({
+    ...VERKAUF,
+    address: { ...VERKAUF.address, name: '<img src=x onerror="alert(1)">' },
+  });
+  assert.ok(!nachricht.html.includes("<img src=x"), "unmaskiertes Markup in der Nachricht");
+  assert.ok(nachricht.html.includes("&lt;img"), "maskiert erwartet");
+});
+
+test("der Betreff bleibt einzeilig, auch bei präpariertem Namen", () => {
+  // Zeilenumbrüche im Betreff könnten eine Kopfzeile einschleusen.
+  const nachricht = sellerOrderNotification({
+    ...VERKAUF,
+    address: { ...VERKAUF.address, name: "Otto\nBcc: fremd@example.org" },
+  });
+  assert.ok(!nachricht.subject.includes("\n"));
 });

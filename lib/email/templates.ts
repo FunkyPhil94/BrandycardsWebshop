@@ -262,3 +262,92 @@ export function cardSubmissionReceived(daten: { title: string; shopUrl: string }
 
   return { subject: sanitizeSubject(`Dein Kartenangebot: ${daten.title}`), text, html };
 }
+
+// --- 6. Verkäufernachricht: die Versanddaten --------------------------------
+
+/** Die Lieferadresse, wie sie in `orders.shipping_address` steht. */
+export type Lieferadresse = {
+  name: string;
+  street: string;
+  postalCode: string;
+  city: string;
+  country: string;
+};
+
+export type VerkaufDaten = {
+  orderNumber: string;
+  /** ISO-Zeitpunkt der Zahlung. */
+  paidAt: string;
+  items: BestellPosition[];
+  subtotal: Betrag;
+  shipping: Betrag;
+  total: Betrag;
+  address: Lieferadresse;
+  /** Für Rückfragen — die Adresse, an die auch die Kundenbestätigung ging. */
+  customerEmail: string;
+  shopUrl: string;
+};
+
+/** Die Nachricht an den Verkäufer, aus der ein Versandetikett entsteht.
+ *
+ * **Der Zweck ist ausschließlich der Versand.** Bis zum 2026-08-08 verschickte
+ * der Shop nur eine Bestätigung an den Kunden; die Lieferadresse stand
+ * ausschließlich in der Datenbank, und der Betreiber erfuhr von einer
+ * Bestellung nur über PayPal — ohne zu wissen, wohin das Paket soll.
+ *
+ * Deshalb steht die Adresse hier **als Block am Anfang**, in der Reihenfolge,
+ * in der sie auf ein Etikett gehört, und nicht zwischen Beträgen versteckt.
+ */
+export function sellerOrderNotification(daten: VerkaufDaten): Nachricht {
+  const adresse = [
+    daten.address.name,
+    daten.address.street,
+    `${daten.address.postalCode} ${daten.address.city}`,
+    daten.address.country,
+  ];
+
+  const zeilenText = daten.items
+    .map((p) => `  ${p.quantity} × ${p.title}: ${formatMoney({ cents: p.unitPrice.cents * p.quantity, currency: p.unitPrice.currency })}`)
+    .join("\n");
+
+  const text = [
+    `Neue Bestellung: ${daten.orderNumber}`,
+    ``,
+    `Bezahlt am ${formatDatum(daten.paidAt)}.`,
+    ``,
+    `LIEFERADRESSE`,
+    ...adresse.map((zeile) => `  ${zeile}`),
+    ``,
+    `INHALT`,
+    zeilenText,
+    ``,
+    `Zwischensumme: ${formatMoney(daten.subtotal)}`,
+    `Versand:       ${formatMoney(daten.shipping)}`,
+    `Gesamt:        ${formatMoney(daten.total)}`,
+    ``,
+    `Kunde: ${daten.customerEmail}`,
+    fussText(daten.shopUrl),
+  ].join("\n");
+
+  const zeilenHtml = daten.items
+    .map((p) => `<tr><td style="padding:6px 0">${escapeHtml(p.title)}${p.quantity > 1 ? ` <span style="color:#7c7770">× ${p.quantity}</span>` : ""}</td>`
+      + `<td style="padding:6px 0;text-align:right;white-space:nowrap">${escapeHtml(formatMoney({ cents: p.unitPrice.cents * p.quantity, currency: p.unitPrice.currency }))}</td></tr>`)
+    .join("");
+
+  const html = rahmen([
+    `<h1 style="font-size:22px;margin:0 0 16px">Neue Bestellung</h1>`,
+    `<p style="margin:0 0 6px;color:#7c7770;font-size:13px">Bestellnummer</p>`,
+    `<p style="margin:0 0 18px;font-weight:bold">${escapeHtml(daten.orderNumber)}</p>`,
+    `<p style="margin:0 0 6px;color:#7c7770;font-size:13px">Lieferadresse</p>`,
+    `<p style="margin:0 0 20px;font-size:16px;line-height:1.5">${adresse.map((zeile) => escapeHtml(zeile)).join("<br>")}</p>`,
+    `<table style="width:100%;border-collapse:collapse;font-size:14px;border-top:1px solid #e4e0d8">${zeilenHtml}</table>`,
+    `<table style="width:100%;border-collapse:collapse;font-size:14px;margin-top:14px;border-top:1px solid #e4e0d8">`,
+    `<tr><td style="padding:8px 0">Zwischensumme</td><td style="padding:8px 0;text-align:right">${escapeHtml(formatMoney(daten.subtotal))}</td></tr>`,
+    `<tr><td style="padding:0 0 8px">Versand</td><td style="padding:0 0 8px;text-align:right">${escapeHtml(formatMoney(daten.shipping))}</td></tr>`,
+    `<tr><td style="padding:8px 0;border-top:1px solid #e4e0d8;font-weight:bold">Gesamt</td><td style="padding:8px 0;border-top:1px solid #e4e0d8;text-align:right;font-weight:bold">${escapeHtml(formatMoney(daten.total))}</td></tr>`,
+    `</table>`,
+    `<p style="margin:20px 0 0;color:#7c7770;font-size:13px">Bezahlt am ${escapeHtml(formatDatum(daten.paidAt))} · Kunde: ${escapeHtml(daten.customerEmail)}</p>`,
+  ].join(""), daten.shopUrl);
+
+  return { subject: sanitizeSubject(`Neue Bestellung ${daten.orderNumber} — ${daten.address.name}`), text, html };
+}

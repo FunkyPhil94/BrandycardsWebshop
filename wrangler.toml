@@ -28,6 +28,11 @@ routes = [
 # Cloudflare-Secrets. Die drei Zugangsdaten (`PAYPAL_CLIENT_ID`,
 # `PAYPAL_CLIENT_SECRET`, `PAYPAL_WEBHOOK_ID`) liegen dort.
 PAYPAL_ENVIRONMENT = "production"
+# Wohin die Verkäufernachricht mit der Lieferadresse geht. Ohne sie erfährt
+# niemand, wohin das Paket soll — die Adresse stünde nur in der Datenbank.
+# Kein Geheimnis: Dieselbe Adresse steht im Impressum und in der
+# Datenschutzerklärung dieses Repositories.
+SELLER_NOTIFICATION_EMAIL = "brandycards@gmx.de"
 EBAY_ENVIRONMENT = "production"
 EBAY_MARKETPLACE_ID = "EBAY_DE"
 EBAY_OAUTH_SCOPE = "https://api.ebay.com/oauth/api_scope/sell.inventory.readonly"
