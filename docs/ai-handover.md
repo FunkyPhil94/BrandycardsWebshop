@@ -37,49 +37,7 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-### 2026-08-08 — Import-Takt auf 3 Minuten, und ein Test, der die richtige Grenze misst
-
-- **Stand:** LÄUFT
-- **Datum:** 2026-08-08
-- **Anlass:** Der Betreiber fragte, welcher Takt ohne Mehrkosten möglich ist.
-  Beantwortet mit gemessenen Zahlen statt Schätzungen — und dabei kam heraus,
-  dass der bestehende Test die falsche Grenze bewacht.
-- **Gemessen, nicht geschätzt:**
-  - **D1 je Lauf:** ~6.500 Zeilen gelesen, **0 geschrieben** (Fenster
-    10:00–11:00 UTC, genau ein Lauf darin). Vor dem Diff-Umbau waren es ~5.400
-    geschriebene je Lauf.
-  - **Rechenzeit je Lauf:** **9,8 ms**. Nachgestellt mit echtem Zerlegecode und
-    einer Antwort in echter Größe (294 Angebote, 209 KB, zwei Seiten), `fetch`
-    gestubbt. 200 Durchläufe in einem Messfenster, weil Windows CPU-Zeit nur in
-    15,6-ms-Schritten misst und ein Einzellauf darunter liegt.
-  - **eBay je Lauf:** 2 Trading-Aufrufe (200 Angebote je Seite) + 1
-    Token-Tausch über `/identity/`, der nicht gegen das Trading-Kontingent zählt.
-- **Die Grenze ist eBay, nicht Cloudflare.** Der Betreiber hat die Tabelle aus
-  dem Entwicklerportal beigebracht: **Trading API 5.000 Aufrufe/Tag** — und
-  zwar als **gemeinsamer Topf** für alle Trading-Aufrufe. Bei uns teilen ihn
-  vier Verbraucher: Sync, Beschreibungsabfrage beim ersten Öffnen einer Karte,
-  Bestandsprüfung an der Kasse, eBay-Rücknahmen. Cloudflare liegt bei jedem
-  denkbaren Takt unter 2 % seiner Kontingente.
-- **Der bestehende Test bewacht zwei überholte Zahlen:**
-  `tests/ebay-stock-check.test.mjs` rechnet mit **100.000 Zeilen/Tag** — das
-  ist der **Gratis**-Tarif, den das Projekt am 2026-08-07 verlassen hat — und
-  mit **5.396 Zeilen je Lauf**, was seit dem Diff-Umbau **0** ist. Er würde
-  jeden Takt unter etwa 78 Minuten ablehnen, und zwar aus Gründen, die es nicht
-  mehr gibt.
-- **Wie:** Takt auf `*/3 * * * *`. Der Test misst künftig die **eBay**-Grenze
-  und gibt dem Sync ausdrücklich nur einen **Anteil** des gemeinsamen Topfes,
-  damit die übrigen drei Verbraucher Platz behalten. Die D1-Prüfung bleibt, nur
-  mit den gemessenen Zahlen und dem Budget des bezahlten Tarifs.
-- **Warum ein Anteil und keine Vollausschöpfung:** Ein Test, der dem Sync alle
-  5.000 zugesteht, ginge genau in dem Moment durch, in dem die Kasse keine
-  Bestandsprüfung mehr machen kann. Die Reserve ist der eigentliche Zweck.
-- **Der Wachstumssprung gehört in den Test:** Zwei Seitenabrufe gelten bis 400
-  Angebote. Ab 401 werden es drei, ab 601 vier — der Verbrauch steigt
-  sprunghaft mit dem Sortiment, nicht gleitend. Wer das nicht weiß, wundert
-  sich später über einen plötzlich gerissenen Deckel.
-- **Betroffen:** `wrangler.toml`, `tests/ebay-stock-check.test.mjs`,
-  `docs/ai-todo.md`. Kein Schemaeingriff, keine Produktionsdaten.
-- **Rückweg:** eine Zeile in `wrangler.toml` und ein Deploy.
+*(leer — bereit für den nächsten Auftrag.)*
 
 ---
 
@@ -405,6 +363,76 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
 ---
 
 ## Historie
+
+### 2026-08-08 — Import-Takt auf 3 Minuten, und ein Test, der die richtige Grenze misst
+
+- **Stand:** ABGESCHLOSSEN
+- **Datum:** 2026-08-08
+- **Anlass:** Der Betreiber fragte, welcher Takt ohne Mehrkosten möglich ist.
+  Beantwortet mit gemessenen Zahlen statt Schätzungen — und dabei kam heraus,
+  dass der bestehende Test die falsche Grenze bewacht.
+- **Gemessen, nicht geschätzt:**
+  - **D1 je Lauf:** ~6.500 Zeilen gelesen, **0 geschrieben** (Fenster
+    10:00–11:00 UTC, genau ein Lauf darin). Vor dem Diff-Umbau waren es ~5.400
+    geschriebene je Lauf.
+  - **Rechenzeit je Lauf:** **9,8 ms**. Nachgestellt mit echtem Zerlegecode und
+    einer Antwort in echter Größe (294 Angebote, 209 KB, zwei Seiten), `fetch`
+    gestubbt. 200 Durchläufe in einem Messfenster, weil Windows CPU-Zeit nur in
+    15,6-ms-Schritten misst und ein Einzellauf darunter liegt.
+  - **eBay je Lauf:** 2 Trading-Aufrufe (200 Angebote je Seite) + 1
+    Token-Tausch über `/identity/`, der nicht gegen das Trading-Kontingent zählt.
+- **Die Grenze ist eBay, nicht Cloudflare.** Der Betreiber hat die Tabelle aus
+  dem Entwicklerportal beigebracht: **Trading API 5.000 Aufrufe/Tag** — und
+  zwar als **gemeinsamer Topf** für alle Trading-Aufrufe. Bei uns teilen ihn
+  vier Verbraucher: Sync, Beschreibungsabfrage beim ersten Öffnen einer Karte,
+  Bestandsprüfung an der Kasse, eBay-Rücknahmen. Cloudflare liegt bei jedem
+  denkbaren Takt unter 2 % seiner Kontingente.
+- **Der bestehende Test bewacht zwei überholte Zahlen:**
+  `tests/ebay-stock-check.test.mjs` rechnet mit **100.000 Zeilen/Tag** — das
+  ist der **Gratis**-Tarif, den das Projekt am 2026-08-07 verlassen hat — und
+  mit **5.396 Zeilen je Lauf**, was seit dem Diff-Umbau **0** ist. Er würde
+  jeden Takt unter etwa 78 Minuten ablehnen, und zwar aus Gründen, die es nicht
+  mehr gibt.
+- **Wie:** Takt auf `*/3 * * * *`. Der Test misst künftig die **eBay**-Grenze
+  und gibt dem Sync ausdrücklich nur einen **Anteil** des gemeinsamen Topfes,
+  damit die übrigen drei Verbraucher Platz behalten. Die D1-Prüfung bleibt, nur
+  mit den gemessenen Zahlen und dem Budget des bezahlten Tarifs.
+- **Warum ein Anteil und keine Vollausschöpfung:** Ein Test, der dem Sync alle
+  5.000 zugesteht, ginge genau in dem Moment durch, in dem die Kasse keine
+  Bestandsprüfung mehr machen kann. Die Reserve ist der eigentliche Zweck.
+- **Der Wachstumssprung gehört in den Test:** Zwei Seitenabrufe gelten bis 400
+  Angebote. Ab 401 werden es drei, ab 601 vier — der Verbrauch steigt
+  sprunghaft mit dem Sortiment, nicht gleitend. Wer das nicht weiß, wundert
+  sich später über einen plötzlich gerissenen Deckel.
+- **Betroffen:** `wrangler.toml`, `tests/ebay-stock-check.test.mjs`,
+  `docs/ai-todo.md`. Kein Schemaeingriff, keine Produktionsdaten.
+- **Rückweg:** eine Zeile in `wrangler.toml` und ein Deploy.
+- **Ergebnis: ABGESCHLOSSEN.** `tsc` sauber, Lint 0 Fehler, `npm test`
+  **247/247**. Deployed als Version **`ab6d564d`**; die Deploy-Ausgabe
+  bestätigt `schedule: */3 * * * *`.
+- **In Produktion belegt, nicht nur ausgeliefert:** Der erste Lauf im neuen
+  Takt steht um **11:03:43** auf `SUCCEEDED` — davor lagen zwei Stunden
+  Abstand (10:00, 08:00, 06:00). Ein einzelner Lauf beweist den Abstand noch
+  nicht; die Folge wurde deshalb über mehrere Schläge nachgezählt.
+- **Rot-Nachweis für den neuen Test:** 2-Minuten-Takt geht durch (1 440
+  Aufrufe ≤ 2 500), Minutentakt wird abgelehnt (2 880 > 2 500). Die Grenze
+  sitzt also dort, wo sie hingehört, und nicht irgendwo.
+- **Zwei Zahlen, die künftige Sitzungen brauchen werden:**
+  - `ANGEBOTE = 294` im Test ist der Stand vom 2026-08-08. **Ab 401 Angeboten
+    werden aus zwei Seitenabrufen drei** — wer das Sortiment vergrößert und die
+    Zahl nicht nachzieht, reißt den Deckel ohne Vorwarnung.
+  - `ANTEIL_FUER_SYNC = 0.5` ist eine **Entscheidung, keine Messung.** Die
+    andere Hälfte gehört Beschreibungsabfrage, Kasse und Rücknahmen. Wenn
+    deren echter Verbrauch einmal gemessen ist, gehört der Anteil überprüft.
+- **Was ich nicht messen konnte:** die Rechenzeit auf Cloudflares Maschinen.
+  `wrangler tail` verlangt im nicht-interaktiven Betrieb einen
+  `CLOUDFLARE_API_TOKEN`, den diese Umgebung nicht hat — `deploy` und
+  `d1 execute` laufen dagegen über die zwischengespeicherte Anmeldung. Die
+  9,8 ms stammen daher aus einer Nachstellung auf dem Rechner des Betreibers,
+  nicht aus der Produktion. Die belastbare Zahl steht im Cloudflare-Dashboard
+  unter Workers & Pages → brandycards-webshop → Metrics. Bei 0,5 % Auslastung
+  ist die Unsicherheit folgenlos; bei einem künftigen, teureren Lauf wäre sie
+  es nicht.
 
 ### 2026-08-08 — Abnahme des eBay-Schreibpfads (ai-todo Punkt 6)
 

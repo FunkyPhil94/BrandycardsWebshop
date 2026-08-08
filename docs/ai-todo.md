@@ -202,13 +202,29 @@ Deployed als Version `6f33f7f1`. **An der Produktion gemessen:** Der Lauf um
 Der Vergleich stellt gegenüber, was geschrieben würde, und was schon dasteht
 (`lib/ebay-sync-diff.ts`); bleibt keine Anweisung übrig, entfällt der Batch.
 
-**Zwei Dinge sind bewusst noch nicht gemacht und gehören zusammen:**
-`ZEILEN_JE_LAUF` in `tests/ebay-stock-check.test.mjs` steht weiter auf 5 396,
-und der Cron bleibt bei `0 */2 * * *`. Beides sollte auf Grundlage der
-**Tageszahlen ab 2026-08-09** angepasst werden — `wrangler d1 insights
---timePeriod 1d --limit 100` enthält bis dahin noch Läufe von vor dem Deploy.
-Erst dann darf der Takt beschleunigt werden; der Test dort erzwingt die
-Reihenfolge.
+~~**Zwei Dinge sind bewusst noch nicht gemacht:** `ZEILEN_JE_LAUF` und der
+Cron-Takt.~~ **Beides erledigt am 2026-08-08** — und ohne bis zum 2026-08-09 zu
+warten: Ein Fenster von **einer** Stunde enthält genau einen Lauf und ist damit
+frei von Läufen vor dem Deploy.
+
+**Der Takt steht auf `*/3 * * * *`** (480 Läufe/Tag). Gemessen je Lauf:
+~6 500 D1-Zeilen gelesen, **0 geschrieben**, ~9,8 ms Rechenzeit, 2 eBay-Aufrufe.
+
+**Die begrenzende Größe ist eBay, nicht Cloudflare** — und das war die
+eigentliche Erkenntnis. Cloudflare liegt bei 0,5 % (CPU) und 0,4 %
+(D1-Lesebudget). eBays Trading-API erlaubt **5 000 Aufrufe/Tag**, und zwar als
+**gemeinsamer Topf** für alle Trading-Aufrufe; bei uns teilen ihn Sync,
+Beschreibungsabfrage, Bestandsprüfung an der Kasse und die Rücknahmen. Der Sync
+verbraucht davon 960/Tag.
+
+Der Test in `tests/ebay-stock-check.test.mjs` misst jetzt genau das und gibt dem
+Sync ausdrücklich nur die **Hälfte** des Topfes. Einer, der ihm alle 5 000
+zugestünde, ginge genau dann durch, wenn die Kasse keine Bestandsprüfung mehr
+machen kann.
+
+> **Beim Wachsen des Sortiments nachziehen:** Zwei Seitenabrufe je Lauf gelten
+> bis 400 Angebote. Ab 401 werden es drei, ab 601 vier — der Verbrauch steigt
+> **sprunghaft**, nicht gleitend. Die Zahl steht als `ANGEBOTE` im Test.
 
 <details><summary>Ursprünglicher Eintrag, zur Nachvollziehbarkeit</summary>
 
