@@ -37,8 +37,24 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-_Kein laufender Auftrag._ Vorlage: Stand, Datum, Ziel, geplante Schritte,
-betroffene Dateien, Verifikation, Ergebnis.
+- **Stand:** LÄUFT
+- **Datum:** 2026-08-08
+- **Ziel:** Den E-Mail-Versand **einmal echt zustellen**. Bisher ist er nur
+  durch Tests belegt; eine tatsächlich angekommene Nachricht gab es nie.
+- **Voraussetzungen erfüllt:** Domain `brandycards.de` bei Resend verifiziert
+  (06.08.), TLS auf `Enforced` gestellt, `RESEND_API_KEY` als Cloudflare-Secret
+  hinterlegt und in `wrangler secret list` bestätigt.
+- **Vorgehen:** Eine Kartenanfrage über `/anfragen` **in Produktion**
+  abschicken, Empfänger `p.brand94@googlemail.com` — vom Betreiber ausdrücklich
+  benannt. Parallel `wrangler tail` mitlesen.
+- **Berührt Produktionsdaten:** Es entsteht eine echte Zeile in `inquiries`
+  mit Status `NEW`, erkennbar am Testtitel. **Sie wird nicht gelöscht** —
+  schreibende Eingriffe in Produktionsdaten sind rücksprachepflichtig, und der
+  Betreiber ist darüber informiert.
+- **Nicht prüfbar auf diesem Weg:** die Bestellbestätigung. Sie hängt an einer
+  echten PayPal-Zahlung.
+- **Fertig, wenn:** Das Protokoll den Versand als angenommen meldet und der
+  Betreiber die Nachricht im Postfach bestätigt.
 
 ---
 
