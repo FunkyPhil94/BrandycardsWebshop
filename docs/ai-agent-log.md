@@ -449,3 +449,43 @@ die sie prüfen.
 verhält sich vor und nach dem Hinterlegen des Secrets gleich. Belegt: Eine
 echte Anfrage über `/anfragen` lief mit 201 durch, die Zeile steht in der
 Datenbank, im Protokoll steht nur der Hinweis auf den fehlenden Schlüssel.
+
+## 2026-08-08 – Bestellungen im Adminbereich sichtbar machen
+
+**Warum eine eigene Route und nicht das Dashboard erweitern.**
+`/api/admin/dashboard` liefert Zähler und die letzten Kartenangebote und wird
+beim Laden der Seite einmal geholt. Bestellungen samt Positionen, Zahlungen und
+Adressen dranzuhängen hätte diesen einen Aufruf um drei weitere Abfragen
+verlängert — und zwar auch dann, wenn niemand die Bestellungen ansieht. Die
+Ansicht bekommt deshalb `/api/admin/orders` für sich, genau wie die
+Preisvorschläge ihre eigene Route haben.
+
+**Warum `requireAdmin` aus `lib/admin-access.ts` und nicht die ausgeschriebene
+Prüfung.** Beides bestünde den Test „keine Route unter `/api/admin` ohne
+Rollenprüfung". Der Helfer fängt zusätzlich den Fall ab, dass die Prüfung selbst
+wirft (kaputtes Token, Supabase nicht erreichbar) und antwortet dann mit 401
+statt mit einem 500er aus dem `catch` der Route.
+
+**Warum die Seitengröße 25 beträgt und nicht 50.** Positionen und Zahlungen
+werden über `inArray` an den Bestell-Ids nachgeladen; jede Id ist ein gebundener
+Parameter. `D1_SAFE_ID_LIST` steht bei 40. Die Zahl ist also keine Geschmacks-
+frage, und `tests/d1-limits.test.mjs` liest sie jetzt aus der Route und misst
+die erzeugten Abfragen — dieselbe Falle hat am 2026-08-06 den Sync zerlegt.
+
+**Warum die Adresse noch einmal feldweise gelesen wird.** Sie liegt als JSON in
+der Spalte. Der Checkout schreibt sie zwar durch `cleanAddress` geprüft, aber
+die Spalte selbst garantiert nichts, und ältere Zeilen müssen dem heutigen
+Format nicht folgen. Die Ansicht zeigt lieber „keine vollständige Lieferadresse"
+als eine halbe Adresse, mit der niemand etwas verschicken kann.
+
+**Warum die PayPal-Capture-Id mit angezeigt wird.** Sie ist der einzige Faden
+zwischen einer Bestellung hier und dem Vorgang im PayPal-Konto. Ohne sie ist
+eine Rückerstattung Suchen von Hand — genau die Sorte Aufgabe, für die bisher
+`wrangler d1 execute` nötig war.
+
+**Nebenbefund, der Arbeit gespart hat.** Der Arbeitsvorrat führte unter Punkt
+12.3 „es fehlt ausschließlich die Oberfläche" für Preisvorschläge. Das stimmt
+nicht mehr: `app/admin/offers-panel.tsx` existiert seit `a0d4367`, wird in
+`app/admin/page.tsx` gerendert, und die Stile stehen in `globals.css`. Der
+Eintrag ist richtiggestellt, bevor die nächste Sitzung die Arbeit ein zweites
+Mal beginnt.

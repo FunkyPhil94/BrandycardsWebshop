@@ -52,3 +52,26 @@ test("the chunk size that caused the outage would now be rejected", () => {
   assert.ok(params(db.insert(syncEvents).values(rows)) > D1_MAX_BOUND_PARAMS, "regression fixture must exceed the limit");
   assert.ok(maxInsertRows(SYNC_EVENT_INSERT_COLUMNS) < 50, "chosen chunk size must be smaller than the failing one");
 });
+
+test("die Bestellansicht laedt Positionen und Zahlungen unter der Grenze nach", async () => {
+  // Die Seitengroesse der Adminansicht ist zugleich die Laenge der Id-Liste,
+  // mit der Positionen und Zahlungen nachgeladen werden. Wer sie anhebt, ohne
+  // zu stueckeln, baut sich denselben Ausfall wie beim Sync.
+  const { readFile } = await import("node:fs/promises");
+  const quelle = await readFile(new URL("../app/api/admin/orders/route.ts", import.meta.url), "utf8");
+  const treffer = /const PAGE_SIZE = (\d+);/u.exec(quelle);
+  assert.ok(treffer, "PAGE_SIZE nicht gefunden — der Test greift ins Leere");
+
+  const seite = Number(treffer[1]);
+  assert.ok(seite <= D1_SAFE_ID_LIST, `PAGE_SIZE ${seite} ueberschreitet die sichere Id-Listenlaenge ${D1_SAFE_ID_LIST}`);
+
+  const ids = Array.from({ length: seite }, (_, i) => `order-${i}`);
+  const { orderItems, payments } = await import("../db/schema.ts");
+  for (const statement of [
+    db.select().from(orderItems).where(inArray(orderItems.orderId, ids)),
+    db.select().from(payments).where(inArray(payments.orderId, ids)),
+  ]) {
+    const used = params(statement);
+    assert.ok(used <= D1_MAX_BOUND_PARAMS, `Nachladen bindet ${used} Parameter, Grenze ist ${D1_MAX_BOUND_PARAMS}`);
+  }
+});

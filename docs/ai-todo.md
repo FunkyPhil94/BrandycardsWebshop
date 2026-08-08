@@ -872,27 +872,25 @@ Tag mehrfach `wrangler d1 execute` gegen die Produktion nötig war.
    nächste Import geänderte Felder wieder. Entweder nur bei manuellen Karten
    erlauben, oder pro Feld eine „von Hand gesetzt"-Markierung, die der Sync
    respektiert. **Das ist die eigentliche Entwurfsfrage dieses Punktes.**
-2. **Bestellungen sehen** — heute nur als Zahl. Wer wissen will, was in
-   Bestellung X steckt, muss die Datenbank fragen.
-3. **Preisvorschläge annehmen und ablehnen** — die Funktion ist gebaut und
-   beworben (Punkt 7), aber der Betreiber kann Vorschläge nur über die
-   Datenbank beantworten. **Das wiegt seit dem 2026-08-08 schwer**, weil der
-   Shop nun aktiv dafür wirbt.
-
-   > **Hier ist fast alles schon da — am 2026-08-08 nachgelesen, nicht
-   > vermutet.** `app/api/admin/offers/route.ts` ist **vollständig**:
-   > `GET` liefert die offenen Vorschläge samt Titel, Listenpreis, Betrag,
-   > Nachricht und Kunden-E-Mail (50 neueste); `POST` mit
-   > `{offerId, action:"accept"|"reject"}` entscheidet sie, setzt beim Annehmen
-   > die 48-Stunden-Frist über `offerExpiry`, ist gegen Doppelklick abgesichert
-   > (bedingtes `UPDATE`, sonst 409) und verschickt die Kundennachricht über
-   > `notifyOfferDecision`. Adminpflichtig ist sie ebenfalls.
-   >
-   > **Es fehlt ausschließlich die Oberfläche:** `app/admin/page.tsx` ruft die
-   > Route nirgends auf. Wer hier anfängt, sollte **keine API bauen**, sondern
-   > eine Liste mit zwei Knöpfen — dasselbe Muster wie `runEbaySync`
-   > (Sitzungstoken über `getSupabaseBrowserClient`, `Authorization: Bearer`).
-   > Das ist der kleinste wertvolle Schritt der ganzen Konsole.
+2. ~~**Bestellungen sehen**~~ — **ERLEDIGT am 2026-08-08.**
+   `/api/admin/orders` (nur lesend, `requireAdmin`) und `OrdersPanel` zeigen die
+   25 jüngsten Bestellungen; aufgeklappt stehen Positionen, Zwischensumme,
+   Versand, Zahlungsstand mit PayPal-Capture-Id und die Lieferadresse.
+   **Die Seitengröße ist keine Geschmacksfrage:** Positionen und Zahlungen
+   werden über `inArray` an den Bestell-Ids nachgeladen, `D1_SAFE_ID_LIST` steht
+   bei 40, und `tests/d1-limits.test.mjs` misst das nach. Wer die Zahl anhebt,
+   muss stückeln. Noch offen an der Ansicht: **Blättern** (älter als die 25
+   jüngsten ist unsichtbar) und **Statuswechsel von Hand** — „versandt" setzt
+   heute niemand, weil es dafür keinen Knopf gibt.
+3. ~~**Preisvorschläge annehmen und ablehnen**~~ — **war schon fertig**, am
+   2026-08-08 nachgesehen statt vermutet: `app/api/admin/offers/route.ts`
+   **und** `app/admin/offers-panel.tsx` (seit `a0d4367`, in `app/admin/page.tsx`
+   gerendert, Stile in `globals.css`). Die frühere Notiz „es fehlt ausschließlich
+   die Oberfläche" war falsch. `GET` liefert die offenen Vorschläge, `POST` mit
+   `{offerId, action:"accept"|"reject"}` entscheidet sie, setzt beim Annehmen die
+   48-Stunden-Frist über `offerExpiry`, ist gegen Doppelklick abgesichert
+   (bedingtes `UPDATE`, sonst 409) und verschickt die Kundennachricht über
+   `notifyOfferDecision`.
 4. **Anfragen und Kartenangebote bearbeiten** statt nur zählen.
 5. **eBay-Outbox einsehen** — hängende Rücknahmen sind heute unsichtbar, außer
    man fragt die Datenbank.
