@@ -25,6 +25,13 @@ nächste Verkauf ohnehin beweist. **Punkt 7 (Verhandeln bewerben) ist am
 Reste der Sicherheitsprüfung, von denen der Selbstbedienungsweg für Auskunft
 und Kontolöschung vor dem Verkaufsstart stehen sollte.
 
+**Am 2026-08-08 kamen drei Punkte vom Betreiber dazu (10 bis 12).** Sie stehen
+am Ende, aber **11 und 12 gehören zusammen und ziehen 8 mit sich**: Karten von
+Hand einzustellen braucht eine neue Produktart, die neue Produktart braucht eine
+Migration, und auf genau diese Migration wartet SEC-12 aus Punkt 8. Wer das
+angeht, sollte die drei in einem Zug erledigen — **Adminkonsole zuerst**, sonst
+gibt es keine Oberfläche, um die manuellen Karten anzulegen.
+
 **Seit 2026-08-07 läuft das Projekt auf Workers Paid (5 $/Monat).** Damit sind
 die harten Tagesdeckel weg (D1 wird nach Verbrauch abgerechnet), `Email
 Sending` steht zur Verfügung, und die Grenze von 50 Unteranfragen je Anfrage
@@ -750,6 +757,115 @@ jede Route einzeln) sowie die Rechtstexte.
 **Empfehlung:** Nicht ohne Bibliothek anfangen — Next.js bringt Bausteine für
 lokalisiertes Routing mit. Und erst beginnen, wenn die vier Fragen beantwortet
 sind.
+
+---
+
+## 10. Kleine Anpassungen an Texten und Inhalten
+
+**Aufwand:** klein · **Hängt an:** einer Liste des Betreibers
+
+**Sammelstelle, noch nicht abarbeitbar.** Der Betreiber hat den Bedarf am
+2026-08-08 genannt, ohne die Stellen zu benennen. Wer hier anfängt, ohne die
+Liste zu haben, rät — und Texte, die niemand angefordert hat, zu ändern ist
+schlimmer als sie zu lassen.
+
+**Zu sammeln sind:** Seite, genaue Stelle, alter Text, gewünschter Text.
+
+**Bekannte Kandidaten** (von der KI beim Arbeiten gesehen, **nicht** vom
+Betreiber bestätigt — vor dem Ändern fragen):
+
+- `app/karten/page.tsx` beschriftet Karten weiterhin mit „eBay synchronisiert ·
+  Sofort-Kaufen". Für Kundschaft ist „eBay synchronisiert" eine Innensicht.
+- Die Auktionszweige in `meta()` und `badge()` derselben Datei sind seit dem
+  2026-08-08 tot — Auktionen erscheinen nicht mehr im Katalog.
+- `/verkaufen` und `/anfragen` sind seit dem 2026-08-06 unverändert; ob ihre
+  Texte noch zum heutigen Shop passen, hat niemand geprüft.
+
+---
+
+## 11. Karten von Hand einstellen („Vorverkauf" / „Lagerverkauf")
+
+**Aufwand:** mittel bis groß · **Hängt an:** Punkt 12 (die Oberfläche dafür) ·
+**Braucht:** eine Migration
+
+**Warum:** Heute kann der Shop **nur** verkaufen, was bei eBay steht — der
+Bestand kommt ausschließlich aus dem Import. Karten, die noch nicht eingestellt
+sind, lassen sich nicht anbieten. Der Betreiber will sie vorab verkaufen können,
+ohne den Umweg über eBay (und dessen Gebühren).
+
+**`PRELISTED` ist nicht die Lösung.** Die Vormerkliste ist eine *Ankündigung*:
+`quantity` steht fest auf 0, die Aktion heißt „Vormerken", ein Kauf ist nicht
+vorgesehen. Gebraucht wird eine **dritte Art** von Produkt, die man kaufen kann.
+
+**Vier Fallen, die alle schon dastehen — vor dem ersten Handgriff lesen:**
+
+1. **Der Waisen-Sweep räumt sie wieder ab.** `lib/ebay-sync.ts` setzt jedes
+   Produkt mit `kind = 'EBAY_SYNCED'` **ohne Listing-Zeile** auf `INACTIVE`.
+   Bei einem 3-Minuten-Takt verschwände eine von Hand angelegte Karte binnen
+   Minuten, ohne dass jemand versteht, warum. Sie braucht eine eigene `kind`.
+2. **`products.kind` hat eine Prüfbedingung** (`IN ('EBAY_SYNCED',
+   'PRELISTED')`). Eine neue Art heißt **Migration** — und damit ist der
+   „nächste ohnehin nötige Schemaschritt" da, auf den **SEC-12** wartet
+   (Punkt 8). Beides in einem Zug erledigen und dabei
+   `drizzle/meta/_journal.json` nachziehen, das bei `0002` endet.
+3. **Die Detailseite verknüpft `ebay_listings` per `innerJoin`**
+   (`app/api/products/[id]/route.ts`). Eine Karte ohne Listing liefert dort
+   **404**. Muss auf `leftJoin` und einen Preis aus dem Produkt selbst
+   umgestellt werden.
+4. **Preis und Menge stehen heute im Listing, nicht am Produkt.** Eine manuelle
+   Karte braucht beides an anderer Stelle — dazu eine `inventory`-Zeile, sonst
+   lehnt `app/api/orders/route.ts` den Kauf ab.
+
+**Was dadurch angenehm einfach wird:** Die Bestandsprüfung an der Kasse
+überspringt Karten ohne `ebayItemId` von selbst, und die eBay-Rücknahme reiht
+sie gar nicht erst ein. Beide Wege sind also schon vorbereitet.
+
+**Offen und vom Betreiber zu entscheiden:**
+- Sollen manuelle Karten verhandelbar sein (Preisvorschlag) wie eBay-Karten?
+- Was passiert, wenn dieselbe Karte später doch bei eBay eingestellt wird —
+  zusammenführen oder nebeneinander?
+- Eigener Bereich in der Navigation oder im normalen Bestand mitlaufend?
+
+**Fertig, wenn:** Eine von Hand angelegte Karte erscheint im Katalog, überlebt
+mehrere Sync-Läufe, lässt sich kaufen, und die Bestellung läuft bis zur
+Versandmail durch.
+
+---
+
+## 12. Eine richtige Adminkonsole
+
+**Aufwand:** groß · **Hängt an:** nichts · **Blockiert:** Punkt 11
+
+**Warum:** `/admin` ist heute vier Kacheln mit Zahlen und vier Knöpfe. Es gibt
+**keine Möglichkeit, ein einzelnes Angebot anzusehen oder zu ändern** — kein
+Preis, keine Beschreibung, kein Status. Alles, was über „Sync anstoßen" hinaus
+geht, läuft über direkte Datenbankbefehle. Das ist der Grund, warum an diesem
+Tag mehrfach `wrangler d1 execute` gegen die Produktion nötig war.
+
+**Was fehlt, grob nach Nutzen sortiert:**
+
+1. **Angebote durchsehen und einzeln bearbeiten** — Preis, Beschreibung,
+   Sichtbarkeit. Achtung: Bei eBay-synchronisierten Karten überschreibt der
+   nächste Import geänderte Felder wieder. Entweder nur bei manuellen Karten
+   erlauben, oder pro Feld eine „von Hand gesetzt"-Markierung, die der Sync
+   respektiert. **Das ist die eigentliche Entwurfsfrage dieses Punktes.**
+2. **Bestellungen sehen** — heute nur als Zahl. Wer wissen will, was in
+   Bestellung X steckt, muss die Datenbank fragen.
+3. **Preisvorschläge annehmen und ablehnen** — die Funktion ist gebaut und
+   beworben (Punkt 7), aber der Betreiber kann Vorschläge nur über die
+   Datenbank beantworten. **Das wiegt seit dem 2026-08-08 schwer**, weil der
+   Shop nun aktiv dafür wirbt.
+4. **Anfragen und Kartenangebote bearbeiten** statt nur zählen.
+5. **eBay-Outbox einsehen** — hängende Rücknahmen sind heute unsichtbar, außer
+   man fragt die Datenbank.
+
+**Zwei Dinge, die es schon gibt und die man weiterverwenden sollte:**
+`requireAdmin` aus `lib/admin-access.ts`, und der Test „keine Route unter
+`/api/admin` ohne Rollenprüfung" in `tests/hardening.test.mjs` — er deckt jede
+neue Route automatisch ab.
+
+**Fertig, wenn:** Der Betreiber kann eine Woche lang arbeiten, ohne einmal
+`wrangler d1 execute` zu brauchen.
 
 ---
 
