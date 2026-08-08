@@ -43,6 +43,61 @@ Sitzung danebengebaut. Wer hier hereinkommt und beide auf `LÄUFT` findet: Der
 Code beider Punkte ist unabhängig voneinander, sie können sich nicht in die
 Quere kommen.
 
+### 2026-08-08 — CSP ohne `'unsafe-inline'`: Nonces für die Inline-Skripte (ai-todo Punkt 4a)
+
+- **Stand:** LÄUFT
+- **Datum:** 2026-08-08
+- **Ziel:** Punkt 4a aus [ai-todo.md](ai-todo.md). `script-src` trägt
+  `'unsafe-inline'`, weil vinext Inline-`<script>`-Blöcke je Seite ausliefert.
+  Damit sind **Inline-Eventhandler erlaubt**: Ein künftig eingeschleustes
+  `<img onerror=…>` würde laufen — genau die Form, die SEC-01 hatte.
+- **Vorher an der Produktion gemessen, statt der Aufgabenbeschreibung zu
+  glauben.** Zwei Befunde, die den Entwurf bestimmen:
+  1. **Alle Skripte sind inline, keines hat `src`** (7 Blöcke auf der
+     Startseite: RSC-Parameter, Navigationszustand, drei RSC-Blöcke, ein
+     Fertig-Schalter und `import("/assets/index-….js")`). Die Chunks kommen
+     über `<link rel="modulepreload">` und den dynamischen `import()`.
+  2. **HTML wird nicht zwischengespeichert** — die Antwort auf `/` und
+     `/karten` trägt **kein** `cache-control` und **kein** `etag`, es gibt also
+     keine 304-Antwort auf HTML. Das ist die Voraussetzung dafür, dass ein
+     Zufallswert je Antwort überhaupt tragen kann: Käme der Rumpf aus einem
+     Zwischenspeicher und die Kopfzeile frisch, passte der Wert nicht mehr zum
+     Markup und **jede** Seite bliebe leer. Die Assets tragen zwar `etag`, sind
+     aber JS und CSS ohne Inline-Skripte.
+- **Abweichung von der Aufgabenbeschreibung, bewusst und begründet: kein
+  `'strict-dynamic'`.** Die Aufgabe nennt es, mit der Begründung, vinext lade
+  weitere Skripte nach. Das stimmt — aber sie kommen alle **von dieser
+  Herkunft**, und dafür genügt `'self'`. `'strict-dynamic'` hätte einen Preis:
+  Es lässt Browser die Angabe `'self'` **ignorieren**, womit jedes
+  `<script src>` ohne Zufallswert stillgelegt würde und der dynamische
+  `import()` von einer Spezifikationsfeinheit abhinge. `script-src 'self'
+  'nonce-…'` erreicht dasselbe Ziel — Inline-Eventhandler können **nie** einen
+  Zufallswert tragen und sind damit tot — ohne diese Abhängigkeit. Sollte je
+  ein fremdes Skript nötig werden, ist `'strict-dynamic'` der nächste Schritt.
+- **Wie:** Zufallswert je Antwort in `worker/index.ts`; `HTMLRewriter` hängt
+  ihn **jedem** `<script>` an; `lib/security-headers.ts` setzt ihn in die
+  Regel. Antworten, die kein HTML sind, bekommen `script-src 'self'` ganz ohne
+  Zufallswert — dort führt niemand Skripte aus, und `'unsafe-inline'`
+  verschwindet damit aus **allen** Antworten.
+- **Drei Fallen, auf die zu achten ist:**
+  - Der Zufallswert muss **je Antwort** neu sein, sonst ist er wertlos.
+  - `HTMLRewriter` darf nur auf `text/html` laufen, nicht auf JSON, Bilder oder
+    Assets.
+  - Antworten ohne Rumpf (101, 204, 304) dürfen nicht umgeschrieben werden.
+- **`style-src` behält `'unsafe-inline'`** und bleibt außen vor: React und
+  vinext setzen Inline-Stile. Das ist eine eigene Aufgabe, kein Nebenbei.
+- **Betroffen:** `lib/security-headers.ts`, `worker/index.ts`,
+  `tests/hardening.test.mjs`. **Keine Migration, keine Datenänderung.**
+- **Verifikation:** Tests für Regel und Zufallswert samt Rot-Nachweis; dann
+  **lokal im Browser**, bevor irgendetwas deployed wird: Startseite, `/karten`,
+  Kartendetail, `/checkout`, `/account` und `/admin` ohne Konsolenfehler
+  bedienbar, und in der ausgelieferten Seite trägt jedes `<script>` den Wert.
+  **Ein Fehler hier legt den ganzen Shop lahm** — eine blockierte
+  Hydrierung heißt: keine Seite funktioniert mehr. Deshalb wird hier nicht auf
+  eine Stichprobe vertraut.
+- **Rückweg:** Eine Zeile — `'unsafe-inline'` zurück in `script-src`, deployen.
+- **Ergebnis:** _(wird nach dem Durchlauf eingetragen)_
+
 ### 2026-08-08 — Der Checkout zeigt den ausgehandelten Preis (ai-todo Punkt 5)
 
 - **Stand:** LÄUFT
