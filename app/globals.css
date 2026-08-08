@@ -565,3 +565,23 @@ footer { background:var(--ink); color:#fff; padding:52px max(48px,calc((100vw - 
 .admin-section { margin-top:30px; }
 .admin-section h2 { font-size:15px; letter-spacing:-.02em; margin:0 0 12px; }
 .offer-message { color:#b6b3ad; font-size:12px; font-style:italic; margin:0; }
+
+/* --- Bestellungen im Adminbereich --- */
+.admin-orders { display:grid; gap:8px; margin-top:14px; }
+.admin-order { background:#1e1f21; }
+.admin-order-head { align-items:center; background:none; border:0; color:inherit; cursor:pointer; display:grid; font-size:12px; gap:10px; grid-template-columns:minmax(150px,auto) 90px 1fr auto auto; padding:14px 18px; text-align:left; width:100%; }
+.admin-order-number { font-family:'DM Mono',monospace; font-size:11px; letter-spacing:.04em; }
+.admin-order-status { font-size:9px; font-weight:800; letter-spacing:.08em; padding:4px 8px; text-align:center; text-transform:uppercase; }
+.admin-order-status.status-paid { background:#2f7d3b; color:#fff; }
+.admin-order-status.status-pending { background:#6b5a1f; color:#fff; }
+.admin-order-status.status-cancelled,.admin-order-status.status-refunded { background:#7a2f2f; color:#fff; }
+.admin-order-body { border-top:1px solid #2c2d30; display:grid; gap:14px; padding:16px 18px; }
+.admin-order-items { display:grid; gap:6px; list-style:none; margin:0; padding:0; }
+.admin-order-items li { display:flex; font-size:12px; gap:16px; justify-content:space-between; }
+.admin-order-facts { display:grid; gap:6px 24px; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); margin:0; }
+.admin-order-facts div { display:flex; font-size:12px; gap:12px; justify-content:space-between; }
+.admin-order-facts dt { color:#b6b3ad; }
+.admin-order-facts dd { margin:0; }
+.admin-order-mono { font-family:'DM Mono',monospace; font-size:10px; }
+.admin-order-address { color:#b6b3ad; font-size:12px; font-style:normal; line-height:1.7; }
+@media (max-width:640px) { .admin-order-head { grid-template-columns:1fr; } }
