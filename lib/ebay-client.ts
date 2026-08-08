@@ -335,6 +335,32 @@ function writeScope() {
   return process.env.EBAY_WRITE_OAUTH_SCOPE || EBAY_WRITE_SCOPE;
 }
 
+/** Checks whether the stored refresh token can obtain a **write** token.
+ *
+ * Answers the one question that stood open when the write path was built: does
+ * `EBAY_REFRESH_TOKEN` carry `sell.inventory`, or only the readonly scope? It
+ * cannot be read off the token, and it does not follow from the consent flow
+ * either — the token may have been issued by other means.
+ *
+ * **Touches no listing.** A token exchange changes nothing at eBay, which is
+ * what makes this safe to run at any time, with the write switch still off.
+ *
+ * Returns the outcome instead of throwing: the caller is a diagnostic, and
+ * "authentication refused" is the very answer it is after.
+ */
+export async function checkEbayWriteAuth(): Promise<{ ok: boolean; scope: string; detail?: string }> {
+  const scope = writeScope();
+  try {
+    const config = getConfig();
+    await getAccessToken(config, scope);
+    // Deliberately not the token, not even its length — only that it came.
+    return { ok: true, scope };
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : "Unbekannter eBay-Fehler.";
+    return { ok: false, scope, detail: detail.slice(0, 300) };
+  }
+}
+
 /** Reads the eBay error numbers out of a Trading response.
  *
  * eBay states the reason in `<ErrorCode>`, and only that number is stable —

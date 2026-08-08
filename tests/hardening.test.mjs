@@ -327,3 +327,38 @@ test("the starter's header-trusting auth helper is gone", async () => {
   const readme = await read("README.md");
   assert.ok(!/Import the ready-to-use helpers/.test(readme), "the README must not invite anyone to use it");
 });
+
+// --- Jede Adminroute prüft die Rolle ----------------------------------------
+
+test("keine Route unter /api/admin ohne Rollenprüfung", async () => {
+  // SEC-12 fiel auf, weil **eine** Adminroute die Prüfung nicht hatte — gefunden
+  // durch Hinsehen, nicht durch eine Regel. Diese Regel gibt es jetzt: Wer eine
+  // Adminroute hinzufügt und die Prüfung vergisst, bekommt einen roten Lauf
+  // statt einer offenen Tür.
+  const { readdir } = await import("node:fs/promises");
+  const { join } = await import("node:path");
+  const wurzel = new URL("../app/api/admin/", import.meta.url);
+  const eintraege = await readdir(wurzel, { recursive: true, withFileTypes: true });
+  const routen = eintraege
+    .filter((eintrag) => eintrag.isFile() && eintrag.name === "route.ts")
+    .map((eintrag) => join(eintrag.parentPath ?? eintrag.path, eintrag.name).replaceAll("\\", "/"));
+
+  assert.ok(routen.length >= 5, `zu wenige Adminrouten gefunden (${routen.length}) — der Scan greift ins Leere`);
+
+  const ohnePruefung = [];
+  for (const route of routen) {
+    const quelle = await readFile(route, "utf8");
+    // Zwei zulässige Schreibweisen: der Helfer `requireAdmin` (die Mehrheit)
+    // und die ausgeschriebene Rollenprüfung. Beides schützt; auf nur eine
+    // Schreibweise zu prüfen hätte vier gesunde Routen angeschwärzt.
+    const geschuetzt = /requireAdmin\(/.test(quelle) || /\.role !== "ADMIN"/.test(quelle);
+    if (!geschuetzt) ohnePruefung.push(route.split("/app/api/admin/")[1] ?? route);
+  }
+
+  // Die eBay-OAuth-Rückseite ist die eine begründete Ausnahme: eBay leitet den
+  // *Browser* dorthin um, und eine Navigation trägt keinen Authorization-Header.
+  // Eine Prüfung würde den eBay-Anschluss blockieren, ohne etwas zu sichern —
+  // die Begründung steht als Kommentar an der Route (SEC-12).
+  assert.deepEqual(ohnePruefung, ["ebay/oauth/callback/route.ts"],
+    "eine Adminroute ohne Rollenprüfung ist eine offene Tür; die einzige zulässige Ausnahme ist die OAuth-Rückseite");
+});
