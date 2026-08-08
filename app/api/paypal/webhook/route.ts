@@ -5,6 +5,7 @@ import { orders, payments, webhookEvents } from "../../../../db/schema";
 import { notifyOrderPaid } from "../../../../lib/email/notify.ts";
 import { getPayPalConfig } from "../../../../lib/paypal/config";
 import { verifyPayPalWebhookSignature } from "../../../../lib/paypal/client";
+import { webhookCaptureAction } from "../../../../lib/paypal/webhook-decision";
 import { releaseOrderReservations, settlePaidOrder } from "../../../../lib/paypal/settle-order";
 import { centsToPayPalValue } from "../../../../lib/paypal/money";
 
@@ -75,6 +76,16 @@ export async function POST(request: Request) {
     const strictPaymentEvent = eventType.startsWith("PAYMENT.CAPTURE.");
     const payment = await findPayment(db, event, strictPaymentEvent);
     const now = new Date().toISOString();
+    // Ein bereits eingezogenes Ereignis ist eine Dublette — aber **kein Grund,
+    // vorzeitig auszusteigen.** Genau das tat diese Route bis zum 2026-08-08:
+    // Sie kehrte mit `duplicate: true` zurück, bevor die Zeile in
+    // `webhook_events` auf `PROCESSED` gesetzt wurde, und ließ damit einen
+    // sauber abgewiesenen Vorgang wie einen hängen gebliebenen aussehen
+    // (nachgewiesen an `WH-4MD290111R3948627-…` vom 06:10:22).
+    //
+    // Der Merker statt des `return` ist die eigentliche Korrektur: Es gibt
+    // keinen Ausgang mehr, der an der Buchführung vorbeiführt.
+    let duplicate = false;
     if (eventType === "PAYMENT.CAPTURE.COMPLETED") {
       if (!payment) throw new Error("Zugehörige PayPal-Zahlung wurde nicht gefunden.");
       const order = await db.query.orders.findFirst({ where: eq(orders.id, payment.orderId) });
@@ -84,20 +95,24 @@ export async function POST(request: Request) {
         throw new Error("PayPal-Webhook-Betrag oder Währung stimmt nicht mit der Bestellung überein.");
       }
       const captureId = stringValue(event.resource?.id);
-      if (payment.status === "CAPTURED") return NextResponse.json({ ok: true, duplicate: true });
-      if (payment.status === "REFUNDED") throw new Error("Eine erstattete Zahlung kann nicht erneut als bezahlt markiert werden.");
-      // Bedingt geschrieben, wie in `app/api/paypal/capture/route.ts`: Die
-      // Rückkehr des Kunden aus PayPal kann dieselbe Zahlung gleichzeitig
-      // einziehen. Nur wer den Übergang gewinnt, verschickt die Bestätigung.
-      const captureClaim = await db.batch([db.update(payments).set({
-        status: "CAPTURED",
-        ...(captureId ? { providerCaptureId: captureId } : {}),
-        rawData: event,
-        updatedAt: now,
-      }).where(and(eq(payments.id, payment.id), inArray(payments.status, ["CREATED", "APPROVED"])))]);
-      await db.update(orders).set({ status: "PAID", paidAt: now, updatedAt: now }).where(eq(orders.id, payment.orderId));
-      await settlePaidOrder(db, payment.orderId, now);
-      if (captureClaim[0].meta.changes === 1) await notifyOrderPaid(db, payment.orderId);
+      const action = webhookCaptureAction(payment.status);
+      if (action === "erstattet") throw new Error("Eine erstattete Zahlung kann nicht erneut als bezahlt markiert werden.");
+      if (action === "dublette") {
+        duplicate = true;
+      } else {
+        // Bedingt geschrieben, wie in `app/api/paypal/capture/route.ts`: Die
+        // Rückkehr des Kunden aus PayPal kann dieselbe Zahlung gleichzeitig
+        // einziehen. Nur wer den Übergang gewinnt, verschickt die Bestätigung.
+        const captureClaim = await db.batch([db.update(payments).set({
+          status: "CAPTURED",
+          ...(captureId ? { providerCaptureId: captureId } : {}),
+          rawData: event,
+          updatedAt: now,
+        }).where(and(eq(payments.id, payment.id), inArray(payments.status, ["CREATED", "APPROVED"])))]);
+        await db.update(orders).set({ status: "PAID", paidAt: now, updatedAt: now }).where(eq(orders.id, payment.orderId));
+        await settlePaidOrder(db, payment.orderId, now);
+        if (captureClaim[0].meta.changes === 1) await notifyOrderPaid(db, payment.orderId);
+      }
     } else if (eventType === "PAYMENT.CAPTURE.DENIED" || eventType === "PAYMENT.CAPTURE.DECLINED") {
       if (!payment) throw new Error("Zugehörige PayPal-Zahlung wurde nicht gefunden.");
       await db.update(payments).set({ status: "FAILED", rawData: event, updatedAt: now }).where(and(eq(payments.id, payment.id), inArray(payments.status, ["CREATED", "APPROVED"])));
@@ -108,8 +123,10 @@ export async function POST(request: Request) {
       await db.update(orders).set({ status: "REFUNDED", updatedAt: now }).where(and(eq(orders.id, payment.orderId), inArray(orders.status, ["PAID", "REFUNDED"])));
     }
 
+    // Der eine Ausgang, den jeder Pfad nimmt — auch der Dubletten-Pfad. Die
+    // Zeile sagt damit die Wahrheit: fertig verarbeitet, nichts hängt.
     await db.update(webhookEvents).set({ status: "PROCESSED", processedAt: now }).where(and(eq(webhookEvents.provider, "PAYPAL"), eq(webhookEvents.externalEventId, eventId)));
-    return NextResponse.json({ ok: true, processed: true });
+    return NextResponse.json(duplicate ? { ok: true, duplicate: true } : { ok: true, processed: true });
   } catch (error) {
     console.error("PayPal webhook failed", error);
     if (db && eventId) {

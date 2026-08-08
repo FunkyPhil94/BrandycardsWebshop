@@ -156,7 +156,27 @@ danach wieder startet. Ohne die Korrektur muss der Test hängen bzw. rot sein.
 
 ---
 
-## 2. Der Sync darf nur schreiben, was sich geändert hat
+## 2. ~~Der Sync darf nur schreiben, was sich geändert hat~~ — ERLEDIGT am 2026-08-08
+
+Deployed als Version `6f33f7f1`. **An der Produktion gemessen:** Der Lauf um
+08:00 UTC meldet **0 aktualisiert** und schreibt **einen** `sync_events`-Eintrag
+(die Deaktivierung des Testartikels); die vier Läufe davor meldeten je 294 und
+294–295. Der Katalog blieb unversehrt — 294 Produkte, 294 Listings, 302 Bilder.
+
+Der Vergleich stellt gegenüber, was geschrieben würde, und was schon dasteht
+(`lib/ebay-sync-diff.ts`); bleibt keine Anweisung übrig, entfällt der Batch.
+
+**Zwei Dinge sind bewusst noch nicht gemacht und gehören zusammen:**
+`ZEILEN_JE_LAUF` in `tests/ebay-stock-check.test.mjs` steht weiter auf 5 396,
+und der Cron bleibt bei `0 */2 * * *`. Beides sollte auf Grundlage der
+**Tageszahlen ab 2026-08-09** angepasst werden — `wrangler d1 insights
+--timePeriod 1d --limit 100` enthält bis dahin noch Läufe von vor dem Deploy.
+Erst dann darf der Takt beschleunigt werden; der Test dort erzwingt die
+Reihenfolge.
+
+<details><summary>Ursprünglicher Eintrag, zur Nachvollziehbarkeit</summary>
+
+### Der Sync darf nur schreiben, was sich geändert hat
 
 **Aufwand:** mittel · **Hängt an:** nichts · **Blockiert:** jeden schnelleren
 Import-Takt
@@ -239,6 +259,8 @@ Mal alles neu, und die Ersparnis verpufft still.
 und `ZEILEN_JE_LAUF` in `tests/ebay-stock-check.test.mjs` kann auf den neuen
 Messwert gesenkt werden. **Erst dann** darf der Cron wieder beschleunigt
 werden — der Test dort erzwingt genau diese Reihenfolge.
+
+</details>
 
 ---
 

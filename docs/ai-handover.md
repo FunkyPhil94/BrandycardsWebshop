@@ -88,7 +88,29 @@ Quere kommen.
   PayPal-Ereignisses nötig wäre — das lässt sich nicht herbeiführen, ohne eine
   echte Zahlung zu wiederholen. **Das wird hier ausdrücklich als Grenze
   festgehalten und nicht als „geprüft" ausgegeben.**
-- **Ergebnis:** _(wird nach dem Durchlauf eingetragen)_
+- **Ergebnis: ABGESCHLOSSEN.** Prüfkette grün: `tsc` sauber, Lint 0 Fehler,
+  `npm test` **210/210** (6 neue Tests).
+- **Gebaut:** `lib/paypal/webhook-decision.ts` mit `webhookCaptureAction`
+  (`CAPTURED` → Dublette, `REFUNDED` → Konflikt, sonst einziehen); in der Route
+  ersetzt ein Merker das vorzeitige `return`, und **alle** Pfade laufen durch
+  dasselbe Ende, das `PROCESSED` schreibt.
+- **Rot-Nachweis:** Mit wieder eingebautem `return` fällt genau der Test „der
+  Webhook verlässt die Verarbeitung nur an einer Stelle" (5/6). Der Test misst
+  also die Struktur, um die es geht, und nicht nur die Formulierung.
+- **Die Antwort unterscheidet weiterhin** zwischen `duplicate: true` und
+  `processed: true` — PayPal soll eine Dublette als erledigt sehen, sonst
+  wiederholt es die Zustellung.
+- **Die bestehende Zeile `WH-4MD290111R3948627-…` steht weiterhin auf
+  `RECEIVED`.** Sie zu ändern wäre ein schreibender Eingriff in
+  Produktionsdaten. Wer sie bereinigen will:
+  ```sql
+  UPDATE webhook_events SET status='PROCESSED', processed_at='2026-08-08T06:10:22.766Z'
+  WHERE external_event_id='WH-4MD290111R3948627-8AM47435BU5710537';
+  ```
+- **Grenze der Prüfung, ausdrücklich:** An echten Daten ist die Korrektur
+  **nicht** belegt. Dafür müsste PayPal dasselbe Ereignis ein zweites Mal
+  zustellen, und das ließe sich nur durch eine wiederholte echte Zahlung
+  herbeiführen. Belegt sind die Entscheidung und die Struktur.
 
 ### 2026-08-08 — CSP ohne `'unsafe-inline'`: Nonces für die Inline-Skripte (ai-todo Punkt 4a)
 
@@ -393,7 +415,45 @@ Quere kommen.
   und der nächste Schritt ist, herauszufinden welches, nicht die Zahl schön zu
   reden.
 - **Der Cron-Takt bleibt unangetastet**, bis diese Messung vorliegt.
-- **Ergebnis:** _(wird nach der Messung eingetragen)_
+
+#### Ergebnis: ABGESCHLOSSEN — an der Produktion gemessen
+
+Der Lauf vom **2026-08-08 08:00:38 UTC** ist der erste unter der neuen Fassung.
+Gegenübergestellt den vier Läufen davor:
+
+| Lauf (UTC) | aktualisiert | deaktiviert | `sync_events` |
+|---|---|---|---|
+| **08:00:38** *(neu)* | **0** | 1 | **1** |
+| 06:00:38 | 294 | 1 | 295 |
+| 04:00:46 | 294 | 0 | 294 |
+| 02:00:46 | 294 | 0 | 294 |
+| 00:00:46 | 294 | 0 | 294 |
+
+**294 wirkungslose Schreibvorgänge je Lauf sind auf 0 gefallen.** Der eine
+verbliebene `sync_events`-Eintrag ist die Deaktivierung des Testartikels — also
+genau ein Ereignis, das etwas aussagt. Das ist die Absicht der Änderung, an
+echten Daten belegt.
+
+**Der Katalog ist unversehrt:** 294 aktive Produkte, 294 aktive Listings,
+**302 Bilder**. Letzteres ist der wichtigere Wert — er belegt, dass das
+Überspringen des Löschen-und-Einfügens keine Bilder verloren hat.
+
+**Nebenbei erledigt:** Derselbe Lauf hat den **Testartikel** abgeräumt
+(`ec6c212e…` steht jetzt auf `INACTIVE` / `ENDED` / `UNAVAILABLE`). Der Punkt
+aus der Übergabe ist damit ohne Eingriff von Hand geschlossen.
+
+**`wrangler d1 insights --timePeriod 1d` taugt hier noch nicht als Beleg** und
+wird es erst am 2026-08-09: Das Fenster enthält die vier Läufe von vor dem
+Deploy und meldet deshalb weiterhin ~31 000 Zeilen für das `ebay_listings`-
+Update. Wer die Zahl sehen will, muss einen vollen Tag abwarten — die
+Gegenüberstellung oben ist die belastbarere Messung, weil sie einzelne Läufe
+vergleicht.
+
+**Noch offen und bewusst nicht mit erledigt:** `ZEILEN_JE_LAUF` in
+`tests/ebay-stock-check.test.mjs` steht weiter auf 5 396, und der Cron bleibt
+bei `0 */2 * * *`. Beides gehört zusammen und sollte auf Grundlage der
+Tageszahlen vom 2026-08-09 angepasst werden, nicht auf Grundlage eines einzigen
+Laufs. **Erst dann** darf der Takt beschleunigt werden.
 
 ---
 
