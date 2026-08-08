@@ -1,10 +1,11 @@
-import { asc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import type { BatchItem } from "drizzle-orm/batch";
 import { env } from "cloudflare:workers";
 import { getDb } from "../db";
-import { ebayListings, inventory, productAssets, products, syncEvents, syncRuns } from "../db/schema";
+import { ebayListings, inventory, priceOffers, productAssets, products, syncEvents, syncRuns } from "../db/schema";
 import { getActiveEbayListings, type EbayActiveListing } from "./ebay-client";
 import { bilderStehenSchonSo, stehtSchonSo } from "./ebay-sync-diff";
+import { darfUebernommenWerden, handfelder, ohneHandfelder, titelSchluessel } from "./manual-overrides";
 import { D1_SAFE_ID_LIST, maxInsertRows } from "./d1-limits";
 import { ExpiringLock, isSyncRunStale, SYNC_RUN_DEADLINE_MS, withDeadline } from "./sync-lock";
 
@@ -84,6 +85,10 @@ async function runEbaySyncInternal() {
 
   let importedCount = 0;
   let updatedCount = 0;
+  /** Karten, die aus dem Vorverkauf zu den synchronisierten gewandert sind.
+   *  Eigene Zahl, weil sie für den Betreiber etwas anderes bedeutet als ein
+   *  Import: Im Vorverkauf fehlt danach eine Karte, die er selbst angelegt hat. */
+  let mergedCount = 0;
   let deactivatedCount = 0;
   let skippedCount = 0;
   // Getrennt von `skippedCount` zu halten ist wichtig: Der entscheidet über
@@ -130,8 +135,32 @@ async function runEbaySyncInternal() {
     const existingListingsByItemId = new Map(existingListingRows.map((row) => [row.ebayItemId, row]));
     const productRows = await db.select({
       id: products.id, title: products.title, description: products.description, status: products.status,
+      origin: products.origin, manualOverrides: products.manualOverrides,
     }).from(products);
     const productsById = new Map(productRows.map((row) => [row.id, row]));
+
+    // Von Hand eingestellte Karten, die ein eBay-Angebot übernehmen kann. Der
+    // Betreiber hat entschieden: Taucht dieselbe Karte bei eBay auf, wandert sie
+    // aus dem Vorverkauf zu den synchronisierten Karten — **dieselbe Zeile**,
+    // damit Kennung, Verknüpfungen und laufende Preisvorschläge erhalten bleiben.
+    //
+    // Karten mit angenommenem, noch gültigem Preisvorschlag bleiben draußen:
+    // Die Zusage nennt einen Preis, den ab dem Wechsel eBay bestimmen würde.
+    const jetztIso = new Date().toISOString();
+    const zusagen = new Set((await db.select({ productId: priceOffers.productId })
+      .from(priceOffers)
+      .where(and(eq(priceOffers.status, "ACCEPTED"), sql`datetime(coalesce(${priceOffers.expiresAt}, '9999-12-31')) > datetime(${jetztIso})`))
+    ).map((row) => row.productId));
+    const uebernahmeKandidaten = new Map<string, string>();
+    for (const row of productRows) {
+      if (row.origin !== "MANUAL") continue;
+      if (!darfUebernommenWerden({ id: row.id, status: row.status, hatZusage: zusagen.has(row.id) })) continue;
+      // Erster Treffer gewinnt. Zwei manuelle Karten mit identischem Titel sind
+      // ein Fehler im Bestand, kein Fall fürs Raten — die zweite bleibt stehen
+      // und fällt dem Betreiber im Vorverkauf auf.
+      const schluessel = titelSchluessel(row.title);
+      if (!uebernahmeKandidaten.has(schluessel)) uebernahmeKandidaten.set(schluessel, row.id);
+    }
     const assetRows = await db.select({
       productId: productAssets.productId, sourceUrl: productAssets.sourceUrl,
     }).from(productAssets).orderBy(asc(productAssets.productId), asc(productAssets.sortOrder));
@@ -155,8 +184,14 @@ async function runEbaySyncInternal() {
       }
       try {
         const existing = existingListingsByItemId.get(mapped.ebayItemId);
-        const isNewProduct = !existing?.productId;
-        const productId = existing?.productId ?? newEntityId();
+        // Kennt der Shop dieses Angebot noch nicht, kann eine von Hand
+        // eingestellte Karte gleichen Titels es übernehmen, statt daneben ein
+        // Duplikat entstehen zu lassen. Der Schlüssel wird aus dem Vorrat
+        // genommen, damit ein zweites Angebot nicht dieselbe Karte greift.
+        const uebernommeneKarte = existing ? undefined : uebernahmeKandidaten.get(titelSchluessel(mapped.title));
+        if (uebernommeneKarte) uebernahmeKandidaten.delete(titelSchluessel(mapped.title));
+        const isNewProduct = !existing?.productId && !uebernommeneKarte;
+        const productId = existing?.productId ?? uebernommeneKarte ?? newEntityId();
         const now = new Date().toISOString();
         const listingStatus: "ACTIVE" | "ENDED" = mapped.quantity > 0 ? "ACTIVE" : "ENDED";
         const listingValues = {
@@ -182,8 +217,23 @@ async function runEbaySyncInternal() {
         // Bleibt die Liste leer, entfällt der Batch vollständig — und damit
         // der ganze Schreibvorgang für dieses Listing.
         const statements: BatchItem<"sqlite">[] = [];
-        const productValues = { title: mapped.title, description: mapped.description ?? null, status: (mapped.quantity > 0 ? "ACTIVE" : "INACTIVE") as "ACTIVE" | "INACTIVE", updatedAt: now };
-        if (isNewProduct) statements.push(db.insert(products).values({ id: productId, kind: "EBAY_SYNCED", ...productValues, status: "ACTIVE", createdAt: now }));
+        const alleProduktwerte = { title: mapped.title, description: mapped.description ?? null, status: (mapped.quantity > 0 ? "ACTIVE" : "INACTIVE") as "ACTIVE" | "INACTIVE", updatedAt: now };
+        // Von Hand gesetzte Felder bleiben stehen — das ist die Zusage von
+        // ai-todo Punkt 12.1. Ohne diesen Filter macht der Import jede Korrektur
+        // des Betreibers beim nächsten Lauf wieder zunichte, im Drei-Minuten-Takt
+        // und ohne jede Spur.
+        const gesperrt = handfelder(productsById.get(productId)?.manualOverrides);
+        const productValues = { ...ohneHandfelder(alleProduktwerte, gesperrt), updatedAt: now };
+        if (isNewProduct) statements.push(db.insert(products).values({ id: productId, kind: "EBAY_SYNCED", ...alleProduktwerte, status: "ACTIVE", createdAt: now }));
+        else if (uebernommeneKarte) {
+          // Der Wechsel aus dem Vorverkauf: Dieselbe Zeile wird zur
+          // synchronisierten Karte. `kind` muss mitwandern, sonst fasst der
+          // Waisen-Sweep sie nie an; der Produktpreis fällt weg, weil ab jetzt
+          // das Angebot den Preis bestimmt und zwei Quellen sich widersprächen.
+          statements.push(db.update(products).set({
+            ...productValues, kind: "EBAY_SYNCED" as const, origin: "EBAY" as const, priceAmountCents: null,
+          }).where(eq(products.id, productId)));
+        }
         else if (!stehtSchonSo(productsById.get(productId), productValues)) statements.push(db.update(products).set(productValues).where(eq(products.id, productId)));
         if (!existing) statements.push(db.insert(ebayListings).values(listingValues));
         else if (!stehtSchonSo(existing, listingValues)) statements.push(db.update(ebayListings).set(listingValues).where(eq(ebayListings.id, existing.id)));
@@ -208,10 +258,19 @@ async function runEbaySyncInternal() {
         // Die Frage „hat sich etwas geändert?" muss **vor** diesem Eintrag
         // beantwortet werden — danach ist die Liste immer gefüllt.
         const hatAenderungen = statements.length > 0;
-        if (hatAenderungen) statements.push(db.insert(syncEvents).values({ syncRunId: run.id, ebayItemId: mapped.ebayItemId, productId, status: existing ? "UPDATED" : "IMPORTED", createdAt: now }));
+        if (hatAenderungen) statements.push(db.insert(syncEvents).values({
+          syncRunId: run.id, ebayItemId: mapped.ebayItemId, productId,
+          status: existing ? "UPDATED" : "IMPORTED",
+          // Eine Übernahme muss im Protokoll stehen: Für den Betreiber
+          // verschwindet eine Karte aus dem Vorverkauf, und ohne diese Zeile
+          // gäbe es nichts, woran sich das nachvollziehen ließe.
+          message: uebernommeneKarte ? "Von Hand eingestellte Karte gleichen Titels übernommen." : undefined,
+          createdAt: now,
+        }));
         if (statements.length) await db.batch(statements as [BatchItem<"sqlite">, ...BatchItem<"sqlite">[]]);
         seenItemIds.add(mapped.ebayItemId);
-        if (isNewProduct) importedCount++;
+        if (uebernommeneKarte) mergedCount++;
+        else if (isNewProduct) importedCount++;
         else if (hatAenderungen) updatedCount++;
         else unchangedCount++;
       } catch (error) {
@@ -288,7 +347,7 @@ async function runEbaySyncInternal() {
     // ruhiger Lauf meldet 0 statt 294. Das ist der Zweck, sieht in der
     // Laufübersicht aber nach „nichts passiert" aus; die Zahl daneben in der
     // Adminfläche ordnet es ein.
-    return { runId: run.id, importedCount, updatedCount, deactivatedCount, skippedCount, unchangedCount };
+    return { runId: run.id, importedCount, updatedCount, deactivatedCount, skippedCount, unchangedCount, mergedCount };
   } catch (error) {
     await finalizeRun({ status: "FAILED", importedCount, updatedCount, failedCount: Math.max(1, failedCount), errorMessage: error instanceof Error ? error.message : "Unbekannter eBay-Fehler.", finishedAt: new Date().toISOString() });
     throw error;

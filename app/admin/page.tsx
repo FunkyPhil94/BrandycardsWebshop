@@ -86,12 +86,18 @@ export default function AdminPage() {
       const token = data.session?.access_token;
       if (!token) throw new Error("Bitte melde dich zuerst an.");
       const response = await fetch("/api/admin/ebay-sync", { method: "POST", headers: { Authorization: `Bearer ${token}` } });
-      const body = await response.json() as { error?: string; detail?: string; importedCount?: number; updatedCount?: number; skippedCount?: number; unchangedCount?: number };
+      const body = await response.json() as { error?: string; detail?: string; importedCount?: number; updatedCount?: number; skippedCount?: number; unchangedCount?: number; mergedCount?: number };
       if (!response.ok) throw new Error(body.detail ? `${body.error ?? "eBay-Synchronisierung fehlgeschlagen."} (${body.detail})` : body.error ?? "eBay-Synchronisierung fehlgeschlagen.");
       // „unverändert" gehört sichtbar dazu: Seit der Sync nur noch echte
       // Änderungen schreibt, meldet ein ruhiger Lauf 0 aktualisiert. Ohne die
       // Zahl daneben läse sich das wie ein Lauf, der nichts gesehen hat.
-      setSyncMessage(`Sync abgeschlossen: ${body.importedCount ?? 0} importiert, ${body.updatedCount ?? 0} aktualisiert, ${body.unchangedCount ?? 0} unverändert, ${body.skippedCount ?? 0} übersprungen.`);
+      //
+      // Übernahmen stehen nur da, wenn es welche gab — dann aber deutlich:
+      // Für den Betreiber verschwindet dabei eine Karte aus dem Vorverkauf,
+      // die er selbst angelegt hat.
+      const uebernommen = body.mergedCount ?? 0;
+      setSyncMessage(`Sync abgeschlossen: ${body.importedCount ?? 0} importiert, ${body.updatedCount ?? 0} aktualisiert, ${body.unchangedCount ?? 0} unverändert, ${body.skippedCount ?? 0} übersprungen.`
+        + (uebernommen ? ` ${uebernommen} Karte(n) aus dem Vorverkauf übernommen — sie laufen jetzt über eBay.` : ""));
     } catch (error) {
       setSyncMessage(error instanceof Error ? error.message : "eBay-Synchronisierung fehlgeschlagen.");
     } finally {

@@ -73,3 +73,66 @@ test("die Migration begründet, warum kind unverändert bleibt", async () => {
   assert.match(migration, /ON DELETE CASCADE/u);
   assert.match(migration, /PRAGMA foreign_keys = OFF. greift in D1 nicht/u);
 });
+
+// --- Handmarkierungen und Übernahme (ai-todo Punkt 12.1) --------------------
+
+const { HANDFELDER, darfUebernommenWerden, handfelder, ohneHandfelder, titelSchluessel } =
+  await import("../lib/manual-overrides.ts");
+
+test("ohne Markierung schreibt der Import alles", () => {
+  const werte = { title: "eBay-Titel", description: "eBay-Text", status: "ACTIVE" };
+  assert.deepEqual(ohneHandfelder(werte, handfelder(null)), werte);
+});
+
+test("ein markiertes Feld überlebt den Import", () => {
+  // Die Zusage von Punkt 12.1. Fällt dieser Test, macht der Sync jede
+  // Korrektur des Betreibers im Drei-Minuten-Takt wieder zunichte.
+  const werte = { title: "eBay-Titel", description: "eBay-Text", status: "ACTIVE" };
+  assert.deepEqual(ohneHandfelder(werte, handfelder(["title"])), { description: "eBay-Text", status: "ACTIVE" });
+  assert.deepEqual(ohneHandfelder(werte, handfelder(["title", "description"])), { status: "ACTIVE" });
+});
+
+test("kaputte oder unbekannte Markierungen reißen nichts", () => {
+  // Die Spalte ist JSON aus der Datenbank, also ungeprüft. Ein Fehler darin
+  // darf keinen Sync-Lauf kosten — und ein alter Eintrag darf nicht später ein
+  // Feld sperren, das es inzwischen gibt.
+  assert.equal(handfelder("kaputt").size, 0);
+  assert.equal(handfelder(["gibtsnicht"]).size, 0);
+  assert.equal(handfelder(["title", 42, null]).size, 1);
+});
+
+test("der Titelschlüssel ist bewusst streng", () => {
+  assert.equal(titelSchluessel("  Panini   Prizm  "), "panini prizm");
+  assert.equal(titelSchluessel("PANINI PRIZM"), titelSchluessel("panini prizm"));
+  // Kein Kürzen, kein Weglassen von Satzzeichen: Bei Einzelstücken wäre ein
+  // Fehltreffer eine Karte, die stillschweigend aus dem Vorverkauf fällt.
+  assert.notEqual(titelSchluessel("Panini Prizm!"), titelSchluessel("Panini Prizm"));
+  assert.notEqual(titelSchluessel("Panini Prizm 2023"), titelSchluessel("Panini Prizm"));
+});
+
+test("übernommen wird nur, was gefahrlos wechseln kann", () => {
+  assert.equal(darfUebernommenWerden({ id: "a", status: "ACTIVE", hatZusage: false }), true);
+  // Verkauft: Der Bestand ist gebucht, ein Wechsel würde die Karte wieder
+  // anbieten.
+  assert.equal(darfUebernommenWerden({ id: "a", status: "SOLD", hatZusage: false }), false);
+  assert.equal(darfUebernommenWerden({ id: "a", status: "INACTIVE", hatZusage: false }), false);
+  // Zusage: Ein angenommener Preis gilt 48 Stunden. Ab dem Wechsel bestimmt
+  // eBay den Preis — das widerspräche der Zusage.
+  assert.equal(darfUebernommenWerden({ id: "a", status: "ACTIVE", hatZusage: true }), false);
+});
+
+test("die Liste der Handfelder bleibt klein", () => {
+  // Jedes Feld hier kann der Import nicht mehr korrigieren. Wer sie erweitert,
+  // soll das bewusst tun und diesen Test mit anfassen.
+  assert.deepEqual([...HANDFELDER], ["title", "description", "status"]);
+});
+
+test("der Sync übernimmt statt zu duplizieren", async () => {
+  const sync = await readFile(new URL("../lib/ebay-sync.ts", import.meta.url), "utf8");
+  // Die übernommene Karte muss `kind` und `origin` mitwandern lassen: ohne
+  // `kind = EBAY_SYNCED` fasst der Waisen-Sweep sie nie wieder an, ohne
+  // `origin = EBAY` liest der Katalog weiter den Produktpreis.
+  assert.match(sync, /kind: "EBAY_SYNCED" as const, origin: "EBAY" as const, priceAmountCents: null/u);
+  // Ein zweites Angebot darf dieselbe Karte nicht noch einmal greifen.
+  assert.match(sync, /uebernahmeKandidaten\.delete\(/u);
+});
