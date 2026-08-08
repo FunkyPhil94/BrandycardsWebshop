@@ -3,7 +3,7 @@ import test from "node:test";
 
 const {
   cardSubmissionReceived, escapeHtml, formatMoney, inquiryReceived,
-  offerAccepted, offerRejected, orderConfirmation, sanitizeSubject, sellerOrderNotification,
+  bestandshinweis, offerAccepted, offerRejected, orderConfirmation, sanitizeSubject, sellerOrderNotification,
 } = await import("../lib/email/templates.ts");
 
 const SHOP = "https://shop.brandycards.de";
@@ -417,4 +417,43 @@ test("der Betreff bleibt einzeilig, auch bei präpariertem Namen", () => {
     address: { ...VERKAUF.address, name: "Otto\nBcc: fremd@example.org" },
   });
   assert.ok(!nachricht.subject.includes("\n"));
+});
+
+// --- Der Hinweis, wenn die Bestandsprüfung nicht laufen konnte --------------
+
+test("bei geprüftem Bestand steht kein Hinweis in der Nachricht", () => {
+  // Eine Zeile „alles geprüft" in **jeder** Mail stumpft ab. Gewarnt wird nur,
+  // wenn es etwas zu warnen gibt — sonst wird die Warnung überlesen, wenn sie
+  // einmal zählt.
+  assert.equal(bestandshinweis("OK"), null);
+  assert.equal(bestandshinweis(undefined), null);
+  const nachricht = sellerOrderNotification({ ...VERKAUF, bestandspruefung: "OK" });
+  assert.ok(!nachricht.text.includes("ACHTUNG"));
+  assert.ok(!nachricht.html.includes("ACHTUNG"));
+});
+
+test("ein eBay-Ausfall wird dem Verkäufer gemeldet, bevor er packt", () => {
+  // Die Prüfung an der Kasse lässt bei einem eBay-Ausfall bewusst durch --
+  // aber lautlos. Hier ist der letzte Moment, in dem der Verkäufer noch
+  // selbst nachsehen kann.
+  const hinweis = bestandshinweis("FEHLGESCHLAGEN");
+  assert.match(hinweis, /ACHTUNG/);
+  assert.match(hinweis, /nicht geantwortet/);
+  const nachricht = sellerOrderNotification({ ...VERKAUF, bestandspruefung: "FEHLGESCHLAGEN" });
+  assert.ok(nachricht.text.includes("ACHTUNG"), "im Text");
+  assert.ok(nachricht.html.includes("ACHTUNG"), "und im HTML");
+});
+
+test("über den Webhook abgerechnete Bestellungen nennen den anderen Grund", () => {
+  // Dieser Weg ruft den Wächter gar nicht auf. Das ist ein anderer Fall als
+  // „eBay antwortete nicht", und der Verkäufer soll wissen, welcher vorliegt.
+  const hinweis = bestandshinweis("NICHT_GELAUFEN");
+  assert.match(hinweis, /Webhook/);
+  assert.ok(!/nicht geantwortet/.test(hinweis), "kein erfundener eBay-Ausfall");
+});
+
+test("der Hinweis wird maskiert und kann kein Markup einschleusen", () => {
+  const nachricht = sellerOrderNotification({ ...VERKAUF, bestandspruefung: "FEHLGESCHLAGEN" });
+  assert.ok(!/<script/i.test(nachricht.html));
+  assert.ok(nachricht.html.includes("&mdash;") || !nachricht.html.includes("<b>"), "kein rohes Markup aus dem Hinweis");
 });

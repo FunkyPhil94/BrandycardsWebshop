@@ -14,18 +14,36 @@ import { orderCardsForStockCheck } from "./paypal/settle-order";
  * docs/ai-todo.md, Punkt 3.
  */
 export async function ebaySoldOutMessage(db: ReturnType<typeof getDb>, orderId: string): Promise<string | null> {
+  return (await ebayBestandspruefung(db, orderId)).meldung;
+}
+
+/** Wie `ebaySoldOutMessage`, sagt aber zusätzlich, **ob überhaupt geprüft
+ *  wurde**.
+ *
+ * Der Unterschied ist der Punkt: Ein `null` bedeutete bisher zweierlei — „bei
+ * eBay ist alles da" und „ich konnte nicht nachsehen". Für den Verkauf ist das
+ * dasselbe (beides lässt durch, und das soll so bleiben), für den **Verkäufer**
+ * aber nicht: Im zweiten Fall packt er ein Paket, ohne dass jemand geprüft hat,
+ * ob die Karte noch existiert. Diese Unterscheidung landet in der
+ * Verkäufernachricht.
+ */
+export async function ebayBestandspruefung(
+  db: ReturnType<typeof getDb>,
+  orderId: string,
+): Promise<{ meldung: string | null; status: "OK" | "FEHLGESCHLAGEN" }> {
   try {
     const cards = await orderCardsForStockCheck(db, orderId);
     const ids = cards.map((card) => card.ebayItemId).filter((id): id is string => Boolean(id));
-    if (!ids.length) return null;
+    // Keine eBay-Kennungen: nichts zu prüfen, und das ist kein Ausfall.
+    if (!ids.length) return { meldung: null, status: "OK" };
     const gone = unavailableTitles(cards, await getEbayAvailability(ids));
-    if (!gone.length) return null;
+    if (!gone.length) return { meldung: null, status: "OK" };
     console.warn("[ebay-stock-guard] Karte bei eBay nicht mehr verfügbar", { orderId, titles: gone });
-    return soldOutMessage(gone);
+    return { meldung: soldOutMessage(gone), status: "OK" };
   } catch (error) {
     // Auch ein Fehler in der Prüfung selbst darf nichts blockieren. Sie ist
     // eine zusätzliche Sicherung, keine Voraussetzung.
     console.error("[ebay-stock-guard] Bestandsprüfung fehlgeschlagen, Bestellung wird durchgelassen", orderId, error instanceof Error ? error.message : error);
-    return null;
+    return { meldung: null, status: "FEHLGESCHLAGEN" };
   }
 }

@@ -51,10 +51,11 @@ export async function GET() {
     for (const row of rows) {
       if (!row.listing && row.product.kind !== "PRELISTED") continue;
       // Verkauft heißt weg — sofort, nicht erst beim nächsten Import.
-      if (!istImKatalogSichtbar(row.product.kind, row.listing?.quantity, row.stock)) continue;
+      if (!istImKatalogSichtbar(row.product.kind, row.listing?.listingType, row.listing?.quantity, row.stock)) continue;
       const current = byId.get(row.product.id) ?? {
         id: row.product.id, title: row.product.title, description: row.product.description,
-        category: row.product.kind === "PRELISTED" ? "Vormerkliste" : row.listing?.listingType === "AUCTION" ? "Auktion" : "Festpreis",
+        // Kein „Auktion" mehr: Auktionen sind oben schon ausgefiltert.
+        category: row.product.kind === "PRELISTED" ? "Vormerkliste" : "Festpreis",
         priceAmountCents: row.listing?.priceAmountCents ?? null, priceCurrency: row.listing?.priceCurrency ?? "EUR",
         quantity: row.product.kind === "PRELISTED" ? 0 : verfuegbareMenge(row.listing?.quantity, row.stock),
         listingUrl: row.listing?.listingUrl ?? null, imageUrls: [],

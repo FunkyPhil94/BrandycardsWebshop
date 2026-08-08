@@ -47,9 +47,24 @@ export function verfuegbareMenge(listingQuantity: number | null | undefined, bes
  * **`PRELISTED` ist die Ausnahme, die man leicht zerstört.** Karten der
  * Vormerkliste haben kein Listing und keinen Bestand; ein Filter auf „Menge
  * größer null" würde sie stillschweigend aus dem Katalog werfen. Sie sind kein
- * Kaufangebot, sondern eine Ankündigung, und bleiben immer sichtbar.
+ * Kaufangebot, sondern eine Ankündigung, und bleiben immer sichtbar. Deshalb
+ * steht ihre Prüfung **vor** allen anderen.
+ *
+ * **Auktionen gehören nicht in den Shop**, und das ist keine Geschmacksfrage:
+ * Ihre Menge lässt sich bei eBay nicht ändern, weil sie Gebote tragen. Die
+ * Rücknahme-Warteschlange überspringt sie deshalb (`lib/ebay-outbox-plan.ts`).
+ * Stünde eine Auktion im Katalog, könnte der Shop sie verkaufen, während eBay
+ * sie weiter anbietet — ein Doppelverkauf, den niemand mehr verhindern kann.
+ * Bis zum 2026-08-08 wurden sie nur beschriftet, nicht gefiltert; aufgefallen
+ * ist es nicht, weil alle 294 aktiven Angebote Festpreis sind.
  */
-export function istImKatalogSichtbar(kind: string, listingQuantity: number | null | undefined, bestand: BestandsZeile): boolean {
+export function istImKatalogSichtbar(
+  kind: string,
+  listingType: string | null | undefined,
+  listingQuantity: number | null | undefined,
+  bestand: BestandsZeile,
+): boolean {
   if (kind === "PRELISTED") return true;
+  if (listingType === "AUCTION") return false;
   return verfuegbareMenge(listingQuantity, bestand) > 0;
 }

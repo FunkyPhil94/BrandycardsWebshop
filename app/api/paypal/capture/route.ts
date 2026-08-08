@@ -4,7 +4,7 @@ import { getDb } from "../../../../db";
 import { orders, payments } from "../../../../db/schema";
 import { getAuthenticatedAppUser } from "../../../../lib/app-user";
 import { notifyOrderPaid } from "../../../../lib/email/notify.ts";
-import { ebaySoldOutMessage } from "../../../../lib/ebay-stock-guard";
+import { ebayBestandspruefung } from "../../../../lib/ebay-stock-guard";
 import { capturePayPalOrder } from "../../../../lib/paypal/client";
 import { assertValidMoney, centsToPayPalValue } from "../../../../lib/paypal/money";
 import { releaseOrderReservations, settlePaidOrder } from "../../../../lib/paypal/settle-order";
@@ -67,10 +67,10 @@ export async function POST(request: Request) {
     // Klartext und die Reservierung wird freigegeben. Die PayPal-Order bleibt
     // uneingezogen und verfällt von selbst; ein aktives `void` wäre ein
     // weiterer Fremdaufruf mit eigenen Fehlerpfaden für keinen Gewinn.
-    const soldOut = await ebaySoldOutMessage(db, order.id);
-    if (soldOut) {
+    const bestandspruefung = await ebayBestandspruefung(db, order.id);
+    if (bestandspruefung.meldung) {
       await releaseOrderReservations(db, order.id, new Date().toISOString());
-      return NextResponse.json({ error: soldOut }, { status: 409 });
+      return NextResponse.json({ error: bestandspruefung.meldung }, { status: 409 });
     }
 
     const lockResult = await db.batch([db.update(orders).set({ status: "PROCESSING", updatedAt: new Date().toISOString() }).where(and(eq(orders.id, order.id), eq(orders.status, "PENDING")))]);
@@ -94,7 +94,7 @@ export async function POST(request: Request) {
       .where(and(eq(payments.id, payment.id), inArray(payments.status, ["CREATED", "APPROVED"])))]);
     await db.update(orders).set({ status: "PAID", paidAt: now, updatedAt: now }).where(and(eq(orders.id, order.id), inArray(orders.status, ["PENDING", "PROCESSING"])));
     await settlePaidOrder(db, order.id, now);
-    if (captureClaim[0].meta.changes === 1) await notifyOrderPaid(db, order.id);
+    if (captureClaim[0].meta.changes === 1) await notifyOrderPaid(db, order.id, bestandspruefung.status);
     return NextResponse.json({ ok: true, idempotent: false, orderId: order.id, captureId: capture.id, status: "CAPTURED" });
   } catch (error) {
     console.error("PayPal capture failed", error);

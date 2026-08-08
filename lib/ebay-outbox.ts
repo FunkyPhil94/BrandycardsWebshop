@@ -58,21 +58,22 @@ async function claimNext(db: Db) {
 }
 
 /** Carries out one queued job. Which call to make is decided in the plan module. */
-async function runJob(job: { operation: string; ebayItemId: string | null; ebayOfferId: string | null }) {
+async function runJob(job: { operation: string; ebayItemId: string | null; ebayOfferId: string | null }, timeoutMs?: number) {
   const ziel = bestimmeAuftragsziel(job);
-  if (ziel.aufruf === REVISE_QUANTITY) return reviseEbayItemQuantity(ziel.ebayItemId, ziel.menge);
+  if (ziel.aufruf === REVISE_QUANTITY) return reviseEbayItemQuantity(ziel.ebayItemId, ziel.menge, timeoutMs);
   if (ziel.aufruf === WITHDRAW_OFFER) return withdrawEbayOffer(ziel.ebayOfferId);
   throw new Error("Unerreichbar: unbekanntes Auftragsziel.");
 }
 
-export async function processEbayOutbox(db: Db = getDb()) {
+export async function processEbayOutbox(db: Db = getDb(), optionen: { timeoutMs?: number; maxJobs?: number } = {}) {
   if (process.env.EBAY_WRITE_ENABLED !== "true") return 0;
+  const maxJobs = optionen.maxJobs ?? 10;
   let processed = 0;
-  for (let i = 0; i < 10; i += 1) {
+  for (let i = 0; i < maxJobs; i += 1) {
     const job = await claimNext(db);
     if (!job) break;
     try {
-      const ergebnis = await runJob(job);
+      const ergebnis = await runJob(job, optionen.timeoutMs);
       // Welcher Weg es war, gehört ins Protokoll. `SUCCEEDED` allein
       // unterscheidet nicht zwischen „eBay hat die Menge geändert" und „eBay
       // meldete bereits beendet, und unsere Fehlernummern haben gegriffen" —

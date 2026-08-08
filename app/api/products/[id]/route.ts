@@ -2,7 +2,7 @@ import { and, asc, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { getDb } from "../../../../db";
 import { ebayListings, inventory, productAssets, products } from "../../../../db/schema";
-import { verfuegbareMenge } from "../../../../lib/catalog-availability";
+import { istImKatalogSichtbar, verfuegbareMenge } from "../../../../lib/catalog-availability";
 import { getEbayItemDescription } from "../../../../lib/ebay-client";
 import { parseEbayDescription } from "../../../../lib/ebay-description";
 import { enforcePublicRateLimit } from "../../../../lib/rate-limit";
@@ -40,9 +40,14 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
     if (!row) return NextResponse.json({ error: "Diese Karte ist nicht verfügbar." }, { status: 404 });
     // Verkauft ist wie nicht vorhanden — dieselbe Antwort wie für eine Karte,
     // die es nie gab. Sonst stünde hier weiter „1 verfügbar" mit aktivem
-    // Kaufknopf, und der Kunde liefe erst an der Kasse auf.
+    // Kaufknopf, und der Kunde liefe erst an der Kasse auf. **Auktionen fallen
+    // hier ebenfalls heraus**, weil sich ihre Menge bei eBay nicht
+    // zurücknehmen lässt; dieselbe Entscheidung wie im Katalog, deshalb
+    // dieselbe Funktion.
+    if (!istImKatalogSichtbar(row.product.kind, row.listing.listingType, row.listing.quantity, row.stock)) {
+      return NextResponse.json({ error: "Diese Karte ist nicht verfügbar." }, { status: 404 });
+    }
     const menge = verfuegbareMenge(row.listing.quantity, row.stock);
-    if (menge < 1) return NextResponse.json({ error: "Diese Karte ist nicht verfügbar." }, { status: 404 });
 
     const assets = await db.select({ sourceUrl: productAssets.sourceUrl })
       .from(productAssets)
@@ -88,7 +93,8 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
         const structured = parsed && (parsed.specs.length || parsed.sections.length) ? parsed : null;
         return { specs: structured?.specs ?? [], sections: structured?.sections ?? [], descriptionHtml: structured ? null : safe };
       })(),
-      category: row.listing.listingType === "AUCTION" ? "Auktion" : "Festpreis",
+      // Immer Festpreis: Auktionen sind oben schon mit 404 abgewiesen worden.
+      category: "Festpreis",
       priceAmountCents: row.listing.priceAmountCents,
       priceCurrency: row.listing.priceCurrency,
       quantity: menge,

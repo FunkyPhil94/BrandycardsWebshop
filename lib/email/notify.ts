@@ -39,7 +39,13 @@ async function empfaengerDerBestellung(db: Db, order: { userId: string | null; g
  * aufgerufen.** Bestellungen werden auf zwei Wegen bezahlt (Rückkehr aus
  * PayPal und Webhook); ohne diesen Riegel bekäme der Kunde zwei Bestätigungen.
  */
-export async function notifyOrderPaid(db: Db, orderId: string): Promise<void> {
+export async function notifyOrderPaid(
+  db: Db,
+  orderId: string,
+  /** Ob vor dem Einzug bei eBay nachgesehen wurde. Fehlt der Wert, wird nicht
+   *  gewarnt — die Nachricht soll nie schlechter sein als vorher. */
+  bestandspruefung?: "OK" | "FEHLGESCHLAGEN" | "NICHT_GELAUFEN",
+): Promise<void> {
   // **Zwei getrennte Blöcke, und das ist wichtig.** Der Kunde bekommt seine
   // Bestätigung, der Verkäufer die Versanddaten. Lägen beide in einem Block,
   // verschluckte ein Fehler beim Zusammenbauen der einen Nachricht die andere —
@@ -88,6 +94,7 @@ export async function notifyOrderPaid(db: Db, orderId: string): Promise<void> {
       total: { cents: daten.order.totalAmountCents, currency: daten.order.currency },
       address: adresse,
       customerEmail: daten.empfaenger ?? "unbekannt",
+      bestandspruefung,
       shopUrl: shopUrl(),
     });
 

@@ -1,7 +1,7 @@
 import { and, eq, gte, lte, sql } from "drizzle-orm";
 import { getDb } from "../../db";
 import { ebayListings, inventory, orderItems, orders, reservations } from "../../db/schema";
-import { enqueueEbayWithdraw } from "../ebay-outbox";
+import { enqueueEbayWithdraw, processEbayOutbox } from "../ebay-outbox";
 
 export async function settlePaidOrder(db: ReturnType<typeof getDb>, orderId: string, now: string) {
   const rows = await db.select({ reservation: reservations, stock: inventory, listing: ebayListings })
@@ -12,6 +12,7 @@ export async function settlePaidOrder(db: ReturnType<typeof getDb>, orderId: str
 
   if (!rows.length) return;
 
+  let eingereiht = false;
   for (const { reservation, listing } of rows) {
     const reservationResult = await db.batch([db.update(reservations).set({ status: "CONVERTED", releasedAt: now }).where(and(eq(reservations.id, reservation.id), eq(reservations.status, "ACTIVE")))]);
     if (reservationResult[0].meta.changes !== 1) continue;
@@ -25,7 +26,32 @@ export async function settlePaidOrder(db: ReturnType<typeof getDb>, orderId: str
       await db.batch([db.update(reservations).set({ status: "ACTIVE", releasedAt: null }).where(and(eq(reservations.id, reservation.id), eq(reservations.status, "CONVERTED")))]);
       continue;
     }
-    if (listing) await enqueueEbayWithdraw(db, listing.id, "Webshop-Bestellung bezahlt");
+    if (listing) eingereiht = await enqueueEbayWithdraw(db, listing.id, "Webshop-Bestellung bezahlt") || eingereiht;
+  }
+
+  // **Sofort ausführen, nicht auf den geplanten Lauf warten.** Sonst bliebe die
+  // verkaufte Karte bis zum nächsten Schlag bei eBay im Angebot — bei einem
+  // 3-Minuten-Takt also bis zu drei Minuten, in denen ein eBay-Käufer dieselbe
+  // Einzelkarte kaufen kann. Das ist die Richtung, die beim Storno den
+  // Verkäuferstatus kostet.
+  //
+  // **Mit eigener, kurzer Zeitgrenze**, denn hier wartet ein Kunde auf seine
+  // Kaufbestätigung. Die 30 Sekunden des Importlaufs wären an dieser Stelle
+  // unzumutbar; 5 Sekunden reichen für einen Aufruf, der sonst in
+  // Millisekunden antwortet.
+  //
+  // `cloudflare:workers` stellt **kein** `waitUntil` bereit — nachgeprüft, es
+  // gibt dort nur `env`. Und eine Zusage einfach ohne `await` zu feuern wäre
+  // schlimmer als warten: Die Laufzeitumgebung bricht sie ab, sobald die
+  // Antwort steht, und der Auftrag bliebe halb erledigt liegen.
+  //
+  // Der geplante Lauf bleibt das Netz: Was hier scheitert oder in die
+  // Zeitgrenze läuft, holt er nach — die Zeile steht dann auf RETRY_WAIT.
+  if (eingereiht) {
+    await processEbayOutbox(db, { timeoutMs: 5_000, maxJobs: 3 }).catch((error: unknown) => {
+      console.error("[settle-order] Sofortige eBay-Rücknahme fehlgeschlagen, der geplante Lauf holt es nach.",
+        { orderId, fehler: error instanceof Error ? error.message : error });
+    });
   }
 }
 

@@ -57,16 +57,16 @@ test("Karten der Vormerkliste bleiben sichtbar, obwohl sie keinen Bestand haben"
   // PRELISTED-Karten haben weder Listing noch Bestand. Ein Filter auf „Menge
   // größer null" hätte sie stillschweigend aus dem Katalog geworfen — sie sind
   // kein Kaufangebot, sondern eine Ankündigung.
-  assert.equal(istImKatalogSichtbar("PRELISTED", null, null), true);
-  assert.equal(istImKatalogSichtbar("PRELISTED", 0, { availableQuantity: 0, status: "UNAVAILABLE" }), true);
+  assert.equal(istImKatalogSichtbar("PRELISTED", null, null, null), true);
+  assert.equal(istImKatalogSichtbar("PRELISTED", null, 0, { availableQuantity: 0, status: "UNAVAILABLE" }), true);
 });
 
 test("eine verkaufte eBay-Karte verschwindet aus dem Katalog", () => {
-  assert.equal(istImKatalogSichtbar("EBAY_SYNCED", 1, { availableQuantity: 0, status: "SOLD" }), false);
+  assert.equal(istImKatalogSichtbar("EBAY_SYNCED", "FIXED_PRICE", 1, { availableQuantity: 0, status: "SOLD" }), false);
 });
 
 test("eine verfügbare eBay-Karte bleibt im Katalog", () => {
-  assert.equal(istImKatalogSichtbar("EBAY_SYNCED", 1, { availableQuantity: 1, status: "AVAILABLE" }), true);
+  assert.equal(istImKatalogSichtbar("EBAY_SYNCED", "FIXED_PRICE", 1, { availableQuantity: 1, status: "AVAILABLE" }), true);
 });
 
 // --- Die Verzögerung am Rand ------------------------------------------------
@@ -81,4 +81,22 @@ test("der Katalog wird höchstens 90 Sekunden lang veraltet ausgeliefert", async
   const maxAge = Number(regel.match(/max-age=(\d+)/)?.[1]);
   const stale = Number(regel.match(/stale-while-revalidate=(\d+)/)?.[1]);
   assert.ok(maxAge + stale <= 90, `veraltete Auslieferung bis zu ${maxAge + stale} s — zu lang für eine verkaufte Karte`);
+});
+
+// --- Auktionen gehören nach eBay, nicht in den Shop -------------------------
+
+test("eine Auktion erscheint nicht im Katalog, auch wenn Bestand da ist", () => {
+  // Der Grund ist kein Geschmack: Die Menge einer Auktion lässt sich bei eBay
+  // nicht zurücknehmen, weil sie Gebote trägt. Stünde sie im Shop, könnte er
+  // sie verkaufen, während eBay sie weiter anbietet — ein Doppelverkauf, den
+  // danach niemand mehr verhindern kann.
+  assert.equal(istImKatalogSichtbar("EBAY_SYNCED", "AUCTION", 1, { availableQuantity: 1, status: "AVAILABLE" }), false);
+});
+
+test("die Vormerkliste bleibt sichtbar, auch ohne Angebotstyp", () => {
+  // PRELISTED wird **vor** der Typprüfung durchgelassen. Andernfalls hätte der
+  // Auktionsfilter die Vormerkliste mit aus dem Katalog geworfen — dieselbe
+  // Falle wie beim letzten Umbau dieser Datei.
+  assert.equal(istImKatalogSichtbar("PRELISTED", null, null, null), true);
+  assert.equal(istImKatalogSichtbar("PRELISTED", "AUCTION", null, null), true);
 });

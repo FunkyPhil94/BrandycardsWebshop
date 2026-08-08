@@ -285,8 +285,30 @@ export type VerkaufDaten = {
   address: Lieferadresse;
   /** Für Rückfragen — die Adresse, an die auch die Kundenbestätigung ging. */
   customerEmail: string;
+  /** Ob vor dem Einzug bei eBay nachgesehen wurde, ob die Karte dort noch da ist.
+   *
+   * `OK` erzeugt **keinen** Hinweis. Eine Zeile „alles geprüft" in jeder
+   * Nachricht stumpft ab; gewarnt wird nur, wenn es etwas zu warnen gibt.
+   */
+  bestandspruefung?: "OK" | "FEHLGESCHLAGEN" | "NICHT_GELAUFEN";
   shopUrl: string;
 };
+
+/** Der Warnsatz zur Bestandsprüfung — oder nichts, wenn alles geprüft ist.
+ *
+ * **Warum das in der Verkäufernachricht steht:** Die Prüfung an der Kasse lässt
+ * bei einem eBay-Ausfall bewusst durch, sonst hielte eine eBay-Störung den
+ * ganzen Shop an. Sie tut es aber lautlos — der Verkäufer packt die Karte ein,
+ * ohne zu wissen, dass niemand nachgesehen hat, ob sie noch existiert. Hier ist
+ * der letzte Moment, in dem er noch handeln kann.
+ */
+export function bestandshinweis(status: VerkaufDaten["bestandspruefung"]): string | null {
+  if (!status || status === "OK") return null;
+  const grund = status === "FEHLGESCHLAGEN"
+    ? "eBay hat auf die Anfrage nicht geantwortet"
+    : "die Zahlung kam über den PayPal-Webhook herein, der diese Prüfung nicht ausführt";
+  return `ACHTUNG: Vor dem Einzug konnte nicht geprüft werden, ob die Karte bei eBay noch verfügbar ist — ${grund}. Bitte vor dem Versand kurz selbst nachsehen.`;
+}
 
 /** Die Nachricht an den Verkäufer, aus der ein Versandetikett entsteht.
  *
@@ -326,6 +348,7 @@ export function sellerOrderNotification(daten: VerkaufDaten): Nachricht {
     `Gesamt:        ${formatMoney(daten.total)}`,
     ``,
     `Kunde: ${daten.customerEmail}`,
+    ...(bestandshinweis(daten.bestandspruefung) ? ["", bestandshinweis(daten.bestandspruefung) as string] : []),
     fussText(daten.shopUrl),
   ].join("\n");
 
@@ -347,6 +370,10 @@ export function sellerOrderNotification(daten: VerkaufDaten): Nachricht {
     `<tr><td style="padding:8px 0;border-top:1px solid #e4e0d8;font-weight:bold">Gesamt</td><td style="padding:8px 0;border-top:1px solid #e4e0d8;text-align:right;font-weight:bold">${escapeHtml(formatMoney(daten.total))}</td></tr>`,
     `</table>`,
     `<p style="margin:20px 0 0;color:#7c7770;font-size:13px">Bezahlt am ${escapeHtml(formatDatum(daten.paidAt))} · Kunde: ${escapeHtml(daten.customerEmail)}</p>`,
+    // Auffällig gesetzt: Dieser Hinweis kommt selten und muss dann gesehen werden.
+    ...(bestandshinweis(daten.bestandspruefung)
+      ? [`<p style="margin:18px 0 0;padding:12px;background:#fdf1ec;border-left:3px solid #c0472c;font-size:14px;line-height:1.5">${escapeHtml(bestandshinweis(daten.bestandspruefung) as string)}</p>`]
+      : []),
   ].join(""), daten.shopUrl);
 
   return { subject: sanitizeSubject(`Neue Bestellung ${daten.orderNumber} — ${daten.address.name}`), text, html };

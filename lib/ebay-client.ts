@@ -51,12 +51,19 @@ function fetchTimeoutMs() {
   return Number.isFinite(configured) && configured > 0 ? configured : EBAY_FETCH_TIMEOUT_MS;
 }
 
-/** Wie `fetch`, nur dass es garantiert zurückkommt. Vorbild: `lib/paypal/client.ts`. */
-function fetchWithTimeout(input: string, init: RequestInit = {}) {
-  return fetch(input, { ...init, signal: AbortSignal.timeout(fetchTimeoutMs()) });
+/** Wie `fetch`, nur dass es garantiert zurückkommt. Vorbild: `lib/paypal/client.ts`.
+ *
+ * `timeoutMs` übersteuert die Voreinstellung für **einen** Aufruf. Gebraucht
+ * wird das an genau einer Stelle: Wenn die Rücknahme unmittelbar nach der
+ * Zahlung läuft, wartet ein Kunde auf die Antwort — dort sind 30 Sekunden zu
+ * viel, im Importlauf dagegen richtig.
+ */
+function fetchWithTimeout(input: string, init: RequestInit = {}, timeoutMs?: number) {
+  const grenze = Number.isFinite(timeoutMs) && (timeoutMs ?? 0) > 0 ? (timeoutMs as number) : fetchTimeoutMs();
+  return fetch(input, { ...init, signal: AbortSignal.timeout(grenze) });
 }
 
-async function getAccessToken(config: EbayConfig, scope = process.env.EBAY_OAUTH_SCOPE || "https://api.ebay.com/oauth/api_scope/sell.inventory.readonly") {
+async function getAccessToken(config: EbayConfig, scope = process.env.EBAY_OAUTH_SCOPE || "https://api.ebay.com/oauth/api_scope/sell.inventory.readonly", timeoutMs?: number) {
   const form = new URLSearchParams({
     grant_type: "refresh_token",
     refresh_token: config.refreshToken,
@@ -69,7 +76,7 @@ async function getAccessToken(config: EbayConfig, scope = process.env.EBAY_OAUTH
       "Content-Type": "application/x-www-form-urlencoded",
     },
     body: form,
-  });
+  }, timeoutMs);
   if (!response.ok) {
     const body = await response.text();
     throw new Error(`eBay OAuth fehlgeschlagen (${response.status}): ${body.slice(0, 240)}`);
@@ -392,13 +399,13 @@ const ALREADY_ENDED_CODES = new Set(["291", "21916750", "1047"]);
  * NOT for auctions. A running auction has bids, and its quantity is not a thing
  * that can be revised; the caller filters those out (`lib/ebay-outbox.ts`).
  */
-export async function reviseEbayItemQuantity(ebayItemId: string, quantity: number) {
+export async function reviseEbayItemQuantity(ebayItemId: string, quantity: number, timeoutMs?: number) {
   const itemId = ebayItemId.replace(/[^0-9]/g, "");
   if (!itemId) throw new Error("eBay-ItemID fehlt oder ist unbrauchbar.");
   if (!Number.isInteger(quantity) || quantity < 0) throw new Error("Menge muss eine nicht-negative ganze Zahl sein.");
 
   const config = getConfig();
-  const accessToken = await getAccessToken(config, writeScope());
+  const accessToken = await getAccessToken(config, writeScope(), timeoutMs);
   const request = `<?xml version="1.0" encoding="utf-8"?><ReviseInventoryStatusRequest xmlns="urn:ebay:apis:eBLBaseComponents"><InventoryStatus><ItemID>${itemId}</ItemID><Quantity>${quantity}</Quantity></InventoryStatus></ReviseInventoryStatusRequest>`;
   const response = await fetchWithTimeout(`${apiBase(config.environment)}/ws/api.dll`, {
     method: "POST",
@@ -410,7 +417,7 @@ export async function reviseEbayItemQuantity(ebayItemId: string, quantity: numbe
       "X-EBAY-API-IAF-TOKEN": accessToken,
     },
     body: request,
-  });
+  }, timeoutMs);
   if (!response.ok) throw new Error(`eBay ReviseInventoryStatus fehlgeschlagen (${response.status}).`);
   const xml = await response.text();
   const ack = xmlValue(xml, "Ack")?.toUpperCase();

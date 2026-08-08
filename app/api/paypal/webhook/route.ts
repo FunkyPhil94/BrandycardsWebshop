@@ -111,7 +111,7 @@ export async function POST(request: Request) {
         }).where(and(eq(payments.id, payment.id), inArray(payments.status, ["CREATED", "APPROVED"])))]);
         await db.update(orders).set({ status: "PAID", paidAt: now, updatedAt: now }).where(eq(orders.id, payment.orderId));
         await settlePaidOrder(db, payment.orderId, now);
-        if (captureClaim[0].meta.changes === 1) await notifyOrderPaid(db, payment.orderId);
+        if (captureClaim[0].meta.changes === 1) await notifyOrderPaid(db, payment.orderId, "NICHT_GELAUFEN");
       }
     } else if (eventType === "PAYMENT.CAPTURE.DENIED" || eventType === "PAYMENT.CAPTURE.DECLINED") {
       if (!payment) throw new Error("Zugehörige PayPal-Zahlung wurde nicht gefunden.");
