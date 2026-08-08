@@ -293,6 +293,22 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
   Entscheidung verschickt wurde („Preisvorschlag angenommen" statt nur
   „Angebotsnachricht").
 
+- **In Produktion belegt, nicht nur im Test.** Deployed als `9a2d28f2`, danach
+  eine zweite Zustellprobe über `/anfragen` mit mitlaufendem `wrangler tail`:
+
+  ```
+  POST https://shop.brandycards.de/api/inquiries - Ok
+    (log) [email] Anfragebestätigung zugestellt. { resendId: '45cea890-…' }
+  ```
+
+  Die Erfolgszeile erscheint, trägt die Resend-Kennung und **nicht** die
+  Empfängeradresse. Damit ist rückwirkend auch belegt, dass die erste
+  Zustellung denselben Weg genommen hat.
+- **Zweite Zeile in `inquiries`** mit dem Titel „ZUSTELLPROBE 2 Protokollzeile
+  2026-08-08". Bleibt ebenfalls stehen; Löschen wäre ein schreibender Eingriff
+  in Produktionsdaten.
+- **Reihenfolge diesmal richtig herum:** erst CI abwarten, dann deployen. Der
+  Durchlauf davor ging auf grüner lokaler Kette raus und war in CI rot.
 
 ### 2026-08-08 — Erste echt zugestellte E-Mail
 
