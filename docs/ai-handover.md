@@ -39,6 +39,18 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 *(leer — bereit für den nächsten Auftrag.)*
 
+**Angefangen und bewusst nicht begonnen:** Der Betreiber hat am 2026-08-08
+„Fang mit Punkt 12 an" gesagt. Ich bin bis zum Lesen des Bestands gekommen und
+habe dabei einen Befund gemacht, der die Aufgabe verkleinert — er steht in
+ai-todo Punkt 12 unter Nummer 3. **Geschrieben wurde kein Code**, es liegt also
+nichts halbfertig herum. Wer weitermacht, fängt bei Schritt 1 der dortigen
+Liste an: eine Oberfläche für Preisvorschläge, **keine** neue API.
+
+Zwei Entscheidungen hat der Betreiber am selben Tag ausdrücklich vertagt:
+**PayPal-Gebühren** („gerade erstmal egal") und die **Bestandsprüfung**
+(„erstmal so lassen" — sie lässt bei eBay-Ausfall weiterhin durch). Beides ist
+keine offene Aufgabe, sondern eine getroffene Entscheidung.
+
 ---
 
 ## Stand nach der zweiten Sitzung vom 2026-08-08

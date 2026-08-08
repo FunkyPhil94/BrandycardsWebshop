@@ -878,6 +878,21 @@ Tag mehrfach `wrangler d1 execute` gegen die Produktion nötig war.
    beworben (Punkt 7), aber der Betreiber kann Vorschläge nur über die
    Datenbank beantworten. **Das wiegt seit dem 2026-08-08 schwer**, weil der
    Shop nun aktiv dafür wirbt.
+
+   > **Hier ist fast alles schon da — am 2026-08-08 nachgelesen, nicht
+   > vermutet.** `app/api/admin/offers/route.ts` ist **vollständig**:
+   > `GET` liefert die offenen Vorschläge samt Titel, Listenpreis, Betrag,
+   > Nachricht und Kunden-E-Mail (50 neueste); `POST` mit
+   > `{offerId, action:"accept"|"reject"}` entscheidet sie, setzt beim Annehmen
+   > die 48-Stunden-Frist über `offerExpiry`, ist gegen Doppelklick abgesichert
+   > (bedingtes `UPDATE`, sonst 409) und verschickt die Kundennachricht über
+   > `notifyOfferDecision`. Adminpflichtig ist sie ebenfalls.
+   >
+   > **Es fehlt ausschließlich die Oberfläche:** `app/admin/page.tsx` ruft die
+   > Route nirgends auf. Wer hier anfängt, sollte **keine API bauen**, sondern
+   > eine Liste mit zwei Knöpfen — dasselbe Muster wie `runEbaySync`
+   > (Sitzungstoken über `getSupabaseBrowserClient`, `Authorization: Bearer`).
+   > Das ist der kleinste wertvolle Schritt der ganzen Konsole.
 4. **Anfragen und Kartenangebote bearbeiten** statt nur zählen.
 5. **eBay-Outbox einsehen** — hängende Rücknahmen sind heute unsichtbar, außer
    man fragt die Datenbank.
