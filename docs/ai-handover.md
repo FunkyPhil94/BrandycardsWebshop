@@ -37,29 +37,7 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-### 2026-08-08 — „eBay synchronisiert" raus, und Punkt 10 auf Stand bringen
-
-- **Stand:** LÄUFT
-- **Datum:** 2026-08-08
-- **Zwei Aufträge vom Betreiber:** die Bemerkung „eBay synchronisiert ·
-  Sofort-Kaufen" unter jeder Karte entfernen (er hat den Kandidaten
-  ausdrücklich bestätigt), und die Aufgabenliste nachziehen — die beiden
-  erledigten Textänderungen als erledigt vermerken, die übrigen Kandidaten
-  ordentlich notieren.
-- **Warum die Zeile weg kann, und warum das mehr als Geschmack ist:** Der
-  Ausweis über der Karte sagt bereits **„Sofort-Kaufen"**. Die Zeile darunter
-  wiederholt das und ergänzt „eBay synchronisiert" — eine reine Innensicht.
-  Für Kundschaft ist das bestenfalls bedeutungslos, schlimmstenfalls
-  verwirrend („muss ich jetzt zu eBay?"). Sie fällt **ersatzlos** weg, statt
-  durch eine andere Behauptung ersetzt zu werden.
-- **Wie:** `meta()` in `app/karten/page.tsx` gibt für Festpreis `null` zurück,
-  und die Zeile wird nur gezeichnet, wenn es etwas zu sagen gibt. Die
-  Vormerkliste behält ihren Hinweis — dort trägt er echte Information.
-- **Die toten Auktionszweige bleiben stehen.** Sie sind seit dem 2026-08-08
-  unerreichbar, weil Auktionen nicht mehr im Katalog erscheinen. Der Betreiber
-  hat gesagt: *notieren*, nicht umsetzen. Sie stehen als Kandidat in Punkt 10.
-- **Betroffen:** `app/karten/page.tsx`, `docs/ai-todo.md`. Keine Migration.
-- **Verifikation:** Prüfkette am Exit-Code, Deploy, Nachprüfung in Produktion.
+*(leer — bereit für den nächsten Auftrag.)*
 
 ---
 
@@ -385,6 +363,42 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
 ---
 
 ## Historie
+
+### 2026-08-08 — „eBay synchronisiert" raus, und Punkt 10 auf Stand bringen
+
+- **Stand:** ABGESCHLOSSEN
+- **Datum:** 2026-08-08
+- **Zwei Aufträge vom Betreiber:** die Bemerkung „eBay synchronisiert ·
+  Sofort-Kaufen" unter jeder Karte entfernen (er hat den Kandidaten
+  ausdrücklich bestätigt), und die Aufgabenliste nachziehen — die beiden
+  erledigten Textänderungen als erledigt vermerken, die übrigen Kandidaten
+  ordentlich notieren.
+- **Warum die Zeile weg kann, und warum das mehr als Geschmack ist:** Der
+  Ausweis über der Karte sagt bereits **„Sofort-Kaufen"**. Die Zeile darunter
+  wiederholt das und ergänzt „eBay synchronisiert" — eine reine Innensicht.
+  Für Kundschaft ist das bestenfalls bedeutungslos, schlimmstenfalls
+  verwirrend („muss ich jetzt zu eBay?"). Sie fällt **ersatzlos** weg, statt
+  durch eine andere Behauptung ersetzt zu werden.
+- **Wie:** `meta()` in `app/karten/page.tsx` gibt für Festpreis `null` zurück,
+  und die Zeile wird nur gezeichnet, wenn es etwas zu sagen gibt. Die
+  Vormerkliste behält ihren Hinweis — dort trägt er echte Information.
+- **Die toten Auktionszweige bleiben stehen.** Sie sind seit dem 2026-08-08
+  unerreichbar, weil Auktionen nicht mehr im Katalog erscheinen. Der Betreiber
+  hat gesagt: *notieren*, nicht umsetzen. Sie stehen als Kandidat in Punkt 10.
+- **Betroffen:** `app/karten/page.tsx`, `docs/ai-todo.md`. Keine Migration.
+- **Verifikation:** Prüfkette am Exit-Code, Deploy, Nachprüfung in Produktion.
+
+- **Ergebnis: ABGESCHLOSSEN.** `tsc` sauber, Lint unverändert 1 alte Warnung,
+  Testkette **exit=0**. Deployed als **`facaa7e5`**; `/`, `/admin`,
+  `/account`, `/karten` je 200.
+- **Am laufenden Katalog gemessen, nicht im Quelltext geraten:** 20 Karten
+  gezeichnet, **0** Meta-Zeilen, kein „eBay synchronisiert" im Seitentext, und
+  die Ausweise sagen weiterhin „Sofort-Kaufen" — die Information ist also
+  nicht verschwunden, nur die Dopplung.
+- **Punkt 10 ist jetzt als laufende Sammelstelle geführt**, mit drei
+  getrennten Abschnitten: erledigt, vom Betreiber bestätigt (derzeit leer),
+  und Kandidaten der KI. Die Trennung ist der Zweck — ein unbestätigter
+  Kandidat darf nie versehentlich als Auftrag gelesen werden.
 
 ### 2026-08-08 — Zwei Textänderungen auf /ueber-uns (ai-todo Punkt 10)
 
