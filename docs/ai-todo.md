@@ -724,12 +724,22 @@ Adminbereich mit seinem Bearer-Token einlöst. Braucht eine Tabelle, also eine
 Migration — **beim nächsten ohnehin nötigen Schemaschritt erledigen** und dabei
 `drizzle/meta/_journal.json` nachziehen (endet bei `0002`).
 
-**Aus SEC-15 bleibt ein Rest:** Es gibt keinen Selbstbedienungsweg für Auskunft
-oder Löschung des **Kontos**. Die Löschfrist für Kartenangebote steht (90 Tage,
-automatisch im geplanten Lauf), aber ein Kunde kann seine eigenen Daten weder
-einsehen noch löschen lassen — er muss eine E-Mail schreiben. Das ist zulässig
-und trägt, solange es genau einen Nutzer gibt. **Vor dem Verkaufsstart sollte
-es stehen.**
+~~**Aus SEC-15 bleibt ein Rest:** kein Selbstbedienungsweg für Auskunft oder
+Löschung des Kontos.~~ — **ERLEDIGT am 2026-08-08**, deployed als `76e2ac63`,
+Commit `348edb5`. `GET /api/account/data` liefert alles zum Konto als Datei,
+`POST /api/account/delete` löscht Shopdaten **und** Supabase-Anmeldung;
+Bestellungen bleiben als Rechnungsbelege stehen und verlieren nur die
+Verknüpfung (Art. 17 Abs. 3 lit. b DSGVO). `tests/account-data.test.mjs` liest
+`db/schema.ts` und schlägt an, sobald eine neue Tabelle mit `user_id` in
+Auskunft oder Löschung fehlt.
+
+> **Zwei Dinge stehen daran noch offen.** Erstens muss der Betreiber
+> `SUPABASE_SERVICE_ROLE_KEY` als Cloudflare-Secret anlegen — ohne ihn zeigt
+> `/account` statt des Löschknopfes den Hinweis auf die E-Mail-Adresse, und die
+> Route bricht mit 503 ab, **bevor** sie etwas löscht. Zweitens ist **kein
+> echter Löschlauf** gelaufen; er ist unwiderruflich und braucht ein
+> Wegwerfkonto. Danach in D1 prüfen: `price_offers`, `inquiries`,
+> `card_submissions`, `users` leer — Bestellzeile steht, `user_id` ist `NULL`.
 
 ---
 

@@ -489,3 +489,45 @@ nicht mehr: `app/admin/offers-panel.tsx` existiert seit `a0d4367`, wird in
 `app/admin/page.tsx` gerendert, und die Stile stehen in `globals.css`. Der
 Eintrag ist richtiggestellt, bevor die nächste Sitzung die Arbeit ein zweites
 Mal beginnt.
+
+## 2026-08-08 – Auskunft und Kontolöschung zur Selbstbedienung
+
+**Warum Bestellungen nicht mitgelöscht werden.** Der Löschanspruch aus Art. 17
+DSGVO endet dort, wo eine gesetzliche Aufbewahrungspflicht beginnt (Abs. 3
+lit. b). Rechnungs- und Zahlungsdaten fallen darunter. Sie bleiben deshalb
+stehen und verlieren nur die Verknüpfung zum Konto — `orders.user_id` fällt
+durch `ON DELETE SET NULL` von selbst weg, sobald die Kontozeile verschwindet.
+Die Lieferadresse bleibt in der Bestellung, weil sie *der Beleg ist*, nicht ein
+Anhängsel daran. Wichtig war, dass das **vor** dem Klick dasteht und nicht
+danach: im Abtipp-Dialog, in der Bestätigungsmail und im Datenschutztext.
+
+**Warum die Route ohne Service-Role-Key gar nicht erst anfängt.** Der halbe
+Zustand — Shopdaten gelöscht, Anmeldung funktioniert weiter — ist schlechter
+als der Zustand davor: Der Kunde glaubt, er sei gelöscht, kann sich aber
+einloggen und bekommt ein leeres Konto. Deshalb steht `hasSupabaseAdminAccess()`
+vor dem ersten Schreibzugriff, und die Oberfläche fragt denselben Zustand über
+`GET /api/account/delete` ab, damit gar kein Knopf erscheint, der nicht kann.
+
+**Warum erst die Shopdaten und dann das Anmeldekonto.** Die umgekehrte
+Reihenfolge ist die gefährliche: Fällt die Anmeldung zuerst und scheitert danach
+das Löschen der Shopdaten, steht der Kunde ohne Login da — und **ohne Login
+erreicht er den Selbstbedienungsweg nicht mehr**, um es erneut zu versuchen. In
+der gewählten Reihenfolge ist der schlimmste Fall: Daten weg (das war der
+Wunsch), Anmeldung noch da, und die Antwort sagt genau das, statt „alles
+erledigt" zu melden.
+
+**Wogegen der Test wirklich schützt.** Nicht gegen einen Absturz — der fiele
+auf. Sondern gegen die stille Lücke: Jemand ergänzt in einem halben Jahr eine
+Tabelle mit `user_id`, und die Auskunft liefert sie nicht mit, die Löschung
+lässt sie stehen. Beides bemerkt niemand, weil beides erfolgreich aussieht.
+`tests/account-data.test.mjs` liest deshalb `db/schema.ts` und verlangt für jede
+Tabelle mit Nutzerbezug entweder ein Vorkommen in `lib/account-data.ts` oder
+einen **begründeten** Eintrag in der Ausnahmeliste. Beim ersten Lauf hat der
+Test prompt `products` gemeldet — `created_by_user_id` zeigt dort auf den Admin,
+nicht auf einen Kunden. Genau diese Sorte Fund ist der Zweck.
+
+**Warum `payments.raw_data` spaltenweise ausgeschlossen wird.** Ein `select()`
+über die Zahlungstabelle hätte die vollständige PayPal-Antwort in die Auskunft
+geschrieben. Ein Auskunftsrecht ist kein Grund, Abwicklungsdaten eines Dritten
+herauszugeben. Die Spalte wird deshalb gar nicht erst gelesen, statt sie
+hinterher zu entfernen — was man vergessen kann.

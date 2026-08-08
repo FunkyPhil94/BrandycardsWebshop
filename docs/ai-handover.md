@@ -37,27 +37,22 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-### 2026-08-08 — Auskunft und Kontolöschung zur Selbstbedienung (ai-todo Punkt 8)
+*(leer — bereit für den nächsten Auftrag.)*
 
-- **Stand:** LÄUFT
-- **Ziel:** Ein Kunde soll seine Daten selbst herunterladen und sein Konto selbst
-  löschen können. Heute geht beides nur per E-Mail an den Betreiber — der Rest
-  aus SEC-15, der laut Arbeitsvorrat vor dem Verkaufsstart stehen soll.
-- **Geplant:** `GET /api/account/data` (Auskunft als JSON) und
-  `POST /api/account/delete` (Löschung), dazu ein Bereich „Meine Daten" in
-  `app/account/page.tsx`.
-- **Entscheidung des Betreibers vom 2026-08-08:** Die Löschung soll **auch das
-  Supabase-Anmeldekonto** entfernen. Dafür braucht der Worker einen
-  **Service-Role-Key als Cloudflare-Secret** (`SUPABASE_SERVICE_ROLE_KEY`), den
-  der Betreiber anlegt. Fehlt er, muss die Route **abbrechen statt halb zu
-  löschen** — sonst stünde ein Kunde ohne Shopdaten, aber mit funktionierendem
-  Login da.
-- **Was bewusst NICHT gelöscht wird:** Bestellungen. Rechnungsdaten unterliegen
-  der Aufbewahrungspflicht (Art. 17 Abs. 3 lit. b DSGVO); sie verlieren nur die
-  Verknüpfung zum Konto. Das muss dem Kunden vor dem Klick klar dastehen.
-- **Risiko:** Diese Route löscht unwiderruflich. Kein Löschlauf gegen
-  Produktionsdaten zum Ausprobieren — geprüft wird gegen einen eigens
-  angelegten Testnutzer.
+### **Der Betreiber muss ein Secret anlegen, sonst bleibt die halbe Funktion aus**
+
+Die Selbstbedienungslöschung ist gebaut und deployed, **schaltet sich aber erst
+mit `SUPABASE_SERVICE_ROLE_KEY` frei**:
+
+```bash
+npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY
+```
+
+Wert: Supabase → Project Settings → API → `service_role`. Solange er fehlt, zeigt
+`/account` statt des Löschknopfes den Hinweis auf die E-Mail-Adresse, und die
+Route antwortet mit 503, **bevor** sie etwas löscht. Der Download der eigenen
+Daten funktioniert unabhängig davon schon jetzt. Kein zweites Deployment nötig —
+die Oberfläche fragt den Zustand bei jedem Aufruf ab.
 
 **Eine Abnahme steht noch aus, die nur der Betreiber machen kann:** Die neue
 Bestellansicht in `/admin` ist deployed, aber **hinter der Anmeldung** — von
@@ -396,6 +391,44 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
 ---
 
 ## Historie
+
+### 2026-08-08 — Auskunft und Kontolöschung zur Selbstbedienung (ai-todo Punkt 8)
+
+- **Stand:** ABGESCHLOSSEN, mit einem offenen Handgriff beim Betreiber
+- **Ziel:** Der Rest aus SEC-15 — ein Kunde konnte seine Daten weder einsehen
+  noch löschen lassen, ohne eine E-Mail zu schreiben.
+- **Ergebnis:** `GET /api/account/data` liefert alles zum Konto als JSON-Datei,
+  `POST /api/account/delete` löscht Kartenangebote samt R2-Bildern,
+  Preisvorschläge, Anfragen, Reservierungen, die Kontozeile **und** das
+  Supabase-Anmeldekonto. Oberfläche: Abschnitt „Meine Daten" in
+  `app/account/page.tsx`. Logik in `lib/account-data.ts`, der Service-Role-Key
+  ausschließlich in `lib/supabase-admin.ts`. Deployed als Version `76e2ac63`,
+  Commit `348edb5`.
+- **Bestellungen bleiben stehen** (Art. 17 Abs. 3 lit. b DSGVO). Sie verlieren
+  per `ON DELETE SET NULL` nur die Verknüpfung zum Konto. Das steht an drei
+  Stellen, bevor jemand klickt: im Abtipp-Dialog, in der Bestätigungsmail und
+  im Datenschutztext.
+- **Vier Abbruchbedingungen vor dem ersten Schreibzugriff:** keine Anmeldung →
+  401; kein Service-Role-Key → 503; laufende Bestellung (`PENDING`,
+  `PROCESSING`) → 409; und die Kontozeile fällt erst zuletzt, damit
+  `ON DELETE SET NULL` nicht zuschlägt, bevor die übrigen Tabellen gelesen sind.
+- **Reihenfolge, die man nicht umdrehen darf:** erst die Shopdaten, dann das
+  Anmeldekonto. Andersherum stünde ein Kunde nach einem Fehlschlag ohne Login,
+  aber mit seinen Daten da — und käme an den Selbstbedienungsweg nicht mehr
+  heran. `tests/account-data.test.mjs` hält beide Reihenfolgen fest.
+- **Gegen die stille Lücke:** Derselbe Test liest `db/schema.ts` und verlangt für
+  **jede** Tabelle mit `user_id` entweder ein Vorkommen in `lib/account-data.ts`
+  oder einen begründeten Eintrag in der Ausnahmeliste. Wer später eine Tabelle
+  ergänzt und die Auskunft vergisst, bekommt einen roten Lauf statt einer
+  unvollständigen Auskunft, die niemandem auffällt.
+- **Belegt:** `npx tsc --noEmit` sauber, `npm run lint` 0 Fehler, `npm test`
+  261/261. In Produktion antworten `/api/account/data` und
+  `/api/account/delete` ohne Token mit 401, `/account` lädt, der neue
+  Datenschutzabsatz steht auf `/datenschutz`.
+- **Nicht geprüft:** Ein echter Löschlauf. Er ist unwiderruflich, und ein
+  Testnutzer stand nicht zur Verfügung. **Wer das nachholt, legt sich ein
+  Wegwerfkonto an** — und prüft danach in D1, dass `price_offers`, `inquiries`,
+  `card_submissions` und `users` leer sind, die Bestellzeile aber steht.
 
 ### 2026-08-08 — Zwei Gestaltungskorrekturen vom Betreiber
 
