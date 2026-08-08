@@ -554,34 +554,46 @@ footer { background:var(--ink); color:#fff; padding:52px max(48px,calc((100vw - 
 .offer-meta { color:var(--muted); font-family:'DM Mono',monospace; font-size:9px; letter-spacing:.08em; margin:14px 0 0; text-transform:uppercase; }
 .offer-accepted { background:#dcebdc; }
 .offer-accepted h3 { color:#245b2d; }
+/* Der Adminbereich steht auf hellem Papier wie der ganze Shop. Die Listen
+   waren bis zum 2026-08-08 dunkel (#1e1f21) — ein Rest aus der ersten Anlage,
+   der neben den hellen Kacheln wie ein Fremdkörper wirkte. Flächen kommen
+   deshalb aus derselben Reihe wie `.admin-stats`, Kanten aus `--line`. */
 .admin-offers { display:grid; gap:12px; margin-top:14px; }
-.admin-offer { background:#1e1f21; display:grid; gap:10px; padding:16px 18px; }
+.admin-offer { background:#ebe8e1; display:grid; gap:10px; padding:16px 18px; }
 .admin-offer strong { font-size:13px; }
-.admin-offer .offer-row { align-items:center; display:flex; flex-wrap:wrap; gap:14px; justify-content:space-between; }
+.admin-offer .offer-row { align-items:center; display:flex; flex-wrap:wrap; gap:14px; justify-content:space-between; font-size:12px; }
 .admin-offer .offer-actions { display:flex; gap:10px; }
 .admin-offer button { border:0; font-size:10px; font-weight:800; letter-spacing:.08em; padding:9px 16px; text-transform:uppercase; }
 .admin-offer .accept { background:#2f7d3b; color:#fff; }
-.admin-offer .reject { background:#3a3b3e; color:#e8e6e2; }
+.admin-offer .reject { background:#ddd9d1; color:var(--ink); }
 .admin-section { margin-top:30px; }
 .admin-section h2 { font-size:15px; letter-spacing:-.02em; margin:0 0 12px; }
-.offer-message { color:#b6b3ad; font-size:12px; font-style:italic; margin:0; }
+.offer-message { color:var(--muted); font-size:12px; font-style:italic; margin:0; }
 
 /* --- Bestellungen im Adminbereich --- */
 .admin-orders { display:grid; gap:8px; margin-top:14px; }
-.admin-order { background:#1e1f21; }
+.admin-order { background:#ebe8e1; }
 .admin-order-head { align-items:center; background:none; border:0; color:inherit; cursor:pointer; display:grid; font-size:12px; gap:10px; grid-template-columns:minmax(150px,auto) 90px 1fr auto auto; padding:14px 18px; text-align:left; width:100%; }
+.admin-order-head:hover { background:#e3dfd6; }
+/* Betrag und Datum durften nicht umbrechen — „3,46 €" auf zwei Zeilen sah aus
+   wie zwei Werte. Die E-Mail-Spalte gibt dafür nach, sie ist die einzige, die
+   beliebig lang werden kann. */
+.admin-order-head > span:nth-child(3) { overflow-wrap:anywhere; }
+.admin-order-head > span:nth-child(n+4) { white-space:nowrap; }
 .admin-order-number { font-family:'DM Mono',monospace; font-size:11px; letter-spacing:.04em; }
 .admin-order-status { font-size:9px; font-weight:800; letter-spacing:.08em; padding:4px 8px; text-align:center; text-transform:uppercase; }
+/* Bezahlt bleibt grün, offen wird Gold, storniert und erstattet nehmen das Rot
+   des Hauses — dieselben drei Bedeutungen wie vorher, nur auf hellem Grund. */
 .admin-order-status.status-paid { background:#2f7d3b; color:#fff; }
-.admin-order-status.status-pending { background:#6b5a1f; color:#fff; }
-.admin-order-status.status-cancelled,.admin-order-status.status-refunded { background:#7a2f2f; color:#fff; }
-.admin-order-body { border-top:1px solid #2c2d30; display:grid; gap:14px; padding:16px 18px; }
+.admin-order-status.status-pending { background:var(--gold); color:var(--ink); }
+.admin-order-status.status-cancelled,.admin-order-status.status-refunded { background:var(--red); color:#fff; }
+.admin-order-body { border-top:1px solid var(--line); display:grid; gap:14px; padding:16px 18px; }
 .admin-order-items { display:grid; gap:6px; list-style:none; margin:0; padding:0; }
 .admin-order-items li { display:flex; font-size:12px; gap:16px; justify-content:space-between; }
 .admin-order-facts { display:grid; gap:6px 24px; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); margin:0; }
 .admin-order-facts div { display:flex; font-size:12px; gap:12px; justify-content:space-between; }
-.admin-order-facts dt { color:#b6b3ad; }
+.admin-order-facts dt { color:var(--muted); }
 .admin-order-facts dd { margin:0; }
 .admin-order-mono { font-family:'DM Mono',monospace; font-size:10px; }
-.admin-order-address { color:#b6b3ad; font-size:12px; font-style:normal; line-height:1.7; }
+.admin-order-address { color:var(--muted); font-size:12px; font-style:normal; line-height:1.7; }
 @media (max-width:640px) { .admin-order-head { grid-template-columns:1fr; } }
