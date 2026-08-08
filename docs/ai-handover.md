@@ -37,8 +37,68 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-_Kein laufender Auftrag._ Vorlage: Stand, Datum, Ziel, geplante Schritte,
-betroffene Dateien, Verifikation, Ergebnis.
+### 2026-08-08 — Der Sync schreibt nur noch, was sich geändert hat (ai-todo Punkt 2)
+
+- **Stand:** LÄUFT
+- **Datum:** 2026-08-08
+- **Ziel:** Punkt 2 aus [ai-todo.md](ai-todo.md). Ein Sync-Lauf schreibt heute
+  ~5 396 Zeilen, obwohl sich zwischen zwei Läufen fast nie etwas ändert. Die
+  Läufe der letzten 24 Stunden belegen es: **294 „aktualisiert", 0 importiert,
+  0 deaktiviert** — bei jedem einzelnen Lauf. Alle 294 Schreibvorgänge
+  bewirken nichts.
+- **Leitgedanke, der die Sicherheit trägt:** Es wird **nicht** entschieden, was
+  sich geändert haben *könnte*, sondern verglichen, was geschrieben würde, mit
+  dem, was schon dasteht. Sind sie gleich, entfällt die Anweisung. Damit ist
+  die Änderung verhaltenserhaltend per Konstruktion — ein übersprungener
+  Schreibvorgang hätte nichts bewirkt.
+- **Wie, im Einzelnen:**
+  - Neues Modul `lib/ebay-sync-diff.ts` mit reinen Vergleichsfunktionen
+    (Listing, Produkt, Bilder, Bestand). Ohne Netz und ohne Datenbank prüfbar —
+    dieselbe Trennung wie `lib/ebay-stock-check.ts` gegen
+    `lib/ebay-stock-guard.ts`.
+  - `lib/ebay-sync.ts` lädt die Vergleichswerte gebündelt vorab (heute holt es
+    von `ebay_listings` nur drei Spalten) und stellt je Listing nur noch die
+    Anweisungen zusammen, die etwas bewirken. Kein Batch heißt: gar kein
+    Schreibvorgang.
+  - **`product_assets` nicht mehr blind löschen und neu einfügen.** Gleiche
+    `sourceUrl`-Liste in gleicher Reihenfolge → nichts anfassen. Allein ~18 000
+    der gemessenen Zeilen.
+  - **`sync_events`** nur noch bei einem echten Ereignis. `UPDATED` entfällt
+    für unveränderte Listings.
+  - **`lastSyncedAt`/`updatedAt` sind kein Grund zu schreiben.** Sie ändern
+    sich zwangsläufig bei jedem Lauf; nähme man sie in den Vergleich, wäre er
+    wertlos. Sie werden mitgeschrieben, wenn ohnehin geschrieben wird.
+- **Zwei Fallen, vorher geprüft, nicht vermutet:**
+  1. **`rawData` ist unbedenklich.** `lib/ebay-client.ts:174` baut es als
+     `{source, marketplaceId, itemId}` — rein deterministisch, kein
+     Zeitstempel, kein Zähler. Ein wechselndes JSON-Feld hätte die Ersparnis
+     still aufgefressen. `shippingData` schreibt der Sync gar nicht.
+  2. **`descriptionHtml` darf der Vergleich nicht anfassen.** Der Sync setzt es
+     auf `undefined`, Drizzle lässt die Spalte damit beim `UPDATE` weg — dort
+     liegt der Beschreibungs-Zwischenspeicher aus
+     `app/api/products/[id]/route.ts:60`. Der Vergleich muss dieselbe
+     Auslassung abbilden, sonst würde er einen Unterschied sehen, den es nicht
+     gibt, und den Zwischenspeicher überschreiben.
+- **Sichtbare Nebenwirkung, bewusst in Kauf genommen:** `updated_count` in
+  `sync_runs` zählt künftig **tatsächliche** Änderungen. Ein ruhiger Lauf meldet
+  damit 0 statt 294. Das ist der Zweck, sieht in der Laufübersicht aber nach
+  „nichts passiert" aus. Eine eigene Spalte für „unverändert" wäre eine
+  Migration und damit rücksprachepflichtig — die Zahl geht deshalb nur in den
+  Rückgabewert, nicht in die Datenbank.
+- **Betroffen:** neu `lib/ebay-sync-diff.ts` und `tests/ebay-sync-diff.test.mjs`;
+  geändert `lib/ebay-sync.ts`, `tests/ebay-stock-check.test.mjs`
+  (`ZEILEN_JE_LAUF`). **Keine Migration, kein Schemaschritt, kein Eingriff in
+  Produktionsdaten.**
+- **Der Cron-Takt bleibt bei `0 */2 * * *`.** Beschleunigt wird erst, wenn die
+  Ersparnis **an der Produktion gemessen** ist, nicht auf Grundlage einer
+  Schätzung. Genau diese Reihenfolge erzwingt der Test in
+  `tests/ebay-stock-check.test.mjs`.
+- **Verifikation:** Rot-Nachweis für jede Vergleichsfunktion (ohne sie fallen
+  die Tests); Prüfkette `tsc`, Lint, `npm test`; nach dem Deploy ein Lauf
+  abwarten und `wrangler d1 insights --timePeriod 1d --sort-by writes`
+  gegenprüfen.
+- **Rückweg:** Eine Datei und ein Commit. Der Lauf schreibt danach wieder alles.
+- **Ergebnis:** _(wird nach dem Durchlauf eingetragen)_
 
 ---
 
