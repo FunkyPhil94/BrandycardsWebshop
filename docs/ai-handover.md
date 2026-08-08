@@ -43,6 +43,53 @@ Sitzung danebengebaut. Wer hier hereinkommt und beide auf `LÄUFT` findet: Der
 Code beider Punkte ist unabhängig voneinander, sie können sich nicht in die
 Quere kommen.
 
+### 2026-08-08 — Der Dubletten-Webhook hinterlässt keine falsche Spur mehr
+
+- **Stand:** LÄUFT
+- **Datum:** 2026-08-08
+- **Ziel:** Der Punkt, der seit dem 2026-08-08 unter „Offene Punkte" stand und
+  auf eine Entscheidung wartete — der Betreiber hat ihn heute beauftragt.
+  `app/api/paypal/webhook/route.ts` steigt bei `payment.status === "CAPTURED"`
+  vorzeitig mit `duplicate: true` aus, **bevor** die Zeile in `webhook_events`
+  auf `PROCESSED` gesetzt wird.
+- **In Produktion nachgesehen, nicht aus der Notiz übernommen:**
+  `WH-4MD290111R3948627-8AM47435BU5710537`
+  (`PAYMENT.CAPTURE.COMPLETED`, 2026-08-08T06:10:22.766Z) steht auf `RECEIVED`
+  mit leerem `processed_at`. Alle anderen vier Zeilen der Tabelle stehen auf
+  `PROCESSED`.
+- **Funktional harmlos, aber die Zeile lügt.** Ein erneuter Zustellversuch wird
+  ohnehin abgewiesen, weil die Eingangsprüfung (Zeile 68) `RECEIVED` genauso
+  behandelt wie `PROCESSED`. Der Schaden ist diagnostisch: Die Zeile sieht aus
+  wie ein Ereignis, das mitten in der Verarbeitung hängen geblieben ist, und
+  führt jede spätere Suche nach hängenden Webhooks in die Irre. Das wiegt
+  schwerer, sobald echtes Geld fließt.
+- **Nicht die zwei Zeilen aus der Notiz, sondern eine Zeile weniger.** Statt auf
+  dem Dubletten-Pfad ein zweites `PROCESSED`-Schreiben danebenzustellen,
+  entfällt das vorzeitige `return`: Der Fall setzt einen Merker und läuft durch
+  dasselbe Ende wie jeder andere. **Damit ist die Fehlerklasse weg, nicht nur
+  dieser Fall** — ein künftiger Zweig kann die Buchführung nicht mehr
+  überspringen, weil es keinen Ausgang mehr gibt, der an ihr vorbeiführt.
+- **Dazu eine prüfbare Regel:** Was mit einem `PAYMENT.CAPTURE.COMPLETED`
+  geschehen soll, hängt allein am Zustand der Zahlung. Diese Entscheidung
+  wandert als reine Funktion nach `lib/paypal/webhook-decision.ts`
+  (`CAPTURED` → Dublette, `REFUNDED` → Konflikt, sonst einziehen) und wird
+  ohne Netz und Datenbank geprüft. Wichtig ist dabei vor allem, dass
+  **`REFUNDED` niemals als einziehbar** durchgeht.
+- **Betroffen:** neu `lib/paypal/webhook-decision.ts` und
+  `tests/paypal-webhook.test.mjs`; geändert
+  `app/api/paypal/webhook/route.ts`. **Keine Migration, keine Änderung an
+  Produktionsdaten.**
+- **Die bestehende Zeile wird nicht repariert.** Sie rückwirkend auf
+  `PROCESSED` zu setzen wäre ein schreibender Eingriff in Produktionsdaten und
+  damit rücksprachepflichtig; der Auftrag lautete auf die Korrektur des Pfades.
+  Der Befehl steht unten, falls der Betreiber sie doch bereinigen will.
+- **Verifikation:** Tests mit Rot-Nachweis; Prüfkette; nach dem Deploy bleibt
+  der Beleg an echten Daten aus, weil dafür eine zweite Zustellung desselben
+  PayPal-Ereignisses nötig wäre — das lässt sich nicht herbeiführen, ohne eine
+  echte Zahlung zu wiederholen. **Das wird hier ausdrücklich als Grenze
+  festgehalten und nicht als „geprüft" ausgegeben.**
+- **Ergebnis:** _(wird nach dem Durchlauf eingetragen)_
+
 ### 2026-08-08 — CSP ohne `'unsafe-inline'`: Nonces für die Inline-Skripte (ai-todo Punkt 4a)
 
 - **Stand:** LÄUFT
