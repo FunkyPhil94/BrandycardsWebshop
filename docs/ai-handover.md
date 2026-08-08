@@ -37,31 +37,29 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-### 2026-08-08 — Zwei Textänderungen auf /ueber-uns (ai-todo Punkt 10)
+### 2026-08-08 — „eBay synchronisiert" raus, und Punkt 10 auf Stand bringen
 
 - **Stand:** LÄUFT
 - **Datum:** 2026-08-08
-- **Vom Betreiber wörtlich vorgegeben**, mit Bildausschnitten belegt. Damit hat
-  Punkt 10 seine ersten konkreten Einträge — bisher war er eine Sammelstelle.
-- **Erstens, `app/ueber-uns/page.tsx:31`:** Der letzte Satz unter „Warum auch
-  eBay" wird zu **„Beides ist synchronisiert, damit dir auch nichts entgeht."**
-  Der alte Satz („damit dir nichts doppelt oder gar nicht angeboten wird")
-  erklärte ein technisches Problem, das den Kunden nichts angeht.
-- **Zweitens, `app/ueber-uns/page.tsx:39`:** Aus dem gesetzten Kürzel
-  `B×B` wird das **echte Logo**, und die drei Wörter darunter
-  („BRÜDER · BRANDY · BALL") fallen weg.
-- **Vorher geprüft, weil es hier schiefgehen kann:** Der Abschnitt
-  `.about-section` hat einen **goldenen** Hintergrund. Ein Logo mit weißem
-  Grund klebte dort als weißer Kasten. Die PNG-Blöcke zeigen `tRNS` — das Bild
-  ist **transparent** und steht frei. 500×333 px, 30 KB, wird schon im
-  Kopfbereich über `app/brand/brandycards-logo.png` eingebunden.
-- **Das CSS braucht eine Ergänzung:** `.about-signature` ist auf Schrift
-  ausgelegt (`font:italic 26px Georgia`), `small` darin ist die Zeile mit den
-  drei Wörtern. Für ein Bild fehlt eine Breitenangabe, sonst stünde es in
-  Originalgröße da.
-- **Betroffen:** `app/ueber-uns/page.tsx`, `app/globals.css`. Kein API-Eingriff.
-- **Verifikation:** Prüfkette am Exit-Code, lokal im Browser ansehen (es ist
-  eine reine Sichtsache), danach Deploy und Nachprüfung in Produktion.
+- **Zwei Aufträge vom Betreiber:** die Bemerkung „eBay synchronisiert ·
+  Sofort-Kaufen" unter jeder Karte entfernen (er hat den Kandidaten
+  ausdrücklich bestätigt), und die Aufgabenliste nachziehen — die beiden
+  erledigten Textänderungen als erledigt vermerken, die übrigen Kandidaten
+  ordentlich notieren.
+- **Warum die Zeile weg kann, und warum das mehr als Geschmack ist:** Der
+  Ausweis über der Karte sagt bereits **„Sofort-Kaufen"**. Die Zeile darunter
+  wiederholt das und ergänzt „eBay synchronisiert" — eine reine Innensicht.
+  Für Kundschaft ist das bestenfalls bedeutungslos, schlimmstenfalls
+  verwirrend („muss ich jetzt zu eBay?"). Sie fällt **ersatzlos** weg, statt
+  durch eine andere Behauptung ersetzt zu werden.
+- **Wie:** `meta()` in `app/karten/page.tsx` gibt für Festpreis `null` zurück,
+  und die Zeile wird nur gezeichnet, wenn es etwas zu sagen gibt. Die
+  Vormerkliste behält ihren Hinweis — dort trägt er echte Information.
+- **Die toten Auktionszweige bleiben stehen.** Sie sind seit dem 2026-08-08
+  unerreichbar, weil Auktionen nicht mehr im Katalog erscheinen. Der Betreiber
+  hat gesagt: *notieren*, nicht umsetzen. Sie stehen als Kandidat in Punkt 10.
+- **Betroffen:** `app/karten/page.tsx`, `docs/ai-todo.md`. Keine Migration.
+- **Verifikation:** Prüfkette am Exit-Code, Deploy, Nachprüfung in Produktion.
 
 ---
 
@@ -387,6 +385,53 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
 ---
 
 ## Historie
+
+### 2026-08-08 — Zwei Textänderungen auf /ueber-uns (ai-todo Punkt 10)
+
+- **Stand:** ABGESCHLOSSEN
+- **Datum:** 2026-08-08
+- **Vom Betreiber wörtlich vorgegeben**, mit Bildausschnitten belegt. Damit hat
+  Punkt 10 seine ersten konkreten Einträge — bisher war er eine Sammelstelle.
+- **Erstens, `app/ueber-uns/page.tsx:31`:** Der letzte Satz unter „Warum auch
+  eBay" wird zu **„Beides ist synchronisiert, damit dir auch nichts entgeht."**
+  Der alte Satz („damit dir nichts doppelt oder gar nicht angeboten wird")
+  erklärte ein technisches Problem, das den Kunden nichts angeht.
+- **Zweitens, `app/ueber-uns/page.tsx:39`:** Aus dem gesetzten Kürzel
+  `B×B` wird das **echte Logo**, und die drei Wörter darunter
+  („BRÜDER · BRANDY · BALL") fallen weg.
+- **Vorher geprüft, weil es hier schiefgehen kann:** Der Abschnitt
+  `.about-section` hat einen **goldenen** Hintergrund. Ein Logo mit weißem
+  Grund klebte dort als weißer Kasten. Die PNG-Blöcke zeigen `tRNS` — das Bild
+  ist **transparent** und steht frei. 500×333 px, 30 KB, wird schon im
+  Kopfbereich über `app/brand/brandycards-logo.png` eingebunden.
+- **Das CSS braucht eine Ergänzung:** `.about-signature` ist auf Schrift
+  ausgelegt (`font:italic 26px Georgia`), `small` darin ist die Zeile mit den
+  drei Wörtern. Für ein Bild fehlt eine Breitenangabe, sonst stünde es in
+  Originalgröße da.
+- **Betroffen:** `app/ueber-uns/page.tsx`, `app/globals.css`. Kein API-Eingriff.
+- **Verifikation:** Prüfkette am Exit-Code, lokal im Browser ansehen (es ist
+  eine reine Sichtsache), danach Deploy und Nachprüfung in Produktion.
+- **Ergebnis: ABGESCHLOSSEN.** `tsc` sauber, Lint zurück auf die eine alte
+  Warnung, Testkette **exit=0**. Deployed als **`42cabc7a`**; in Produktion
+  `/`, `/admin`, `/account`, `/ueber-uns` je 200, der neue Satz und
+  `about-logo` sind da, „BRÜDER · BRANDY · BALL" ist weg.
+- **Am laufenden Bild nachgemessen, nicht nur angesehen:** Logo geladen
+  (500×333 natürlich, 190 px dargestellt), mittig im Abschnitt, goldener
+  Hintergrund, am Telefon kein Querlauf.
+- **Ein Fehlalarm von mir:** Die erste Messung meldete „nicht zentriert". Die
+  7 px Abweichung waren die **Bildlaufleiste** — verglichen wurde gegen die
+  Fenstermitte statt gegen die Mitte des Elternelements. Das Layout war immer
+  richtig, die Messung war falsch gestellt.
+- **`.about-signature` entfernt**, weil kein Element sie mehr benutzt. Tote
+  Fracht im Stylesheet ist genau das, was mir beim vorigen Punkt aufgefallen
+  war — dann hinterlasse ich nicht selbst welche.
+- **`eslint-disable` für `no-img-element`** wie in `site-chrome.tsx`, das
+  dasselbe Logo auf demselben Weg einbindet. Ohne die Zeile stand die
+  Lint-Ausgabe bei 2 Warnungen statt 1.
+- **Versäumnis, das hier hingehört:** Dieser Eintrag blieb nach dem Deploy auf
+  `LÄUFT` stehen und wurde erst beim nächsten Auftrag geschlossen. Genau der
+  Zustand, den ich heute früh in sieben Fällen aufgeräumt habe. **Das Schließen
+  gehört an das Ende des Auftrags, nicht an den Anfang des nächsten.**
 
 ### 2026-08-08 — Drei neue Punkte in den Arbeitsvorrat
 
