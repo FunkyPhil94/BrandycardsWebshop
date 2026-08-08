@@ -37,7 +37,48 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-*(leer — bereit für den nächsten Auftrag.)*
+### 2026-08-08 — Verhandeln sichtbar machen (ai-todo Punkt 7)
+
+- **Stand:** LÄUFT
+- **Datum:** 2026-08-08
+- **Vom Betreiber beauftragt.** Der letzte Punkt der Liste, der Umsatz bringt
+  statt Risiko zu senken. Seine Vorbedingungen sind heute alle gefallen.
+- **Warum überhaupt:** Die Verhandlungsfunktion ist gebaut und läuft, aber
+  **nirgends steht, dass es sie gibt** — außer im Formular auf der
+  Detailseite, das man erst findet, wenn man schon dort ist. Dabei ist sie die
+  Antwort auf „warum hier bestellen statt auf eBay".
+- **Die Regeln kommen aus dem Code, nicht aus dem Gedächtnis** — ein Text, der
+  etwas anderes verspricht als `lib/price-offers.ts` einlöst, ist schlimmer als
+  gar keiner:
+  - `MAX_OFFERS_PER_PRODUCT = 3` — drei Vorschläge je Karte
+  - `OFFER_VALIDITY_HOURS = 48` — ein angenommener Preis gilt 48 Stunden
+  - `MIN_DISCOUNT_CENTS = 50` — **der Vorschlag muss mindestens 50 Cent unter
+    dem Preis liegen.** Diese Regel stand bisher nirgends im Text; wer sie
+    nicht kennt, läuft in eine Ablehnung, die er nicht versteht.
+  - Kundenkonto nötig (`signedIn`)
+- **Wo:**
+  1. **Startseite:** ein eigener Abschnitt zwischen Galerie und Verweiskacheln.
+  2. **`/karten`:** ein Satz über dem Raster, dort entscheidet sich der Blick.
+  3. **Detailseite:** das Formular lädt deutlicher ein und nennt die 48 Stunden
+     und den Mindestabstand.
+- **Ohne eine Zeile neues CSS**, und das ist kein Geiz: `.split-section`,
+  `.split-copy`, `.split-panel` und `.panel-card` stehen vollständig im
+  Stylesheet, werden aber **nirgends** benutzt — Überbleibsel vom Entschlacken
+  der Startseite am 2026-08-06. Der Abschnitt benutzt sie und macht damit totes
+  Gewicht wieder lebendig, statt daneben eine zweite Lösung zu bauen.
+- **Ein Fund, der direkt aus der heutigen Auktionsänderung folgt:** Die Kachel
+  „Alle Karten" verspricht auf der Startseite „Festpreis, **Auktion** und
+  Vormerkliste". Auktionen erscheinen seit heute nicht mehr im Shop — das ist
+  jetzt ein falsches Versprechen und wird mit korrigiert.
+- **Was der Text nicht sagen darf:** dass man bei Auktionen verhandeln kann.
+  Dort wird auf eBay geboten. Da Auktionen im Shop gar nicht mehr auftauchen,
+  ist die Gefahr kleiner geworden, aber der Satz gehört trotzdem nicht hinein.
+- **Betroffen:** `app/page.tsx`, `app/karten/page.tsx`,
+  `app/karten/[id]/offer-form.tsx`. Kein API-Eingriff, keine Migration.
+- **Verifikation:** Prüfkette **am Exit-Code**, nicht an einer gefilterten
+  Ausgabe — der Fehler aus dem vorigen Auftrag. Danach die Seiten **im Browser
+  ansehen**, weil es eine reine Oberflächenänderung ist und Tests dafür wenig
+  aussagen.
 
 ---
 
