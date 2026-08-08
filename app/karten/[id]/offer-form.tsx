@@ -88,8 +88,11 @@ export function OfferForm({ productId, listPriceCents, currency }: { productId: 
 
   if (!state.signedIn) {
     return <div className="offer-box">
-      <h3>Preis vorschlagen</h3>
-      <p>Verhandeln geht nur mit Kundenkonto. So wissen wir, für wen der Preis gilt.</p>
+      <h3>Mach uns ein Angebot</h3>
+      <p>
+        Du musst diese Karte nicht zum angegebenen Preis nehmen — sag uns, was sie dir wert ist.
+        Verhandeln geht nur mit Kundenkonto, so wissen wir, für wen der Preis gilt.
+      </p>
       <Link className="button button-outline" href="/account">Anmelden oder registrieren <span>→</span></Link>
     </div>;
   }
@@ -116,6 +119,13 @@ export function OfferForm({ productId, listPriceCents, currency }: { productId: 
         ? <p>Für diese Karte hast du alle Vorschläge genutzt. Der reguläre Preis gilt weiterhin.</p>
         : <>
             <p>Nenn uns deinen Preis. {listPriceCents ? <>Aktuell kostet die Karte {formatPrice(listPriceCents, currency)}.</> : null}</p>
+            {/* Der Mindestabstand stand bisher nur im `max` des Eingabefelds und
+                in der Fehlermeldung der API. Wer ihn nicht kennt, bekommt eine
+                Ablehnung, die er nicht versteht — deshalb steht er jetzt davor. */}
+            <p className="offer-meta">
+              Mindestens 50 Cent unter dem Preis. Nehmen wir an, gilt dein Preis 48 Stunden und wird
+              im Checkout automatisch verrechnet.
+            </p>
             <form onSubmit={submit}>
               <label className="form-field">
                 <span>Dein Preis in €<b aria-hidden="true"> *</b></span>

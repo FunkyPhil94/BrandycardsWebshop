@@ -104,6 +104,12 @@ export default function KartenPage() {
       <p className="eyebrow">DER BESTAND</p>
       <h1>Alle Karten.</h1>
       <p>Unser gesamter Bestand. Jede Karte einzeln geprüft, beschrieben und sicher verpackt.</p>
+      {/* Hier entscheidet sich der Blick: Wer im Raster steht, hat den
+          Verhandlungsabschnitt der Startseite womöglich nie gesehen. */}
+      <p>
+        <strong>Bei jeder Karte kannst du verhandeln.</strong> Öffne sie und schlag uns deinen Preis
+        vor — drei Versuche je Karte, ein angenommener Preis gilt 48 Stunden.
+      </p>
     </section>
 
     <section className="shop-section" id="shop">

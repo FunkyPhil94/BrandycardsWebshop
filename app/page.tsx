@@ -7,7 +7,10 @@ const DESTINATIONS = [
     href: "/karten",
     eyebrow: "DER BESTAND",
     title: "Alle Karten",
-    text: "Der komplette Bestand mit Suche und Filter. Festpreis, Auktion und Vormerkliste.",
+    // Kein „Auktion" mehr: Auktionen erscheinen seit dem 2026-08-08 nicht mehr
+    // im Shop, weil sich ihre Menge bei eBay nicht zurücknehmen lässt. Der
+    // Satz wäre sonst ein Versprechen, das der Katalog nicht einlöst.
+    text: "Der komplette Bestand mit Suche und Filter. Zum Festpreis kaufen oder deinen Preis vorschlagen.",
     cta: "Zum Kartenbestand",
   },
   {
@@ -74,6 +77,36 @@ export default function Home() {
     </section>
 
     <Gallery />
+
+    {/* Der Grund, hier zu kaufen statt auf eBay — und bis heute stand er
+        nirgends. Das Formular auf der Detailseite findet nur, wer schon dort
+        ist. Die Regeln stehen bewusst dabei: Sie kommen aus
+        lib/price-offers.ts, und ein Versprechen, das der Shop nicht einlöst,
+        wäre schlimmer als gar keine Werbung. */}
+    <section className="split-section" aria-labelledby="verhandeln-title">
+      <div className="split-copy">
+        <p className="eyebrow">JEDER PREIS IST EIN ANFANG</p>
+        <h2 id="verhandeln-title">Mach uns ein Angebot.</h2>
+        <p>
+          Du kannst jede Karte zum angegebenen Preis kaufen — oder uns sagen, was sie dir wert ist.
+          Wir sind zwei Brüder mit einer Sammelleidenschaft, keine Preisautomatik. Wenn dein
+          Vorschlag passt, nehmen wir ihn an, und der Betrag wird im Checkout automatisch verrechnet.
+        </p>
+        <p>
+          Drei Vorschläge je Karte, mindestens 50 Cent unter dem Preis, ein angenommener Preis gilt
+          48 Stunden. Mehr Regeln gibt es nicht — nur ein Kundenkonto, damit wir wissen, für wen der
+          Preis gilt.
+        </p>
+        <Link className="text-link" href="/karten">Karten ansehen und vorschlagen <span>→</span></Link>
+      </div>
+      <div className="split-panel" aria-hidden="true">
+        <div className="panel-card">
+          <span>Dein<br />Preis</span>
+          <b>?</b>
+        </div>
+        <p className="panel-note">DREI VERSUCHE<br /><strong>48 STUNDEN GÜLTIG</strong></p>
+      </div>
+    </section>
 
     <section className="destinations" aria-label="Bereiche des Shops">
       {DESTINATIONS.map((entry) => (
