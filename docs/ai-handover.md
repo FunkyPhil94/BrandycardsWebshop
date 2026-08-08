@@ -37,8 +37,70 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-_Kein laufender Auftrag._ Vorlage: Stand, Datum, Ziel, geplante Schritte,
-betroffene Dateien, Verifikation, Ergebnis.
+- **Stand:** LÄUFT
+- **Datum:** 2026-08-08
+- **Ziel:** Punkt 3 aus [ai-todo.md](ai-todo.md) — **Kunden-E-Mails**. Heute gibt
+  es **keinen** eigenen Versand; nur Supabase verschickt seine Anmeldemails.
+  Wer im Shop zahlt, bekommt keine Bestellbestätigung.
+- **Anbieter: Resend.** Steht bereits in Abschnitt 5 der Datenschutzerklärung,
+  ist also keine neue Offenlegung. Der Schlüssel gehört als
+  Cloudflare-Secret `RESEND_API_KEY` hinterlegt, **niemals** ins Repository.
+- **Fünf Anlässe, nach Wichtigkeit:**
+  1. Bestellbestätigung nach erfolgreichem Zahlungseinzug
+  2. Preisvorschlag angenommen (Betrag, Gültigkeit, Link zur Karte)
+  3. Preisvorschlag abgelehnt
+  4. Eingangsbestätigung für eine Kartenanfrage
+  5. Eingangsbestätigung für ein Ankaufsangebot
+
+### Die drei Entwurfsentscheidungen, die zählen
+
+- **Ein fehlgeschlagener Versand darf nie die auslösende Aktion scheitern
+  lassen.** `sendEmail` wirft grundsätzlich nicht, sondern meldet `false` und
+  protokolliert. Zusätzlich liegt jeder Aufruf in einem eigenen `try/catch`,
+  weil auch das *Zusammenbauen* der Nachricht fehlschlagen kann (fehlende
+  Verknüpfung, unerwartete Daten). Muster wie bei der Beschreibungsabfrage in
+  `app/api/products/[id]/route.ts`.
+- **Genau einmal senden, ohne neue Datenbankspalte.** Eine Bestellung wird auf
+  **zwei** Wegen bezahlt: über `app/api/paypal/capture/route.ts` (Kunde wartet
+  im Browser) und über `app/api/paypal/webhook/route.ts` (PayPal meldet
+  nach). Laufen beide, gäbe es zwei Bestätigungen. Eine Migration wäre
+  rücksprachepflichtig und ist unnötig: **Der Übergang der Zahlung auf
+  `CAPTURED` ist der Einmal-Moment.** Beide Stellen schreiben ihn künftig mit
+  `WHERE status IN ('CREATED','APPROVED')` und prüfen `meta.changes === 1` —
+  wer den Übergang gewinnt, verschickt. Das ist zugleich eine echte Korrektur:
+  Heute schreiben **beide** Stellen ungeschützt, ein Wettlauf überschreibt
+  stillschweigend. Bei den Preisvorschlägen existiert dieser Riegel schon
+  (`app/api/admin/offers/route.ts`, `meta.changes !== 1`).
+- **Der Versand wird abgewartet, nicht nebenher gestartet.** `waitUntil` gibt
+  es nur im Worker-Einstieg (`worker/index.ts`), nicht in den Route-Handlern;
+  eine nicht abgewartete Zusage kann Cloudflare abräumen — genau die Falle aus
+  dem hängenden Sync-Lauf. Preis: Die Antwort an den Kunden dauert um die
+  Versanddauer länger, begrenzt auf **5 Sekunden**.
+
+### Weitere Festlegungen
+
+- **Kartentitel kommen von eBay**, sind also Fremdeingabe. Sie werden für HTML
+  maskiert, und aus Betreffzeilen werden Zeilenumbrüche entfernt — sonst ließe
+  sich über einen präparierten Titel eine Kopfzeile einschleusen.
+- **Ohne `RESEND_API_KEY` ist der Versand ein stiller Leerlauf** mit einer
+  Protokollzeile. Der Shop funktioniert dadurch vor und nach dem Hinterlegen
+  des Schlüssels gleich; nichts bricht, solange er fehlt.
+- **Ton:** geduzt wie der übrige Shop, persönlich, knapp. Kein „Sehr geehrte
+  Damen und Herren". Impressum-Link im Fuß, keine Abmeldung (rein
+  transaktional).
+- **Nicht Teil dieses Auftrags:** eine Absenderadresse einzurichten und die
+  Domain bei Resend zu verifizieren. Das sind Zugänge zu Fremddiensten und
+  gehört dem Betreiber.
+- **Betroffen:** neu `lib/email/config.ts`, `lib/email/send.ts`,
+  `lib/email/templates.ts`, `tests/email.test.mjs`; geändert
+  `app/api/paypal/capture/route.ts`, `app/api/paypal/webhook/route.ts`,
+  `app/api/admin/offers/route.ts`, `app/api/inquiries/route.ts`,
+  `app/api/card-submissions/route.ts`, `package.json` (Test), README und
+  `.env.example`. **Keine Migration, keine Änderung an Produktionsdaten.**
+- **Verifikation:** Tests für die Vorlagen und für die Zusage „wirft nie" ohne
+  Netz; Prüfkette; im Browser belegen, dass Anfrage und Ankauf **ohne**
+  hinterlegten Schlüssel weiterhin fehlerfrei durchlaufen. **Es wird keine
+  E-Mail an echte Empfänger verschickt.**
 
 ---
 
