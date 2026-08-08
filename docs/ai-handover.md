@@ -43,6 +43,88 @@ Sitzung danebengebaut. Wer hier hereinkommt und beide auf `LÄUFT` findet: Der
 Code beider Punkte ist unabhängig voneinander, sie können sich nicht in die
 Quere kommen.
 
+### 2026-08-08 — Verkaufte Karten verschwinden sofort, und der Verkäufer bekommt die Versanddaten
+
+- **Stand:** LÄUFT
+- **Datum:** 2026-08-08
+- **Anlass:** Der Betreiber hat nach dem ersten echten Kauf zwei Fehler
+  gemeldet, und beide sind ernst, weil sie **jede echte Karte** betreffen:
+  1. Die verkaufte Karte stand weiter mit **„1 VERFÜGBAR"** im Katalog.
+  2. Es gibt **keine Benachrichtigung an den Verkäufer** — und damit keine
+     Lieferadresse, aus der sich ein Versandetikett erzeugen ließe.
+- **Sofortmaßnahme, bereits ausgeführt:** Der Testartikel wurde von Hand auf
+  `ENDED`/`INACTIVE` gesetzt und ist aus dem Katalog verschwunden (294 statt
+  295). Das behebt den Einzelfall, nicht die Ursache.
+
+#### Ursache 1: Der Katalog liest die Menge aus dem falschen Ort
+
+`app/api/products/route.ts:38` nimmt `row.listing?.quantity` — die Menge des
+**eBay-Listings**. Die Tabelle `inventory`, in der der Verkauf gebucht wird,
+wird **gar nicht abgefragt**. Dasselbe in
+`app/api/products/[id]/route.ts` (`quantity: row.listing.quantity`).
+
+Ein Verkauf im Shop setzt `inventory.available_quantity = 0` und
+`status = 'SOLD'`, rührt das Listing aber nicht an. Die Karte bleibt deshalb
+sichtbar und scheinbar kaufbar, **bis der eBay-Import sie abräumt — bis zu zwei
+Stunden.** Ein zweiter Kunde legt sie in den Warenkorb und scheitert erst an der
+Kasse.
+
+**Gefährlich ist das nicht** — `app/api/orders/route.ts` prüft den Bestand und
+lehnt ab, ein Doppelverkauf ist ausgeschlossen. **Ärgerlich ist es sehr.**
+
+- **Wie:** Beide Routen verknüpfen zusätzlich `inventory` und zeigen die
+  **verfügbare** Menge. Karten ohne verfügbaren Bestand fallen aus dem Katalog
+  und liefern auf der Detailseite 404, wie jede andere nicht verfügbare Karte.
+  Die Entscheidung kommt in eine reine Funktion (`lib/catalog-availability.ts`),
+  damit sie ohne Datenbank prüfbar ist.
+- **Achtung, zwei Fallstricke:**
+  - **`PRELISTED`-Karten (Vormerkliste) haben weder Listing noch Bestand.** Ein
+    unbedachter `innerJoin` oder ein Filter auf „Menge > 0" würde sie
+    stillschweigend aus dem Katalog werfen. Sie müssen ausdrücklich ausgenommen
+    werden.
+  - **Fehlt die Bestandszeile bei einer eBay-Karte**, darf das nicht als
+    „ausverkauft" gelten — sonst verschwindet bei einem halb geschriebenen
+    Import der halbe Katalog. Dann zählt die Listing-Menge.
+- **Der Randspeicher bleibt eine Verzögerung, und das gehört gesagt:** Der
+  Katalog wird an Cloudflares Rand zwischengespeichert
+  (`max-age=60, stale-while-revalidate=300`), im schlechtesten Fall also gut
+  sechs Minuten. Ich setze das auf `max-age=30, stale-while-revalidate=60`
+  herunter — damit sind es höchstens **90 Sekunden** statt bis zu zwei Stunden.
+  **Wirklich „sofort" wäre nur ohne Zwischenspeicher**, und der ist als SEC-05
+  bewusst eingebaut worden. Die Entscheidung gehört dem Betreiber; die Zahlen
+  stehen hier, damit er sie treffen kann.
+
+#### Ursache 2: Niemand sagt dem Verkäufer, wohin das Paket soll
+
+`notifyOrderPaid` verschickt genau **eine** Nachricht, an den Kunden. Die
+Lieferadresse steht in `orders.shipping_address` und wird nirgends zugestellt.
+Ohne sie kein Etikett.
+
+- **Wie:** Eine zweite Nachricht an **brandycards@gmx.de** mit allem, was für
+  den Versand nötig ist: Bestellnummer, Zeitpunkt, **vollständige
+  Lieferadresse**, Positionen, Beträge und die Kontaktadresse des Kunden für
+  Rückfragen.
+- **Die Adresse kommt als `[vars]`-Eintrag** `SELLER_NOTIFICATION_EMAIL` in die
+  `wrangler.toml`, kein Secret. Sie steht ohnehin im Impressum und in der
+  Datenschutzerklärung desselben öffentlichen Repositories — kein neuer
+  Umstand, aber bewusst geprüft, bevor sie eingecheckt wird.
+- **Getrennt abgesichert:** Beide Nachrichten laufen in **eigenen**
+  `versucheVersand`-Blöcken. Scheitert die Kundenbestätigung, muss die
+  Verkäufernachricht trotzdem hinausgehen — und umgekehrt. Ein gemeinsamer
+  Block würde beim ersten Fehler die zweite verschlucken.
+- **Der Einmal-Riegel gilt weiter:** `notifyOrderPaid` wird nur vom Gewinner des
+  Übergangs `CREATED/APPROVED → CAPTURED` aufgerufen. Der Verkäufer bekommt also
+  **eine** Nachricht je Bestellung, nicht zwei — beide Zahlungswege feuern.
+- **Betroffen:** neu `lib/catalog-availability.ts`,
+  `tests/catalog-availability.test.mjs`; geändert `app/api/products/route.ts`,
+  `app/api/products/[id]/route.ts`, `lib/email/config.ts`,
+  `lib/email/templates.ts`, `lib/email/notify.ts`, `tests/email.test.mjs`,
+  `wrangler.toml`, `.env.example`. **Keine Migration.**
+- **Verifikation:** Tests mit Rot-Nachweis für beide Teile; Prüfkette; nach dem
+  Deploy die Lieferadresse an einer echten Bestellung belegen — der Betreiber
+  kauft dafür erneut.
+- **Ergebnis:** _(wird nach dem Durchlauf eingetragen)_
+
 ### 2026-08-08 — Testartikel für den Live-Abnahmekauf (1 Cent)
 
 - **Stand:** LÄUFT
