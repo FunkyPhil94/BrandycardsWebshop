@@ -37,18 +37,8 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-- **Stand:** LÄUFT
-- **Datum:** 2026-08-07
-- **Ziel:** „Sammelkarten" wieder auf **„Sportkarten"** umstellen. Der Betreiber
-  hatte den Begriff im vorigen Durchlauf verwechselt und korrigiert das jetzt.
-  Damit spricht der Shop **einen** Begriff, statt wie seit einer Stunde zwei.
-- **Betroffen:** `app/layout.tsx:6`, `app/ueber-uns/page.tsx:7`,
-  `app/ueber-uns/page.tsx:17` — dieselben drei Stellen wie im Durchlauf davor.
-  Der Banner sagt bereits „Sportkarten" und bleibt unangetastet.
-- **Verifikation:** Kein „Sammelkarten" und kein „Fußball" mehr in sichtbarem
-  Text oder in den Beschreibungen, in Produktion nachgeprüft. **Dabei mit einer
-  frisch geladenen Seite arbeiten** — beim letzten Mal zeigte der Browser
-  minutenlang den alten Text, während `curl` schon den neuen lieferte.
+_Kein laufender Auftrag._ Vorlage: Stand, Datum, Ziel, geplante Schritte,
+betroffene Dateien, Verifikation, Ergebnis.
 
 ---
 
@@ -263,6 +253,37 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
 ---
 
 ## Historie
+
+### 2026-08-07 — Doch Sportkarten, nicht Sammelkarten
+
+- **Stand:** ABGESCHLOSSEN
+- **Datum:** 2026-08-07
+- **Ziel:** „Sammelkarten" wieder auf **„Sportkarten"** umstellen. Der Betreiber
+  hatte den Begriff im vorigen Durchlauf verwechselt und korrigiert das jetzt.
+  Damit spricht der Shop **einen** Begriff, statt wie seit einer Stunde zwei.
+- **Betroffen:** `app/layout.tsx:6`, `app/ueber-uns/page.tsx:7`,
+  `app/ueber-uns/page.tsx:17` — dieselben drei Stellen wie im Durchlauf davor.
+  Der Banner sagt bereits „Sportkarten" und bleibt unangetastet.
+- **Verifikation:** Kein „Sammelkarten" und kein „Fußball" mehr in sichtbarem
+  Text oder in den Beschreibungen, in Produktion nachgeprüft. **Dabei mit einer
+  frisch geladenen Seite arbeiten** — beim letzten Mal zeigte der Browser
+  minutenlang den alten Text, während `curl` schon den neuen lieferte.
+- **Ergebnis: ABGESCHLOSSEN.** Prüfkette grün (`tsc`, Lint 0 Fehler, 149/149).
+  Weder „Sammelkarten" noch „Fußball" kommen im Projekt noch vor; der Shop
+  spricht durchgängig von **Sportkarten**, passend zur Vorzeile „THE HOME OF
+  SPORTS CARDS".
+- **Die vier Stellen:** `app/page.tsx:48` (Banner, stand schon so),
+  `app/layout.tsx:6`, `app/ueber-uns/page.tsx:7`, `app/ueber-uns/page.tsx:17`.
+- **Zur Historie dieser drei Stellen, damit niemand die Kehrtwende für einen
+  Fehler hält:** Sie hießen am 2026-08-07 nacheinander „Fußballkarten",
+  „Sammelkarten" und nun „Sportkarten". Der mittlere Schritt beruhte auf einer
+  Wortverwechslung des Betreibers und wurde von ihm selbst korrigiert.
+- **In Produktion nachgeprüft, mit frisch geladener Seite** — die Falle vom
+  Durchlauf davor war genau das: Der Browser zeigte minutenlang den alten Text,
+  während `curl` schon den neuen lieferte, und das sah aus wie ein
+  fehlgeschlagener Deploy. **Erst `curl`, dann der Browser, und der Browser nur
+  ohne Cache.**
+
 
 ### 2026-08-07 — Sammelkarten statt Fußballkarten
 

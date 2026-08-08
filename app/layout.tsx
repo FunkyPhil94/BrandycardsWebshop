@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "BrandyCards — Football Collectibles",
-  description: "Ausgewählte Sammelkarten, persönlich ausgesucht und sicher verpackt.",
+  description: "Ausgewählte Sportkarten, persönlich ausgesucht und sicher verpackt.",
   icons: { icon: "/favicon.svg", shortcut: "/favicon.svg" },
 };
 
