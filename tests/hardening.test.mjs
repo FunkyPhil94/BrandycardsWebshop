@@ -159,6 +159,20 @@ test("PayPal steht auf production, nicht auf sandbox", async () => {
     "Ohne diesen Wert nimmt der Shop kein echtes Geld ein, sieht dabei aber gesund aus.");
 });
 
+test("der eBay-Schreibpfad bleibt eingeschaltet", async () => {
+  // Dasselbe Muster wie eine Zeile höher, nur andersherum gefährlich: Steht
+  // `EBAY_WRITE_ENABLED` nicht auf `true`, kehrt `processEbayOutbox` **still**
+  // mit 0 zurück. Aufträge entstehen weiter, werden aber nie ausgeführt — eine
+  // im Shop verkaufte Karte bliebe bei eBay im Angebot, und das kostet bei
+  // einem Storno den Verkäuferstatus.
+  //
+  // Am 2026-08-08 nach bestätigtem Schreibzugriff eingeschaltet.
+  const wrangler = await readFile(new URL("../wrangler.toml", import.meta.url), "utf8");
+  const vars = wrangler.slice(wrangler.indexOf("[vars]"), wrangler.indexOf("[triggers]"));
+  assert.match(vars, /^EBAY_WRITE_ENABLED = "true"$/m,
+    "Ohne diesen Wert bleiben verkaufte Karten bei eBay im Angebot — lautlos.");
+});
+
 test("die Zugangsdaten stehen nicht in der versionierten Konfiguration", async () => {
   // Die Umstellung auf Live ist der Moment, in dem jemand versucht sein könnte,
   // Client ID und Secret „kurz" hier abzulegen.

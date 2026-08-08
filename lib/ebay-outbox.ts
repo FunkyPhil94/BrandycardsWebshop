@@ -72,7 +72,14 @@ export async function processEbayOutbox(db: Db = getDb()) {
     const job = await claimNext(db);
     if (!job) break;
     try {
-      await runJob(job);
+      const ergebnis = await runJob(job);
+      // Welcher Weg es war, gehört ins Protokoll. `SUCCEEDED` allein
+      // unterscheidet nicht zwischen „eBay hat die Menge geändert" und „eBay
+      // meldete bereits beendet, und unsere Fehlernummern haben gegriffen" —
+      // beim Abnahmetest am 2026-08-08 war deshalb nicht feststellbar, welcher
+      // Fall eingetreten war. Die Nummern in ALREADY_ENDED_CODES sind geraten;
+      // diese Zeile ist die einzige Stelle, an der sie sich bestätigen lassen.
+      console.log("[ebay-outbox] Auftrag erledigt.", { jobId: job.id, operation: job.operation, ebayItemId: job.ebayItemId, ergebnis: ergebnis ?? "OHNE_RUECKMELDUNG" });
       const now = new Date().toISOString();
       await db.update(ebayOutbox).set({ status: "SUCCEEDED", succeededAt: now, lockedAt: null, lastError: null, updatedAt: now }).where(eq(ebayOutbox.id, job.id));
       processed += 1;
