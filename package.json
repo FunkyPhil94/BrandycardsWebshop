@@ -9,7 +9,7 @@
     "dev": "vinext dev",
     "build": "vinext build",
     "start": "vinext start",
-    "test": "npm run build && node --test tests/rendered-html.test.mjs tests/ebay-active-list.test.mjs tests/d1-limits.test.mjs tests/ebay-images.test.mjs tests/sanitize-html.test.mjs tests/ebay-description.test.mjs tests/price-offers.test.mjs tests/rate-limit.test.mjs tests/order-guard.test.mjs tests/hardening.test.mjs tests/retention.test.mjs tests/ebay-stock-check.test.mjs tests/ebay-availability.test.mjs tests/ebay-sync-timeout.test.mjs tests/ebay-sync-diff.test.mjs tests/paypal-webhook.test.mjs tests/catalog-availability.test.mjs tests/cart-and-pagination.test.mjs tests/email.test.mjs",
+    "test": "npm run build && node --test tests/rendered-html.test.mjs tests/ebay-active-list.test.mjs tests/d1-limits.test.mjs tests/ebay-images.test.mjs tests/sanitize-html.test.mjs tests/ebay-description.test.mjs tests/price-offers.test.mjs tests/rate-limit.test.mjs tests/order-guard.test.mjs tests/hardening.test.mjs tests/retention.test.mjs tests/ebay-stock-check.test.mjs tests/ebay-availability.test.mjs tests/ebay-sync-timeout.test.mjs tests/ebay-sync-diff.test.mjs tests/ebay-outbox.test.mjs tests/paypal-webhook.test.mjs tests/catalog-availability.test.mjs tests/cart-and-pagination.test.mjs tests/email.test.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate"
   },

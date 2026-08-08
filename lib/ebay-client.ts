@@ -322,17 +322,91 @@ export async function getEbayAvailability(ebayItemIds: string[]): Promise<Map<st
   return result;
 }
 
+/** The OAuth scope that write calls need.
+ *
+ * Reading gets by with `sell.inventory.readonly`; changing a quantity does not.
+ * Whether the stored refresh token actually carries this scope is decided at
+ * consent time and can only be found out by making the call — see the error
+ * handling in `reviseEbayItemQuantity`.
+ */
+export const EBAY_WRITE_SCOPE = "https://api.ebay.com/oauth/api_scope/sell.inventory";
+
+function writeScope() {
+  return process.env.EBAY_WRITE_OAUTH_SCOPE || EBAY_WRITE_SCOPE;
+}
+
+/** Reads the eBay error numbers out of a Trading response.
+ *
+ * eBay states the reason in `<ErrorCode>`, and only that number is stable —
+ * `LongMessage` is prose and localized. The distinction matters because the
+ * outbox must not keep retrying an error that will never pass.
+ */
+export function tradingErrorCodes(xml: string): string[] {
+  return xmlValues(xml, "ErrorCode").map((code) => code.trim()).filter(Boolean);
+}
+
+/** eBay says the listing is already over — nothing left to do.
+ *
+ * 21916750 = auction/listing already ended, 291 = "Auction ended". Treated as
+ * success: the goal is that the card is no longer for sale, and it is not.
+ * Retrying would fail forever and park the job at FAILED for no reason.
+ */
+const ALREADY_ENDED_CODES = new Set(["291", "21916750", "1047"]);
+
+/** Sets the available quantity of a fixed-price listing, addressed by ItemID.
+ *
+ * This is the write path for listings that came in through `GetMyeBaySelling`:
+ * they carry an ItemID but no Inventory API offerId, so `withdrawEbayOffer`
+ * below can never reach them.
+ *
+ * Quantity 0 rather than `EndItem` on purpose — it is reversible. If an order
+ * falls through or a reservation expires, the quantity can be set back. EndItem
+ * is final; relisting mints a new ItemID and breaks the local mapping.
+ *
+ * NOT for auctions. A running auction has bids, and its quantity is not a thing
+ * that can be revised; the caller filters those out (`lib/ebay-outbox.ts`).
+ */
+export async function reviseEbayItemQuantity(ebayItemId: string, quantity: number) {
+  const itemId = ebayItemId.replace(/[^0-9]/g, "");
+  if (!itemId) throw new Error("eBay-ItemID fehlt oder ist unbrauchbar.");
+  if (!Number.isInteger(quantity) || quantity < 0) throw new Error("Menge muss eine nicht-negative ganze Zahl sein.");
+
+  const config = getConfig();
+  const accessToken = await getAccessToken(config, writeScope());
+  const request = `<?xml version="1.0" encoding="utf-8"?><ReviseInventoryStatusRequest xmlns="urn:ebay:apis:eBLBaseComponents"><InventoryStatus><ItemID>${itemId}</ItemID><Quantity>${quantity}</Quantity></InventoryStatus></ReviseInventoryStatusRequest>`;
+  const response = await fetchWithTimeout(`${apiBase(config.environment)}/ws/api.dll`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "text/xml",
+      "X-EBAY-API-CALL-NAME": "ReviseInventoryStatus",
+      "X-EBAY-API-SITEID": config.siteId,
+      "X-EBAY-API-COMPATIBILITY-LEVEL": "1231",
+      "X-EBAY-API-IAF-TOKEN": accessToken,
+    },
+    body: request,
+  });
+  if (!response.ok) throw new Error(`eBay ReviseInventoryStatus fehlgeschlagen (${response.status}).`);
+  const xml = await response.text();
+  const ack = xmlValue(xml, "Ack")?.toUpperCase();
+  if (ack === "FAILURE" || ack === "PARTIAL_FAILURE") {
+    // An already-ended listing is the outcome we wanted, not a failure.
+    if (tradingErrorCodes(xml).some((code) => ALREADY_ENDED_CODES.has(code))) return "ALREADY_ENDED" as const;
+    throw new Error(`eBay ReviseInventoryStatus fehlgeschlagen: ${xmlValue(xml, "LongMessage") ?? "Unbekannter eBay-Fehler."}`);
+  }
+  return "REVISED" as const;
+}
+
 /** Withdraws an Inventory API offer.
  *
  * NOTE: this only works for offers created through the Sell Inventory API.
- * The read sync now imports via the Trading API (`GetMyeBaySelling`), which
- * yields an ItemID rather than an offerId, so `ebay_listings.ebay_offer_id`
- * stays NULL for those listings and no withdraw job is ever enqueued. Ending
- * a Trading API listing requires `EndItem` / `EndFixedPriceItem` instead.
+ * The read sync imports via the Trading API (`GetMyeBaySelling`), which yields
+ * an ItemID rather than an offerId, so `ebay_listings.ebay_offer_id` stays NULL
+ * for those listings. `reviseEbayItemQuantity` above is the path that actually
+ * runs; this one remains for offers that do carry an offerId.
  */
 export async function withdrawEbayOffer(offerId: string) {
   const config = getConfig();
-  const accessToken = await getAccessToken(config, process.env.EBAY_WRITE_OAUTH_SCOPE || "https://api.ebay.com/oauth/api_scope/sell.inventory");
+  const accessToken = await getAccessToken(config, writeScope());
   const response = await fetchWithTimeout(`${apiBase(config.environment)}/sell/inventory/v1/offer/${encodeURIComponent(offerId)}/withdraw`, {
     method: "POST",
     headers: {
