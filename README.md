@@ -101,6 +101,23 @@ To switch it on:
 
 The wording lives in `lib/email/templates.ts` as plain functions, so it can be
 changed and tested without sending anything (`tests/email.test.mjs`).
+
+### Self-service account deletion (needed by `/account`)
+
+`POST /api/account/delete` removes the customer's shop data **and** their
+Supabase login. Deleting the login needs a Supabase **service-role key**:
+
+1. Supabase dashboard → Project Settings → API → `service_role` secret.
+2. `npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY`
+
+**This key bypasses every row-level rule in Supabase.** It is used in exactly
+one place (`lib/supabase-admin.ts`), never reaches the browser, and must never
+appear in `wrangler.toml`, `.env.example`, or the repository.
+
+Without it the route refuses with 503 **before deleting anything** — on purpose.
+Shop data gone while the login still works is a worse state than the one before,
+so the shop would rather do nothing and point the customer at the mailbox.
+
 5. Deploy with `npx wrangler deploy`.
 6. Attach the custom domain in Cloudflare under the Worker’s **Domains &
    Routes** settings. Do not add a route until the Worker deployment exists.

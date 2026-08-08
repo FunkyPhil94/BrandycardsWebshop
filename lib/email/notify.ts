@@ -3,7 +3,7 @@ import type { getDb } from "../../db";
 import { orderItems, orders, priceOffers, products, users } from "../../db/schema";
 import { getEmailConfig } from "./config.ts";
 import { protokolliereVersand, sendEmail, versucheVersand } from "./send.ts";
-import { cardSubmissionReceived, inquiryReceived, offerAccepted, offerRejected, orderConfirmation, sellerOrderNotification } from "./templates.ts";
+import { accountDeleted, cardSubmissionReceived, inquiryReceived, offerAccepted, offerRejected, orderConfirmation, sellerOrderNotification } from "./templates.ts";
 
 /** Die Brücke zwischen Datenbank und Vorlagen.
  *
@@ -191,5 +191,16 @@ export async function notifyInquiryReceived(empfaenger: string, gesucht: string)
 export async function notifyCardSubmissionReceived(empfaenger: string, karte: string): Promise<void> {
   await versucheVersand("Ankaufbestätigung", async () => {
     protokolliereVersand("Ankaufbestätigung", await sendEmail(empfaenger, cardSubmissionReceived({ title: karte, shopUrl: shopUrl() })));
+  });
+}
+
+/** Bestätigung einer Kontolöschung.
+ *
+ * `empfaenger` muss der Aufrufer **vor** dem Löschen festhalten: Danach gibt es
+ * keine Kontozeile mehr, aus der sich die Adresse nachschlagen ließe.
+ */
+export async function notifyAccountDeleted(empfaenger: string, bestellungen: number): Promise<void> {
+  await versucheVersand("Löschbestätigung", async () => {
+    protokolliereVersand("Löschbestätigung", await sendEmail(empfaenger, accountDeleted({ bestellungen, shopUrl: shopUrl() })));
   });
 }

@@ -33,6 +33,7 @@ export default function AccountPage() {
   const [busy, setBusy] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [recovery, setRecovery] = useState(() => typeof window !== "undefined" && new URLSearchParams(window.location.hash.replace(/^#/, "")).get("type") === "recovery");
+  const [deletionReady, setDeletionReady] = useState<boolean | null>(null);
 
   async function syncProfile(sessionUser: User | null, accessToken?: string, profile?: { username?: string; displayName?: string }) {
     if (!sessionUser || !accessToken) return;
@@ -65,6 +66,79 @@ export default function AccountPage() {
       return undefined;
     }
   }, []);
+
+  // Ob die Löschung bereitsteht, hängt an einem Secret auf dem Server. Die
+  // Antwort entscheidet, ob unten ein Knopf oder ein Hinweis auf die
+  // E-Mail-Adresse steht.
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const response = await fetch("/api/account/delete", { headers: { Authorization: `Bearer ${await accessToken()}` } });
+        const body = await response.json() as { available?: boolean };
+        if (!cancelled) setDeletionReady(response.ok && body.available === true);
+      } catch {
+        if (!cancelled) setDeletionReady(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [user]);
+
+  async function accessToken() {
+    const { data } = await getSupabaseBrowserClient().auth.getSession();
+    const token = data.session?.access_token;
+    if (!token) throw new Error("Bitte melde dich erneut an.");
+    return token;
+  }
+
+  /** Auskunft nach Art. 15 DSGVO. Der Browser lädt die Datei selbst herunter —
+   *  der Umweg über ein `<a download>` ist nötig, weil die Route ein
+   *  `Authorization`-Bearer braucht und ein einfacher Link keinen mitschickt. */
+  async function downloadData() {
+    setBusy(true);
+    setMessage("");
+    try {
+      const response = await fetch("/api/account/data", { headers: { Authorization: `Bearer ${await accessToken()}` } });
+      if (!response.ok) throw new Error(((await response.json().catch(() => ({}))) as { error?: string }).error ?? "Die Auskunft konnte nicht erstellt werden.");
+      const url = URL.createObjectURL(await response.blob());
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "brandycards-meine-daten.json";
+      link.click();
+      URL.revokeObjectURL(url);
+      setMessage("Deine Daten wurden heruntergeladen.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Die Auskunft konnte nicht erstellt werden.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  /** Kontolöschung nach Art. 17 DSGVO. Zwei Hürden mit Absicht: Der Text muss
+   *  abgetippt werden, danach fragt der Browser noch einmal. Die Aktion lässt
+   *  sich nicht rückgängig machen, und ein Fehlklick kostet echte Daten. */
+  async function deleteAccount() {
+    const eingabe = window.prompt("Dein Konto und alle Daten dazu werden endgültig gelöscht — Anfragen, Kartenangebote samt Bildern, Preisvorschläge und deine Anmeldung. Bestellungen bleiben als Rechnungsbeleg gespeichert, ohne Verknüpfung zu dir.\n\nTippe LÖSCHEN, um fortzufahren.");
+    if (eingabe?.trim().toUpperCase() !== "LÖSCHEN") return;
+    if (!window.confirm("Wirklich löschen? Das lässt sich nicht rückgängig machen.")) return;
+    setBusy(true);
+    setMessage("");
+    try {
+      const response = await fetch("/api/account/delete", { method: "POST", headers: { Authorization: `Bearer ${await accessToken()}` } });
+      const body = await response.json().catch(() => ({})) as { error?: string; verbleibendeBestellungen?: number };
+      if (!response.ok) throw new Error(body.error ?? "Das Konto konnte nicht gelöscht werden.");
+      await getSupabaseBrowserClient().auth.signOut();
+      setUser(null);
+      setMessage(body.verbleibendeBestellungen
+        ? `Dein Konto ist gelöscht. ${body.verbleibendeBestellungen === 1 ? "Eine Bestellung bleibt" : `${body.verbleibendeBestellungen} Bestellungen bleiben`} als Rechnungsbeleg gespeichert — dazu sind wir gesetzlich verpflichtet. Eine Bestätigung ist unterwegs.`
+        : "Dein Konto ist gelöscht. Eine Bestätigung ist unterwegs.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Das Konto konnte nicht gelöscht werden.");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function signOut() {
     const supabase = getSupabaseBrowserClient();
@@ -165,6 +239,16 @@ export default function AccountPage() {
               <label className="form-field"><span>Anzeigename</span><input type="text" value={displayName} onChange={(event) => setDisplayName(event.target.value)} maxLength={120} /></label>
               <button className="button button-primary" type="submit" disabled={busy}>{busy ? "Speichere …" : "Profil speichern"}</button>
             </form>
+          </section>
+          <section className="privacy-panel" aria-labelledby="privacy-title">
+            <h2 id="privacy-title">Meine Daten</h2>
+            <p>Du kannst jederzeit herunterladen, was wir über dich gespeichert haben, und dein Konto selbst löschen.</p>
+            <div className="privacy-actions">
+              <button className="button button-outline" type="button" onClick={downloadData} disabled={busy}>Meine Daten herunterladen</button>
+              {deletionReady && <button className="privacy-delete" type="button" onClick={deleteAccount} disabled={busy}>Konto endgültig löschen</button>}
+            </div>
+            {deletionReady === false && <p className="privacy-note">Zum Löschen deines Kontos schreib uns kurz an <a href="mailto:brandycards@gmx.de">brandycards@gmx.de</a> — wir erledigen das von Hand.</p>}
+            <p className="privacy-note">Beim Löschen verschwinden Anfragen, Kartenangebote samt Bildern, Preisvorschläge und deine Anmeldung. <strong>Bestellungen bleiben als Rechnungsbeleg gespeichert</strong> — dazu sind wir gesetzlich verpflichtet; die Verknüpfung zu deinem Konto wird aufgehoben.</p>
           </section>
         </>}
         {(!user || recovery) && <>

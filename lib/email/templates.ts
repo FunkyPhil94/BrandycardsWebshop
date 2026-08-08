@@ -378,3 +378,45 @@ export function sellerOrderNotification(daten: VerkaufDaten): Nachricht {
 
   return { subject: sanitizeSubject(`Neue Bestellung ${daten.orderNumber} — ${daten.address.name}`), text, html };
 }
+
+// --- 7. Konto gelöscht ------------------------------------------------------
+
+/** Bestätigung der Kontolöschung.
+ *
+ * Muss **nach** der Löschung verschickt werden, aber an eine Adresse, die
+ * vorher gemerkt wurde — nach dem Löschlauf gibt es keine Zeile mehr, aus der
+ * sich der Empfänger nachschlagen ließe.
+ *
+ * Der Hinweis auf verbleibende Bestelldaten steht bewusst darin: Wer „Konto
+ * löschen" klickt und später erfährt, dass Rechnungen weiterhin gespeichert
+ * sind, fühlt sich getäuscht. Rechtsgrundlage ist Art. 17 Abs. 3 lit. b DSGVO.
+ */
+export function accountDeleted(daten: { bestellungen: number; shopUrl: string }): Nachricht {
+  const hinweis = daten.bestellungen > 0
+    ? `Deine ${daten.bestellungen === 1 ? "Bestellung bleibt" : `${daten.bestellungen} Bestellungen bleiben`} als Rechnungsbeleg gespeichert — dazu sind wir gesetzlich verpflichtet. Die Verknüpfung zu deinem Konto ist aufgehoben.`
+    : `Es lagen keine Bestellungen vor, die wir aufbewahren müssten.`;
+
+  const text = [
+    `Dein Konto ist gelöscht.`,
+    ``,
+    `Wir haben dein Konto bei BrandyCards und alle Daten dazu entfernt: Anfragen, Kartenangebote samt Bildern und Preisvorschläge. Auch deine Anmeldung ist gelöscht.`,
+    ``,
+    hinweis,
+    ``,
+    `Wenn du später wieder bei uns kaufen möchtest, kannst du jederzeit ein neues Konto anlegen.`,
+    ``,
+    `Viele Grüße`,
+    `die Brüder von BrandyCards`,
+    fussText(daten.shopUrl),
+  ].join("\n");
+
+  const html = rahmen([
+    `<h1 style="font-size:22px;margin:0 0 16px">Dein Konto ist gelöscht.</h1>`,
+    `<p style="margin:0 0 14px">Wir haben dein Konto bei BrandyCards und alle Daten dazu entfernt: Anfragen, Kartenangebote samt Bildern und Preisvorschläge. Auch deine Anmeldung ist gelöscht.</p>`,
+    `<p style="margin:0 0 14px;color:#7c7770;font-size:13px">${escapeHtml(hinweis)}</p>`,
+    `<p style="margin:0">Wenn du später wieder bei uns kaufen möchtest, kannst du jederzeit ein neues Konto anlegen.</p>`,
+    `<p style="margin:18px 0 0">Viele Grüße<br>die Brüder von BrandyCards</p>`,
+  ].join(""), daten.shopUrl);
+
+  return { subject: sanitizeSubject("Dein BrandyCards-Konto wurde gelöscht"), text, html };
+}
