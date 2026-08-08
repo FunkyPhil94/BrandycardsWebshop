@@ -43,6 +43,49 @@ Sitzung danebengebaut. Wer hier hereinkommt und beide auf `LÄUFT` findet: Der
 Code beider Punkte ist unabhängig voneinander, sie können sich nicht in die
 Quere kommen.
 
+### 2026-08-08 — Testartikel für den Live-Abnahmekauf (1 Cent)
+
+- **Stand:** LÄUFT
+- **Datum:** 2026-08-08
+- **Ziel:** **Schreibender Eingriff in Produktionsdaten**, vom Betreiber
+  ausdrücklich beauftragt. Er braucht eine kaufbare Karte, um den ersten
+  **echten** PayPal-Kauf durchzuspielen — die ausstehende Abnahme aus
+  ai-todo Punkt 0.
+- **Kein neuer Artikel, sondern der vorhandene wieder in Betrieb.**
+  `ec6c212e96332bdcc93612848694b907` („TESTARTIKEL BrandyCards, bitte nicht
+  kaufen") liegt bereits in der Datenbank und wurde vom 08:00-Lauf auf
+  `INACTIVE`/`ENDED`/`UNAVAILABLE` gesetzt. Ihn zu reaktivieren ist sauberer,
+  als eine zweite Produktzeile mit eigener Bestands- und Listing-Zeile
+  anzulegen.
+- **Drei `UPDATE`s:** Produkt auf `ACTIVE`, Listing auf `ACTIVE` mit **Preis 1
+  Cent**, Bestand auf verfügbar 1 / reserviert 0 / verkauft 0 / `AVAILABLE`.
+  Der Bestand muss zurückgesetzt werden, weil der Sandbox-Testkauf vom Vormittag
+  dort `sold_quantity = 1` hinterlassen hat.
+- **Der Betrag ist nicht 1 Cent, sondern 3,46 €.** Der Versand nach Deutschland
+  kostet 3,45 € und kommt hinzu; unter 1 Cent geht der Artikelpreis nicht.
+  Gehört gesagt, damit sich niemand über die Abbuchung wundert.
+- **Zeitpunkt bewusst gewählt:** angelegt um ~08:2x UTC, der nächste Cron-Schlag
+  ist **10:00 UTC**. Beim letzten Mal wurde der Artikel um 06:00:07 angelegt und
+  um 06:00:38 vom Import sofort wieder abgeräumt. Das Kauffenster reicht diesmal
+  knapp zwei Stunden.
+- **Der Import räumt ihn danach von selbst ab** — die erfundene ItemID
+  `999000000001` steht nicht in der eBay-Aktivliste. Das ist erwünscht und
+  braucht keinen weiteren Eingriff.
+- **Der Artikel ist öffentlich sichtbar**, solange er lebt. Dagegen hilft nur
+  der unmissverständliche Titel und der Preis; einen versteckten Weg gibt es
+  nicht, weil `/api/products` nur `ACTIVE` ausliefert und nur ein aktives
+  Listing kaufbar ist.
+- **Die Bestandsprüfung vor der Zahlung blockiert nicht.** Sie ruft `GetItem`
+  bei eBay auf, eBay kennt die erfundene ItemID nicht und antwortet mit
+  `Ack=FAILURE`; `getEbayAvailability` legt dann **keinen** Eintrag an, und ohne
+  Eintrag gilt die Karte als „unbekannt" — was den Kauf durchlässt
+  (`lib/ebay-stock-check.ts`). Am 2026-08-08 schon einmal so nachgelesen.
+- **Betroffen:** ausschließlich Produktionsdaten, drei Zeilen. Kein Code, keine
+  Migration, kein Deploy.
+- **Rückweg:** Dieselben drei Zeilen zurücksetzen — oder nichts tun, dann
+  erledigt es der 10:00-Lauf.
+- **Ergebnis:** _(wird nach dem Durchlauf eingetragen)_
+
 ### 2026-08-08 — PayPal auf Live (ai-todo Punkt 0)
 
 - **Stand:** LÄUFT
