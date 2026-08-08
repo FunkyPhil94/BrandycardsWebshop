@@ -377,6 +377,34 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
 
 ## Historie
 
+### 2026-08-08 — Zwei Gestaltungskorrekturen vom Betreiber
+
+- **Stand:** ABGESCHLOSSEN
+- **Regelverstoß, offen notiert:** Dieser Eintrag ist **nachgetragen**, nicht
+  vorher angelegt. Zwei Handgriffe fühlten sich zu klein für das Protokoll an —
+  das ist genau die Begründung, gegen die Regel 1 geschrieben wurde.
+- **Ziel:** (1) Der Absatz über dem Preisfeld auf der Kartenseite stand in
+  Monospace-Versalien und erschlug den Kasten. (2) Die Listen im Adminbereich
+  waren dunkel (`#1e1f21`) und standen allein zwischen hellen Flächen.
+- **Ergebnis:** Der Hinweis „mindestens 50 Cent unter dem Preis" läuft jetzt als
+  `<small>` am Eingabefeld mit — er muss sichtbar bleiben, sonst bekommt der
+  Kunde eine Ablehnung, die er nicht versteht; die 48-Stunden-Zusage steht im
+  normalen Fließtext darüber. Bestell- und Vorschlagslisten nehmen dieselben
+  Farben wie die Kacheln daneben (`#ebe8e1`, Kanten `--line`), die drei
+  Statusfarben behalten ihre Bedeutung (bezahlt grün, offen Gold, storniert
+  Rot). Betrag und Datum brechen nicht mehr um.
+- **Belegt:** `npx tsc --noEmit` sauber, `npm run lint` 0 Fehler, `npm test`
+  254/254. Deployed als Version `255a752f`; die ausgelieferte CSS
+  (`/assets/index-Bu8ArPOy.css`) enthält `.admin-order{background:#ebe8e1}`.
+  Commit `607e79d`.
+- **Wie geprüft, obwohl beide Stellen hinter der Anmeldung liegen:** Über eine
+  statische Seite mit der **gebauten** CSS und nachgebautem Markup im
+  Vorschaubrowser. Das belegt Farben und Umbruch, nicht das Zusammenspiel mit
+  echten Daten.
+- **Stehen geblieben:** Die kurze Zeile „Noch 3 von 3 Vorschlägen für diese
+  Karte" trägt weiterhin `offer-meta`, also dieselbe Versalien-Monospace. Sie
+  war nicht Teil des Auftrags.
+
 ### 2026-08-08 — Bestellungen im Adminbereich sichtbar (ai-todo Punkt 12.2)
 
 - **Stand:** ABGESCHLOSSEN
