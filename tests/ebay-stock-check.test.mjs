@@ -103,18 +103,26 @@ test("beide Zahlungsrouten prüfen, und der Capture vor dem PROCESSING-Riegel", 
     read("app/api/paypal/orders/route.ts"),
   ]);
 
-  assert.match(orders, /ebaySoldOutMessage\(db, order\.id\)/,
+  // **Zwei Einstiege, eine Prüfung.** `ebaySoldOutMessage` liefert nur die
+  // Meldung, `ebayBestandspruefung` zusätzlich, *ob* geprüft werden konnte —
+  // letzteres braucht der Capture-Weg für die Verkäufernachricht. Der Test
+  // fragt deshalb nach dem Wächter, nicht nach einem Namen; sonst bricht er
+  // bei jeder Umbenennung, ohne dass sich am Schutz etwas geändert hätte.
+  const waechter = /ebay(SoldOutMessage|Bestandspruefung)\(db, order\.id\)/;
+  const waechterStelle = (route) => route.search(waechter);
+
+  assert.match(orders, waechter,
     "vor dem Gang zu PayPal prüfen, damit der Kunde es früh erfährt");
-  assert.match(capture, /ebaySoldOutMessage\(db, order\.id\)/,
+  assert.match(capture, waechter,
     "und unmittelbar vor dem Einzug, das ist die verbindliche Stelle");
 
   // Nach dem Riegel geprüft, bliebe eine abgelehnte Bestellung in PROCESSING
   // hängen -- aus dem Status käme sie nur von Hand wieder heraus.
-  assert.ok(capture.indexOf("ebaySoldOutMessage") < capture.indexOf('status: "PROCESSING"'),
+  assert.ok(waechterStelle(capture) < capture.indexOf('status: "PROCESSING"'),
     "die Prüfung muss vor dem PENDING → PROCESSING-Riegel stehen");
 
   for (const [name, route] of [["capture", capture], ["orders", orders]]) {
-    const block = route.slice(route.indexOf("ebaySoldOutMessage"), route.indexOf("ebaySoldOutMessage") + 400);
+    const block = route.slice(waechterStelle(route), waechterStelle(route) + 400);
     assert.match(block, /releaseOrderReservations/, `${name}: eine abgelehnte Bestellung muss den Bestand freigeben`);
   }
 });
@@ -122,8 +130,14 @@ test("beide Zahlungsrouten prüfen, und der Capture vor dem PROCESSING-Riegel", 
 test("der Wächter gibt bei eigenem Fehler frei statt zu blockieren", async () => {
   const guard = await read("lib/ebay-stock-guard.ts");
   const catchBlock = guard.slice(guard.indexOf("} catch"));
-  assert.match(catchBlock, /return null/,
+  // Entscheidend ist, dass **keine Meldung** herauskommt: Eine Meldung lehnt die
+  // Bestellung ab. Seit dem 2026-08-08 gibt der Wächter ein Objekt zurück, das
+  // zusätzlich den Prüfstatus trägt — `meldung: null` ist die neue Schreibweise
+  // desselben Versprechens.
+  assert.match(catchBlock, /meldung: null|return null/,
     "ein Fehler in der Prüfung selbst darf den Verkauf nicht anhalten");
+  assert.match(catchBlock, /status: "FEHLGESCHLAGEN"/,
+    "und er muss ihn als ungeprüft kennzeichnen, sonst bleibt der Ausfall lautlos");
 });
 
 test("der Import-Takt bleibt innerhalb des eBay-Tageskontingents", async () => {
