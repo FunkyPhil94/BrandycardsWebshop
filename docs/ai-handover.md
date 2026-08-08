@@ -37,36 +37,7 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-### 2026-08-08 — Der Schreib-Check braucht einen Knopf, sonst ist er unbenutzbar
-
-- **Stand:** LÄUFT
-- **Datum:** 2026-08-08
-- **Anlass:** Der Betreiber fragte, **wo** er den `curl`-Befehl ausführen soll.
-  Die Frage deckt einen Fehler in meiner eigenen Anleitung auf.
-- **Mein Fehler:** Ich hatte geschrieben, man könne die URL „im angemeldeten
-  Browser einfach aufrufen". **Das stimmt nicht.** Die Anmeldung hängt am
-  `Authorization: Bearer`-Header (`lib/supabase-server.ts:9`), nicht an einem
-  Cookie. Eine Navigation in der Adresszeile trägt keinen solchen Header, ein
-  blanker `curl` erst recht nicht — **beides ergibt 401**, unabhängig davon, ob
-  der Betreiber angemeldet ist. Es ist genau die Falle, die bei SEC-12 schon
-  einmal beschrieben wurde, und ich bin hineingelaufen.
-- **Konsequenz:** Eine Diagnose, die man nur mit einem von Hand kopierten Token
-  aus den Entwicklerwerkzeugen aufrufen kann, ist keine Diagnose. Sie gehört
-  dorthin, wo das Token ohnehin mitläuft: in den Adminbereich.
-- **Wie:** Ein dritter Knopf in `app/admin/page.tsx`, neben „eBay-Angebote
-  synchronisieren" und „eBay OAuth verbinden". Er ruft
-  `GET /api/admin/ebay/write-check` mit dem Sitzungstoken auf — dasselbe Muster
-  wie `runEbaySync` und `connectEbay` — und zeigt das Ergebnis im vorhandenen
-  Meldungsfeld.
-- **Der Text muss die Folgefrage gleich mitbeantworten:** Bei Misserfolg soll
-  dort stehen, dass der Knopf daneben („OAuth verbinden") die Lösung ist.
-  Sonst steht der Betreiber vor einem roten Hinweis ohne nächsten Schritt.
-- **Betroffen:** `app/admin/page.tsx`. Kein neuer Endpunkt — die Route steht
-  seit `32dfd0f`. Keine Migration.
-- **Verifikation:** Prüfkette, Deploy, und **im laufenden Adminbereich
-  nachsehen**, dass der Knopf da ist und antwortet. Der Adminbereich ist genau
-  die Seite, die Client-Konfiguration braucht — die Pflichtprüfung nach dem
-  Deploy fällt hier also mit der Sichtprüfung zusammen.
+*(leer — bereit für den nächsten Auftrag.)*
 
 ---
 
@@ -391,6 +362,56 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
 ---
 
 ## Historie
+
+### 2026-08-08 — Der Schreib-Check braucht einen Knopf, sonst ist er unbenutzbar
+
+- **Stand:** ABGESCHLOSSEN
+- **Datum:** 2026-08-08
+- **Anlass:** Der Betreiber fragte, **wo** er den `curl`-Befehl ausführen soll.
+  Die Frage deckt einen Fehler in meiner eigenen Anleitung auf.
+- **Mein Fehler:** Ich hatte geschrieben, man könne die URL „im angemeldeten
+  Browser einfach aufrufen". **Das stimmt nicht.** Die Anmeldung hängt am
+  `Authorization: Bearer`-Header (`lib/supabase-server.ts:9`), nicht an einem
+  Cookie. Eine Navigation in der Adresszeile trägt keinen solchen Header, ein
+  blanker `curl` erst recht nicht — **beides ergibt 401**, unabhängig davon, ob
+  der Betreiber angemeldet ist. Es ist genau die Falle, die bei SEC-12 schon
+  einmal beschrieben wurde, und ich bin hineingelaufen.
+- **Konsequenz:** Eine Diagnose, die man nur mit einem von Hand kopierten Token
+  aus den Entwicklerwerkzeugen aufrufen kann, ist keine Diagnose. Sie gehört
+  dorthin, wo das Token ohnehin mitläuft: in den Adminbereich.
+- **Wie:** Ein dritter Knopf in `app/admin/page.tsx`, neben „eBay-Angebote
+  synchronisieren" und „eBay OAuth verbinden". Er ruft
+  `GET /api/admin/ebay/write-check` mit dem Sitzungstoken auf — dasselbe Muster
+  wie `runEbaySync` und `connectEbay` — und zeigt das Ergebnis im vorhandenen
+  Meldungsfeld.
+- **Der Text muss die Folgefrage gleich mitbeantworten:** Bei Misserfolg soll
+  dort stehen, dass der Knopf daneben („OAuth verbinden") die Lösung ist.
+  Sonst steht der Betreiber vor einem roten Hinweis ohne nächsten Schritt.
+- **Betroffen:** `app/admin/page.tsx`. Kein neuer Endpunkt — die Route steht
+  seit `32dfd0f`. Keine Migration.
+- **Verifikation:** Prüfkette, Deploy, und **im laufenden Adminbereich
+  nachsehen**, dass der Knopf da ist und antwortet. Der Adminbereich ist genau
+  die Seite, die Client-Konfiguration braucht — die Pflichtprüfung nach dem
+  Deploy fällt hier also mit der Sichtprüfung zusammen.
+- **Ergebnis: ABGESCHLOSSEN.** `tsc` sauber, Lint 0 Fehler, `npm test`
+  **245/245**. Deployed als Version **`39d943c8`**, Commit `22ead4f`.
+- **Die Sichtprüfung ging nicht wie geplant, und der Grund gehört notiert:**
+  Ohne Anmeldung rendert `/admin` die Knöpfe gar nicht — es steht nur „Bitte
+  melde dich zuerst an." Admin-Zugangsdaten habe ich nicht und soll ich nicht
+  haben. **Der Beleg läuft deshalb über das ausgelieferte Bundle:** Der
+  Knopftext „eBay-Schreibzugriff prüfen" steht in
+  `dist/client/assets/page-dD_19DsN.js` — demselben Chunk, der auch
+  „BRANDYCARDS ADMIN" enthält —, und der laufende `/admin` lädt genau diesen
+  Chunk. Zusätzlich antwortet `/api/admin/ebay/write-check` ohne Anmeldung mit
+  **401**, was nebenbei der beste Beweis dafür ist, dass der `curl`-Weg nicht
+  funktioniert hätte.
+- **Die Propagierungsverzögerung ist wieder aufgetreten:** Der erste Abruf von
+  `/admin` nannte noch einen älteren Chunk, der zweite Sekunden später den
+  neuen. Beim Prüfen also nachfassen statt sofort zu urteilen — dieselbe
+  Beobachtung wie am 2026-08-06 bei `/karten`.
+- **Was weiterhin niemand geprüft hat:** ob der Knopf beim Draufdrücken das
+  Erhoffte meldet. Das kann nur der Betreiber, angemeldet. Der Pfad dahin ist
+  aber belegt: Route erreichbar, adminpflichtig, Knopf ausgeliefert.
 
 ### 2026-08-08 — Die eBay-Schreibanmeldung prüfbar machen, ohne ein Angebot zu opfern
 

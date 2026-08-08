@@ -555,14 +555,21 @@ Zeilen in `ebay_outbox` sind deshalb der Normalzustand und kein Fehler.
 
 **Was noch fehlt — und es liegt beim Betreiber:**
 
-1. **Den Schreib-Scope bestätigen — das geht jetzt per Knopfdruck.** Als Admin
-   angemeldet `GET /api/admin/ebay/write-check` aufrufen. Die Route tauscht ein
-   Token mit dem Schreib-Scope und **fasst kein Angebot an**; sie ist deshalb
-   auch bei `EBAY_WRITE_ENABLED=false` gefahrlos.
-   - `{"ok": true}` → der Token trägt `sell.inventory`, weiter mit Schritt 2.
-   - `{"ok": false}` → die eBay-Zustimmung einmal über
-     `/api/admin/ebay/oauth/start` erneuern. Der Zustimmungsweg fordert den
-     Schreib-Scope bereits an (seit 2026-08-06), es genügt also der Durchlauf.
+1. **Den Schreib-Scope bestätigen — ein Knopf im Adminbereich.** Auf `/admin`
+   anmelden und **„eBay-Schreibzugriff prüfen"** drücken (neben „eBay-Angebote
+   synchronisieren"). Dahinter liegt `GET /api/admin/ebay/write-check`: Die
+   Route tauscht ein Token mit dem Schreib-Scope und **fasst kein Angebot an**;
+   sie ist deshalb auch bei `EBAY_WRITE_ENABLED=false` gefahrlos.
+   - Erfolg → der Token trägt `sell.inventory`, weiter mit Schritt 2.
+   - Misserfolg → einmal **„eBay OAuth verbinden"** drücken. Der Zustimmungsweg
+     fordert den Schreib-Scope bereits an (seit 2026-08-06), es genügt also der
+     Durchlauf. Die Meldung sagt das auch selbst.
+
+   > **Nicht per `curl` oder über die Adresszeile aufrufen.** Die Adminrouten
+   > erkennen die Anmeldung am `Authorization: Bearer`-Header
+   > (`lib/supabase-server.ts:9`), nicht an einem Cookie. Beide Wege bekommen
+   > **401**, unabhängig davon, wer angemeldet ist — dieselbe Falle wie bei
+   > SEC-12. Nur die Oberfläche schickt das Token mit.
 
    *(Die lokalen Zugangsdaten in `.env.local` taugen zum Prüfen nicht — ihr
    Refresh-Token ist veraltet und scheitert für **jeden** Scope gleich. Deshalb
