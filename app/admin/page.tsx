@@ -18,6 +18,7 @@ export default function AdminPage() {
   const [syncBusy, setSyncBusy] = useState(false);
   const [syncMessage, setSyncMessage] = useState("");
   const [oauthBusy, setOauthBusy] = useState(false);
+  const [writeCheckBusy, setWriteCheckBusy] = useState(false);
   const [assetUrls, setAssetUrls] = useState<Record<string, string>>({});
   const [deletingSubmission, setDeletingSubmission] = useState<string | null>(null);
 
@@ -96,6 +97,41 @@ export default function AdminPage() {
     }
   }
 
+  /** Prüft, ob der hinterlegte eBay-Token schreiben darf.
+   *
+   * Muss hier stehen und nicht in einem Terminal: Die Adminrouten erkennen die
+   * Anmeldung am `Authorization: Bearer`-Header, den nur ein Aufruf aus der
+   * angemeldeten Oberfläche mitbringt. Eine URL in der Adresszeile oder ein
+   * blanker `curl` bekämen 401 — unabhängig davon, wer davorsitzt.
+   */
+  async function checkEbayWrite() {
+    setWriteCheckBusy(true);
+    setSyncMessage("");
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) throw new Error("Bitte melde dich zuerst an.");
+      const response = await fetch("/api/admin/ebay/write-check", { headers: { Authorization: `Bearer ${token}` } });
+      const body = await response.json() as { ok?: boolean; detail?: string; writeEnabled?: boolean; error?: string };
+      if (body.error) throw new Error(body.error);
+      if (body.ok) {
+        // Der Schalter gehört in dieselbe Meldung: Eine geglückte Anmeldung
+        // heißt noch nicht, dass Aufträge auch ausgeführt werden.
+        setSyncMessage(body.writeEnabled
+          ? "eBay-Schreibzugriff steht: Anmeldung erfolgreich, und der Schreibpfad ist eingeschaltet."
+          : "eBay-Schreibzugriff steht: Anmeldung erfolgreich. Ausgeführt wird noch nichts — EBAY_WRITE_ENABLED ist aus.");
+        return;
+      }
+      // Ohne den nächsten Schritt wäre das nur ein roter Hinweis.
+      setSyncMessage(`eBay-Schreibzugriff fehlt: ${body.detail ?? "Anmeldung abgelehnt."} — bitte einmal „eBay OAuth verbinden" ausführen, das erneuert die Zustimmung mit Schreibrecht.`);
+    } catch (error) {
+      setSyncMessage(error instanceof Error ? error.message : "eBay-Schreibzugriff konnte nicht geprüft werden.");
+    } finally {
+      setWriteCheckBusy(false);
+    }
+  }
+
   async function connectEbay() {
     setOauthBusy(true);
     setSyncMessage("");
@@ -132,6 +168,7 @@ export default function AdminPage() {
           </div>
           <button className="button button-primary admin-sync-button" type="button" onClick={runEbaySync} disabled={syncBusy}>{syncBusy ? "eBay-Sync läuft …" : "eBay-Angebote synchronisieren"}</button>
           <button className="button button-outline admin-sync-button" type="button" onClick={connectEbay} disabled={oauthBusy}>{oauthBusy ? "eBay OAuth wird gestartet …" : "eBay OAuth verbinden / Refresh-Token erstellen"}</button>
+          <button className="button button-outline admin-sync-button" type="button" onClick={checkEbayWrite} disabled={writeCheckBusy}>{writeCheckBusy ? "eBay-Schreibzugriff wird geprüft …" : "eBay-Schreibzugriff prüfen"}</button>
           {syncMessage && <p className="form-feedback" role="status">{syncMessage}</p>}
           <OffersPanel />
           <div className="admin-submissions">
