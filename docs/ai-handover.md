@@ -401,9 +401,17 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
   statische Seite mit der **gebauten** CSS und nachgebautem Markup im
   Vorschaubrowser. Das belegt Farben und Umbruch, nicht das Zusammenspiel mit
   echten Daten.
+- **Nachtrag, zweite Runde:** Auch die graue `<small>`-Zeile am Preisfeld hat
+  der Betreiber verworfen. Der Mindestabstand steht jetzt als halber Satz im
+  Fließtext („Nenn uns deinen Preis — mindestens 50 Cent unter den 10,00 €, die
+  die Karte aktuell kostet."), ohne eigene Gestaltung. **Ganz weglassen ist
+  keine Option** — ohne den Hinweis läuft der Kunde in eine Ablehnung, die er
+  nicht versteht. Deployed als Version `c1425a12`, Commit `111ab2f`.
 - **Stehen geblieben:** Die kurze Zeile „Noch 3 von 3 Vorschlägen für diese
   Karte" trägt weiterhin `offer-meta`, also dieselbe Versalien-Monospace. Sie
-  war nicht Teil des Auftrags.
+  war nicht Teil des Auftrags. Nach zwei verworfenen Gestaltungen lässt sich
+  eine Regel ableiten: **Der Betreiber will keine abgesetzten Hinweiszeilen um
+  Formulare herum** — weder in Versalien-Monospace noch grau und klein.
 
 ### 2026-08-08 — Bestellungen im Adminbereich sichtbar (ai-todo Punkt 12.2)
 
