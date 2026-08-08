@@ -37,6 +37,64 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
+**Zwei Einträge stehen hier gleichzeitig.** Punkt 2 ist gebaut und deployed und
+wartet nur noch auf die Messung des 08:00-UTC-Laufs; Punkt 5 wird in derselben
+Sitzung danebengebaut. Wer hier hereinkommt und beide auf `LÄUFT` findet: Der
+Code beider Punkte ist unabhängig voneinander, sie können sich nicht in die
+Quere kommen.
+
+### 2026-08-08 — Der Checkout zeigt den ausgehandelten Preis (ai-todo Punkt 5)
+
+- **Stand:** LÄUFT
+- **Datum:** 2026-08-08
+- **Ziel:** Punkt 5 aus [ai-todo.md](ai-todo.md). Nach einer angenommenen
+  Verhandlung zeigt der Checkout weiterhin den **Listenpreis**. Der Rabatt
+  erscheint erst in der Serverantwort und bei PayPal. Kunden zahlen nie zu
+  viel — sie sehen den Vorteil nur zu spät, und eine transparente Preisangabe
+  vor dem Bestellabschluss ist in Deutschland auch rechtlich das saubere
+  Vorgehen.
+- **Folgenlos, bis es das nicht mehr ist:** Solange niemand ein angenommenes
+  Angebot hat, fällt nichts auf. Mit dem ersten angenommenen Vorschlag wird es
+  sofort sichtbar.
+- **Die Entwurfsentscheidung, auf die es ankommt:** Die Anzeige darf **nicht**
+  ihre eigene Preisregel bekommen. Sonst driften Anzeige und Abrechnung
+  auseinander, und der Kunde sieht am Ende einen anderen Betrag als den, der
+  abgebucht wird — schlimmer als gar keine Anzeige. Deshalb wird die
+  Entscheidung in `lib/price-offers.ts` **einmal** getroffen und von beiden
+  benutzt: `pickAcceptedOffers` wird die eine Quelle, `pickAcceptedPrices`
+  (heute von `app/api/orders/route.ts` benutzt) leitet sich daraus ab. Auch die
+  zweite Regel wird gespiegelt statt nachgebaut: **Ein angenommenes Angebot
+  senkt nur** — ist der Listenpreis inzwischen darunter, gilt der niedrigere
+  (`app/api/orders/route.ts:79`).
+- **Wie:**
+  - Neue Route `GET /api/account/offers`, die für den **angemeldeten** Nutzer
+    alle angenommenen, unverfallenen Angebote als `productId → Betrag` samt
+    Gültigkeit liefert. Anmeldung über `getAuthenticatedAppUser` wie in
+    `app/api/orders/route.ts`, dazu das übliche Rate-Limit.
+  - `app/checkout/page.tsx` holt sie und zeigt je Position den ausgehandelten
+    Preis, den durchgestrichenen Listenpreis und die Ersparnis; die
+    Zwischensumme rechnet mit dem ausgehandelten Preis.
+- **Achtung, und das bleibt unangetastet:** Reine Darstellung. Der verbindliche
+  Preis wird weiterhin **ausschließlich** serverseitig bestimmt; aus dem Browser
+  wird niemals ein Betrag übernommen. Der Checkout schickt nach wie vor nur
+  Produkt-Kennungen.
+- **Wer nicht angemeldet ist, sieht keinen Fehler.** Die Abfrage antwortet dann
+  mit 401, und der Checkout zeigt schlicht die Listenpreise — Anmelden verlangt
+  er ohnehin erst beim Absenden.
+- **Betroffen:** neu `app/api/account/offers/route.ts`; geändert
+  `lib/price-offers.ts`, `app/checkout/page.tsx`, `app/globals.css`,
+  `tests/price-offers.test.mjs`. **Keine Migration, keine Änderung an
+  Produktionsdaten.**
+- **Verifikation:** Tests für die neue gemeinsame Entscheidung samt
+  Rot-Nachweis, darunter ausdrücklich der Fall „Listenpreis ist unter das
+  Angebot gefallen"; Prüfkette; im Browser gegen den lokalen Server prüfen,
+  dass der Checkout ohne Angebot unverändert aussieht.
+- **Ehrlich zur Grenze der Prüfung:** Ein Konto mit einem **echten**
+  angenommenen Angebot gibt es nicht, und eines anzulegen wäre ein schreibender
+  Eingriff in Produktionsdaten. Der Fall wird deshalb über die Tests und über
+  eine untergeschobene Antwort im Browser belegt, nicht an echten Daten.
+- **Ergebnis:** _(wird nach dem Durchlauf eingetragen)_
+
 ### 2026-08-08 — Der Sync schreibt nur noch, was sich geändert hat (ai-todo Punkt 2)
 
 - **Stand:** LÄUFT
