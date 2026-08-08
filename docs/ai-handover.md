@@ -37,7 +37,36 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-*(leer — bereit für den nächsten Auftrag.)*
+### 2026-08-08 — Drei neue Punkte in den Arbeitsvorrat
+
+- **Stand:** LÄUFT
+- **Datum:** 2026-08-08
+- **Vom Betreiber genannt:** kleine Text- und Inhaltsanpassungen, ein Weg zum
+  **manuellen Einstellen** von Karten, die noch nicht bei eBay sind
+  („Vorverkauf"/„Lagerverkauf"), und eine **richtige Adminkonsole**, weil
+  `/admin` für das Anpassen einzelner Angebote nicht reicht.
+- **Nur Dokumentation** — `docs/ai-todo.md`. Kein Code.
+- **Vor dem Schreiben im Code nachgesehen**, damit die Aufgaben nicht gegen
+  Wände laufen, die schon dastehen:
+  - **Der Waisen-Sweep würde manuelle Karten wieder abräumen.**
+    `lib/ebay-sync.ts` setzt jedes Produkt mit `kind = 'EBAY_SYNCED'` **ohne
+    Listing-Zeile** auf `INACTIVE`. Bei einem 3-Minuten-Takt verschwände eine
+    von Hand angelegte Karte binnen Minuten. Sie braucht also eine **eigene
+    Art**, nicht bloß ein fehlendes Listing.
+  - **`products.kind` trägt eine Prüfbedingung** (`IN ('EBAY_SYNCED',
+    'PRELISTED')`). Eine neue Art heißt **Migration** — und damit ist der
+    „nächste ohnehin nötige Schemaschritt" da, auf den SEC-12 seit dem
+    2026-08-07 wartet. Gehört gebündelt.
+  - **Die Detailseite verknüpft `ebay_listings` mit `innerJoin`.** Eine Karte
+    ohne Listing liefert dort **404**, egal wie gut sie sonst gepflegt ist.
+  - **`PRELISTED` ist nicht dasselbe.** Die Vormerkliste ist eine Ankündigung
+    ohne Bestand (`quantity` fest auf 0, Aktion „Vormerken"). Der Betreiber
+    will Karten, die man **kaufen** kann — das ist eine dritte Art, keine
+    Erweiterung der zweiten.
+- **Der erste Punkt bleibt bewusst unscharf** und wird als Sammelstelle
+  angelegt: „kleine Anpassungen an Texten und Inhalten" ist ohne Liste nicht
+  abarbeitbar. Die konkreten Stellen muss der Betreiber nennen; danach gehören
+  sie dort hinein.
 
 ---
 
