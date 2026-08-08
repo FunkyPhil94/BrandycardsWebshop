@@ -13,9 +13,12 @@ dabei, damit niemand den Gesprächsverlauf braucht.
 
 ## Warum diese Reihenfolge
 
-**Stand 2026-08-07:** Die Sicherheitsprüfung ist durch und deployed, und die
-Bestandsprüfung vor der Zahlung ist gebaut. Damit hat sich die Rangfolge
-verschoben.
+**Stand 2026-08-08:** Die Punkte 0 bis 5 sind allesamt erledigt und deployed —
+PayPal steht auf Live und hat echtes Geld eingenommen, der Sync schreibt nur
+noch Änderungen, die Kunden-E-Mails sind scharf, die Sicherheitskorrekturen
+samt CSP ohne `'unsafe-inline'` sind in Produktion, und der Checkout zeigt den
+ausgehandelten Preis. **Der nächste ungebaute Punkt dieser Liste ist Punkt 6,
+der eBay-Schreibpfad.**
 
 **Seit 2026-08-07 läuft das Projekt auf Workers Paid (5 $/Monat).** Damit sind
 die harten Tagesdeckel weg (D1 wird nach Verbrauch abgerechnet), `Email
@@ -30,12 +33,13 @@ Drei Überlegungen bestimmen die Reihenfolge:
    still, bis jemand von Hand eingriff. Ein Bestand, der stillschweigend
    veraltet, ist gefährlicher als einer, der langsam aktualisiert wird — man
    merkt es nicht. Deshalb steht Punkt 1 ganz oben.
-2. **Der Shop konnte bis heute niemandem verkaufen.** Der Checkout verlangt ein
-   Konto, ein Konto verlangt eine bestätigte E-Mail-Adresse — und die
-   Bestätigungslinks zeigten auf `localhost` (SEC-18). Diese Tür ist seit
-   heute offen. Was jetzt zählt, ist, dass der erste echte Kauf **vollständig**
-   funktioniert. Dort klafft die nächste Lücke: Wer zahlt, bekommt keine
-   Bestätigung.
+2. **Der Shop konnte bis zum 2026-08-07 niemandem verkaufen.** Der Checkout
+   verlangt ein Konto, ein Konto verlangt eine bestätigte E-Mail-Adresse — und
+   die Bestätigungslinks zeigten auf `localhost` (SEC-18). **Diese Kette ist
+   seit dem 2026-08-08 vollständig durchgespielt:** Der Abnahmekauf
+   `BC-20260808-89309FCA` lief auf `PAID`, und die Bestellbestätigung kam an.
+   Der Kaufweg steht — offen ist an ihm nur noch die **Verkäufernachricht**
+   (Punkt 3), die auf den nächsten echten Kauf zum Beleg wartet.
 3. **Was kann Geld kosten?** Alle 296 Karten sind Einzelstücke und stehen
    gleichzeitig hier und auf eBay. Ein Doppelverkauf bedeutet Rückerstattung,
    verärgerte Kunden und — bei eBay-Stornos — eine Verschlechterung des
@@ -293,7 +297,7 @@ werden — der Test dort erzwingt genau diese Reihenfolge.
 
 ---
 
-## 3. ~~Kunden-E-Mails~~ — GEBAUT am 2026-08-08, wartet auf den Schlüssel
+## 3. ~~Kunden-E-Mails~~ — ERLEDIGT am 2026-08-08, scharf und echt zugestellt
 
 Alle fünf Anlässe sind gebaut und verdrahtet: Bestellbestätigung,
 Preisvorschlag angenommen, Preisvorschlag abgelehnt, Eingangsbestätigung für
@@ -301,15 +305,23 @@ Anfrage und für Kartenankauf. Anbieter ist Resend, die Wortlaute stehen als
 reine Funktionen in `lib/email/templates.ts` und sind ohne Versand prüfbar
 (20 Tests in `tests/email.test.mjs`).
 
-**Es wird noch nichts verschickt, und das ist Absicht.** Ohne
-`RESEND_API_KEY` protokolliert der Versand eine Zeile und kehrt zurück; der
-Shop läuft unverändert. **Zwei Schritte fehlen, beide beim Betreiber:**
+**Der Versand ist scharf.** Die Domain `brandycards.de` ist bei Resend
+verifiziert (TLS auf `Enforced`), `RESEND_API_KEY` liegt als Cloudflare-Secret.
+**Zwei Anlässe sind durch echte Zustellung belegt**, nicht nur durch Tests: die
+Eingangsbestätigung einer Anfrage (2026-08-08, 05:45 UTC) und die
+Bestellbestätigung aus dem Abnahmekauf `BC-20260808-89309FCA`. Die übrigen drei
+sind durch Tests abgedeckt.
 
-1. Die Absenderdomain bei Resend verifizieren. Ohne das prallt jede Nachricht
-   ab, was schlechter wäre als gar nichts zu verschicken.
-2. `npx wrangler secret put RESEND_API_KEY`
+> **Diese Überschrift lautete bis zum 2026-08-08 „wartet auf den Schlüssel"** —
+> vier Tage, nachdem der Schlüssel lag und Nachrichten ankamen. Wer nur diese
+> Datei las, hielt den offensichtlichsten nächsten Schritt für offen. Beim
+> Abhaken gehört der Kopf der Aufgabe mitgezogen, nicht nur der Rumpf.
 
-Danach eine Testbestellung durchspielen und den Posteingang prüfen.
+**Ein Rest bleibt, und er ist klein, aber ungeprüft:** Die
+**Verkäufernachricht** an `brandycards@gmx.de` mit der Lieferadresse ist erst
+seit dem 2026-08-08 gebaut und **nur durch Tests belegt**. Ob sie ankommt und
+die Adresse trägt, zeigt erst der nächste echte Kauf.
+
 Begründung der Bauweise in [ai-agent-log.md](ai-agent-log.md), Durchlauf in
 [ai-handover.md](ai-handover.md).
 

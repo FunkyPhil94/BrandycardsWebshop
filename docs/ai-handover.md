@@ -37,678 +37,18 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-**Zwei Einträge stehen hier gleichzeitig.** Punkt 2 ist gebaut und deployed und
-wartet nur noch auf die Messung des 08:00-UTC-Laufs; Punkt 5 wird in derselben
-Sitzung danebengebaut. Wer hier hereinkommt und beide auf `LÄUFT` findet: Der
-Code beider Punkte ist unabhängig voneinander, sie können sich nicht in die
-Quere kommen.
-
-### 2026-08-08 — Verkaufte Karten verschwinden sofort, und der Verkäufer bekommt die Versanddaten
-
-- **Stand:** LÄUFT
-- **Datum:** 2026-08-08
-- **Anlass:** Der Betreiber hat nach dem ersten echten Kauf zwei Fehler
-  gemeldet, und beide sind ernst, weil sie **jede echte Karte** betreffen:
-  1. Die verkaufte Karte stand weiter mit **„1 VERFÜGBAR"** im Katalog.
-  2. Es gibt **keine Benachrichtigung an den Verkäufer** — und damit keine
-     Lieferadresse, aus der sich ein Versandetikett erzeugen ließe.
-- **Sofortmaßnahme, bereits ausgeführt:** Der Testartikel wurde von Hand auf
-  `ENDED`/`INACTIVE` gesetzt und ist aus dem Katalog verschwunden (294 statt
-  295). Das behebt den Einzelfall, nicht die Ursache.
-
-#### Ursache 1: Der Katalog liest die Menge aus dem falschen Ort
-
-`app/api/products/route.ts:38` nimmt `row.listing?.quantity` — die Menge des
-**eBay-Listings**. Die Tabelle `inventory`, in der der Verkauf gebucht wird,
-wird **gar nicht abgefragt**. Dasselbe in
-`app/api/products/[id]/route.ts` (`quantity: row.listing.quantity`).
-
-Ein Verkauf im Shop setzt `inventory.available_quantity = 0` und
-`status = 'SOLD'`, rührt das Listing aber nicht an. Die Karte bleibt deshalb
-sichtbar und scheinbar kaufbar, **bis der eBay-Import sie abräumt — bis zu zwei
-Stunden.** Ein zweiter Kunde legt sie in den Warenkorb und scheitert erst an der
-Kasse.
-
-**Gefährlich ist das nicht** — `app/api/orders/route.ts` prüft den Bestand und
-lehnt ab, ein Doppelverkauf ist ausgeschlossen. **Ärgerlich ist es sehr.**
-
-- **Wie:** Beide Routen verknüpfen zusätzlich `inventory` und zeigen die
-  **verfügbare** Menge. Karten ohne verfügbaren Bestand fallen aus dem Katalog
-  und liefern auf der Detailseite 404, wie jede andere nicht verfügbare Karte.
-  Die Entscheidung kommt in eine reine Funktion (`lib/catalog-availability.ts`),
-  damit sie ohne Datenbank prüfbar ist.
-- **Achtung, zwei Fallstricke:**
-  - **`PRELISTED`-Karten (Vormerkliste) haben weder Listing noch Bestand.** Ein
-    unbedachter `innerJoin` oder ein Filter auf „Menge > 0" würde sie
-    stillschweigend aus dem Katalog werfen. Sie müssen ausdrücklich ausgenommen
-    werden.
-  - **Fehlt die Bestandszeile bei einer eBay-Karte**, darf das nicht als
-    „ausverkauft" gelten — sonst verschwindet bei einem halb geschriebenen
-    Import der halbe Katalog. Dann zählt die Listing-Menge.
-- **Der Randspeicher bleibt eine Verzögerung, und das gehört gesagt:** Der
-  Katalog wird an Cloudflares Rand zwischengespeichert
-  (`max-age=60, stale-while-revalidate=300`), im schlechtesten Fall also gut
-  sechs Minuten. Ich setze das auf `max-age=30, stale-while-revalidate=60`
-  herunter — damit sind es höchstens **90 Sekunden** statt bis zu zwei Stunden.
-  **Wirklich „sofort" wäre nur ohne Zwischenspeicher**, und der ist als SEC-05
-  bewusst eingebaut worden. Die Entscheidung gehört dem Betreiber; die Zahlen
-  stehen hier, damit er sie treffen kann.
-
-#### Ursache 2: Niemand sagt dem Verkäufer, wohin das Paket soll
-
-`notifyOrderPaid` verschickt genau **eine** Nachricht, an den Kunden. Die
-Lieferadresse steht in `orders.shipping_address` und wird nirgends zugestellt.
-Ohne sie kein Etikett.
-
-- **Wie:** Eine zweite Nachricht an **brandycards@gmx.de** mit allem, was für
-  den Versand nötig ist: Bestellnummer, Zeitpunkt, **vollständige
-  Lieferadresse**, Positionen, Beträge und die Kontaktadresse des Kunden für
-  Rückfragen.
-- **Die Adresse kommt als `[vars]`-Eintrag** `SELLER_NOTIFICATION_EMAIL` in die
-  `wrangler.toml`, kein Secret. Sie steht ohnehin im Impressum und in der
-  Datenschutzerklärung desselben öffentlichen Repositories — kein neuer
-  Umstand, aber bewusst geprüft, bevor sie eingecheckt wird.
-- **Getrennt abgesichert:** Beide Nachrichten laufen in **eigenen**
-  `versucheVersand`-Blöcken. Scheitert die Kundenbestätigung, muss die
-  Verkäufernachricht trotzdem hinausgehen — und umgekehrt. Ein gemeinsamer
-  Block würde beim ersten Fehler die zweite verschlucken.
-- **Der Einmal-Riegel gilt weiter:** `notifyOrderPaid` wird nur vom Gewinner des
-  Übergangs `CREATED/APPROVED → CAPTURED` aufgerufen. Der Verkäufer bekommt also
-  **eine** Nachricht je Bestellung, nicht zwei — beide Zahlungswege feuern.
-- **Betroffen:** neu `lib/catalog-availability.ts`,
-  `tests/catalog-availability.test.mjs`; geändert `app/api/products/route.ts`,
-  `app/api/products/[id]/route.ts`, `lib/email/config.ts`,
-  `lib/email/templates.ts`, `lib/email/notify.ts`, `tests/email.test.mjs`,
-  `wrangler.toml`, `.env.example`. **Keine Migration.**
-- **Verifikation:** Tests mit Rot-Nachweis für beide Teile; Prüfkette; nach dem
-  Deploy die Lieferadresse an einer echten Bestellung belegen — der Betreiber
-  kauft dafür erneut.
-- **Ergebnis: ABGESCHLOSSEN.** Prüfkette grün: `tsc` sauber, Lint 0 Fehler,
-  `npm test` **229/229** (17 neue Tests).
-- **Rot-Nachweis, beide Teile:** Lässt man die Bestandsprüfung wieder auf die
-  Listing-Menge zurückfallen, fallen **6** Tests; entfernt man die
-  HTML-Maskierung aus der Verkäufernachricht, fällt genau der Test, der den
-  präparierten Namen prüft.
-- **Am echten Produktionsbau belegt**, nicht nur in Tests: `npm run build`,
-  dann `npx wrangler dev --local` mit drei nachgebauten Karten in einer lokalen
-  Datenbank (Tabellendefinitionen lesend aus der Produktion geholt).
-  - **Katalog:** Die verkaufte Karte ist **weg**, die verfügbare da, und die
-    Karte der **Vormerkliste ist geblieben** — der Fallstrick, den ich mir
-    selbst gestellt hatte.
-  - **Detailseite:** verfügbar → `200` mit `quantity: 1`; verkauft → `404`
-    mit „Diese Karte ist nicht verfügbar."
-  - **`cache-control`:** `public, max-age=30, stale-while-revalidate=60`.
-- **Ein eigener Fehler beim Prüfen, der fast als Befund durchgegangen wäre:**
-  Die Detailseite lieferte zuerst auch für die *verfügbare* Karte 404. Ursache
-  war **nicht** der Code, sondern meine Testdaten: Die Route verlangt eine
-  32-stellige Hex-Kennung (`/^[a-f0-9]{32}$/`) und lehnt vorher ab; meine
-  IDs waren zwölf Zeichen lang. **Wer hier prüft, muss echte Kennungsformate
-  verwenden** — sonst misst er den Türsteher statt die Wohnung.
-- **Was ausdrücklich noch aussteht:** Die Verkäufernachricht ist **nicht** an
-  echten Daten belegt. Dafür braucht es einen weiteren echten Kauf; erst dann
-  ist bewiesen, dass die Nachricht bei `brandycards@gmx.de` ankommt und die
-  Adresse trägt.
-
-### 2026-08-08 — Testartikel für den Live-Abnahmekauf (1 Cent)
-
-- **Stand:** LÄUFT
-- **Datum:** 2026-08-08
-- **Ziel:** **Schreibender Eingriff in Produktionsdaten**, vom Betreiber
-  ausdrücklich beauftragt. Er braucht eine kaufbare Karte, um den ersten
-  **echten** PayPal-Kauf durchzuspielen — die ausstehende Abnahme aus
-  ai-todo Punkt 0.
-- **Kein neuer Artikel, sondern der vorhandene wieder in Betrieb.**
-  `ec6c212e96332bdcc93612848694b907` („TESTARTIKEL BrandyCards, bitte nicht
-  kaufen") liegt bereits in der Datenbank und wurde vom 08:00-Lauf auf
-  `INACTIVE`/`ENDED`/`UNAVAILABLE` gesetzt. Ihn zu reaktivieren ist sauberer,
-  als eine zweite Produktzeile mit eigener Bestands- und Listing-Zeile
-  anzulegen.
-- **Drei `UPDATE`s:** Produkt auf `ACTIVE`, Listing auf `ACTIVE` mit **Preis 1
-  Cent**, Bestand auf verfügbar 1 / reserviert 0 / verkauft 0 / `AVAILABLE`.
-  Der Bestand muss zurückgesetzt werden, weil der Sandbox-Testkauf vom Vormittag
-  dort `sold_quantity = 1` hinterlassen hat.
-- **Der Betrag ist nicht 1 Cent, sondern 3,46 €.** Der Versand nach Deutschland
-  kostet 3,45 € und kommt hinzu; unter 1 Cent geht der Artikelpreis nicht.
-  Gehört gesagt, damit sich niemand über die Abbuchung wundert.
-- **Zeitpunkt bewusst gewählt:** angelegt um ~08:2x UTC, der nächste Cron-Schlag
-  ist **10:00 UTC**. Beim letzten Mal wurde der Artikel um 06:00:07 angelegt und
-  um 06:00:38 vom Import sofort wieder abgeräumt. Das Kauffenster reicht diesmal
-  knapp zwei Stunden.
-- **Der Import räumt ihn danach von selbst ab** — die erfundene ItemID
-  `999000000001` steht nicht in der eBay-Aktivliste. Das ist erwünscht und
-  braucht keinen weiteren Eingriff.
-- **Der Artikel ist öffentlich sichtbar**, solange er lebt. Dagegen hilft nur
-  der unmissverständliche Titel und der Preis; einen versteckten Weg gibt es
-  nicht, weil `/api/products` nur `ACTIVE` ausliefert und nur ein aktives
-  Listing kaufbar ist.
-- **Die Bestandsprüfung vor der Zahlung blockiert nicht.** Sie ruft `GetItem`
-  bei eBay auf, eBay kennt die erfundene ItemID nicht und antwortet mit
-  `Ack=FAILURE`; `getEbayAvailability` legt dann **keinen** Eintrag an, und ohne
-  Eintrag gilt die Karte als „unbekannt" — was den Kauf durchlässt
-  (`lib/ebay-stock-check.ts`). Am 2026-08-08 schon einmal so nachgelesen.
-- **Betroffen:** ausschließlich Produktionsdaten, drei Zeilen. Kein Code, keine
-  Migration, kein Deploy.
-- **Rückweg:** Dieselben drei Zeilen zurücksetzen — oder nichts tun, dann
-  erledigt es der 10:00-Lauf.
-- **Ergebnis: ABGESCHLOSSEN.** Alle drei `UPDATE`s mit `changes: 1`
-  durchgelaufen, um ~08:2x UTC.
-- **Die schreibenden D1-Befehle gingen diesmal durch.** Beim Durchlauf am
-  Vormittag wurden sie zweimal von der Berechtigungsprüfung abgelehnt und
-  mussten dem Betreiber übergeben werden. **Die Notiz unter „Offene Punkte", man
-  solle im Zweifel gleich den Befehl herausgeben, ist damit überholt** — es
-  lohnt sich, es selbst zu versuchen.
-- **Am laufenden Shop belegt, nicht in der Datenbank:**
-  - `/api/products` liefert **295** Karten statt 294, der Testartikel ist
-    darunter mit `priceAmountCents: 1`, Menge 1, Kategorie „Festpreis".
-  - Die Detailseite zeigt **„0,01 €"**, **„1 VERFÜGBAR"** und einen aktiven
-    Knopf „IN DEN WARENKORB" (`disabled: false`).
-- **Erinnerung an den Betrag:** Mit Versand nach Deutschland wird **3,46 €**
-  abgebucht, nicht 1 Cent.
-
-### 2026-08-08 — PayPal auf Live (ai-todo Punkt 0)
-
-- **Stand:** LÄUFT
-- **Datum:** 2026-08-08
-- **Ziel:** Punkt 0 — der Punkt, der jeden Verkauf blockierte. `lib/paypal/config.ts`
-  fiel mangels `PAYPAL_ENVIRONMENT` auf `sandbox` zurück, der Shop sprach mit
-  `api-m.sandbox.paypal.com`, **ein echter Kunde konnte nicht bezahlen.**
-- **Der Betreiber hat die Schritte 1–3 gemeldet:** Live-App bei PayPal angelegt,
-  Live-Webhook auf `https://shop.brandycards.de/api/paypal/webhook` eingerichtet
-  und die drei Secrets `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`,
-  `PAYPAL_WEBHOOK_ID` ersetzt.
-- **Mein Teil, Schritt 4:** `PAYPAL_ENVIRONMENT = "production"` in `[vars]` der
-  `wrangler.toml` eintragen und deployen. **Kein Geheimnis** — der Wert gehört
-  bewusst nicht zu den Secrets, sondern in die versionierte Konfiguration.
-- **Dazu ein Riegel, der vorher fehlte:** `getPayPalConfig` fällt bei fehlendem
-  oder falsch geschriebenem Wert **still** auf `sandbox` zurück. Das ist als
-  Verhalten richtig (kein Absturz), als Betriebszustand aber der schlimmste
-  denkbare: Der Shop sähe gesund aus und nähme trotzdem kein Geld ein — genau
-  der Zustand, der seit dem 2026-08-06 unbemerkt bestand. Ein Test in
-  `tests/hardening.test.mjs` hält deshalb fest, dass `wrangler.toml` den Wert
-  auf `production` setzt. Wer ihn je entfernt, bekommt einen roten Lauf statt
-  eines stillen Ausfalls.
-- **Betroffen:** `wrangler.toml`, `tests/hardening.test.mjs`. **Kein
-  Anwendungscode**, keine Migration, keine Änderung an Produktionsdaten.
-- **Das Fenster, in dem der Checkout nicht funktioniert, ist jetzt offen** und
-  schließt sich mit diesem Deploy: Seit dem Tausch der Secrets liegen
-  Live-Zugangsdaten vor, während der Shop noch den Sandbox-Endpunkt anspricht.
-  Deshalb hat dieser Durchlauf Vorrang vor allem anderen.
-- **Verifikation, und ihre Grenze:** Prüfkette und Deploy belegen, dass die
-  Konfiguration steht — `wrangler deploy` listet die Variable auf, und der
-  Webhook antwortet mit 400 statt 503 (503 hieße: Webhook-ID leer). **Ob die
-  hinterlegten Zugangsdaten gültig sind, kann nur ein echter Kauf zeigen.** Das
-  ist keine Nachlässigkeit, sondern eine Grenze: Ein Tokenaufruf gegen
-  `api-m.paypal.com` mit fremden Zugangsdaten ist von hier aus nicht führbar,
-  ohne die Geheimnisse anzufassen.
-- **Rückweg:** Die Zeile entfernen und deployen — der Shop spricht dann wieder
-  mit der Sandbox.
-- **Ergebnis: ABGESCHLOSSEN.** Prüfkette grün: `tsc` sauber, Lint 0 Fehler,
-  `npm test` **212/212** (2 neue Tests). Deployed als Version **`4a6b7a46`**,
-  Commit `bfa479d`, CI vorher grün.
-- **`wrangler deploy` bestätigt die Bindung:**
-  `env.PAYPAL_ENVIRONMENT ("production")`.
-- **In Produktion nachgeprüft:** `/`, `/karten`, `/checkout`, `/account`,
-  `/admin` je 200; `/account` ohne „noch nicht konfiguriert";
-  `/api/orders` ohne Anmeldung 401; der Webhook antwortet mit **400** und nicht
-  mit 503 — 503 hieße, `PAYPAL_WEBHOOK_ID` sei leer. Die neue Webhook-ID liegt
-  also vor.
-- **Rot-Nachweis:** Mit `PAYPAL_ENVIRONMENT = "sandbox"` fällt genau der neue
-  Test (33/34). Ein stiller Rückfall in die Sandbox kann also nicht mehr
-  unbemerkt eingecheckt werden.
-- **Was hiermit ausdrücklich noch NICHT belegt ist: dass Geld ankommt.** Ob die
-  hinterlegten Live-Zugangsdaten gültig sind und der Live-Webhook zustellt,
-  zeigt allein ein echter Kauf. Der steht beim Betreiber und ist das
-  Abnahmekriterium aus ai-todo Punkt 0.
-
-#### ABGENOMMEN — der erste echte Kauf ist durch
-
-Bestellung **`BC-20260808-89309FCA`**, 2026-08-08 08:29:48 UTC. **Der Shop hat
-zum ersten Mal echtes Geld eingenommen.**
-
-| Prüfung | Ergebnis |
-|---|---|
-| Bestellung | `PAID`, 1 Cent Ware + 345 Cent Versand = **346 Cent** |
-| Zahlung | `CAPTURED`, Capture-ID `1LC23949C0153504L`, 346 Cent EUR |
-| Bestand | verfügbar 0, reserviert 0, **verkauft 1**, `SOLD` |
-| eBay-Outbox | leer (Schreibpfad ist aus, erwartet) |
-| Webhook | `PAYMENT.CAPTURE.COMPLETED`, **`PROCESSED`** um 08:29:53.925Z |
-| Bestellbestätigung | vom Betreiber bestätigt |
-
-**Damit ist auch die Webhook-Korrektur an echten Daten belegt — und meine
-Einschätzung dazu war zu pessimistisch.** Ich hatte notiert, dafür müsse PayPal
-dasselbe Ereignis ein zweites Mal zustellen, was sich nicht herbeiführen lasse.
-**Falsch:** Der Dubletten-Pfad wird bei *jeder* Zahlung durchlaufen, weil immer
-beide Wege feuern — die Rückkehr des Kunden aus PayPal (08:29:48) und der
-Webhook fünf Sekunden später (08:29:53). Der Kunde gewann den Übergang, der
-Webhook fand `CAPTURED` vor und lief in den Dubletten-Pfad. Genau dieselbe Lage
-wie um 06:10 — nur steht die Zeile jetzt auf `PROCESSED` statt auf `RECEIVED`.
-Ein direkterer Vergleich ist kaum zu bekommen.
-
-Die alte Zeile `WH-4MD290111R3948627-…` steht weiterhin auf `RECEIVED` und ist
-damit die einzige verbliebene im ganzen Bestand — sie taugt als Beleg, wie es
-vorher aussah.
-
-### 2026-08-08 — Der Dubletten-Webhook hinterlässt keine falsche Spur mehr
-
-- **Stand:** LÄUFT
-- **Datum:** 2026-08-08
-- **Ziel:** Der Punkt, der seit dem 2026-08-08 unter „Offene Punkte" stand und
-  auf eine Entscheidung wartete — der Betreiber hat ihn heute beauftragt.
-  `app/api/paypal/webhook/route.ts` steigt bei `payment.status === "CAPTURED"`
-  vorzeitig mit `duplicate: true` aus, **bevor** die Zeile in `webhook_events`
-  auf `PROCESSED` gesetzt wird.
-- **In Produktion nachgesehen, nicht aus der Notiz übernommen:**
-  `WH-4MD290111R3948627-8AM47435BU5710537`
-  (`PAYMENT.CAPTURE.COMPLETED`, 2026-08-08T06:10:22.766Z) steht auf `RECEIVED`
-  mit leerem `processed_at`. Alle anderen vier Zeilen der Tabelle stehen auf
-  `PROCESSED`.
-- **Funktional harmlos, aber die Zeile lügt.** Ein erneuter Zustellversuch wird
-  ohnehin abgewiesen, weil die Eingangsprüfung (Zeile 68) `RECEIVED` genauso
-  behandelt wie `PROCESSED`. Der Schaden ist diagnostisch: Die Zeile sieht aus
-  wie ein Ereignis, das mitten in der Verarbeitung hängen geblieben ist, und
-  führt jede spätere Suche nach hängenden Webhooks in die Irre. Das wiegt
-  schwerer, sobald echtes Geld fließt.
-- **Nicht die zwei Zeilen aus der Notiz, sondern eine Zeile weniger.** Statt auf
-  dem Dubletten-Pfad ein zweites `PROCESSED`-Schreiben danebenzustellen,
-  entfällt das vorzeitige `return`: Der Fall setzt einen Merker und läuft durch
-  dasselbe Ende wie jeder andere. **Damit ist die Fehlerklasse weg, nicht nur
-  dieser Fall** — ein künftiger Zweig kann die Buchführung nicht mehr
-  überspringen, weil es keinen Ausgang mehr gibt, der an ihr vorbeiführt.
-- **Dazu eine prüfbare Regel:** Was mit einem `PAYMENT.CAPTURE.COMPLETED`
-  geschehen soll, hängt allein am Zustand der Zahlung. Diese Entscheidung
-  wandert als reine Funktion nach `lib/paypal/webhook-decision.ts`
-  (`CAPTURED` → Dublette, `REFUNDED` → Konflikt, sonst einziehen) und wird
-  ohne Netz und Datenbank geprüft. Wichtig ist dabei vor allem, dass
-  **`REFUNDED` niemals als einziehbar** durchgeht.
-- **Betroffen:** neu `lib/paypal/webhook-decision.ts` und
-  `tests/paypal-webhook.test.mjs`; geändert
-  `app/api/paypal/webhook/route.ts`. **Keine Migration, keine Änderung an
-  Produktionsdaten.**
-- **Die bestehende Zeile wird nicht repariert.** Sie rückwirkend auf
-  `PROCESSED` zu setzen wäre ein schreibender Eingriff in Produktionsdaten und
-  damit rücksprachepflichtig; der Auftrag lautete auf die Korrektur des Pfades.
-  Der Befehl steht unten, falls der Betreiber sie doch bereinigen will.
-- **Verifikation:** Tests mit Rot-Nachweis; Prüfkette; nach dem Deploy bleibt
-  der Beleg an echten Daten aus, weil dafür eine zweite Zustellung desselben
-  PayPal-Ereignisses nötig wäre — das lässt sich nicht herbeiführen, ohne eine
-  echte Zahlung zu wiederholen. **Das wird hier ausdrücklich als Grenze
-  festgehalten und nicht als „geprüft" ausgegeben.**
-- **Ergebnis: ABGESCHLOSSEN.** Prüfkette grün: `tsc` sauber, Lint 0 Fehler,
-  `npm test` **210/210** (6 neue Tests).
-- **Gebaut:** `lib/paypal/webhook-decision.ts` mit `webhookCaptureAction`
-  (`CAPTURED` → Dublette, `REFUNDED` → Konflikt, sonst einziehen); in der Route
-  ersetzt ein Merker das vorzeitige `return`, und **alle** Pfade laufen durch
-  dasselbe Ende, das `PROCESSED` schreibt.
-- **Rot-Nachweis:** Mit wieder eingebautem `return` fällt genau der Test „der
-  Webhook verlässt die Verarbeitung nur an einer Stelle" (5/6). Der Test misst
-  also die Struktur, um die es geht, und nicht nur die Formulierung.
-- **Die Antwort unterscheidet weiterhin** zwischen `duplicate: true` und
-  `processed: true` — PayPal soll eine Dublette als erledigt sehen, sonst
-  wiederholt es die Zustellung.
-- **Die bestehende Zeile `WH-4MD290111R3948627-…` steht weiterhin auf
-  `RECEIVED`.** Sie zu ändern wäre ein schreibender Eingriff in
-  Produktionsdaten. Wer sie bereinigen will:
-  ```sql
-  UPDATE webhook_events SET status='PROCESSED', processed_at='2026-08-08T06:10:22.766Z'
-  WHERE external_event_id='WH-4MD290111R3948627-8AM47435BU5710537';
-  ```
-- **Grenze der Prüfung, ausdrücklich:** An echten Daten ist die Korrektur
-  **nicht** belegt. Dafür müsste PayPal dasselbe Ereignis ein zweites Mal
-  zustellen, und das ließe sich nur durch eine wiederholte echte Zahlung
-  herbeiführen. Belegt sind die Entscheidung und die Struktur.
-
-### 2026-08-08 — CSP ohne `'unsafe-inline'`: Nonces für die Inline-Skripte (ai-todo Punkt 4a)
-
-- **Stand:** LÄUFT
-- **Datum:** 2026-08-08
-- **Ziel:** Punkt 4a aus [ai-todo.md](ai-todo.md). `script-src` trägt
-  `'unsafe-inline'`, weil vinext Inline-`<script>`-Blöcke je Seite ausliefert.
-  Damit sind **Inline-Eventhandler erlaubt**: Ein künftig eingeschleustes
-  `<img onerror=…>` würde laufen — genau die Form, die SEC-01 hatte.
-- **Vorher an der Produktion gemessen, statt der Aufgabenbeschreibung zu
-  glauben.** Zwei Befunde, die den Entwurf bestimmen:
-  1. **Alle Skripte sind inline, keines hat `src`** (7 Blöcke auf der
-     Startseite: RSC-Parameter, Navigationszustand, drei RSC-Blöcke, ein
-     Fertig-Schalter und `import("/assets/index-….js")`). Die Chunks kommen
-     über `<link rel="modulepreload">` und den dynamischen `import()`.
-  2. **HTML wird nicht zwischengespeichert** — die Antwort auf `/` und
-     `/karten` trägt **kein** `cache-control` und **kein** `etag`, es gibt also
-     keine 304-Antwort auf HTML. Das ist die Voraussetzung dafür, dass ein
-     Zufallswert je Antwort überhaupt tragen kann: Käme der Rumpf aus einem
-     Zwischenspeicher und die Kopfzeile frisch, passte der Wert nicht mehr zum
-     Markup und **jede** Seite bliebe leer. Die Assets tragen zwar `etag`, sind
-     aber JS und CSS ohne Inline-Skripte.
-- **Abweichung von der Aufgabenbeschreibung, bewusst und begründet: kein
-  `'strict-dynamic'`.** Die Aufgabe nennt es, mit der Begründung, vinext lade
-  weitere Skripte nach. Das stimmt — aber sie kommen alle **von dieser
-  Herkunft**, und dafür genügt `'self'`. `'strict-dynamic'` hätte einen Preis:
-  Es lässt Browser die Angabe `'self'` **ignorieren**, womit jedes
-  `<script src>` ohne Zufallswert stillgelegt würde und der dynamische
-  `import()` von einer Spezifikationsfeinheit abhinge. `script-src 'self'
-  'nonce-…'` erreicht dasselbe Ziel — Inline-Eventhandler können **nie** einen
-  Zufallswert tragen und sind damit tot — ohne diese Abhängigkeit. Sollte je
-  ein fremdes Skript nötig werden, ist `'strict-dynamic'` der nächste Schritt.
-- **Wie:** Zufallswert je Antwort in `worker/index.ts`; `HTMLRewriter` hängt
-  ihn **jedem** `<script>` an; `lib/security-headers.ts` setzt ihn in die
-  Regel. Antworten, die kein HTML sind, bekommen `script-src 'self'` ganz ohne
-  Zufallswert — dort führt niemand Skripte aus, und `'unsafe-inline'`
-  verschwindet damit aus **allen** Antworten.
-- **Drei Fallen, auf die zu achten ist:**
-  - Der Zufallswert muss **je Antwort** neu sein, sonst ist er wertlos.
-  - `HTMLRewriter` darf nur auf `text/html` laufen, nicht auf JSON, Bilder oder
-    Assets.
-  - Antworten ohne Rumpf (101, 204, 304) dürfen nicht umgeschrieben werden.
-- **`style-src` behält `'unsafe-inline'`** und bleibt außen vor: React und
-  vinext setzen Inline-Stile. Das ist eine eigene Aufgabe, kein Nebenbei.
-- **Betroffen:** `lib/security-headers.ts`, `worker/index.ts`,
-  `tests/hardening.test.mjs`. **Keine Migration, keine Datenänderung.**
-- **Verifikation:** Tests für Regel und Zufallswert samt Rot-Nachweis; dann
-  **lokal im Browser**, bevor irgendetwas deployed wird: Startseite, `/karten`,
-  Kartendetail, `/checkout`, `/account` und `/admin` ohne Konsolenfehler
-  bedienbar, und in der ausgelieferten Seite trägt jedes `<script>` den Wert.
-  **Ein Fehler hier legt den ganzen Shop lahm** — eine blockierte
-  Hydrierung heißt: keine Seite funktioniert mehr. Deshalb wird hier nicht auf
-  eine Stichprobe vertraut.
-- **Rückweg:** Eine Zeile — `'unsafe-inline'` zurück in `script-src`, deployen.
-- **Ergebnis: ABGESCHLOSSEN.** Prüfkette grün: `tsc` sauber, Lint 0 Fehler,
-  `npm test` **204/204** (9 neue Tests).
-- **Der Gewinn ist an beiden Enden gemessen, nicht behauptet.** Derselbe
-  Angriff, genau in der Form von SEC-01
-  (`<img src="…" onerror="window.__angriffLief = true">`, über `innerHTML`
-  eingeschleust):
-  - **Gegen die laufende Produktion mit `'unsafe-inline'`: er läuft**
-    (`angriffLief: true`).
-  - **Gegen den neuen Produktionsbau: er läuft nicht** (`angriffLief: false`),
-    der Browser meldet einen Verstoß gegen `script-src-attr`.
-  Das ist der ganze Zweck dieser Aufgabe, und er ist damit belegt statt
-  angenommen.
-- **Geprüft wurde am echten Produktionsbau**, nicht nur am
-  Entwicklungsserver: `npm run build`, dann `npx wrangler dev --local` auf Port
-  8788. Dort tragen alle **7** Skripte den Zufallswert, die Kopfzeile nennt
-  denselben, und ein Durchgang über Startseite, `/karten`, `/anfragen`,
-  `/verkaufen`, `/ueber-uns`, `/account`, `/checkout` und `/admin` ergab
-  **null** Verstöße bei funktionierender Hydrierung und funktionierender
-  Client-Navigation.
-- **Ein Zwischenbefund, der beinahe falsch gedeutet worden wäre:** Am
-  Entwicklungsserver meldete der Browser 33 Verstöße gegen `script-src` mit
-  `blockedURI: "eval"`. Das ist **die HMR von Vite**, nicht der ausgelieferte
-  Code. Belegt durch zwei Messungen: der Produktionsbau erzeugt **null**
-  Verstöße, und die **laufende Produktion** — deren Regel `eval` schon vorher
-  verbot — ebenfalls null. Wer diese Zeilen künftig wieder sieht: erst den
-  Produktionsbau messen, bevor `'unsafe-eval'` auch nur erwogen wird.
-- **Nachgemessen statt angenommen:** Der Zufallswert ist bei jeder Antwort ein
-  anderer (drei Abrufe, drei Werte), und Antworten, die kein HTML sind, tragen
-  `script-src 'self'` **ohne** Zufallswert — `'unsafe-inline'` steht damit in
-  **keiner** Antwort mehr.
-- **Ein zweiter Stolperstein, der Zeit gekostet hat:** Im Browser schienen auf
-  `/karten` acht Skripte **ohne** Zufallswert zu stehen. Das war eine
-  Client-Navigation — die Skript-Tags im DOM stammten aus dem Seitenwechsel,
-  nicht aus der Auslieferung. Ein direkter Abruf jeder einzelnen Route zeigte:
-  8 von 8 Tags mit Wert, auf allen fünf geprüften Seiten. **Der DOM nach einer
-  Client-Navigation ist kein Beleg dafür, was der Server ausgeliefert hat.**
-- **Typen:** `HTMLRewriter` war dem Typprüfer unbekannt. Eine knappe Erklärung
-  steht jetzt in `cloudflare-env.d.ts`, im selben Stil wie die übrigen
-  Bindings — keine neue Abhängigkeit.
-- **`npx wrangler dev` ist am Ende abgestürzt** („No such module
-  `__vite_rsc_assets_manifest.js`"). Ursache ist harmlos und gehört nicht zur
-  Änderung: `npm test` baut `dist/` neu, und der laufende Server versuchte
-  mitten im Neubau nachzuladen. **Die Prüfungen liefen davor**, gegen einen
-  antwortenden Server. Wer beides zugleich braucht: erst prüfen, dann testen.
-
-#### In Produktion nachgeprüft — deployed als `d230f425`
-
-- **Der Angriff ist tot, wo er vor Minuten noch lief.** Auf
-  `https://shop.brandycards.de` ergibt derselbe eingeschleuste `<img onerror=…>`
-  jetzt `angriffLief: false` und einen `script-src-attr`-Verstoß. Vor dem Deploy
-  war die Antwort an derselben Stelle `true`.
-- **Der Shop läuft:** Startseite, `/karten`, `/anfragen`, `/ueber-uns`,
-  `/checkout` und `/admin` hydrieren und navigieren; der **einzige** gemeldete
-  Verstoß ist der absichtlich ausgelöste. `/admin` zeigt nicht „noch nicht
-  konfiguriert".
-- **Die gefährliche Mischung wurde ausdrücklich gesucht und nicht gefunden.**
-  Beim Ausrollen liefern die Ränder minutenlang alte und neue Fassung
-  nebeneinander. Tödlich wäre **neue Kopfzeile mit Zufallswert auf altem Rumpf
-  ohne** — die Seite bliebe leer. 12 Abrufe, bei jedem Kopfzeile **und** Rumpf
-  derselben Antwort verglichen: 8× neu und stimmig, 4× durchgehend alt,
-  **kein einziger gemischter Fall**. Kopfzeile und Rumpf kommen immer aus
-  derselben Fassung, weil beide im selben Worker entstehen. 45 Sekunden später
-  15 von 15 Abrufen auf der neuen Fassung.
-- **Eine Falle beim Nachprüfen, in die ich zuerst getappt bin:** Getrennte
-  Abrufe für Kopfzeile und Rumpf zu vergleichen ist während eines Ausrollens
-  **wertlos** — die erste Messung meldete „Kopfzeile passt NEIN" für drei
-  Seiten, und es war nur eine alte Antwort gegen eine neue Kopfzeile aus einem
-  anderen Abruf. Wer das prüft, muss Kopfzeile und Rumpf **derselben** Antwort
-  vergleichen (`curl -D kopf.txt … -o rumpf.html`).
-
-### 2026-08-08 — Der Checkout zeigt den ausgehandelten Preis (ai-todo Punkt 5)
-
-- **Stand:** LÄUFT
-- **Datum:** 2026-08-08
-- **Ziel:** Punkt 5 aus [ai-todo.md](ai-todo.md). Nach einer angenommenen
-  Verhandlung zeigt der Checkout weiterhin den **Listenpreis**. Der Rabatt
-  erscheint erst in der Serverantwort und bei PayPal. Kunden zahlen nie zu
-  viel — sie sehen den Vorteil nur zu spät, und eine transparente Preisangabe
-  vor dem Bestellabschluss ist in Deutschland auch rechtlich das saubere
-  Vorgehen.
-- **Folgenlos, bis es das nicht mehr ist:** Solange niemand ein angenommenes
-  Angebot hat, fällt nichts auf. Mit dem ersten angenommenen Vorschlag wird es
-  sofort sichtbar.
-- **Die Entwurfsentscheidung, auf die es ankommt:** Die Anzeige darf **nicht**
-  ihre eigene Preisregel bekommen. Sonst driften Anzeige und Abrechnung
-  auseinander, und der Kunde sieht am Ende einen anderen Betrag als den, der
-  abgebucht wird — schlimmer als gar keine Anzeige. Deshalb wird die
-  Entscheidung in `lib/price-offers.ts` **einmal** getroffen und von beiden
-  benutzt: `pickAcceptedOffers` wird die eine Quelle, `pickAcceptedPrices`
-  (heute von `app/api/orders/route.ts` benutzt) leitet sich daraus ab. Auch die
-  zweite Regel wird gespiegelt statt nachgebaut: **Ein angenommenes Angebot
-  senkt nur** — ist der Listenpreis inzwischen darunter, gilt der niedrigere
-  (`app/api/orders/route.ts:79`).
-- **Wie:**
-  - Neue Route `GET /api/account/offers`, die für den **angemeldeten** Nutzer
-    alle angenommenen, unverfallenen Angebote als `productId → Betrag` samt
-    Gültigkeit liefert. Anmeldung über `getAuthenticatedAppUser` wie in
-    `app/api/orders/route.ts`, dazu das übliche Rate-Limit.
-  - `app/checkout/page.tsx` holt sie und zeigt je Position den ausgehandelten
-    Preis, den durchgestrichenen Listenpreis und die Ersparnis; die
-    Zwischensumme rechnet mit dem ausgehandelten Preis.
-- **Achtung, und das bleibt unangetastet:** Reine Darstellung. Der verbindliche
-  Preis wird weiterhin **ausschließlich** serverseitig bestimmt; aus dem Browser
-  wird niemals ein Betrag übernommen. Der Checkout schickt nach wie vor nur
-  Produkt-Kennungen.
-- **Wer nicht angemeldet ist, sieht keinen Fehler.** Die Abfrage antwortet dann
-  mit 401, und der Checkout zeigt schlicht die Listenpreise — Anmelden verlangt
-  er ohnehin erst beim Absenden.
-- **Betroffen:** neu `app/api/account/offers/route.ts`; geändert
-  `lib/price-offers.ts`, `app/checkout/page.tsx`, `app/globals.css`,
-  `tests/price-offers.test.mjs`. **Keine Migration, keine Änderung an
-  Produktionsdaten.**
-- **Verifikation:** Tests für die neue gemeinsame Entscheidung samt
-  Rot-Nachweis, darunter ausdrücklich der Fall „Listenpreis ist unter das
-  Angebot gefallen"; Prüfkette; im Browser gegen den lokalen Server prüfen,
-  dass der Checkout ohne Angebot unverändert aussieht.
-- **Ehrlich zur Grenze der Prüfung:** Ein Konto mit einem **echten**
-  angenommenen Angebot gibt es nicht, und eines anzulegen wäre ein schreibender
-  Eingriff in Produktionsdaten. Der Fall wird deshalb über die Tests und über
-  eine untergeschobene Antwort im Browser belegt, nicht an echten Daten.
-- **Ergebnis: ABGESCHLOSSEN.** Prüfkette grün: `tsc` sauber, Lint 0 Fehler,
-  `npm test` **195/195** (6 neue Tests).
-- **Gebaut:** neu `lib/offer-price.ts` (`effectiveUnitPrice`) und
-  `app/api/account/offers/route.ts`; in `lib/price-offers.ts` wurde
-  `pickAcceptedOffers` die eine Quelle, aus der sich `pickAcceptedPrices`
-  ableitet.
-- **Eine eigene Datei für eine einzige Zeile, und der Grund gehört behalten:**
-  `effectiveUnitPrice` konnte **nicht** in `lib/price-offers.ts` bleiben. Der
-  Checkout ist eine `"use client"`-Komponente, und diese Datei zieht Drizzle
-  samt Datenbankschema mit — der Import hätte beides ins Client-Bundle gepackt.
-  Wer die Regel später „aufräumt" und zurückschiebt, baut sich das ein.
-- **`app/api/orders/route.ts` benutzt jetzt dieselbe Funktion**, statt die Regel
-  ein zweites Mal zu schreiben. Das war der eigentliche Zweck: Anzeige und
-  Abrechnung können nicht mehr auseinanderdriften.
-- **Rot-Nachweis:** Mit `Math.min` ausgebaut fällt genau der Test „ein unter das
-  Angebot gefallener Listenpreis gewinnt" (14/15). Der Test misst also etwas.
-- **Im Browser an drei Fällen belegt** (lokaler Server, Produkte und Angebote
-  untergeschoben, weil die lokale Datenbank leer ist):
-  1. **Ohne Angebot unverändert:** 45,00 € und 29,00 €, Zwischensumme 74,00 €,
-     keine Ersparnis-Zeile, kein Durchgestrichenes.
-  2. **Mit Angebot:** „45,00 € 32,00 €" mit `line-through` auf dem Listenpreis
-     und Gold auf dem ausgehandelten, dazu „DEIN AUSGEHANDELTER PREIS",
-     Zwischensumme 61,00 €, „Deine Ersparnis −13,00 €", Gesamt 64,45 €. Die
-     zweite Karte ohne Angebot blieb bei 29,00 €.
-  3. **Angebot über dem Listenpreis** (50,00 € gegen 45,00 €): **nichts**
-     angezeigt, keine Ersparnis, 45,00 € bleibt stehen — die Regel „senkt nur"
-     greift auch in der Anzeige.
-- **Nachgemessen statt angenommen:** `display` beider Preise ist `inline`.
-  `.checkout-item span` steht auf `block` und trifft auch verschachtelte
-  Spannen; ohne die Rücknahme in der CSS stünden die beiden Preise
-  untereinander.
-- **Die echte Route wurde gegen den laufenden Server geprüft:** ohne Anmeldung
-  `401 {"error":"Nicht authentifiziert."}`.
-- **Vorbestehend und nicht von diesem Auftrag:** Lokal antwortet
-  `/api/products` mit 503, weil die lokale D1 leer ist. Auf der Produktion
-  liefert dieselbe Route 200.
-
-### 2026-08-08 — Der Sync schreibt nur noch, was sich geändert hat (ai-todo Punkt 2)
-
-- **Stand:** LÄUFT
-- **Datum:** 2026-08-08
-- **Ziel:** Punkt 2 aus [ai-todo.md](ai-todo.md). Ein Sync-Lauf schreibt heute
-  ~5 396 Zeilen, obwohl sich zwischen zwei Läufen fast nie etwas ändert. Die
-  Läufe der letzten 24 Stunden belegen es: **294 „aktualisiert", 0 importiert,
-  0 deaktiviert** — bei jedem einzelnen Lauf. Alle 294 Schreibvorgänge
-  bewirken nichts.
-- **Leitgedanke, der die Sicherheit trägt:** Es wird **nicht** entschieden, was
-  sich geändert haben *könnte*, sondern verglichen, was geschrieben würde, mit
-  dem, was schon dasteht. Sind sie gleich, entfällt die Anweisung. Damit ist
-  die Änderung verhaltenserhaltend per Konstruktion — ein übersprungener
-  Schreibvorgang hätte nichts bewirkt.
-- **Wie, im Einzelnen:**
-  - Neues Modul `lib/ebay-sync-diff.ts` mit reinen Vergleichsfunktionen
-    (Listing, Produkt, Bilder, Bestand). Ohne Netz und ohne Datenbank prüfbar —
-    dieselbe Trennung wie `lib/ebay-stock-check.ts` gegen
-    `lib/ebay-stock-guard.ts`.
-  - `lib/ebay-sync.ts` lädt die Vergleichswerte gebündelt vorab (heute holt es
-    von `ebay_listings` nur drei Spalten) und stellt je Listing nur noch die
-    Anweisungen zusammen, die etwas bewirken. Kein Batch heißt: gar kein
-    Schreibvorgang.
-  - **`product_assets` nicht mehr blind löschen und neu einfügen.** Gleiche
-    `sourceUrl`-Liste in gleicher Reihenfolge → nichts anfassen. Allein ~18 000
-    der gemessenen Zeilen.
-  - **`sync_events`** nur noch bei einem echten Ereignis. `UPDATED` entfällt
-    für unveränderte Listings.
-  - **`lastSyncedAt`/`updatedAt` sind kein Grund zu schreiben.** Sie ändern
-    sich zwangsläufig bei jedem Lauf; nähme man sie in den Vergleich, wäre er
-    wertlos. Sie werden mitgeschrieben, wenn ohnehin geschrieben wird.
-- **Zwei Fallen, vorher geprüft, nicht vermutet:**
-  1. **`rawData` ist unbedenklich.** `lib/ebay-client.ts:174` baut es als
-     `{source, marketplaceId, itemId}` — rein deterministisch, kein
-     Zeitstempel, kein Zähler. Ein wechselndes JSON-Feld hätte die Ersparnis
-     still aufgefressen. `shippingData` schreibt der Sync gar nicht.
-  2. **`descriptionHtml` darf der Vergleich nicht anfassen.** Der Sync setzt es
-     auf `undefined`, Drizzle lässt die Spalte damit beim `UPDATE` weg — dort
-     liegt der Beschreibungs-Zwischenspeicher aus
-     `app/api/products/[id]/route.ts:60`. Der Vergleich muss dieselbe
-     Auslassung abbilden, sonst würde er einen Unterschied sehen, den es nicht
-     gibt, und den Zwischenspeicher überschreiben.
-- **Sichtbare Nebenwirkung, bewusst in Kauf genommen:** `updated_count` in
-  `sync_runs` zählt künftig **tatsächliche** Änderungen. Ein ruhiger Lauf meldet
-  damit 0 statt 294. Das ist der Zweck, sieht in der Laufübersicht aber nach
-  „nichts passiert" aus. Eine eigene Spalte für „unverändert" wäre eine
-  Migration und damit rücksprachepflichtig — die Zahl geht deshalb nur in den
-  Rückgabewert, nicht in die Datenbank.
-- **Betroffen:** neu `lib/ebay-sync-diff.ts` und `tests/ebay-sync-diff.test.mjs`;
-  geändert `lib/ebay-sync.ts`, `app/admin/page.tsx` (Meldung um „unverändert"
-  ergänzt), `package.json` (Testliste). **Keine Migration, kein Schemaschritt,
-  kein Eingriff in Produktionsdaten.**
-  **`ZEILEN_JE_LAUF` in `tests/ebay-stock-check.test.mjs` bleibt vorerst bei
-  5 396** — der Wert wird erst gesenkt, wenn die Ersparnis an der Produktion
-  gemessen ist. Eine Schätzung dort einzutragen hieße, die Kopplung
-  auszuhebeln, die dieser Test herstellt.
-- **Der Cron-Takt bleibt bei `0 */2 * * *`.** Beschleunigt wird erst, wenn die
-  Ersparnis **an der Produktion gemessen** ist, nicht auf Grundlage einer
-  Schätzung. Genau diese Reihenfolge erzwingt der Test in
-  `tests/ebay-stock-check.test.mjs`.
-- **Verifikation:** Rot-Nachweis für jede Vergleichsfunktion (ohne sie fallen
-  die Tests); Prüfkette `tsc`, Lint, `npm test`; nach dem Deploy ein Lauf
-  abwarten und `wrangler d1 insights --timePeriod 1d --sort-by writes`
-  gegenprüfen.
-- **Rückweg:** Eine Datei und ein Commit. Der Lauf schreibt danach wieder alles.
-
-#### Zwischenstand — gebaut und deployed, die Messung fehlt noch
-
-- **Gebaut und in Produktion**, deployed als Version **`6f33f7f1`** um
-  ~07:00 UTC. Commit `500054a` auf `main` und `agent/initial-brandycards`.
-- **Prüfkette grün:** `tsc` sauber, Lint 0 Fehler (nur die vorbestehende
-  `<img>`-Warnung), `npm test` **189/189** (17 neue Tests). **CI grün
-  abgewartet, erst dann deployed** — die Lehre aus zwei Sitzungen, in denen ein
-  Deploy auf grüner *lokaler* Kette rausging, während CI rot war.
-- **Rot-Nachweis in beide Richtungen geführt**, weil ein zu großzügiger
-  Vergleich der gefährlichere Fehler wäre:
-  - Ohne die `undefined`-Ausnahme fallen 4 Tests (der Zwischenspeicher der
-    Beschreibung würde überschrieben).
-  - Ohne die Zeitstempel-Ausnahme fallen 5 Tests (der Vergleich wäre wirkungslos).
-  - Mit abgeschaltetem Vergleich fallen **8** Tests — die Richtung „Geändertes
-    **muss** geschrieben werden" ist damit ebenso belegt wie die Ersparnis.
-- **Deploy nachgeprüft:** `/`, `/account`, `/admin` und `/api/products` je 200,
-  und `/account` enthält **nicht** „noch nicht konfiguriert" — die
-  Bundle-Probe vor dem Deploy fand die Supabase-Konfiguration im Client-Bundle.
-- **Offen: die Messung an der Produktion.** Der nächste Cron-Lauf ist
-  **08:00 UTC**. Erst danach lässt sich sagen, ob die Ersparnis eintritt.
-  Zu prüfen: `updated_count` des Laufs (erwartet: **0** statt 294) und
-  `npx wrangler d1 insights brandycards-production --timePeriod 1d --sort-by writes`
-  (**mit `--limit 100`**, sonst kommen nur die Top 5). **Bleibt die Zahl hoch,
-  ist die Aufgabe nicht erledigt** — dann schreibt ein Feld weiter jedes Mal,
-  und der nächste Schritt ist, herauszufinden welches, nicht die Zahl schön zu
-  reden.
-- **Der Cron-Takt bleibt unangetastet**, bis diese Messung vorliegt.
-
-#### Ergebnis: ABGESCHLOSSEN — an der Produktion gemessen
-
-Der Lauf vom **2026-08-08 08:00:38 UTC** ist der erste unter der neuen Fassung.
-Gegenübergestellt den vier Läufen davor:
-
-| Lauf (UTC) | aktualisiert | deaktiviert | `sync_events` |
-|---|---|---|---|
-| **08:00:38** *(neu)* | **0** | 1 | **1** |
-| 06:00:38 | 294 | 1 | 295 |
-| 04:00:46 | 294 | 0 | 294 |
-| 02:00:46 | 294 | 0 | 294 |
-| 00:00:46 | 294 | 0 | 294 |
-
-**294 wirkungslose Schreibvorgänge je Lauf sind auf 0 gefallen.** Der eine
-verbliebene `sync_events`-Eintrag ist die Deaktivierung des Testartikels — also
-genau ein Ereignis, das etwas aussagt. Das ist die Absicht der Änderung, an
-echten Daten belegt.
-
-**Der Katalog ist unversehrt:** 294 aktive Produkte, 294 aktive Listings,
-**302 Bilder**. Letzteres ist der wichtigere Wert — er belegt, dass das
-Überspringen des Löschen-und-Einfügens keine Bilder verloren hat.
-
-**Nebenbei erledigt:** Derselbe Lauf hat den **Testartikel** abgeräumt
-(`ec6c212e…` steht jetzt auf `INACTIVE` / `ENDED` / `UNAVAILABLE`). Der Punkt
-aus der Übergabe ist damit ohne Eingriff von Hand geschlossen.
-
-**`wrangler d1 insights --timePeriod 1d` taugt hier noch nicht als Beleg** und
-wird es erst am 2026-08-09: Das Fenster enthält die vier Läufe von vor dem
-Deploy und meldet deshalb weiterhin ~31 000 Zeilen für das `ebay_listings`-
-Update. Wer die Zahl sehen will, muss einen vollen Tag abwarten — die
-Gegenüberstellung oben ist die belastbarere Messung, weil sie einzelne Läufe
-vergleicht.
-
-**Noch offen und bewusst nicht mit erledigt:** `ZEILEN_JE_LAUF` in
-`tests/ebay-stock-check.test.mjs` steht weiter auf 5 396, und der Cron bleibt
-bei `0 */2 * * *`. Beides gehört zusammen und sollte auf Grundlage der
-Tageszahlen vom 2026-08-09 angepasst werden, nicht auf Grundlage eines einzigen
-Laufs. **Erst dann** darf der Takt beschleunigt werden.
+*(leer — bereit für den nächsten Auftrag.)*
 
 ---
 
 ## Stand nach der zweiten Sitzung vom 2026-08-08
 
 **Der Shop nimmt seit heute echtes Geld ein.** `PAYPAL_ENVIRONMENT` steht auf
-`production`, deployed als Version `4a6b7a46`. **Die Abnahme fehlt noch:** ein
-echter Kauf, der auf `PAID` läuft und eine Bestellbestätigung auslöst. Dafür
-liegt ein **1-Cent-Testartikel** bereit (`ec6c212e…`, mit Versand 3,46 €); der
-Cron-Lauf um **10:00 UTC** räumt ihn von selbst ab.
+`production`, deployed als Version `4a6b7a46`. **Die Abnahme ist erfolgt:**
+Bestellung `BC-20260808-89309FCA` über 3,46 € steht auf `PAID`, die Zahlung auf
+`CAPTURED` (`1LC23949C0153504L`), der Bestand auf `SOLD`, die Webhook-Zeile auf
+`PROCESSED`, und die Bestellbestätigung ist angekommen. Der 1-Cent-Testartikel
+hat seinen Zweck erfüllt und wird vom Import abgeräumt.
 
 In dieser zweiten Sitzung fertig geworden, alles deployed und in Produktion
 nachgeprüft:
@@ -766,7 +106,8 @@ offen ist, kann der Shop kein Geld einnehmen.
 
 1. ~~**PayPal auf Live umstellen.**~~ Erledigt am 2026-08-08: Live-App,
    Live-Webhook und die drei Secrets vom Betreiber, `PAYPAL_ENVIRONMENT` von
-   der KI, deployed als `4a6b7a46`. **Der echte Abnahmekauf steht noch aus.**
+   der KI, deployed als `4a6b7a46`. **Der echte Abnahmekauf ist inzwischen
+   erfolgt** (`BC-20260808-89309FCA`), siehe oben.
 2. ~~**Testartikel entfernen.**~~ Der 08:00-Lauf hat es selbst getan; danach
    wurde der Artikel für den Abnahmekauf bewusst wieder aktiviert.
    **Der Hinweis, schreibende D1-Befehle würden abgelehnt, ist überholt** —
@@ -1021,6 +362,742 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
 ---
 
 ## Historie
+
+### 2026-08-08 — Den Protokollstand bereinigen: sieben Einträge auf `LÄUFT`, alle sieben fertig
+
+- **Stand:** ABGESCHLOSSEN
+- **Datum:** 2026-08-08
+- **Anlass:** Unter „Aktueller Auftrag" stehen **sieben** Einträge auf `LÄUFT`,
+  und **jeder einzelne** trägt intern bereits „Ergebnis: ABGESCHLOSSEN". Regel 6
+  sagt: Wer hier `LÄUFT` findet, hat einen unterbrochenen Auftrag vor sich und
+  muss erst den tatsächlichen Zustand prüfen. Diese Datei behauptet damit sieben
+  Abbrüche, die es nicht gab.
+- **Warum das mehr ist als Kosmetik:** Der Wert dieser Datei liegt genau darin,
+  dass `LÄUFT` etwas bedeutet. Steht es dauerhaft an fertigen Einträgen, lernt
+  die nächste Sitzung, das Feld zu überlesen — und übersieht den echten Abbruch,
+  für den die Datei gebaut wurde. Der Nachtrag nach Regel 3 ist offenkundig
+  mehrfach unterblieben; vermutlich, weil die Sitzungen jeweils direkt in den
+  nächsten Punkt weitergelaufen sind.
+- **Was ich tue:**
+  1. Den tatsächlichen Zustand prüfen, statt den Einträgen zu glauben —
+     Arbeitsverzeichnis, Abgleich mit `origin/main`, und für den jüngsten
+     Eintrag ein Beleg am **laufenden Shop**, weil dort als Einzigem kein
+     Deploy vermerkt ist.
+  2. Alle sieben auf `ABGESCHLOSSEN` setzen und unter „Historie" einordnen,
+     neueste zuerst — dort stehen sie ohnehin schon in dieser Reihenfolge.
+  3. Den Deploy-Beleg beim jüngsten Eintrag nachtragen.
+  4. „Aktueller Auftrag" leer und aufnahmebereit hinterlassen.
+- **Betroffen:** ausschließlich `docs/ai-handover.md`. **Kein Code, keine
+  Migration, kein Deploy, keine Produktionsdaten.**
+- **Der Befund, der die Prüfung wert war:** Der jüngste Eintrag (verkaufte
+  Karten aus dem Katalog, Versandmail an den Verkäufer, Commit `820e87e`) nennt
+  **keine Deploy-Version** — nach Aktenlage wäre er gebaut, aber nicht
+  ausgeliefert. Am laufenden Shop ist er es doch: `/api/products` antwortet mit
+  `public, max-age=30, stale-while-revalidate=60`, und genau diese Zeile hat
+  jener Commit von `60/300` auf `30/60` geändert. Der Deploy hat also
+  stattgefunden, nur der Nachtrag fehlte.
+- **Was dadurch nicht belegt ist, und das bleibt offen:** Die
+  **Verkäufernachricht an `brandycards@gmx.de`** ist weiterhin nur in Tests
+  belegt, nicht an echten Daten. Dafür braucht es einen weiteren echten Kauf.
+  Der Deploy-Beleg oben sagt über sie nichts.
+
+- **Ergebnis: ABGESCHLOSSEN.** Alle sieben Einträge stehen auf
+  `ABGESCHLOSSEN` und unter „Historie", neueste zuerst. „Aktueller Auftrag"
+  ist leer. Der überholte Einleitungsabsatz („Zwei Einträge stehen hier
+  gleichzeitig") ist weg — er beschrieb einen Zustand vom Vormittag.
+- **Gegen Textverlust abgesichert, nicht nur überflogen:** Der Vergleich Zeile
+  für Zeile gegen `HEAD` zeigt als einzige Verluste den überholten Absatz und
+  sechs `LÄUFT`-Marken; hinzugekommen ist nur dieser Eintrag. Bei einer
+  Verschiebung über 650 Zeilen ist das die Prüfung wert — ein `git diff` allein
+  hätte hier nur „963 Einfügungen, 931 Löschungen" gemeldet und nichts belegt.
+- **Beim Prüfen ist ein echter Widerspruch aufgefallen, kein Formfehler:**
+  `ai-todo.md` führte **Punkt 3 (Kunden-E-Mails) als „wartet auf den
+  Schlüssel"** — während diese Datei an drei Stellen belegt, dass die Domain
+  verifiziert ist, `RESEND_API_KEY` als Secret liegt und **zwei Nachrichten echt
+  zugestellt** wurden (Anfragebestätigung 05:45 UTC, Bestellbestätigung aus dem
+  Abnahmekauf). Wer nur die Aufgabenliste las, hätte als Nächstes einen
+  Schlüssel hinterlegt, der längst liegt. **Punkt 3 ist erledigt**, der
+  nächste ungebaute Punkt ist **Punkt 6 (eBay-Schreibpfad)**.
+- **Deshalb mit korrigiert:** In `ai-todo.md` der Kopf von Punkt 3, der Absatz
+  „Warum diese Reihenfolge" (er behauptete „Wer zahlt, bekommt keine
+  Bestätigung") und der Stand-Vermerk, der noch auf dem 2026-08-07 stand. In
+  dieser Datei zwei Stellen, die den Abnahmekauf als ausstehend führten.
+  **Das Muster ist dasselbe wie bei den sieben `LÄUFT`-Marken:** Der Rumpf
+  einer Notiz wurde gepflegt, ihr Kopf nicht — und gelesen wird zuerst der Kopf.
+- **Eine Abweichung von Regel 1, offen gesagt:** Eintrag und Ausführung liegen
+  in **einem** Commit statt in zweien. Der Auftrag verändert genau die Datei,
+  in der der Eintrag steht; ein Vorab-Commit hätte Zeilen angekündigt, die er
+  selbst schon schreibt. Es gibt hier auch keinen halben Zustand, der einen
+  Abbruch gefährlich machte — es wird kein Code, keine Datenbank und kein
+  Deployment berührt. **Für Code-Aufträge gilt die Regel unverändert.**
+
+### 2026-08-08 — Verkaufte Karten verschwinden sofort, und der Verkäufer bekommt die Versanddaten
+
+- **Stand:** ABGESCHLOSSEN
+- **Datum:** 2026-08-08
+- **Anlass:** Der Betreiber hat nach dem ersten echten Kauf zwei Fehler
+  gemeldet, und beide sind ernst, weil sie **jede echte Karte** betreffen:
+  1. Die verkaufte Karte stand weiter mit **„1 VERFÜGBAR"** im Katalog.
+  2. Es gibt **keine Benachrichtigung an den Verkäufer** — und damit keine
+     Lieferadresse, aus der sich ein Versandetikett erzeugen ließe.
+- **Sofortmaßnahme, bereits ausgeführt:** Der Testartikel wurde von Hand auf
+  `ENDED`/`INACTIVE` gesetzt und ist aus dem Katalog verschwunden (294 statt
+  295). Das behebt den Einzelfall, nicht die Ursache.
+
+#### Ursache 1: Der Katalog liest die Menge aus dem falschen Ort
+
+`app/api/products/route.ts:38` nimmt `row.listing?.quantity` — die Menge des
+**eBay-Listings**. Die Tabelle `inventory`, in der der Verkauf gebucht wird,
+wird **gar nicht abgefragt**. Dasselbe in
+`app/api/products/[id]/route.ts` (`quantity: row.listing.quantity`).
+
+Ein Verkauf im Shop setzt `inventory.available_quantity = 0` und
+`status = 'SOLD'`, rührt das Listing aber nicht an. Die Karte bleibt deshalb
+sichtbar und scheinbar kaufbar, **bis der eBay-Import sie abräumt — bis zu zwei
+Stunden.** Ein zweiter Kunde legt sie in den Warenkorb und scheitert erst an der
+Kasse.
+
+**Gefährlich ist das nicht** — `app/api/orders/route.ts` prüft den Bestand und
+lehnt ab, ein Doppelverkauf ist ausgeschlossen. **Ärgerlich ist es sehr.**
+
+- **Wie:** Beide Routen verknüpfen zusätzlich `inventory` und zeigen die
+  **verfügbare** Menge. Karten ohne verfügbaren Bestand fallen aus dem Katalog
+  und liefern auf der Detailseite 404, wie jede andere nicht verfügbare Karte.
+  Die Entscheidung kommt in eine reine Funktion (`lib/catalog-availability.ts`),
+  damit sie ohne Datenbank prüfbar ist.
+- **Achtung, zwei Fallstricke:**
+  - **`PRELISTED`-Karten (Vormerkliste) haben weder Listing noch Bestand.** Ein
+    unbedachter `innerJoin` oder ein Filter auf „Menge > 0" würde sie
+    stillschweigend aus dem Katalog werfen. Sie müssen ausdrücklich ausgenommen
+    werden.
+  - **Fehlt die Bestandszeile bei einer eBay-Karte**, darf das nicht als
+    „ausverkauft" gelten — sonst verschwindet bei einem halb geschriebenen
+    Import der halbe Katalog. Dann zählt die Listing-Menge.
+- **Der Randspeicher bleibt eine Verzögerung, und das gehört gesagt:** Der
+  Katalog wird an Cloudflares Rand zwischengespeichert
+  (`max-age=60, stale-while-revalidate=300`), im schlechtesten Fall also gut
+  sechs Minuten. Ich setze das auf `max-age=30, stale-while-revalidate=60`
+  herunter — damit sind es höchstens **90 Sekunden** statt bis zu zwei Stunden.
+  **Wirklich „sofort" wäre nur ohne Zwischenspeicher**, und der ist als SEC-05
+  bewusst eingebaut worden. Die Entscheidung gehört dem Betreiber; die Zahlen
+  stehen hier, damit er sie treffen kann.
+
+#### Ursache 2: Niemand sagt dem Verkäufer, wohin das Paket soll
+
+`notifyOrderPaid` verschickt genau **eine** Nachricht, an den Kunden. Die
+Lieferadresse steht in `orders.shipping_address` und wird nirgends zugestellt.
+Ohne sie kein Etikett.
+
+- **Wie:** Eine zweite Nachricht an **brandycards@gmx.de** mit allem, was für
+  den Versand nötig ist: Bestellnummer, Zeitpunkt, **vollständige
+  Lieferadresse**, Positionen, Beträge und die Kontaktadresse des Kunden für
+  Rückfragen.
+- **Die Adresse kommt als `[vars]`-Eintrag** `SELLER_NOTIFICATION_EMAIL` in die
+  `wrangler.toml`, kein Secret. Sie steht ohnehin im Impressum und in der
+  Datenschutzerklärung desselben öffentlichen Repositories — kein neuer
+  Umstand, aber bewusst geprüft, bevor sie eingecheckt wird.
+- **Getrennt abgesichert:** Beide Nachrichten laufen in **eigenen**
+  `versucheVersand`-Blöcken. Scheitert die Kundenbestätigung, muss die
+  Verkäufernachricht trotzdem hinausgehen — und umgekehrt. Ein gemeinsamer
+  Block würde beim ersten Fehler die zweite verschlucken.
+- **Der Einmal-Riegel gilt weiter:** `notifyOrderPaid` wird nur vom Gewinner des
+  Übergangs `CREATED/APPROVED → CAPTURED` aufgerufen. Der Verkäufer bekommt also
+  **eine** Nachricht je Bestellung, nicht zwei — beide Zahlungswege feuern.
+- **Betroffen:** neu `lib/catalog-availability.ts`,
+  `tests/catalog-availability.test.mjs`; geändert `app/api/products/route.ts`,
+  `app/api/products/[id]/route.ts`, `lib/email/config.ts`,
+  `lib/email/templates.ts`, `lib/email/notify.ts`, `tests/email.test.mjs`,
+  `wrangler.toml`, `.env.example`. **Keine Migration.**
+- **Verifikation:** Tests mit Rot-Nachweis für beide Teile; Prüfkette; nach dem
+  Deploy die Lieferadresse an einer echten Bestellung belegen — der Betreiber
+  kauft dafür erneut.
+- **Ergebnis: ABGESCHLOSSEN.** Prüfkette grün: `tsc` sauber, Lint 0 Fehler,
+  `npm test` **229/229** (17 neue Tests).
+- **Rot-Nachweis, beide Teile:** Lässt man die Bestandsprüfung wieder auf die
+  Listing-Menge zurückfallen, fallen **6** Tests; entfernt man die
+  HTML-Maskierung aus der Verkäufernachricht, fällt genau der Test, der den
+  präparierten Namen prüft.
+- **Am echten Produktionsbau belegt**, nicht nur in Tests: `npm run build`,
+  dann `npx wrangler dev --local` mit drei nachgebauten Karten in einer lokalen
+  Datenbank (Tabellendefinitionen lesend aus der Produktion geholt).
+  - **Katalog:** Die verkaufte Karte ist **weg**, die verfügbare da, und die
+    Karte der **Vormerkliste ist geblieben** — der Fallstrick, den ich mir
+    selbst gestellt hatte.
+  - **Detailseite:** verfügbar → `200` mit `quantity: 1`; verkauft → `404`
+    mit „Diese Karte ist nicht verfügbar."
+  - **`cache-control`:** `public, max-age=30, stale-while-revalidate=60`.
+- **Ein eigener Fehler beim Prüfen, der fast als Befund durchgegangen wäre:**
+  Die Detailseite lieferte zuerst auch für die *verfügbare* Karte 404. Ursache
+  war **nicht** der Code, sondern meine Testdaten: Die Route verlangt eine
+  32-stellige Hex-Kennung (`/^[a-f0-9]{32}$/`) und lehnt vorher ab; meine
+  IDs waren zwölf Zeichen lang. **Wer hier prüft, muss echte Kennungsformate
+  verwenden** — sonst misst er den Türsteher statt die Wohnung.
+- **Was ausdrücklich noch aussteht:** Die Verkäufernachricht ist **nicht** an
+  echten Daten belegt. Dafür braucht es einen weiteren echten Kauf; erst dann
+  ist bewiesen, dass die Nachricht bei `brandycards@gmx.de` ankommt und die
+  Adresse trägt.
+- **Deploy nachgetragen am 2026-08-08.** Der Eintrag nannte keine Version, was
+  ihn wie „gebaut, aber nicht ausgeliefert" aussehen ließ. Er ist ausgeliefert:
+  `/api/products` antwortet in Produktion mit
+  `public, max-age=30, stale-while-revalidate=60` — genau die Zeile, die dieser
+  Commit (`820e87e`) von `60/300` auf `30/60` geändert hat. Eine ältere Version
+  könnte diesen Wert nicht senden. **Die Versionskennung fehlt trotzdem**, weil
+  `wrangler deployments list` ohne `CLOUDFLARE_API_TOKEN` in dieser Umgebung
+  nicht läuft; wer sie braucht, holt sie interaktiv nach.
+- **Der Beleg deckt Ursache 1 ab, nicht Ursache 2.** Dass der Katalogcode live
+  ist, sagt nichts darüber, ob die Verkäufernachricht tatsächlich zugestellt
+  wird — siehe den Punkt darüber.
+
+### 2026-08-08 — Testartikel für den Live-Abnahmekauf (1 Cent)
+
+- **Stand:** ABGESCHLOSSEN
+- **Datum:** 2026-08-08
+- **Ziel:** **Schreibender Eingriff in Produktionsdaten**, vom Betreiber
+  ausdrücklich beauftragt. Er braucht eine kaufbare Karte, um den ersten
+  **echten** PayPal-Kauf durchzuspielen — die ausstehende Abnahme aus
+  ai-todo Punkt 0.
+- **Kein neuer Artikel, sondern der vorhandene wieder in Betrieb.**
+  `ec6c212e96332bdcc93612848694b907` („TESTARTIKEL BrandyCards, bitte nicht
+  kaufen") liegt bereits in der Datenbank und wurde vom 08:00-Lauf auf
+  `INACTIVE`/`ENDED`/`UNAVAILABLE` gesetzt. Ihn zu reaktivieren ist sauberer,
+  als eine zweite Produktzeile mit eigener Bestands- und Listing-Zeile
+  anzulegen.
+- **Drei `UPDATE`s:** Produkt auf `ACTIVE`, Listing auf `ACTIVE` mit **Preis 1
+  Cent**, Bestand auf verfügbar 1 / reserviert 0 / verkauft 0 / `AVAILABLE`.
+  Der Bestand muss zurückgesetzt werden, weil der Sandbox-Testkauf vom Vormittag
+  dort `sold_quantity = 1` hinterlassen hat.
+- **Der Betrag ist nicht 1 Cent, sondern 3,46 €.** Der Versand nach Deutschland
+  kostet 3,45 € und kommt hinzu; unter 1 Cent geht der Artikelpreis nicht.
+  Gehört gesagt, damit sich niemand über die Abbuchung wundert.
+- **Zeitpunkt bewusst gewählt:** angelegt um ~08:2x UTC, der nächste Cron-Schlag
+  ist **10:00 UTC**. Beim letzten Mal wurde der Artikel um 06:00:07 angelegt und
+  um 06:00:38 vom Import sofort wieder abgeräumt. Das Kauffenster reicht diesmal
+  knapp zwei Stunden.
+- **Der Import räumt ihn danach von selbst ab** — die erfundene ItemID
+  `999000000001` steht nicht in der eBay-Aktivliste. Das ist erwünscht und
+  braucht keinen weiteren Eingriff.
+- **Der Artikel ist öffentlich sichtbar**, solange er lebt. Dagegen hilft nur
+  der unmissverständliche Titel und der Preis; einen versteckten Weg gibt es
+  nicht, weil `/api/products` nur `ACTIVE` ausliefert und nur ein aktives
+  Listing kaufbar ist.
+- **Die Bestandsprüfung vor der Zahlung blockiert nicht.** Sie ruft `GetItem`
+  bei eBay auf, eBay kennt die erfundene ItemID nicht und antwortet mit
+  `Ack=FAILURE`; `getEbayAvailability` legt dann **keinen** Eintrag an, und ohne
+  Eintrag gilt die Karte als „unbekannt" — was den Kauf durchlässt
+  (`lib/ebay-stock-check.ts`). Am 2026-08-08 schon einmal so nachgelesen.
+- **Betroffen:** ausschließlich Produktionsdaten, drei Zeilen. Kein Code, keine
+  Migration, kein Deploy.
+- **Rückweg:** Dieselben drei Zeilen zurücksetzen — oder nichts tun, dann
+  erledigt es der 10:00-Lauf.
+- **Ergebnis: ABGESCHLOSSEN.** Alle drei `UPDATE`s mit `changes: 1`
+  durchgelaufen, um ~08:2x UTC.
+- **Die schreibenden D1-Befehle gingen diesmal durch.** Beim Durchlauf am
+  Vormittag wurden sie zweimal von der Berechtigungsprüfung abgelehnt und
+  mussten dem Betreiber übergeben werden. **Die Notiz unter „Offene Punkte", man
+  solle im Zweifel gleich den Befehl herausgeben, ist damit überholt** — es
+  lohnt sich, es selbst zu versuchen.
+- **Am laufenden Shop belegt, nicht in der Datenbank:**
+  - `/api/products` liefert **295** Karten statt 294, der Testartikel ist
+    darunter mit `priceAmountCents: 1`, Menge 1, Kategorie „Festpreis".
+  - Die Detailseite zeigt **„0,01 €"**, **„1 VERFÜGBAR"** und einen aktiven
+    Knopf „IN DEN WARENKORB" (`disabled: false`).
+- **Erinnerung an den Betrag:** Mit Versand nach Deutschland wird **3,46 €**
+  abgebucht, nicht 1 Cent.
+
+### 2026-08-08 — PayPal auf Live (ai-todo Punkt 0)
+
+- **Stand:** ABGESCHLOSSEN
+- **Datum:** 2026-08-08
+- **Ziel:** Punkt 0 — der Punkt, der jeden Verkauf blockierte. `lib/paypal/config.ts`
+  fiel mangels `PAYPAL_ENVIRONMENT` auf `sandbox` zurück, der Shop sprach mit
+  `api-m.sandbox.paypal.com`, **ein echter Kunde konnte nicht bezahlen.**
+- **Der Betreiber hat die Schritte 1–3 gemeldet:** Live-App bei PayPal angelegt,
+  Live-Webhook auf `https://shop.brandycards.de/api/paypal/webhook` eingerichtet
+  und die drei Secrets `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`,
+  `PAYPAL_WEBHOOK_ID` ersetzt.
+- **Mein Teil, Schritt 4:** `PAYPAL_ENVIRONMENT = "production"` in `[vars]` der
+  `wrangler.toml` eintragen und deployen. **Kein Geheimnis** — der Wert gehört
+  bewusst nicht zu den Secrets, sondern in die versionierte Konfiguration.
+- **Dazu ein Riegel, der vorher fehlte:** `getPayPalConfig` fällt bei fehlendem
+  oder falsch geschriebenem Wert **still** auf `sandbox` zurück. Das ist als
+  Verhalten richtig (kein Absturz), als Betriebszustand aber der schlimmste
+  denkbare: Der Shop sähe gesund aus und nähme trotzdem kein Geld ein — genau
+  der Zustand, der seit dem 2026-08-06 unbemerkt bestand. Ein Test in
+  `tests/hardening.test.mjs` hält deshalb fest, dass `wrangler.toml` den Wert
+  auf `production` setzt. Wer ihn je entfernt, bekommt einen roten Lauf statt
+  eines stillen Ausfalls.
+- **Betroffen:** `wrangler.toml`, `tests/hardening.test.mjs`. **Kein
+  Anwendungscode**, keine Migration, keine Änderung an Produktionsdaten.
+- **Das Fenster, in dem der Checkout nicht funktioniert, ist jetzt offen** und
+  schließt sich mit diesem Deploy: Seit dem Tausch der Secrets liegen
+  Live-Zugangsdaten vor, während der Shop noch den Sandbox-Endpunkt anspricht.
+  Deshalb hat dieser Durchlauf Vorrang vor allem anderen.
+- **Verifikation, und ihre Grenze:** Prüfkette und Deploy belegen, dass die
+  Konfiguration steht — `wrangler deploy` listet die Variable auf, und der
+  Webhook antwortet mit 400 statt 503 (503 hieße: Webhook-ID leer). **Ob die
+  hinterlegten Zugangsdaten gültig sind, kann nur ein echter Kauf zeigen.** Das
+  ist keine Nachlässigkeit, sondern eine Grenze: Ein Tokenaufruf gegen
+  `api-m.paypal.com` mit fremden Zugangsdaten ist von hier aus nicht führbar,
+  ohne die Geheimnisse anzufassen.
+- **Rückweg:** Die Zeile entfernen und deployen — der Shop spricht dann wieder
+  mit der Sandbox.
+- **Ergebnis: ABGESCHLOSSEN.** Prüfkette grün: `tsc` sauber, Lint 0 Fehler,
+  `npm test` **212/212** (2 neue Tests). Deployed als Version **`4a6b7a46`**,
+  Commit `bfa479d`, CI vorher grün.
+- **`wrangler deploy` bestätigt die Bindung:**
+  `env.PAYPAL_ENVIRONMENT ("production")`.
+- **In Produktion nachgeprüft:** `/`, `/karten`, `/checkout`, `/account`,
+  `/admin` je 200; `/account` ohne „noch nicht konfiguriert";
+  `/api/orders` ohne Anmeldung 401; der Webhook antwortet mit **400** und nicht
+  mit 503 — 503 hieße, `PAYPAL_WEBHOOK_ID` sei leer. Die neue Webhook-ID liegt
+  also vor.
+- **Rot-Nachweis:** Mit `PAYPAL_ENVIRONMENT = "sandbox"` fällt genau der neue
+  Test (33/34). Ein stiller Rückfall in die Sandbox kann also nicht mehr
+  unbemerkt eingecheckt werden.
+- **Was hiermit ausdrücklich noch NICHT belegt ist: dass Geld ankommt.** Ob die
+  hinterlegten Live-Zugangsdaten gültig sind und der Live-Webhook zustellt,
+  zeigt allein ein echter Kauf. Der steht beim Betreiber und ist das
+  Abnahmekriterium aus ai-todo Punkt 0.
+
+#### ABGENOMMEN — der erste echte Kauf ist durch
+
+Bestellung **`BC-20260808-89309FCA`**, 2026-08-08 08:29:48 UTC. **Der Shop hat
+zum ersten Mal echtes Geld eingenommen.**
+
+| Prüfung | Ergebnis |
+|---|---|
+| Bestellung | `PAID`, 1 Cent Ware + 345 Cent Versand = **346 Cent** |
+| Zahlung | `CAPTURED`, Capture-ID `1LC23949C0153504L`, 346 Cent EUR |
+| Bestand | verfügbar 0, reserviert 0, **verkauft 1**, `SOLD` |
+| eBay-Outbox | leer (Schreibpfad ist aus, erwartet) |
+| Webhook | `PAYMENT.CAPTURE.COMPLETED`, **`PROCESSED`** um 08:29:53.925Z |
+| Bestellbestätigung | vom Betreiber bestätigt |
+
+**Damit ist auch die Webhook-Korrektur an echten Daten belegt — und meine
+Einschätzung dazu war zu pessimistisch.** Ich hatte notiert, dafür müsse PayPal
+dasselbe Ereignis ein zweites Mal zustellen, was sich nicht herbeiführen lasse.
+**Falsch:** Der Dubletten-Pfad wird bei *jeder* Zahlung durchlaufen, weil immer
+beide Wege feuern — die Rückkehr des Kunden aus PayPal (08:29:48) und der
+Webhook fünf Sekunden später (08:29:53). Der Kunde gewann den Übergang, der
+Webhook fand `CAPTURED` vor und lief in den Dubletten-Pfad. Genau dieselbe Lage
+wie um 06:10 — nur steht die Zeile jetzt auf `PROCESSED` statt auf `RECEIVED`.
+Ein direkterer Vergleich ist kaum zu bekommen.
+
+Die alte Zeile `WH-4MD290111R3948627-…` steht weiterhin auf `RECEIVED` und ist
+damit die einzige verbliebene im ganzen Bestand — sie taugt als Beleg, wie es
+vorher aussah.
+
+### 2026-08-08 — Der Dubletten-Webhook hinterlässt keine falsche Spur mehr
+
+- **Stand:** ABGESCHLOSSEN
+- **Datum:** 2026-08-08
+- **Ziel:** Der Punkt, der seit dem 2026-08-08 unter „Offene Punkte" stand und
+  auf eine Entscheidung wartete — der Betreiber hat ihn heute beauftragt.
+  `app/api/paypal/webhook/route.ts` steigt bei `payment.status === "CAPTURED"`
+  vorzeitig mit `duplicate: true` aus, **bevor** die Zeile in `webhook_events`
+  auf `PROCESSED` gesetzt wird.
+- **In Produktion nachgesehen, nicht aus der Notiz übernommen:**
+  `WH-4MD290111R3948627-8AM47435BU5710537`
+  (`PAYMENT.CAPTURE.COMPLETED`, 2026-08-08T06:10:22.766Z) steht auf `RECEIVED`
+  mit leerem `processed_at`. Alle anderen vier Zeilen der Tabelle stehen auf
+  `PROCESSED`.
+- **Funktional harmlos, aber die Zeile lügt.** Ein erneuter Zustellversuch wird
+  ohnehin abgewiesen, weil die Eingangsprüfung (Zeile 68) `RECEIVED` genauso
+  behandelt wie `PROCESSED`. Der Schaden ist diagnostisch: Die Zeile sieht aus
+  wie ein Ereignis, das mitten in der Verarbeitung hängen geblieben ist, und
+  führt jede spätere Suche nach hängenden Webhooks in die Irre. Das wiegt
+  schwerer, sobald echtes Geld fließt.
+- **Nicht die zwei Zeilen aus der Notiz, sondern eine Zeile weniger.** Statt auf
+  dem Dubletten-Pfad ein zweites `PROCESSED`-Schreiben danebenzustellen,
+  entfällt das vorzeitige `return`: Der Fall setzt einen Merker und läuft durch
+  dasselbe Ende wie jeder andere. **Damit ist die Fehlerklasse weg, nicht nur
+  dieser Fall** — ein künftiger Zweig kann die Buchführung nicht mehr
+  überspringen, weil es keinen Ausgang mehr gibt, der an ihr vorbeiführt.
+- **Dazu eine prüfbare Regel:** Was mit einem `PAYMENT.CAPTURE.COMPLETED`
+  geschehen soll, hängt allein am Zustand der Zahlung. Diese Entscheidung
+  wandert als reine Funktion nach `lib/paypal/webhook-decision.ts`
+  (`CAPTURED` → Dublette, `REFUNDED` → Konflikt, sonst einziehen) und wird
+  ohne Netz und Datenbank geprüft. Wichtig ist dabei vor allem, dass
+  **`REFUNDED` niemals als einziehbar** durchgeht.
+- **Betroffen:** neu `lib/paypal/webhook-decision.ts` und
+  `tests/paypal-webhook.test.mjs`; geändert
+  `app/api/paypal/webhook/route.ts`. **Keine Migration, keine Änderung an
+  Produktionsdaten.**
+- **Die bestehende Zeile wird nicht repariert.** Sie rückwirkend auf
+  `PROCESSED` zu setzen wäre ein schreibender Eingriff in Produktionsdaten und
+  damit rücksprachepflichtig; der Auftrag lautete auf die Korrektur des Pfades.
+  Der Befehl steht unten, falls der Betreiber sie doch bereinigen will.
+- **Verifikation:** Tests mit Rot-Nachweis; Prüfkette; nach dem Deploy bleibt
+  der Beleg an echten Daten aus, weil dafür eine zweite Zustellung desselben
+  PayPal-Ereignisses nötig wäre — das lässt sich nicht herbeiführen, ohne eine
+  echte Zahlung zu wiederholen. **Das wird hier ausdrücklich als Grenze
+  festgehalten und nicht als „geprüft" ausgegeben.**
+- **Ergebnis: ABGESCHLOSSEN.** Prüfkette grün: `tsc` sauber, Lint 0 Fehler,
+  `npm test` **210/210** (6 neue Tests).
+- **Gebaut:** `lib/paypal/webhook-decision.ts` mit `webhookCaptureAction`
+  (`CAPTURED` → Dublette, `REFUNDED` → Konflikt, sonst einziehen); in der Route
+  ersetzt ein Merker das vorzeitige `return`, und **alle** Pfade laufen durch
+  dasselbe Ende, das `PROCESSED` schreibt.
+- **Rot-Nachweis:** Mit wieder eingebautem `return` fällt genau der Test „der
+  Webhook verlässt die Verarbeitung nur an einer Stelle" (5/6). Der Test misst
+  also die Struktur, um die es geht, und nicht nur die Formulierung.
+- **Die Antwort unterscheidet weiterhin** zwischen `duplicate: true` und
+  `processed: true` — PayPal soll eine Dublette als erledigt sehen, sonst
+  wiederholt es die Zustellung.
+- **Die bestehende Zeile `WH-4MD290111R3948627-…` steht weiterhin auf
+  `RECEIVED`.** Sie zu ändern wäre ein schreibender Eingriff in
+  Produktionsdaten. Wer sie bereinigen will:
+  ```sql
+  UPDATE webhook_events SET status='PROCESSED', processed_at='2026-08-08T06:10:22.766Z'
+  WHERE external_event_id='WH-4MD290111R3948627-8AM47435BU5710537';
+  ```
+- **Grenze der Prüfung, ausdrücklich:** An echten Daten ist die Korrektur
+  **nicht** belegt. Dafür müsste PayPal dasselbe Ereignis ein zweites Mal
+  zustellen, und das ließe sich nur durch eine wiederholte echte Zahlung
+  herbeiführen. Belegt sind die Entscheidung und die Struktur.
+
+### 2026-08-08 — CSP ohne `'unsafe-inline'`: Nonces für die Inline-Skripte (ai-todo Punkt 4a)
+
+- **Stand:** ABGESCHLOSSEN
+- **Datum:** 2026-08-08
+- **Ziel:** Punkt 4a aus [ai-todo.md](ai-todo.md). `script-src` trägt
+  `'unsafe-inline'`, weil vinext Inline-`<script>`-Blöcke je Seite ausliefert.
+  Damit sind **Inline-Eventhandler erlaubt**: Ein künftig eingeschleustes
+  `<img onerror=…>` würde laufen — genau die Form, die SEC-01 hatte.
+- **Vorher an der Produktion gemessen, statt der Aufgabenbeschreibung zu
+  glauben.** Zwei Befunde, die den Entwurf bestimmen:
+  1. **Alle Skripte sind inline, keines hat `src`** (7 Blöcke auf der
+     Startseite: RSC-Parameter, Navigationszustand, drei RSC-Blöcke, ein
+     Fertig-Schalter und `import("/assets/index-….js")`). Die Chunks kommen
+     über `<link rel="modulepreload">` und den dynamischen `import()`.
+  2. **HTML wird nicht zwischengespeichert** — die Antwort auf `/` und
+     `/karten` trägt **kein** `cache-control` und **kein** `etag`, es gibt also
+     keine 304-Antwort auf HTML. Das ist die Voraussetzung dafür, dass ein
+     Zufallswert je Antwort überhaupt tragen kann: Käme der Rumpf aus einem
+     Zwischenspeicher und die Kopfzeile frisch, passte der Wert nicht mehr zum
+     Markup und **jede** Seite bliebe leer. Die Assets tragen zwar `etag`, sind
+     aber JS und CSS ohne Inline-Skripte.
+- **Abweichung von der Aufgabenbeschreibung, bewusst und begründet: kein
+  `'strict-dynamic'`.** Die Aufgabe nennt es, mit der Begründung, vinext lade
+  weitere Skripte nach. Das stimmt — aber sie kommen alle **von dieser
+  Herkunft**, und dafür genügt `'self'`. `'strict-dynamic'` hätte einen Preis:
+  Es lässt Browser die Angabe `'self'` **ignorieren**, womit jedes
+  `<script src>` ohne Zufallswert stillgelegt würde und der dynamische
+  `import()` von einer Spezifikationsfeinheit abhinge. `script-src 'self'
+  'nonce-…'` erreicht dasselbe Ziel — Inline-Eventhandler können **nie** einen
+  Zufallswert tragen und sind damit tot — ohne diese Abhängigkeit. Sollte je
+  ein fremdes Skript nötig werden, ist `'strict-dynamic'` der nächste Schritt.
+- **Wie:** Zufallswert je Antwort in `worker/index.ts`; `HTMLRewriter` hängt
+  ihn **jedem** `<script>` an; `lib/security-headers.ts` setzt ihn in die
+  Regel. Antworten, die kein HTML sind, bekommen `script-src 'self'` ganz ohne
+  Zufallswert — dort führt niemand Skripte aus, und `'unsafe-inline'`
+  verschwindet damit aus **allen** Antworten.
+- **Drei Fallen, auf die zu achten ist:**
+  - Der Zufallswert muss **je Antwort** neu sein, sonst ist er wertlos.
+  - `HTMLRewriter` darf nur auf `text/html` laufen, nicht auf JSON, Bilder oder
+    Assets.
+  - Antworten ohne Rumpf (101, 204, 304) dürfen nicht umgeschrieben werden.
+- **`style-src` behält `'unsafe-inline'`** und bleibt außen vor: React und
+  vinext setzen Inline-Stile. Das ist eine eigene Aufgabe, kein Nebenbei.
+- **Betroffen:** `lib/security-headers.ts`, `worker/index.ts`,
+  `tests/hardening.test.mjs`. **Keine Migration, keine Datenänderung.**
+- **Verifikation:** Tests für Regel und Zufallswert samt Rot-Nachweis; dann
+  **lokal im Browser**, bevor irgendetwas deployed wird: Startseite, `/karten`,
+  Kartendetail, `/checkout`, `/account` und `/admin` ohne Konsolenfehler
+  bedienbar, und in der ausgelieferten Seite trägt jedes `<script>` den Wert.
+  **Ein Fehler hier legt den ganzen Shop lahm** — eine blockierte
+  Hydrierung heißt: keine Seite funktioniert mehr. Deshalb wird hier nicht auf
+  eine Stichprobe vertraut.
+- **Rückweg:** Eine Zeile — `'unsafe-inline'` zurück in `script-src`, deployen.
+- **Ergebnis: ABGESCHLOSSEN.** Prüfkette grün: `tsc` sauber, Lint 0 Fehler,
+  `npm test` **204/204** (9 neue Tests).
+- **Der Gewinn ist an beiden Enden gemessen, nicht behauptet.** Derselbe
+  Angriff, genau in der Form von SEC-01
+  (`<img src="…" onerror="window.__angriffLief = true">`, über `innerHTML`
+  eingeschleust):
+  - **Gegen die laufende Produktion mit `'unsafe-inline'`: er läuft**
+    (`angriffLief: true`).
+  - **Gegen den neuen Produktionsbau: er läuft nicht** (`angriffLief: false`),
+    der Browser meldet einen Verstoß gegen `script-src-attr`.
+  Das ist der ganze Zweck dieser Aufgabe, und er ist damit belegt statt
+  angenommen.
+- **Geprüft wurde am echten Produktionsbau**, nicht nur am
+  Entwicklungsserver: `npm run build`, dann `npx wrangler dev --local` auf Port
+  8788. Dort tragen alle **7** Skripte den Zufallswert, die Kopfzeile nennt
+  denselben, und ein Durchgang über Startseite, `/karten`, `/anfragen`,
+  `/verkaufen`, `/ueber-uns`, `/account`, `/checkout` und `/admin` ergab
+  **null** Verstöße bei funktionierender Hydrierung und funktionierender
+  Client-Navigation.
+- **Ein Zwischenbefund, der beinahe falsch gedeutet worden wäre:** Am
+  Entwicklungsserver meldete der Browser 33 Verstöße gegen `script-src` mit
+  `blockedURI: "eval"`. Das ist **die HMR von Vite**, nicht der ausgelieferte
+  Code. Belegt durch zwei Messungen: der Produktionsbau erzeugt **null**
+  Verstöße, und die **laufende Produktion** — deren Regel `eval` schon vorher
+  verbot — ebenfalls null. Wer diese Zeilen künftig wieder sieht: erst den
+  Produktionsbau messen, bevor `'unsafe-eval'` auch nur erwogen wird.
+- **Nachgemessen statt angenommen:** Der Zufallswert ist bei jeder Antwort ein
+  anderer (drei Abrufe, drei Werte), und Antworten, die kein HTML sind, tragen
+  `script-src 'self'` **ohne** Zufallswert — `'unsafe-inline'` steht damit in
+  **keiner** Antwort mehr.
+- **Ein zweiter Stolperstein, der Zeit gekostet hat:** Im Browser schienen auf
+  `/karten` acht Skripte **ohne** Zufallswert zu stehen. Das war eine
+  Client-Navigation — die Skript-Tags im DOM stammten aus dem Seitenwechsel,
+  nicht aus der Auslieferung. Ein direkter Abruf jeder einzelnen Route zeigte:
+  8 von 8 Tags mit Wert, auf allen fünf geprüften Seiten. **Der DOM nach einer
+  Client-Navigation ist kein Beleg dafür, was der Server ausgeliefert hat.**
+- **Typen:** `HTMLRewriter` war dem Typprüfer unbekannt. Eine knappe Erklärung
+  steht jetzt in `cloudflare-env.d.ts`, im selben Stil wie die übrigen
+  Bindings — keine neue Abhängigkeit.
+- **`npx wrangler dev` ist am Ende abgestürzt** („No such module
+  `__vite_rsc_assets_manifest.js`"). Ursache ist harmlos und gehört nicht zur
+  Änderung: `npm test` baut `dist/` neu, und der laufende Server versuchte
+  mitten im Neubau nachzuladen. **Die Prüfungen liefen davor**, gegen einen
+  antwortenden Server. Wer beides zugleich braucht: erst prüfen, dann testen.
+
+#### In Produktion nachgeprüft — deployed als `d230f425`
+
+- **Der Angriff ist tot, wo er vor Minuten noch lief.** Auf
+  `https://shop.brandycards.de` ergibt derselbe eingeschleuste `<img onerror=…>`
+  jetzt `angriffLief: false` und einen `script-src-attr`-Verstoß. Vor dem Deploy
+  war die Antwort an derselben Stelle `true`.
+- **Der Shop läuft:** Startseite, `/karten`, `/anfragen`, `/ueber-uns`,
+  `/checkout` und `/admin` hydrieren und navigieren; der **einzige** gemeldete
+  Verstoß ist der absichtlich ausgelöste. `/admin` zeigt nicht „noch nicht
+  konfiguriert".
+- **Die gefährliche Mischung wurde ausdrücklich gesucht und nicht gefunden.**
+  Beim Ausrollen liefern die Ränder minutenlang alte und neue Fassung
+  nebeneinander. Tödlich wäre **neue Kopfzeile mit Zufallswert auf altem Rumpf
+  ohne** — die Seite bliebe leer. 12 Abrufe, bei jedem Kopfzeile **und** Rumpf
+  derselben Antwort verglichen: 8× neu und stimmig, 4× durchgehend alt,
+  **kein einziger gemischter Fall**. Kopfzeile und Rumpf kommen immer aus
+  derselben Fassung, weil beide im selben Worker entstehen. 45 Sekunden später
+  15 von 15 Abrufen auf der neuen Fassung.
+- **Eine Falle beim Nachprüfen, in die ich zuerst getappt bin:** Getrennte
+  Abrufe für Kopfzeile und Rumpf zu vergleichen ist während eines Ausrollens
+  **wertlos** — die erste Messung meldete „Kopfzeile passt NEIN" für drei
+  Seiten, und es war nur eine alte Antwort gegen eine neue Kopfzeile aus einem
+  anderen Abruf. Wer das prüft, muss Kopfzeile und Rumpf **derselben** Antwort
+  vergleichen (`curl -D kopf.txt … -o rumpf.html`).
+
+### 2026-08-08 — Der Checkout zeigt den ausgehandelten Preis (ai-todo Punkt 5)
+
+- **Stand:** ABGESCHLOSSEN
+- **Datum:** 2026-08-08
+- **Ziel:** Punkt 5 aus [ai-todo.md](ai-todo.md). Nach einer angenommenen
+  Verhandlung zeigt der Checkout weiterhin den **Listenpreis**. Der Rabatt
+  erscheint erst in der Serverantwort und bei PayPal. Kunden zahlen nie zu
+  viel — sie sehen den Vorteil nur zu spät, und eine transparente Preisangabe
+  vor dem Bestellabschluss ist in Deutschland auch rechtlich das saubere
+  Vorgehen.
+- **Folgenlos, bis es das nicht mehr ist:** Solange niemand ein angenommenes
+  Angebot hat, fällt nichts auf. Mit dem ersten angenommenen Vorschlag wird es
+  sofort sichtbar.
+- **Die Entwurfsentscheidung, auf die es ankommt:** Die Anzeige darf **nicht**
+  ihre eigene Preisregel bekommen. Sonst driften Anzeige und Abrechnung
+  auseinander, und der Kunde sieht am Ende einen anderen Betrag als den, der
+  abgebucht wird — schlimmer als gar keine Anzeige. Deshalb wird die
+  Entscheidung in `lib/price-offers.ts` **einmal** getroffen und von beiden
+  benutzt: `pickAcceptedOffers` wird die eine Quelle, `pickAcceptedPrices`
+  (heute von `app/api/orders/route.ts` benutzt) leitet sich daraus ab. Auch die
+  zweite Regel wird gespiegelt statt nachgebaut: **Ein angenommenes Angebot
+  senkt nur** — ist der Listenpreis inzwischen darunter, gilt der niedrigere
+  (`app/api/orders/route.ts:79`).
+- **Wie:**
+  - Neue Route `GET /api/account/offers`, die für den **angemeldeten** Nutzer
+    alle angenommenen, unverfallenen Angebote als `productId → Betrag` samt
+    Gültigkeit liefert. Anmeldung über `getAuthenticatedAppUser` wie in
+    `app/api/orders/route.ts`, dazu das übliche Rate-Limit.
+  - `app/checkout/page.tsx` holt sie und zeigt je Position den ausgehandelten
+    Preis, den durchgestrichenen Listenpreis und die Ersparnis; die
+    Zwischensumme rechnet mit dem ausgehandelten Preis.
+- **Achtung, und das bleibt unangetastet:** Reine Darstellung. Der verbindliche
+  Preis wird weiterhin **ausschließlich** serverseitig bestimmt; aus dem Browser
+  wird niemals ein Betrag übernommen. Der Checkout schickt nach wie vor nur
+  Produkt-Kennungen.
+- **Wer nicht angemeldet ist, sieht keinen Fehler.** Die Abfrage antwortet dann
+  mit 401, und der Checkout zeigt schlicht die Listenpreise — Anmelden verlangt
+  er ohnehin erst beim Absenden.
+- **Betroffen:** neu `app/api/account/offers/route.ts`; geändert
+  `lib/price-offers.ts`, `app/checkout/page.tsx`, `app/globals.css`,
+  `tests/price-offers.test.mjs`. **Keine Migration, keine Änderung an
+  Produktionsdaten.**
+- **Verifikation:** Tests für die neue gemeinsame Entscheidung samt
+  Rot-Nachweis, darunter ausdrücklich der Fall „Listenpreis ist unter das
+  Angebot gefallen"; Prüfkette; im Browser gegen den lokalen Server prüfen,
+  dass der Checkout ohne Angebot unverändert aussieht.
+- **Ehrlich zur Grenze der Prüfung:** Ein Konto mit einem **echten**
+  angenommenen Angebot gibt es nicht, und eines anzulegen wäre ein schreibender
+  Eingriff in Produktionsdaten. Der Fall wird deshalb über die Tests und über
+  eine untergeschobene Antwort im Browser belegt, nicht an echten Daten.
+- **Ergebnis: ABGESCHLOSSEN.** Prüfkette grün: `tsc` sauber, Lint 0 Fehler,
+  `npm test` **195/195** (6 neue Tests).
+- **Gebaut:** neu `lib/offer-price.ts` (`effectiveUnitPrice`) und
+  `app/api/account/offers/route.ts`; in `lib/price-offers.ts` wurde
+  `pickAcceptedOffers` die eine Quelle, aus der sich `pickAcceptedPrices`
+  ableitet.
+- **Eine eigene Datei für eine einzige Zeile, und der Grund gehört behalten:**
+  `effectiveUnitPrice` konnte **nicht** in `lib/price-offers.ts` bleiben. Der
+  Checkout ist eine `"use client"`-Komponente, und diese Datei zieht Drizzle
+  samt Datenbankschema mit — der Import hätte beides ins Client-Bundle gepackt.
+  Wer die Regel später „aufräumt" und zurückschiebt, baut sich das ein.
+- **`app/api/orders/route.ts` benutzt jetzt dieselbe Funktion**, statt die Regel
+  ein zweites Mal zu schreiben. Das war der eigentliche Zweck: Anzeige und
+  Abrechnung können nicht mehr auseinanderdriften.
+- **Rot-Nachweis:** Mit `Math.min` ausgebaut fällt genau der Test „ein unter das
+  Angebot gefallener Listenpreis gewinnt" (14/15). Der Test misst also etwas.
+- **Im Browser an drei Fällen belegt** (lokaler Server, Produkte und Angebote
+  untergeschoben, weil die lokale Datenbank leer ist):
+  1. **Ohne Angebot unverändert:** 45,00 € und 29,00 €, Zwischensumme 74,00 €,
+     keine Ersparnis-Zeile, kein Durchgestrichenes.
+  2. **Mit Angebot:** „45,00 € 32,00 €" mit `line-through` auf dem Listenpreis
+     und Gold auf dem ausgehandelten, dazu „DEIN AUSGEHANDELTER PREIS",
+     Zwischensumme 61,00 €, „Deine Ersparnis −13,00 €", Gesamt 64,45 €. Die
+     zweite Karte ohne Angebot blieb bei 29,00 €.
+  3. **Angebot über dem Listenpreis** (50,00 € gegen 45,00 €): **nichts**
+     angezeigt, keine Ersparnis, 45,00 € bleibt stehen — die Regel „senkt nur"
+     greift auch in der Anzeige.
+- **Nachgemessen statt angenommen:** `display` beider Preise ist `inline`.
+  `.checkout-item span` steht auf `block` und trifft auch verschachtelte
+  Spannen; ohne die Rücknahme in der CSS stünden die beiden Preise
+  untereinander.
+- **Die echte Route wurde gegen den laufenden Server geprüft:** ohne Anmeldung
+  `401 {"error":"Nicht authentifiziert."}`.
+- **Vorbestehend und nicht von diesem Auftrag:** Lokal antwortet
+  `/api/products` mit 503, weil die lokale D1 leer ist. Auf der Produktion
+  liefert dieselbe Route 200.
+
+### 2026-08-08 — Der Sync schreibt nur noch, was sich geändert hat (ai-todo Punkt 2)
+
+- **Stand:** ABGESCHLOSSEN
+- **Datum:** 2026-08-08
+- **Ziel:** Punkt 2 aus [ai-todo.md](ai-todo.md). Ein Sync-Lauf schreibt heute
+  ~5 396 Zeilen, obwohl sich zwischen zwei Läufen fast nie etwas ändert. Die
+  Läufe der letzten 24 Stunden belegen es: **294 „aktualisiert", 0 importiert,
+  0 deaktiviert** — bei jedem einzelnen Lauf. Alle 294 Schreibvorgänge
+  bewirken nichts.
+- **Leitgedanke, der die Sicherheit trägt:** Es wird **nicht** entschieden, was
+  sich geändert haben *könnte*, sondern verglichen, was geschrieben würde, mit
+  dem, was schon dasteht. Sind sie gleich, entfällt die Anweisung. Damit ist
+  die Änderung verhaltenserhaltend per Konstruktion — ein übersprungener
+  Schreibvorgang hätte nichts bewirkt.
+- **Wie, im Einzelnen:**
+  - Neues Modul `lib/ebay-sync-diff.ts` mit reinen Vergleichsfunktionen
+    (Listing, Produkt, Bilder, Bestand). Ohne Netz und ohne Datenbank prüfbar —
+    dieselbe Trennung wie `lib/ebay-stock-check.ts` gegen
+    `lib/ebay-stock-guard.ts`.
+  - `lib/ebay-sync.ts` lädt die Vergleichswerte gebündelt vorab (heute holt es
+    von `ebay_listings` nur drei Spalten) und stellt je Listing nur noch die
+    Anweisungen zusammen, die etwas bewirken. Kein Batch heißt: gar kein
+    Schreibvorgang.
+  - **`product_assets` nicht mehr blind löschen und neu einfügen.** Gleiche
+    `sourceUrl`-Liste in gleicher Reihenfolge → nichts anfassen. Allein ~18 000
+    der gemessenen Zeilen.
+  - **`sync_events`** nur noch bei einem echten Ereignis. `UPDATED` entfällt
+    für unveränderte Listings.
+  - **`lastSyncedAt`/`updatedAt` sind kein Grund zu schreiben.** Sie ändern
+    sich zwangsläufig bei jedem Lauf; nähme man sie in den Vergleich, wäre er
+    wertlos. Sie werden mitgeschrieben, wenn ohnehin geschrieben wird.
+- **Zwei Fallen, vorher geprüft, nicht vermutet:**
+  1. **`rawData` ist unbedenklich.** `lib/ebay-client.ts:174` baut es als
+     `{source, marketplaceId, itemId}` — rein deterministisch, kein
+     Zeitstempel, kein Zähler. Ein wechselndes JSON-Feld hätte die Ersparnis
+     still aufgefressen. `shippingData` schreibt der Sync gar nicht.
+  2. **`descriptionHtml` darf der Vergleich nicht anfassen.** Der Sync setzt es
+     auf `undefined`, Drizzle lässt die Spalte damit beim `UPDATE` weg — dort
+     liegt der Beschreibungs-Zwischenspeicher aus
+     `app/api/products/[id]/route.ts:60`. Der Vergleich muss dieselbe
+     Auslassung abbilden, sonst würde er einen Unterschied sehen, den es nicht
+     gibt, und den Zwischenspeicher überschreiben.
+- **Sichtbare Nebenwirkung, bewusst in Kauf genommen:** `updated_count` in
+  `sync_runs` zählt künftig **tatsächliche** Änderungen. Ein ruhiger Lauf meldet
+  damit 0 statt 294. Das ist der Zweck, sieht in der Laufübersicht aber nach
+  „nichts passiert" aus. Eine eigene Spalte für „unverändert" wäre eine
+  Migration und damit rücksprachepflichtig — die Zahl geht deshalb nur in den
+  Rückgabewert, nicht in die Datenbank.
+- **Betroffen:** neu `lib/ebay-sync-diff.ts` und `tests/ebay-sync-diff.test.mjs`;
+  geändert `lib/ebay-sync.ts`, `app/admin/page.tsx` (Meldung um „unverändert"
+  ergänzt), `package.json` (Testliste). **Keine Migration, kein Schemaschritt,
+  kein Eingriff in Produktionsdaten.**
+  **`ZEILEN_JE_LAUF` in `tests/ebay-stock-check.test.mjs` bleibt vorerst bei
+  5 396** — der Wert wird erst gesenkt, wenn die Ersparnis an der Produktion
+  gemessen ist. Eine Schätzung dort einzutragen hieße, die Kopplung
+  auszuhebeln, die dieser Test herstellt.
+- **Der Cron-Takt bleibt bei `0 */2 * * *`.** Beschleunigt wird erst, wenn die
+  Ersparnis **an der Produktion gemessen** ist, nicht auf Grundlage einer
+  Schätzung. Genau diese Reihenfolge erzwingt der Test in
+  `tests/ebay-stock-check.test.mjs`.
+- **Verifikation:** Rot-Nachweis für jede Vergleichsfunktion (ohne sie fallen
+  die Tests); Prüfkette `tsc`, Lint, `npm test`; nach dem Deploy ein Lauf
+  abwarten und `wrangler d1 insights --timePeriod 1d --sort-by writes`
+  gegenprüfen.
+- **Rückweg:** Eine Datei und ein Commit. Der Lauf schreibt danach wieder alles.
+
+#### Zwischenstand — gebaut und deployed, die Messung fehlt noch
+
+- **Gebaut und in Produktion**, deployed als Version **`6f33f7f1`** um
+  ~07:00 UTC. Commit `500054a` auf `main` und `agent/initial-brandycards`.
+- **Prüfkette grün:** `tsc` sauber, Lint 0 Fehler (nur die vorbestehende
+  `<img>`-Warnung), `npm test` **189/189** (17 neue Tests). **CI grün
+  abgewartet, erst dann deployed** — die Lehre aus zwei Sitzungen, in denen ein
+  Deploy auf grüner *lokaler* Kette rausging, während CI rot war.
+- **Rot-Nachweis in beide Richtungen geführt**, weil ein zu großzügiger
+  Vergleich der gefährlichere Fehler wäre:
+  - Ohne die `undefined`-Ausnahme fallen 4 Tests (der Zwischenspeicher der
+    Beschreibung würde überschrieben).
+  - Ohne die Zeitstempel-Ausnahme fallen 5 Tests (der Vergleich wäre wirkungslos).
+  - Mit abgeschaltetem Vergleich fallen **8** Tests — die Richtung „Geändertes
+    **muss** geschrieben werden" ist damit ebenso belegt wie die Ersparnis.
+- **Deploy nachgeprüft:** `/`, `/account`, `/admin` und `/api/products` je 200,
+  und `/account` enthält **nicht** „noch nicht konfiguriert" — die
+  Bundle-Probe vor dem Deploy fand die Supabase-Konfiguration im Client-Bundle.
+- **Offen: die Messung an der Produktion.** Der nächste Cron-Lauf ist
+  **08:00 UTC**. Erst danach lässt sich sagen, ob die Ersparnis eintritt.
+  Zu prüfen: `updated_count` des Laufs (erwartet: **0** statt 294) und
+  `npx wrangler d1 insights brandycards-production --timePeriod 1d --sort-by writes`
+  (**mit `--limit 100`**, sonst kommen nur die Top 5). **Bleibt die Zahl hoch,
+  ist die Aufgabe nicht erledigt** — dann schreibt ein Feld weiter jedes Mal,
+  und der nächste Schritt ist, herauszufinden welches, nicht die Zahl schön zu
+  reden.
+- **Der Cron-Takt bleibt unangetastet**, bis diese Messung vorliegt.
+
+#### Ergebnis: ABGESCHLOSSEN — an der Produktion gemessen
+
+Der Lauf vom **2026-08-08 08:00:38 UTC** ist der erste unter der neuen Fassung.
+Gegenübergestellt den vier Läufen davor:
+
+| Lauf (UTC) | aktualisiert | deaktiviert | `sync_events` |
+|---|---|---|---|
+| **08:00:38** *(neu)* | **0** | 1 | **1** |
+| 06:00:38 | 294 | 1 | 295 |
+| 04:00:46 | 294 | 0 | 294 |
+| 02:00:46 | 294 | 0 | 294 |
+| 00:00:46 | 294 | 0 | 294 |
+
+**294 wirkungslose Schreibvorgänge je Lauf sind auf 0 gefallen.** Der eine
+verbliebene `sync_events`-Eintrag ist die Deaktivierung des Testartikels — also
+genau ein Ereignis, das etwas aussagt. Das ist die Absicht der Änderung, an
+echten Daten belegt.
+
+**Der Katalog ist unversehrt:** 294 aktive Produkte, 294 aktive Listings,
+**302 Bilder**. Letzteres ist der wichtigere Wert — er belegt, dass das
+Überspringen des Löschen-und-Einfügens keine Bilder verloren hat.
+
+**Nebenbei erledigt:** Derselbe Lauf hat den **Testartikel** abgeräumt
+(`ec6c212e…` steht jetzt auf `INACTIVE` / `ENDED` / `UNAVAILABLE`). Der Punkt
+aus der Übergabe ist damit ohne Eingriff von Hand geschlossen.
+
+**`wrangler d1 insights --timePeriod 1d` taugt hier noch nicht als Beleg** und
+wird es erst am 2026-08-09: Das Fenster enthält die vier Läufe von vor dem
+Deploy und meldet deshalb weiterhin ~31 000 Zeilen für das `ebay_listings`-
+Update. Wer die Zahl sehen will, muss einen vollen Tag abwarten — die
+Gegenüberstellung oben ist die belastbarere Messung, weil sie einzelne Läufe
+vergleicht.
+
+**Noch offen und bewusst nicht mit erledigt:** `ZEILEN_JE_LAUF` in
+`tests/ebay-stock-check.test.mjs` steht weiter auf 5 396, und der Cron bleibt
+bei `0 */2 * * *`. Beides gehört zusammen und sollte auf Grundlage der
+Tageszahlen vom 2026-08-09 angepasst werden, nicht auf Grundlage eines einzigen
+Laufs. **Erst dann** darf der Takt beschleunigt werden.
 
 ### 2026-08-08 — Testkauf: die Bestellbestätigung ist belegt
 
