@@ -39,22 +39,23 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 - **Stand:** LÄUFT
 - **Datum:** 2026-08-08
-- **Ziel:** Den E-Mail-Versand **einmal echt zustellen**. Bisher ist er nur
-  durch Tests belegt; eine tatsächlich angekommene Nachricht gab es nie.
-- **Voraussetzungen erfüllt:** Domain `brandycards.de` bei Resend verifiziert
-  (06.08.), TLS auf `Enforced` gestellt, `RESEND_API_KEY` als Cloudflare-Secret
-  hinterlegt und in `wrangler secret list` bestätigt.
-- **Vorgehen:** Eine Kartenanfrage über `/anfragen` **in Produktion**
-  abschicken, Empfänger `p.brand94@googlemail.com` — vom Betreiber ausdrücklich
-  benannt. Parallel `wrangler tail` mitlesen.
-- **Berührt Produktionsdaten:** Es entsteht eine echte Zeile in `inquiries`
-  mit Status `NEW`, erkennbar am Testtitel. **Sie wird nicht gelöscht** —
-  schreibende Eingriffe in Produktionsdaten sind rücksprachepflichtig, und der
-  Betreiber ist darüber informiert.
-- **Nicht prüfbar auf diesem Weg:** die Bestellbestätigung. Sie hängt an einer
-  echten PayPal-Zahlung.
-- **Fertig, wenn:** Das Protokoll den Versand als angenommen meldet und der
-  Betreiber die Nachricht im Postfach bestätigt.
+- **Ziel:** Ein erfolgreicher Versand soll eine Protokollzeile hinterlassen.
+  Bisher meldet sich nur der Fehlerfall; ein geglückter Versand ist unsichtbar,
+  und damit lässt sich im Nachhinein nicht belegen, ob ein Kunde seine
+  Bestätigung bekommen hat.
+- **Wie:** Eine gemeinsame Funktion `protokolliereVersand(anlass, ergebnis,
+  kennung)` in `lib/email/send.ts`, die beide Ausgänge schreibt und die vier
+  wiederholten `if (!ergebnis.ok) console.error(...)` in `notify.ts` ersetzt.
+- **Bei Erfolg wird die Resend-Kennung protokolliert**, nicht die
+  Empfängeradresse. Damit lässt sich ein Einzelfall in der Oberfläche von
+  Resend nachschlagen, ohne dass personenbezogene Daten in den
+  Cloudflare-Protokollen liegen — die stünden dort sonst dauerhaft und ohne
+  Zweck. Dazu die fachliche Kennung (`orderId`, `offerId`), die intern ist.
+- **Betroffen:** `lib/email/send.ts`, `lib/email/notify.ts`,
+  `tests/email.test.mjs`. Kein Datenmodell, keine API, keine Datenbank.
+- **Verifikation:** Ein Test fängt die Protokollausgabe ab und belegt beides:
+  dass eine Erfolgszeile mit Kennung entsteht **und** dass die
+  Empfängeradresse nicht darin vorkommt.
 
 ---
 
@@ -269,6 +270,45 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
 ---
 
 ## Historie
+
+### 2026-08-08 — Erste echt zugestellte E-Mail
+
+- **Stand:** ABGESCHLOSSEN
+- **Datum:** 2026-08-08
+- **Ziel:** Den E-Mail-Versand **einmal echt zustellen**. Bisher ist er nur
+  durch Tests belegt; eine tatsächlich angekommene Nachricht gab es nie.
+- **Voraussetzungen erfüllt:** Domain `brandycards.de` bei Resend verifiziert
+  (06.08.), TLS auf `Enforced` gestellt, `RESEND_API_KEY` als Cloudflare-Secret
+  hinterlegt und in `wrangler secret list` bestätigt.
+- **Vorgehen:** Eine Kartenanfrage über `/anfragen` **in Produktion**
+  abschicken, Empfänger `p.brand94@googlemail.com` — vom Betreiber ausdrücklich
+  benannt. Parallel `wrangler tail` mitlesen.
+- **Berührt Produktionsdaten:** Es entsteht eine echte Zeile in `inquiries`
+  mit Status `NEW`, erkennbar am Testtitel. **Sie wird nicht gelöscht** —
+  schreibende Eingriffe in Produktionsdaten sind rücksprachepflichtig, und der
+  Betreiber ist darüber informiert.
+- **Nicht prüfbar auf diesem Weg:** die Bestellbestätigung. Sie hängt an einer
+  echten PayPal-Zahlung.
+- **Fertig, wenn:** Das Protokoll den Versand als angenommen meldet und der
+  Betreiber die Nachricht im Postfach bestätigt.
+- **Ergebnis: ABGESCHLOSSEN — die Nachricht ist angekommen.** Der Betreiber hat
+  den Eingang im Postfach bestätigt. Damit ist der Versandpfad zum ersten Mal
+  **durch eine echte Zustellung** belegt und nicht nur durch Tests.
+- **Ablauf:** Formular meldete „Danke! Deine Anfrage ist bei uns eingegangen.",
+  die Zeile steht in der Produktionsdatenbank
+  (`p.brand94@googlemail.com`, Status `NEW`, 2026-08-08 05:45:48 UTC), und
+  `wrangler tail` zeigte `POST /api/inquiries - Ok` ohne Fehlerzeile.
+- **Die Zeile in `inquiries` bleibt bewusst stehen** (Titel „ZUSTELLPROBE
+  E-Mail-Versand 2026-08-08"). Sie zu löschen wäre ein schreibender Eingriff in
+  Produktionsdaten und damit rücksprachepflichtig.
+- **Was dieser Durchlauf sichtbar gemacht hat:** Ein **erfolgreicher** Versand
+  hinterließ keine Spur. Aus dem Protokoll ließ sich nur ablesen, dass nichts
+  schiefging — nicht, dass etwas hinausging. Für den Betrieb zu wenig: Wer in
+  vier Wochen wissen will, ob ein Kunde seine Bestätigung bekam, fand nichts.
+  Wird als eigener Punkt nachgezogen.
+- **Weiterhin ungeprüft:** die Bestellbestätigung. Sie hängt an einer echten
+  PayPal-Zahlung und lässt sich ohne eine solche nicht belegen.
+
 
 ### 2026-08-08 — Kunden-E-Mails gebaut (ai-todo Punkt 3)
 
