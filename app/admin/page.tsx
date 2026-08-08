@@ -19,6 +19,7 @@ export default function AdminPage() {
   const [syncMessage, setSyncMessage] = useState("");
   const [oauthBusy, setOauthBusy] = useState(false);
   const [writeCheckBusy, setWriteCheckBusy] = useState(false);
+  const [outboxBusy, setOutboxBusy] = useState(false);
   const [assetUrls, setAssetUrls] = useState<Record<string, string>>({});
   const [deletingSubmission, setDeletingSubmission] = useState<string | null>(null);
 
@@ -132,6 +133,30 @@ export default function AdminPage() {
     }
   }
 
+  /** Arbeitet wartende eBay-Rücknahmen sofort ab, statt bis zum Cron zu warten. */
+  async function runEbayOutbox() {
+    setOutboxBusy(true);
+    setSyncMessage("");
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) throw new Error("Bitte melde dich zuerst an.");
+      const response = await fetch("/api/admin/ebay/outbox/run", { method: "POST", headers: { Authorization: `Bearer ${token}` } });
+      const body = await response.json() as { processed?: number; writeEnabled?: boolean; error?: string; detail?: string };
+      if (!response.ok) throw new Error(body.detail ? `${body.error ?? "Fehlgeschlagen."} (${body.detail})` : body.error ?? "Fehlgeschlagen.");
+      // Ohne den Schalterhinweis läse sich „0 abgearbeitet" wie „nichts zu tun",
+      // während in Wahrheit der Schreibpfad aus ist.
+      setSyncMessage(body.writeEnabled
+        ? `eBay-Rücknahmen: ${body.processed ?? 0} abgearbeitet.`
+        : `eBay-Rücknahmen: nichts ausgeführt — EBAY_WRITE_ENABLED ist aus. Wartende Aufträge bleiben liegen.`);
+    } catch (error) {
+      setSyncMessage(error instanceof Error ? error.message : "eBay-Rücknahmen fehlgeschlagen.");
+    } finally {
+      setOutboxBusy(false);
+    }
+  }
+
   async function connectEbay() {
     setOauthBusy(true);
     setSyncMessage("");
@@ -169,6 +194,7 @@ export default function AdminPage() {
           <button className="button button-primary admin-sync-button" type="button" onClick={runEbaySync} disabled={syncBusy}>{syncBusy ? "eBay-Sync läuft …" : "eBay-Angebote synchronisieren"}</button>
           <button className="button button-outline admin-sync-button" type="button" onClick={connectEbay} disabled={oauthBusy}>{oauthBusy ? "eBay OAuth wird gestartet …" : "eBay OAuth verbinden / Refresh-Token erstellen"}</button>
           <button className="button button-outline admin-sync-button" type="button" onClick={checkEbayWrite} disabled={writeCheckBusy}>{writeCheckBusy ? "eBay-Schreibzugriff wird geprüft …" : "eBay-Schreibzugriff prüfen"}</button>
+          <button className="button button-outline admin-sync-button" type="button" onClick={runEbayOutbox} disabled={outboxBusy}>{outboxBusy ? "eBay-Rücknahmen laufen …" : "eBay-Rücknahmen jetzt ausführen"}</button>
           {syncMessage && <p className="form-feedback" role="status">{syncMessage}</p>}
           <OffersPanel />
           <div className="admin-submissions">

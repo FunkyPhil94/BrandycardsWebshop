@@ -37,7 +37,7 @@ EBAY_ENVIRONMENT = "production"
 EBAY_MARKETPLACE_ID = "EBAY_DE"
 EBAY_OAUTH_SCOPE = "https://api.ebay.com/oauth/api_scope/sell.inventory.readonly"
 EBAY_WRITE_OAUTH_SCOPE = "https://api.ebay.com/oauth/api_scope/sell.inventory"
-EBAY_WRITE_ENABLED = "false"
+EBAY_WRITE_ENABLED = "true"
 EBAY_RUNAME = "BrandyCards_GbR-BrandyCa-Brandy-cqibopjv"
 EBAY_OAUTH_CALLBACK_URL = "https://shop.brandycards.de/api/admin/ebay/oauth/callback"
 
