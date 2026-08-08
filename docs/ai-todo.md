@@ -555,17 +555,28 @@ Zeilen in `ebay_outbox` sind deshalb der Normalzustand und kein Fehler.
 
 **Was noch fehlt — und es liegt beim Betreiber:**
 
-1. **Den Schreib-Scope bestätigen.** `EBAY_WRITE_OAUTH_SCOPE` steht korrekt auf
-   `…/sell.inventory`. Ob der in Produktion hinterlegte `EBAY_REFRESH_TOKEN`
-   diesen Scope umfasst, entscheidet sich bei der eBay-Zustimmung und lässt
-   sich **nur am ersten echten Schreibaufruf** feststellen. Der Token trägt
-   nachweislich **lesend** (Sync-Läufe `SUCCEEDED`); das sagt über den
-   Schreib-Scope nichts. Scheitert es mit `invalid_scope` oder Fehler `931`,
-   muss die Zustimmung mit `sell.inventory` erneuert werden.
+1. **Den Schreib-Scope bestätigen — das geht jetzt per Knopfdruck.** Als Admin
+   angemeldet `GET /api/admin/ebay/write-check` aufrufen. Die Route tauscht ein
+   Token mit dem Schreib-Scope und **fasst kein Angebot an**; sie ist deshalb
+   auch bei `EBAY_WRITE_ENABLED=false` gefahrlos.
+   - `{"ok": true}` → der Token trägt `sell.inventory`, weiter mit Schritt 2.
+   - `{"ok": false}` → die eBay-Zustimmung einmal über
+     `/api/admin/ebay/oauth/start` erneuern. Der Zustimmungsweg fordert den
+     Schreib-Scope bereits an (seit 2026-08-06), es genügt also der Durchlauf.
+
    *(Die lokalen Zugangsdaten in `.env.local` taugen zum Prüfen nicht — ihr
-   Refresh-Token ist veraltet und scheitert für **jeden** Scope gleich.)*
+   Refresh-Token ist veraltet und scheitert für **jeden** Scope gleich. Deshalb
+   die Prüfung aus dem Worker heraus.)*
 2. **An einer Testkarte nachweisen**, dass die Menge bei eBay wirklich auf 0
-   geht — an einer, deren Verschwinden nicht wehtut.
+   geht — **an einer, deren Verschwinden nicht wehtut, und das ist wörtlich
+   gemeint.** Bei einem Festpreisangebot mit Menge 1 beendet eBay das Angebot,
+   wenn die Menge auf 0 geht; die Umkehrbarkeit, wegen der `ReviseInventoryStatus`
+   und nicht `EndItem` gewählt wurde, greift dann womöglich nicht, und
+   Wiedereinstellen ergäbe eine neue ItemID. Für den Betrieb bleibt das die
+   richtige Wahl — verkauft ist verkauft, das Angebot *soll* weg. Für den Test
+   heißt es: ein eigens eingestelltes Wegwerf-Angebot nehmen, wie beim
+   1-Cent-Testartikel für PayPal. **Die KI kann keines anlegen** — es gibt
+   keinen Code-Pfad zum Einstellen, der Import ist rein lesend.
 3. **Erst dann `EBAY_WRITE_ENABLED=true`** setzen. Der Schalter existiert genau
    für diese Reihenfolge.
 4. Nach dem ersten echten Verkauf `ebay_outbox` kontrollieren: Status

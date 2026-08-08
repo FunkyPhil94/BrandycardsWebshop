@@ -363,6 +363,49 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
 
 ## Historie
 
+### 2026-08-08 — Die eBay-Schreibanmeldung prüfbar machen, ohne ein Angebot zu opfern
+
+- **Stand:** ABGESCHLOSSEN
+- **Datum:** 2026-08-08
+- **Anlass:** Der Betreiber fragte, ob für Punkt 6 eine neue Testkarte mit
+  neuer ItemID anzulegen sei. Die Frage dahinter — trägt der Token den
+  Schreib-Scope? — lässt sich billiger beantworten.
+- **Eine Testkarte bei eBay anzulegen ist nicht drin:** Es gibt keinen
+  Code-Pfad dafür (`AddFixedPriceItem` existiert nirgends, der Import ist rein
+  lesend), die lokalen Zugangsdaten sind veraltet, und es wäre ein echtes
+  öffentliches Angebot samt Einstellgebühren. Für einen Menschen sind das zwei
+  Minuten in der eBay-Oberfläche, für die KI ein neues Feature.
+- **Der billigere Weg:** Ein Token-Tausch verändert bei eBay **nichts**. Genau
+  das tut `checkEbayWriteAuth` — Anmeldung mit dem Schreib-Scope und sonst gar
+  nichts. Damit ist die Frage klärbar, **bevor** `EBAY_WRITE_ENABLED` fällt und
+  ohne eine Karte zu opfern. Erreichbar als
+  `GET /api/admin/ebay/write-check`, adminpflichtig. **Das Token steht nie in
+  der Antwort**, nur ob es kam.
+- **Vorher geprüft, dass der Weg frei ist:** `ebay_outbox` ist in Produktion
+  **leer**. Ein Umlegen des Schalters könnte also derzeit nichts gegen ein
+  echtes Angebot auslösen — gut zu wissen für den Abnahmetest.
+- **Nebenbefund, und er ist der wertvollere Teil:** **Nichts erzwang die
+  Rollenprüfung an Adminrouten.** SEC-12 wurde seinerzeit durch Hinsehen
+  gefunden, nicht durch eine Regel. Jetzt prüft ein Test alle Routen unter
+  `/api/admin` — mit der OAuth-Rückseite als einziger begründeter Ausnahme,
+  deren Grund als Kommentar an der Route steht.
+- **Ein eigener Fehler dabei, der fast als Befund durchgegangen wäre:** Mein
+  erster Testentwurf kannte nur die ausgeschriebene Rollenprüfung und meldete
+  **vier** angeblich ungeschützte Routen. Sie sind alle geschützt — über den
+  Helfer `requireAdmin` aus `lib/admin-access.ts`. Hätte ich das Ergebnis
+  geglaubt statt es nachzusehen, stünde hier jetzt eine erfundene
+  Sicherheitslücke. Der Test kennt beide Schreibweisen; **die neue Route
+  benutzt den Helfer**, statt die Prüfung ein weiteres Mal nachzubauen.
+- **Verifikation:** `tsc` sauber, Lint 0 Fehler, `npm test` **245/245**.
+  Rot-Nachweis für den neuen Test geführt (Rollenprüfung aus der neuen Route
+  entfernt → er schlägt an). Deployed als **`424f18b6`**, Commit `32dfd0f`.
+  Nach dem Deploy: `/`, `/admin`, `/account` je 200, und
+  `/api/admin/ebay/write-check` ohne Anmeldung **401**.
+- **Abweichung von Regel 1:** Dieser Eintrag entstand **nach** der Arbeit. Der
+  Auftrag wuchs aus der Beantwortung einer Frage heraus, und ich habe den
+  Übergang von „antworten" zu „bauen" nicht als solchen bemerkt. Genau dafür
+  ist die Regel da; beim nächsten Mal früher innehalten.
+
 ### 2026-08-08 — eBay-Schreibpfad: verkaufte Karten von eBay nehmen (ai-todo Punkt 6)
 
 - **Stand:** ABGESCHLOSSEN
