@@ -96,7 +96,50 @@ Quere kommen.
   Hydrierung heißt: keine Seite funktioniert mehr. Deshalb wird hier nicht auf
   eine Stichprobe vertraut.
 - **Rückweg:** Eine Zeile — `'unsafe-inline'` zurück in `script-src`, deployen.
-- **Ergebnis:** _(wird nach dem Durchlauf eingetragen)_
+- **Ergebnis: ABGESCHLOSSEN.** Prüfkette grün: `tsc` sauber, Lint 0 Fehler,
+  `npm test` **204/204** (9 neue Tests).
+- **Der Gewinn ist an beiden Enden gemessen, nicht behauptet.** Derselbe
+  Angriff, genau in der Form von SEC-01
+  (`<img src="…" onerror="window.__angriffLief = true">`, über `innerHTML`
+  eingeschleust):
+  - **Gegen die laufende Produktion mit `'unsafe-inline'`: er läuft**
+    (`angriffLief: true`).
+  - **Gegen den neuen Produktionsbau: er läuft nicht** (`angriffLief: false`),
+    der Browser meldet einen Verstoß gegen `script-src-attr`.
+  Das ist der ganze Zweck dieser Aufgabe, und er ist damit belegt statt
+  angenommen.
+- **Geprüft wurde am echten Produktionsbau**, nicht nur am
+  Entwicklungsserver: `npm run build`, dann `npx wrangler dev --local` auf Port
+  8788. Dort tragen alle **7** Skripte den Zufallswert, die Kopfzeile nennt
+  denselben, und ein Durchgang über Startseite, `/karten`, `/anfragen`,
+  `/verkaufen`, `/ueber-uns`, `/account`, `/checkout` und `/admin` ergab
+  **null** Verstöße bei funktionierender Hydrierung und funktionierender
+  Client-Navigation.
+- **Ein Zwischenbefund, der beinahe falsch gedeutet worden wäre:** Am
+  Entwicklungsserver meldete der Browser 33 Verstöße gegen `script-src` mit
+  `blockedURI: "eval"`. Das ist **die HMR von Vite**, nicht der ausgelieferte
+  Code. Belegt durch zwei Messungen: der Produktionsbau erzeugt **null**
+  Verstöße, und die **laufende Produktion** — deren Regel `eval` schon vorher
+  verbot — ebenfalls null. Wer diese Zeilen künftig wieder sieht: erst den
+  Produktionsbau messen, bevor `'unsafe-eval'` auch nur erwogen wird.
+- **Nachgemessen statt angenommen:** Der Zufallswert ist bei jeder Antwort ein
+  anderer (drei Abrufe, drei Werte), und Antworten, die kein HTML sind, tragen
+  `script-src 'self'` **ohne** Zufallswert — `'unsafe-inline'` steht damit in
+  **keiner** Antwort mehr.
+- **Ein zweiter Stolperstein, der Zeit gekostet hat:** Im Browser schienen auf
+  `/karten` acht Skripte **ohne** Zufallswert zu stehen. Das war eine
+  Client-Navigation — die Skript-Tags im DOM stammten aus dem Seitenwechsel,
+  nicht aus der Auslieferung. Ein direkter Abruf jeder einzelnen Route zeigte:
+  8 von 8 Tags mit Wert, auf allen fünf geprüften Seiten. **Der DOM nach einer
+  Client-Navigation ist kein Beleg dafür, was der Server ausgeliefert hat.**
+- **Typen:** `HTMLRewriter` war dem Typprüfer unbekannt. Eine knappe Erklärung
+  steht jetzt in `cloudflare-env.d.ts`, im selben Stil wie die übrigen
+  Bindings — keine neue Abhängigkeit.
+- **`npx wrangler dev` ist am Ende abgestürzt** („No such module
+  `__vite_rsc_assets_manifest.js`"). Ursache ist harmlos und gehört nicht zur
+  Änderung: `npm test` baut `dist/` neu, und der laufende Server versuchte
+  mitten im Neubau nachzuladen. **Die Prüfungen liefen davor**, gegen einen
+  antwortenden Server. Wer beides zugleich braucht: erst prüfen, dann testen.
 
 ### 2026-08-08 — Der Checkout zeigt den ausgehandelten Preis (ai-todo Punkt 5)
 

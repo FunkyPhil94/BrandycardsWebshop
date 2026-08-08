@@ -16,7 +16,7 @@
  * - `frame-ancestors 'none'` no page of this shop belongs in someone else's
  *              frame; it is the modern form of X-Frame-Options
  */
-export function contentSecurityPolicy(supabaseUrl: string | undefined) {
+export function contentSecurityPolicy(supabaseUrl: string | undefined, nonce?: string) {
   const supabase = supabaseUrl?.trim().replace(/\/+$/, "");
   return [
     "default-src 'self'",
@@ -25,31 +25,73 @@ export function contentSecurityPolicy(supabaseUrl: string | undefined) {
     "frame-ancestors 'none'",
     "form-action 'self'",
     "img-src 'self' data: https://i.ebayimg.com https://*.ebayimg.com https://funkyphil94.github.io",
+    // Bleibt vorerst: React und vinext setzen Inline-Stile. Eigene Aufgabe.
     "style-src 'self' 'unsafe-inline'",
     "font-src 'self' data:",
     `connect-src 'self'${supabase ? ` ${supabase}` : ""}`,
-    "script-src 'self' 'unsafe-inline'",
+    // Ohne Zufallswert — also überall dort, wo keine Seite ausgeliefert wird —
+    // bleibt nur `'self'`. Aus einer JSON-Antwort oder einem Bild führt niemand
+    // Skripte aus; `'unsafe-inline'` verschwindet damit aus **allen** Antworten.
+    nonce ? `script-src 'self' 'nonce-${nonce}'` : "script-src 'self'",
   ].join("; ");
 }
 
+/** Ein Zufallswert je Antwort für die Inline-Skripte.
+ *
+ * **Je Antwort neu, sonst ist er wertlos** — ein wiederverwendeter Wert steht
+ * einem Angreifer genauso zur Verfügung wie `'unsafe-inline'`.
+ *
+ * 16 Bytes aus `crypto.getRandomValues`, Base64. Das ist die von der
+ * Spezifikation empfohlene Untergrenze (128 Bit).
+ */
+export function createNonce() {
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  return btoa(String.fromCharCode(...bytes));
+}
+
+/** Ob diese Antwort eine Seite ist, in der Skript-Tags stehen können.
+ *
+ * Der `HTMLRewriter` darf **nur** hier laufen: Auf JSON, Bildern oder Assets
+ * wäre er sinnlose Arbeit an jedem Byte. Und Antworten ohne Rumpf (101, 204,
+ * 304) lassen sich nicht umschreiben — eine 304 ist dabei der heikle Fall, weil
+ * der Rumpf dann aus dem Zwischenspeicher des Browsers käme und der frische
+ * Zufallswert nicht mehr zum alten Markup passte. Am 2026-08-08 nachgemessen:
+ * HTML dieses Shops trägt weder `cache-control` noch `etag`, wird also nie
+ * revalidiert. Die Prüfung steht hier trotzdem — sie kostet nichts und fängt
+ * den Tag ab, an dem jemand HTML zwischenspeichern lässt.
+ */
+export function isHtmlResponse(response: Response) {
+  if (response.status === 101 || response.status === 204 || response.status === 304) return false;
+  return (response.headers.get("content-type") ?? "").toLowerCase().includes("text/html");
+}
+
 /**
- * Enforcing since 2026-08-07, after every page was walked under this exact
- * policy against a production build.
+ * Enforcing since 2026-08-07, without `'unsafe-inline'` for scripts since
+ * 2026-08-08.
  *
- * **Be honest about what it does and does not buy.** vinext emits eight inline
- * `<script>` blocks per page (RSC parameters, navigation state, the browser
- * entry import), so `script-src` has to carry `'unsafe-inline'` — and that
- * also permits inline event handlers. An `<img onerror=…>` injected through a
- * future hole of the SEC-01 kind would still **run**.
+ * **Was sich am 2026-08-08 geändert hat und warum es zählt:** Bis dahin trug
+ * `script-src` ein `'unsafe-inline'`, weil vinext seine Inline-`<script>`-Blöcke
+ * je Seite ausliefert. Damit waren zugleich **Inline-Eventhandler erlaubt** —
+ * ein eingeschleustes `<img onerror=…>` wäre gelaufen, genau die Form von
+ * SEC-01. Jetzt bekommt jedes `<script>` auf dem Weg nach draußen einen
+ * Zufallswert (`worker/index.ts`), und die Regel nennt nur noch diesen. **Ein
+ * Eventhandler in einem Attribut kann keinen Zufallswert tragen** — er ist
+ * damit tot, und das ist der ganze Gewinn dieser Änderung.
  *
- * What it does buy is the second half of such an attack: `script-src 'self'`
- * blocks loading a script from another origin, and `connect-src` limits where
- * anything can be sent to this origin and Supabase. A stolen session token has
- * no easy way out. Together with `frame-ancestors`, `object-src` and
- * `base-uri`, that is real defence in depth — just not the whole wall.
+ * **Kein `'strict-dynamic'`, und das ist eine Entscheidung, keine
+ * Nachlässigkeit.** Es würde `'self'` unwirksam machen; alles, was diese Seite
+ * nachlädt, kommt aber von dieser Herkunft und ist damit von `'self'` gedeckt.
+ * Der Gewinn wäre null, der Preis eine zusätzliche Abhängigkeit. Erst wenn je
+ * ein fremdes Skript nötig wird, ist `'strict-dynamic'` der nächste Schritt.
  *
- * The whole wall needs nonces instead of `'unsafe-inline'`, which means
- * rewriting every inline script tag on the way out. See docs/ai-todo.md.
+ * Was die Regel schon vorher leistete und weiter leistet: `script-src 'self'`
+ * verbietet fremde Skripte, `connect-src` begrenzt jedes Übertragungsziel auf
+ * diese Herkunft und Supabase. Ein gestohlenes Sitzungstoken kommt schwer
+ * heraus. Zusammen mit `frame-ancestors`, `object-src` und `base-uri` ist das
+ * Tiefenverteidigung.
+ *
+ * Offen bleibt `style-src 'unsafe-inline'` — React und vinext setzen
+ * Inline-Stile. Eigene Aufgabe, kein Nebenbei.
  */
 export const CSP_HEADER_NAME = "content-security-policy";
 
@@ -73,7 +115,7 @@ export const CSP_HEADER_NAME = "content-security-policy";
  */
 const HSTS = "max-age=31536000";
 
-export function securityHeaders(supabaseUrl: string | undefined): Record<string, string> {
+export function securityHeaders(supabaseUrl: string | undefined, nonce?: string): Record<string, string> {
   return {
     "strict-transport-security": HSTS,
     "x-content-type-options": "nosniff",
@@ -82,14 +124,14 @@ export function securityHeaders(supabaseUrl: string | undefined): Record<string,
     "permissions-policy": "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()",
     // frame-ancestors covers modern browsers; this covers the rest.
     "x-frame-options": "DENY",
-    [CSP_HEADER_NAME]: contentSecurityPolicy(supabaseUrl),
+    [CSP_HEADER_NAME]: contentSecurityPolicy(supabaseUrl, nonce),
   };
 }
 
 /** Adds the headers without touching any the route set deliberately. */
-export function withSecurityHeaders(response: Response, supabaseUrl: string | undefined): Response {
+export function withSecurityHeaders(response: Response, supabaseUrl: string | undefined, nonce?: string): Response {
   const headers = new Headers(response.headers);
-  for (const [name, value] of Object.entries(securityHeaders(supabaseUrl))) {
+  for (const [name, value] of Object.entries(securityHeaders(supabaseUrl, nonce))) {
     if (!headers.has(name)) headers.set(name, value);
   }
   // A 101 or 204 carries no body and rejects a rebuilt Response.

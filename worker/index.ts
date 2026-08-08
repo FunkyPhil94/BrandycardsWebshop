@@ -7,7 +7,7 @@ import { deleteExpiredCardSubmissions } from "../lib/card-submission-cleanup";
 import { releaseExpiredReservations } from "../lib/paypal/settle-order";
 import { processEbayOutbox } from "../lib/ebay-outbox";
 import { expireLapsedOffers } from "../lib/price-offers";
-import { withSecurityHeaders } from "../lib/security-headers";
+import { createNonce, isHtmlResponse, withSecurityHeaders } from "../lib/security-headers";
 
 interface Env {
   ASSETS: Fetcher;
@@ -45,7 +45,24 @@ const worker = {
     // security headers reach server-rendered pages, API answers and assets
     // alike. `public/_headers` would only cover the last of the three.
     // See docs/security-findings.md, SEC-06.
-    const harden = (response: Response) => withSecurityHeaders(response, process.env.NEXT_PUBLIC_SUPABASE_URL);
+    //
+    // Seit dem 2026-08-08 entsteht hier zusätzlich der Zufallswert für die
+    // Inline-Skripte. Er muss **je Antwort** neu sein und **dieselbe** Antwort
+    // an zwei Stellen erreichen: die Kopfzeile und jedes `<script>` im Markup.
+    // Deshalb steht beides in einer Funktion — auseinandergezogen wäre es der
+    // Fehler, der die ganze Seite leer lässt.
+    const harden = (response: Response) => {
+      const nonce = isHtmlResponse(response) ? createNonce() : undefined;
+      const hardened = withSecurityHeaders(response, process.env.NEXT_PUBLIC_SUPABASE_URL, nonce);
+      if (!nonce) return hardened;
+      // `HTMLRewriter` schreibt im Strom mit, hält also die Auslieferung nicht
+      // an. Er trifft **jedes** `<script>`, nicht nur die ohne `src`: Ein Tag
+      // ohne Zufallswert wäre unter dieser Regel stillgelegt, und der Ausfall
+      // wäre still.
+      return new HTMLRewriter().on("script", {
+        element(element) { element.setAttribute("nonce", nonce); },
+      }).transform(hardened);
+    };
 
     if (url.pathname === "/_vinext/image") {
       const allowedWidths = [...DEFAULT_DEVICE_SIZES, ...DEFAULT_IMAGE_SIZES];

@@ -11,7 +11,7 @@ const {
   MAX_FORM_AGE_MILLISECONDS,
   inspectSubmission,
 } = await import("../lib/form-bot-guard.ts");
-const { securityHeaders, contentSecurityPolicy, CSP_HEADER_NAME, withSecurityHeaders } = await import("../lib/security-headers.ts");
+const { securityHeaders, contentSecurityPolicy, CSP_HEADER_NAME, withSecurityHeaders, createNonce, isHtmlResponse } = await import("../lib/security-headers.ts");
 const { changed, isUniqueViolation } = await import("../lib/user-profile.ts");
 
 // --- E-2, bot deterrence ----------------------------------------------------
@@ -102,21 +102,83 @@ test("the CSP enforces rather than reports", () => {
     "both headers at once would be confusing and the report-only one adds nothing here");
 });
 
-test("the policy is honest about needing unsafe-inline for scripts", () => {
-  // vinext emits eight inline <script> blocks per page. Dropping
-  // 'unsafe-inline' without putting nonces in their place would produce a
-  // blank page, not a safer one. The consequence has to stay visible: inline
-  // event handlers such as <img onerror=…> are permitted by the same token,
-  // so this policy does not stop a SEC-01-style hole from executing — it
-  // stops the stolen data from leaving.
+test("kein 'unsafe-inline' mehr für Skripte — in keiner Antwort", () => {
+  // Der Kern von ai-todo Punkt 4a. Solange `'unsafe-inline'` dastand, waren
+  // **Inline-Eventhandler erlaubt**: Ein eingeschleustes `<img onerror=…>`
+  // wäre gelaufen, genau die Form von SEC-01. Ein Eventhandler in einem
+  // Attribut kann keinen Zufallswert tragen — mit dieser Zeile ist er tot.
+  for (const policy of [
+    contentSecurityPolicy("https://project.supabase.co"),
+    contentSecurityPolicy("https://project.supabase.co", "abc123"),
+  ]) {
+    const scriptSrc = policy.match(/script-src[^;]*/)[0];
+    assert.ok(!scriptSrc.includes("'unsafe-inline'"), `zurückgefallen: ${scriptSrc}`);
+    assert.match(scriptSrc, /'self'/, "ein Skript von fremder Herkunft muss weiter abgelehnt werden");
+  }
+});
+
+test("mit Zufallswert nennt die Regel genau diesen", () => {
+  const policy = contentSecurityPolicy("https://project.supabase.co", "abc123");
+  assert.match(policy, /script-src 'self' 'nonce-abc123'/);
+});
+
+test("ohne Zufallswert bleibt nur 'self' übrig", () => {
+  // Antworten, die kein HTML sind, bekommen keinen Zufallswert. Dort darf auch
+  // keine Lücke aufgehen: kein `'unsafe-inline'` als Ersatz.
   const policy = contentSecurityPolicy("https://project.supabase.co");
-  assert.match(policy, /script-src [^;]*'unsafe-inline'/,
-    "removing this needs nonces first, see docs/ai-todo.md");
-  assert.match(policy, /script-src 'self'/,
-    "a script from another origin must still be refused");
+  assert.match(policy, /script-src 'self'(;|$)/);
+});
+
+test("kein 'strict-dynamic' — es würde 'self' unwirksam machen", () => {
+  // Bewusste Abweichung von der Aufgabenbeschreibung: Alles, was diese Seiten
+  // nachladen, kommt von dieser Herkunft und ist von `'self'` gedeckt.
+  // `'strict-dynamic'` ließe Browser `'self'` ignorieren — der Gewinn wäre
+  // null, der Preis eine Abhängigkeit mehr. Begründung in ai-handover.md.
+  assert.ok(!contentSecurityPolicy("https://project.supabase.co", "abc123").includes("strict-dynamic"));
+});
+
+test("style-src behält 'unsafe-inline', und das ist bekannt", () => {
+  // Kein Versehen: React und vinext setzen Inline-Stile. Eigene Aufgabe. Der
+  // Test hält fest, dass es eine Entscheidung war.
+  assert.match(contentSecurityPolicy(undefined), /style-src [^;]*'unsafe-inline'/);
+});
+
+test("die Übertragungsziele bleiben eng begrenzt", () => {
+  const policy = contentSecurityPolicy("https://project.supabase.co");
   assert.match(policy, /connect-src 'self' https:\/\/project\.supabase\.co(;|$)/,
     "this is the half that matters: a stolen token has nowhere to go");
   assert.ok(!/connect-src[^;]*\*/.test(policy), "a wildcard here would give the exfiltration path back");
+});
+
+test("der Zufallswert ist bei jeder Antwort ein anderer", () => {
+  // Ein wiederverwendeter Wert wäre so gut wie `'unsafe-inline'` — er stünde
+  // einem Angreifer genauso zur Verfügung.
+  const werte = new Set(Array.from({ length: 200 }, () => createNonce()));
+  assert.equal(werte.size, 200, "ein wiederholter Wert macht die ganze Maßnahme wertlos");
+});
+
+test("der Zufallswert ist lang genug und passt in die Kopfzeile", () => {
+  const nonce = createNonce();
+  // 16 Bytes Base64 = 24 Zeichen. 128 Bit ist die empfohlene Untergrenze.
+  assert.equal(nonce.length, 24);
+  assert.match(nonce, /^[A-Za-z0-9+/]+={0,2}$/, "nur Base64 — ein Anführungszeichen bräche die Regel auf");
+});
+
+test("umgeschrieben wird nur HTML, und nur mit Rumpf", () => {
+  assert.equal(isHtmlResponse(new Response("<p>x</p>", { headers: { "content-type": "text/html; charset=utf-8" } })), true);
+  assert.equal(isHtmlResponse(new Response("<p>x</p>", { headers: { "content-type": "TEXT/HTML" } })), true, "Groß- und Kleinschreibung darf nicht entscheiden");
+  assert.equal(isHtmlResponse(new Response("{}", { headers: { "content-type": "application/json" } })), false);
+  assert.equal(isHtmlResponse(new Response("x", { headers: { "content-type": "text/javascript" } })), false);
+  assert.equal(isHtmlResponse(new Response("x")), false, "ohne Angabe wird nichts angefasst");
+});
+
+test("Antworten ohne Rumpf werden nicht umgeschrieben", () => {
+  // Die 304 ist der heikle Fall: Der Rumpf käme aus dem Zwischenspeicher des
+  // Browsers und trüge den **alten** Zufallswert, während die Kopfzeile einen
+  // frischen nennt. Jedes Skript der Seite wäre dann stillgelegt.
+  for (const status of [204, 304]) {
+    assert.equal(isHtmlResponse(new Response(null, { status, headers: { "content-type": "text/html" } })), false, `Status ${status}`);
+  }
 });
 
 test("the policy allows what the shop actually needs and forbids the rest", () => {

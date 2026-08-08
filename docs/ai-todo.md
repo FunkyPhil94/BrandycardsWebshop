@@ -343,7 +343,26 @@ belegt (10 Anfragen durch, dann `429` mit `retry-after: 60`).
 
 ---
 
-## 4a. CSP ohne `'unsafe-inline'`: Nonces für die Inline-Skripte
+## 4a. ~~CSP ohne `'unsafe-inline'`: Nonces für die Inline-Skripte~~ — ERLEDIGT am 2026-08-08
+
+`script-src` lautet jetzt `'self' 'nonce-…'`. Der Zufallswert entsteht je
+Antwort in `worker/index.ts`, ein `HTMLRewriter` hängt ihn jedem `<script>` an,
+`lib/security-headers.ts` setzt ihn in die Regel. Antworten, die kein HTML sind,
+bekommen `script-src 'self'` — `'unsafe-inline'` steht damit in **keiner**
+Antwort mehr.
+
+**Der Gewinn ist an beiden Enden gemessen:** Derselbe eingeschleuste
+`<img onerror=…>` läuft gegen die alte Regel und wird gegen die neue mit einem
+`script-src-attr`-Verstoß abgewiesen.
+
+**Bewusste Abweichung: kein `'strict-dynamic'`.** Es würde `'self'` unwirksam
+machen, während alles Nachgeladene ohnehin von dieser Herkunft kommt. Begründung
+in [ai-handover.md](ai-handover.md).
+
+**`style-src` behält `'unsafe-inline'`** — React und vinext setzen Inline-Stile.
+Das bleibt offen und ist eine eigene Aufgabe.
+
+<details><summary>Ursprünglicher Eintrag, zur Nachvollziehbarkeit</summary>
 
 **Aufwand:** mittel · **Hängt an:** nichts · **Nicht nebenbei erledigen**
 
@@ -372,6 +391,8 @@ jedem `<script>` ohne `src` ein `nonce="…"` anhängen und in der Regel
 **Fertig, wenn:** `script-src` trägt kein `'unsafe-inline'` mehr, und
 Startseite, `/karten`, Kartendetail, `/checkout`, `/account` und `/admin` sind
 ohne Konsolenfehler bedienbar — **lokal geprüft, bevor deployed wird.**
+
+</details>
 
 ---
 
