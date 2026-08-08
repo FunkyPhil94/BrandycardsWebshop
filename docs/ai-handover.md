@@ -68,6 +68,28 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
   Migration) brechen Katalog und Adminkonsole. Also: **Migration zuerst
   anwenden, Code danach deployen.**
 
+#### Stand 2026-08-08, erster Abschnitt fertig — **NICHT DEPLOYEN**
+
+- **Fertig und committet (`cabdcb2`):** Migration `0006`, Schema (`origin`,
+  `price_amount_cents`, `price_currency`, `manual_overrides`,
+  `ebay_oauth_claims`), Katalog und Detailseite kennen manuelle Karten,
+  `tests/manual-cards.test.mjs` (8 Tests). Prüfkette grün: `tsc` sauber, Lint
+  0 Fehler, `npm test` 270/270.
+- **Blockiert:** Die Migration ist **noch nicht auf Produktion angewandt** —
+  der Berechtigungsklassifizierer verweigert schreibende D1-Befehle. Der
+  Betreiber muss ausführen:
+  `npx wrangler d1 execute brandycards-production --remote --file=drizzle/0006_manual_cards_and_oauth_claims.sql`
+- **Bis dahin gilt: nicht deployen.** Der neue Code liest `products.origin`;
+  ohne die Spalte antworten Katalog und Detailseite mit 503. Der aktuell
+  ausgelieferte Stand (`76e2ac63` plus die Textkorrekturen) läuft weiter.
+- **Kein neuer `kind`-Wert**, entgegen dem Arbeitsvorrat. Begründung samt zweier
+  am lokalen D1 verworfener Versuche steht in der Migration und im Agentenlog.
+  **Manuelle Karte = `kind='PRELISTED'` UND `origin='MANUAL'`.**
+- **Noch offen in diesem Block:** Sync respektiert `manual_overrides` und führt
+  gleichnamige Karten zusammen · Adminkonsole zum Anlegen und Bearbeiten ·
+  eigener Navigationsbereich · SEC-12 (Anspruchs-Kennung; die Tabelle steht
+  schon, die Routen fehlen).
+
 **Eine Abnahme steht noch aus, die nur der Betreiber machen kann:** Die neue
 Bestellansicht in `/admin` ist deployed, aber **hinter der Anmeldung** — von
 außen ist nur belegt, dass `/api/admin/orders` ohne Token mit 401 antwortet und
