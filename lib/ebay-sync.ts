@@ -1,9 +1,10 @@
-import { eq, inArray } from "drizzle-orm";
+import { asc, eq, inArray } from "drizzle-orm";
 import type { BatchItem } from "drizzle-orm/batch";
 import { env } from "cloudflare:workers";
 import { getDb } from "../db";
 import { ebayListings, inventory, productAssets, products, syncEvents, syncRuns } from "../db/schema";
 import { getActiveEbayListings, type EbayActiveListing } from "./ebay-client";
+import { bilderStehenSchonSo, stehtSchonSo } from "./ebay-sync-diff";
 import { D1_SAFE_ID_LIST, maxInsertRows } from "./d1-limits";
 import { ExpiringLock, isSyncRunStale, SYNC_RUN_DEADLINE_MS, withDeadline } from "./sync-lock";
 
@@ -85,6 +86,10 @@ async function runEbaySyncInternal() {
   let updatedCount = 0;
   let deactivatedCount = 0;
   let skippedCount = 0;
+  // Getrennt von `skippedCount` zu halten ist wichtig: Der entscheidet über
+  // `PARTIAL`, und ein unverändertes Listing ist kein halber Lauf, sondern der
+  // Normalfall.
+  let unchangedCount = 0;
   let failedCount = 0;
   const seenItemIds = new Set<string>();
 
@@ -101,13 +106,45 @@ async function runEbaySyncInternal() {
     // actually live in the seller account. It also avoids Inventory API
     // offers that were created but never published.
     const listings = await getActiveEbayListings();
+    // Gelesen wird jetzt der ganze Vergleichsstand, nicht mehr nur drei
+    // Spalten. Das kostet Lesevorgänge — und spart ein Vielfaches davon an
+    // Schreibvorgängen, die ohne den Vergleich nur dasselbe noch einmal
+    // hinschreiben. Vier gebündelte Abfragen statt vier je Listing.
     const existingListingRows = await db.select({
       id: ebayListings.id,
       ebayItemId: ebayListings.ebayItemId,
       productId: ebayListings.productId,
+      ebayOfferId: ebayListings.ebayOfferId,
+      sku: ebayListings.sku,
+      title: ebayListings.title,
+      priceAmountCents: ebayListings.priceAmountCents,
+      priceCurrency: ebayListings.priceCurrency,
+      quantity: ebayListings.quantity,
+      listingType: ebayListings.listingType,
+      listingUrl: ebayListings.listingUrl,
+      startAt: ebayListings.startAt,
+      endAt: ebayListings.endAt,
+      rawData: ebayListings.rawData,
+      status: ebayListings.status,
     }).from(ebayListings);
     const existingListingsByItemId = new Map(existingListingRows.map((row) => [row.ebayItemId, row]));
-    const inventoryRows = await db.select({ id: inventory.id, productId: inventory.productId }).from(inventory);
+    const productRows = await db.select({
+      id: products.id, title: products.title, description: products.description, status: products.status,
+    }).from(products);
+    const productsById = new Map(productRows.map((row) => [row.id, row]));
+    const assetRows = await db.select({
+      productId: productAssets.productId, sourceUrl: productAssets.sourceUrl,
+    }).from(productAssets).orderBy(asc(productAssets.productId), asc(productAssets.sortOrder));
+    const assetUrlsByProductId = new Map<string, (string | null)[]>();
+    for (const row of assetRows) {
+      const bilder = assetUrlsByProductId.get(row.productId);
+      if (bilder) bilder.push(row.sourceUrl);
+      else assetUrlsByProductId.set(row.productId, [row.sourceUrl]);
+    }
+    const inventoryRows = await db.select({
+      id: inventory.id, productId: inventory.productId,
+      status: inventory.status, availableQuantity: inventory.availableQuantity,
+    }).from(inventory);
     const inventoryByProductId = new Map(inventoryRows.map((row) => [row.productId, row]));
 
     for (const listing of listings) {
@@ -141,20 +178,42 @@ async function runEbaySyncInternal() {
           lastSyncedAt: now,
           updatedAt: now,
         };
+        // Jede Anweisung wird einzeln daraufhin geprüft, ob sie etwas bewirkt.
+        // Bleibt die Liste leer, entfällt der Batch vollständig — und damit
+        // der ganze Schreibvorgang für dieses Listing.
         const statements: BatchItem<"sqlite">[] = [];
-        if (isNewProduct) statements.push(db.insert(products).values({ id: productId, kind: "EBAY_SYNCED", status: "ACTIVE", title: mapped.title, description: mapped.description ?? null, createdAt: now, updatedAt: now }));
-        else statements.push(db.update(products).set({ title: mapped.title, description: mapped.description ?? null, status: mapped.quantity > 0 ? "ACTIVE" : "INACTIVE", updatedAt: now }).where(eq(products.id, productId)));
-        if (existing) statements.push(db.update(ebayListings).set(listingValues).where(eq(ebayListings.id, existing.id)));
-        else statements.push(db.insert(ebayListings).values(listingValues));
-        statements.push(db.delete(productAssets).where(eq(productAssets.productId, productId)));
-        if (mapped.imageUrls.length) statements.push(db.insert(productAssets).values(mapped.imageUrls.map((sourceUrl, sortOrder) => ({ productId, storageKey: `ebay/${mapped.ebayItemId}/${sortOrder}`, sourceUrl, mimeType: "image/*", sortOrder, isPublic: true }))));
+        const productValues = { title: mapped.title, description: mapped.description ?? null, status: (mapped.quantity > 0 ? "ACTIVE" : "INACTIVE") as "ACTIVE" | "INACTIVE", updatedAt: now };
+        if (isNewProduct) statements.push(db.insert(products).values({ id: productId, kind: "EBAY_SYNCED", ...productValues, status: "ACTIVE", createdAt: now }));
+        else if (!stehtSchonSo(productsById.get(productId), productValues)) statements.push(db.update(products).set(productValues).where(eq(products.id, productId)));
+        if (!existing) statements.push(db.insert(ebayListings).values(listingValues));
+        else if (!stehtSchonSo(existing, listingValues)) statements.push(db.update(ebayListings).set(listingValues).where(eq(ebayListings.id, existing.id)));
+        // Bilder werden nur angefasst, wenn sich die Liste wirklich
+        // unterscheidet. Das blinde Löschen-und-Einfügen war der teuerste
+        // Einzelposten des Laufs, ohne je etwas zu ändern.
+        if (!bilderStehenSchonSo(assetUrlsByProductId.get(productId) ?? [], mapped.imageUrls)) {
+          statements.push(db.delete(productAssets).where(eq(productAssets.productId, productId)));
+          if (mapped.imageUrls.length) statements.push(db.insert(productAssets).values(mapped.imageUrls.map((sourceUrl, sortOrder) => ({ productId, storageKey: `ebay/${mapped.ebayItemId}/${sortOrder}`, sourceUrl, mimeType: "image/*", sortOrder, isPublic: true }))));
+        }
         const existingInventory = inventoryByProductId.get(productId);
-        if (existingInventory) statements.push(db.update(inventory).set({ status: mapped.quantity > 0 ? "AVAILABLE" : "UNAVAILABLE", availableQuantity: mapped.quantity, updatedAt: now }).where(eq(inventory.id, existingInventory.id)));
-        else statements.push(db.insert(inventory).values({ productId, status: mapped.quantity > 0 ? "AVAILABLE" : "UNAVAILABLE", availableQuantity: mapped.quantity, updatedAt: now }));
-        statements.push(db.insert(syncEvents).values({ syncRunId: run.id, ebayItemId: mapped.ebayItemId, productId, status: existing ? "UPDATED" : "IMPORTED", createdAt: now }));
-        await db.batch(statements as [BatchItem<"sqlite">, ...BatchItem<"sqlite">[]]);
+        const inventoryValues = { status: (mapped.quantity > 0 ? "AVAILABLE" : "UNAVAILABLE") as "AVAILABLE" | "UNAVAILABLE", availableQuantity: mapped.quantity, updatedAt: now };
+        if (!existingInventory) statements.push(db.insert(inventory).values({ productId, ...inventoryValues }));
+        else if (!stehtSchonSo(existingInventory, inventoryValues)) statements.push(db.update(inventory).set(inventoryValues).where(eq(inventory.id, existingInventory.id)));
+        // `sync_events` nur bei einem Ereignis, das etwas aussagt. Ein
+        // „UPDATED" für ein unverändertes Listing war der größte Einzelposten
+        // überhaupt (~31 700 Zeilen in 24 Stunden) und ließ die Tabelle um
+        // ~42 000 Zeilen am Tag wachsen, ohne je eine Frage zu beantworten.
+        // Bei einer **echten** Änderung bleibt der Eintrag: Dann ist er die
+        // Spur, an der sich nachvollziehen lässt, wann sie kam.
+        //
+        // Die Frage „hat sich etwas geändert?" muss **vor** diesem Eintrag
+        // beantwortet werden — danach ist die Liste immer gefüllt.
+        const hatAenderungen = statements.length > 0;
+        if (hatAenderungen) statements.push(db.insert(syncEvents).values({ syncRunId: run.id, ebayItemId: mapped.ebayItemId, productId, status: existing ? "UPDATED" : "IMPORTED", createdAt: now }));
+        if (statements.length) await db.batch(statements as [BatchItem<"sqlite">, ...BatchItem<"sqlite">[]]);
         seenItemIds.add(mapped.ebayItemId);
-        if (isNewProduct) importedCount++; else updatedCount++;
+        if (isNewProduct) importedCount++;
+        else if (hatAenderungen) updatedCount++;
+        else unchangedCount++;
       } catch (error) {
         skippedCount++;
         failedCount++;
@@ -223,7 +282,13 @@ async function runEbaySyncInternal() {
     }
 
     await finalizeRun({ status: skippedCount ? "PARTIAL" : "SUCCEEDED", importedCount, updatedCount, deactivatedCount, failedCount, finishedAt: new Date().toISOString(), errorMessage: null });
-    return { runId: run.id, importedCount, updatedCount, deactivatedCount, skippedCount };
+    // `unchangedCount` geht bewusst **nicht** in `sync_runs`: Dafür bräuchte es
+    // eine Spalte, also eine Migration, und die ist rücksprachepflichtig.
+    // `updated_count` zählt dort künftig nur noch echte Änderungen — ein
+    // ruhiger Lauf meldet 0 statt 294. Das ist der Zweck, sieht in der
+    // Laufübersicht aber nach „nichts passiert" aus; die Zahl daneben in der
+    // Adminfläche ordnet es ein.
+    return { runId: run.id, importedCount, updatedCount, deactivatedCount, skippedCount, unchangedCount };
   } catch (error) {
     await finalizeRun({ status: "FAILED", importedCount, updatedCount, failedCount: Math.max(1, failedCount), errorMessage: error instanceof Error ? error.message : "Unbekannter eBay-Fehler.", finishedAt: new Date().toISOString() });
     throw error;

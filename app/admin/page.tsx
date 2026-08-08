@@ -83,9 +83,12 @@ export default function AdminPage() {
       const token = data.session?.access_token;
       if (!token) throw new Error("Bitte melde dich zuerst an.");
       const response = await fetch("/api/admin/ebay-sync", { method: "POST", headers: { Authorization: `Bearer ${token}` } });
-      const body = await response.json() as { error?: string; detail?: string; importedCount?: number; updatedCount?: number; skippedCount?: number };
+      const body = await response.json() as { error?: string; detail?: string; importedCount?: number; updatedCount?: number; skippedCount?: number; unchangedCount?: number };
       if (!response.ok) throw new Error(body.detail ? `${body.error ?? "eBay-Synchronisierung fehlgeschlagen."} (${body.detail})` : body.error ?? "eBay-Synchronisierung fehlgeschlagen.");
-      setSyncMessage(`Sync abgeschlossen: ${body.importedCount ?? 0} importiert, ${body.updatedCount ?? 0} aktualisiert, ${body.skippedCount ?? 0} übersprungen.`);
+      // „unverändert" gehört sichtbar dazu: Seit der Sync nur noch echte
+      // Änderungen schreibt, meldet ein ruhiger Lauf 0 aktualisiert. Ohne die
+      // Zahl daneben läse sich das wie ein Lauf, der nichts gesehen hat.
+      setSyncMessage(`Sync abgeschlossen: ${body.importedCount ?? 0} importiert, ${body.updatedCount ?? 0} aktualisiert, ${body.unchangedCount ?? 0} unverändert, ${body.skippedCount ?? 0} übersprungen.`);
     } catch (error) {
       setSyncMessage(error instanceof Error ? error.message : "eBay-Synchronisierung fehlgeschlagen.");
     } finally {
