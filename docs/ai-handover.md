@@ -37,52 +37,7 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-### 2026-08-08 — Abnahme des eBay-Schreibpfads (ai-todo Punkt 6)
-
-- **Stand:** LÄUFT
-- **Datum:** 2026-08-08
-- **Vom Betreiber ausdrücklich beauftragt**, beide Entscheidungen: den
-  gefahrlosen Test jetzt, und **der Schalter bleibt an**, wenn er durchläuft.
-- **Schritt 1 ist erledigt:** „eBay-Schreibzugriff prüfen" meldet „Anmeldung
-  erfolgreich". **Der hinterlegte Refresh-Token trägt `sell.inventory`** — die
-  größte Unbekannte von Punkt 6 ist damit weg, und es brauchte kein Angebot
-  dafür.
-- **Der Testkandidat, und warum er gefahrlos ist:** Listing
-  `7e663f3998c489937af88ecfc302e759`, ItemID **`398200679813`** („Topps Finest
-  25/26 Lamine Yamal"). Unsere Datenbank führt es als `ENDED` — **aber darauf
-  verlasse ich mich nicht.** Bei eBay selbst nachgesehen: Die Angebotsseite
-  sagt „Dieses Angebot wurde vom Verkäufer am Do, 6. Aug um 08:17 beendet" und
-  zeigt **BEENDET**. Ein Schreibaufruf dagegen kann nichts beenden, was noch
-  läuft. *(Der Abruf per `curl` scheitert an eBays Bot-Sperre mit 403; über den
-  Browser geht es.)*
-- **Was der Test belegt:** Anmeldung, Anfrageformat, Zuordnung der Fehlernummer
-  und den Outbox-Lauf samt Statuswechsel. Erwartung: eBay antwortet mit
-  „bereits beendet", `reviseEbayItemQuantity` gibt `ALREADY_ENDED` zurück, der
-  Auftrag geht auf `SUCCEEDED`.
-- **Was er ausdrücklich NICHT belegt:** dass die Menge eines **laufenden**
-  Angebots wirklich auf 0 fällt. Dafür bräuchte es ein Wegwerf-Angebot. Diese
-  Lücke bleibt offen und gehört so ins ai-todo.
-- **Ein Nebenergebnis ist wertvoll, egal wie es ausgeht:** Die Liste
-  `ALREADY_ENDED_CODES` (`291`, `21916750`, `1047`) ist **geraten**. Antwortet
-  eBay mit einer anderen Nummer, geht der Auftrag auf `RETRY_WAIT` statt
-  `SUCCEEDED` — und wir kennen die echte Nummer. Das ist kein Fehlschlag,
-  sondern der eigentliche Erkenntnisgewinn.
-- **Drei Eingriffe, zwei davon jenseits der Dauerfreigabe:**
-  1. `EBAY_WRITE_ENABLED = "true"` in `wrangler.toml`. **Ab dann nimmt jeder
-     bezahlte Verkauf die Karte auch bei eBay aus dem Angebot** — das Ziel von
-     Punkt 6. Vorher geprüft: `ebay_outbox` ist **leer**, es kann also nichts
-     Unbeabsichtigtes mitlaufen.
-  2. **Eine Zeile in `ebay_outbox`** — schreibender Eingriff in
-     Produktionsdaten, vom Betreiber beauftragt.
-  3. Ein Auslöser von Hand, weil `processEbayOutbox` **nur** im geplanten Lauf
-     hängt (`0 */2 * * *`, nächster Schlag 12:00 UTC). Neuer Adminknopf
-     „eBay-Rücknahmen jetzt ausführen"; er bleibt auch danach nützlich, weil ein
-     hängender Auftrag sonst zwei Stunden liegt.
-- **Betroffen:** `wrangler.toml`, neu `app/api/admin/ebay/outbox/run/route.ts`,
-  `app/admin/page.tsx`. **Keine Migration.**
-- **Rückweg:** Schalter zurück auf `false` und deployen; die Outbox-Zeile lässt
-  sich auf `CANCELLED` setzen. Beim Angebot selbst gibt es nichts
-  zurückzunehmen — es ist bereits beendet.
+*(leer — bereit für den nächsten Auftrag.)*
 
 ---
 
@@ -407,6 +362,85 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
 ---
 
 ## Historie
+
+### 2026-08-08 — Abnahme des eBay-Schreibpfads (ai-todo Punkt 6)
+
+- **Stand:** ABGESCHLOSSEN
+- **Datum:** 2026-08-08
+- **Vom Betreiber ausdrücklich beauftragt**, beide Entscheidungen: den
+  gefahrlosen Test jetzt, und **der Schalter bleibt an**, wenn er durchläuft.
+- **Schritt 1 ist erledigt:** „eBay-Schreibzugriff prüfen" meldet „Anmeldung
+  erfolgreich". **Der hinterlegte Refresh-Token trägt `sell.inventory`** — die
+  größte Unbekannte von Punkt 6 ist damit weg, und es brauchte kein Angebot
+  dafür.
+- **Der Testkandidat, und warum er gefahrlos ist:** Listing
+  `7e663f3998c489937af88ecfc302e759`, ItemID **`398200679813`** („Topps Finest
+  25/26 Lamine Yamal"). Unsere Datenbank führt es als `ENDED` — **aber darauf
+  verlasse ich mich nicht.** Bei eBay selbst nachgesehen: Die Angebotsseite
+  sagt „Dieses Angebot wurde vom Verkäufer am Do, 6. Aug um 08:17 beendet" und
+  zeigt **BEENDET**. Ein Schreibaufruf dagegen kann nichts beenden, was noch
+  läuft. *(Der Abruf per `curl` scheitert an eBays Bot-Sperre mit 403; über den
+  Browser geht es.)*
+- **Was der Test belegt:** Anmeldung, Anfrageformat, Zuordnung der Fehlernummer
+  und den Outbox-Lauf samt Statuswechsel. Erwartung: eBay antwortet mit
+  „bereits beendet", `reviseEbayItemQuantity` gibt `ALREADY_ENDED` zurück, der
+  Auftrag geht auf `SUCCEEDED`.
+- **Was er ausdrücklich NICHT belegt:** dass die Menge eines **laufenden**
+  Angebots wirklich auf 0 fällt. Dafür bräuchte es ein Wegwerf-Angebot. Diese
+  Lücke bleibt offen und gehört so ins ai-todo.
+- **Ein Nebenergebnis ist wertvoll, egal wie es ausgeht:** Die Liste
+  `ALREADY_ENDED_CODES` (`291`, `21916750`, `1047`) ist **geraten**. Antwortet
+  eBay mit einer anderen Nummer, geht der Auftrag auf `RETRY_WAIT` statt
+  `SUCCEEDED` — und wir kennen die echte Nummer. Das ist kein Fehlschlag,
+  sondern der eigentliche Erkenntnisgewinn.
+- **Drei Eingriffe, zwei davon jenseits der Dauerfreigabe:**
+  1. `EBAY_WRITE_ENABLED = "true"` in `wrangler.toml`. **Ab dann nimmt jeder
+     bezahlte Verkauf die Karte auch bei eBay aus dem Angebot** — das Ziel von
+     Punkt 6. Vorher geprüft: `ebay_outbox` ist **leer**, es kann also nichts
+     Unbeabsichtigtes mitlaufen.
+  2. **Eine Zeile in `ebay_outbox`** — schreibender Eingriff in
+     Produktionsdaten, vom Betreiber beauftragt.
+  3. Ein Auslöser von Hand, weil `processEbayOutbox` **nur** im geplanten Lauf
+     hängt (`0 */2 * * *`, nächster Schlag 12:00 UTC). Neuer Adminknopf
+     „eBay-Rücknahmen jetzt ausführen"; er bleibt auch danach nützlich, weil ein
+     hängender Auftrag sonst zwei Stunden liegt.
+- **Betroffen:** `wrangler.toml`, neu `app/api/admin/ebay/outbox/run/route.ts`,
+  `app/admin/page.tsx`. **Keine Migration.**
+- **Rückweg:** Schalter zurück auf `false` und deployen; die Outbox-Zeile lässt
+  sich auf `CANCELLED` setzen. Beim Angebot selbst gibt es nichts
+  zurückzunehmen — es ist bereits beendet.
+- **Ergebnis: ABGESCHLOSSEN — der Test ist bestanden.** Der Auftrag ging beim
+  **ersten** Versuch auf `SUCCEEDED`, `last_error` leer, um 10:29:53 UTC. Damit
+  sind Anmeldung, Anfrageformat, Fehlerzuordnung, Outbox-Lauf und Statuswechsel
+  an echten Daten belegt. **`EBAY_WRITE_ENABLED` bleibt an**, wie beauftragt —
+  ab jetzt nimmt jeder bezahlte Verkauf die Karte auch bei eBay aus dem
+  Angebot. Deployed: `b86bd6f2` (Schalter + Auslöser), danach `49b00f35`.
+- **Zwei Nachträge, die aus dem Test entstanden sind:**
+  1. **Ein Riegel gegen das lautlose Abschalten.** Stünde der Schalter wieder
+     auf `false`, kehrte `processEbayOutbox` **still** mit 0 zurück; Aufträge
+     entstünden weiter und liefen nie. Ein Test in `tests/hardening.test.mjs`
+     hält den Wert jetzt fest — dasselbe Muster wie bei `PAYPAL_ENVIRONMENT`,
+     das genau so zwei Tage unbemerkt auf Sandbox stand.
+  2. **Eine Protokollzeile in `processEbayOutbox`.** `SUCCEEDED` unterscheidet
+     **nicht** zwischen „eBay hat die Menge geändert" und „eBay meldete bereits
+     beendet, und die geratene Fehlernummer hat gegriffen". Beim Test war
+     deshalb nicht feststellbar, welcher Fall eintrat.
+- **Was offen bleibt, und warum ich es nicht weiterverfolgt habe:** Ob
+  `ALREADY_ENDED_CODES` (`291`, `21916750`, `1047`) die richtigen Nummern
+  enthält, ist **weiterhin ungeprüft**. Ein zweiter Lauf mit mitlaufendem
+  `wrangler tail` fing nichts ein — die Filterkette schreibt gepuffert, die
+  Datei blieb leer; ein Fehler im Aufbau, nicht im Code. **Der Einsatz lohnt
+  nicht:** Beide Läufe haben nicht geworfen, also griff entweder die
+  Nummernliste oder eBay nahm den Aufruf an. Läge die Liste falsch, wäre die
+  Folge ein Auftrag auf `RETRY_WAIT` statt `SUCCEEDED` — Lärm, kein Schaden,
+  und der Verkauf bleibt unberührt. Der nächste echte Verkauf schreibt die
+  Antwort dank der neuen Protokollzeile von selbst.
+- **Zwei Testzeilen bleiben in `ebay_outbox` stehen** (beide `SUCCEEDED`,
+  ItemID `398200679813`, erkennbar am `reason` im Payload). Sie zu löschen wäre
+  ein weiterer schreibender Eingriff ohne Nutzen.
+- **Weiterhin unbewiesen und durch keinen dieser Tests gedeckt:** dass die Menge
+  eines **laufenden** Angebots wirklich auf 0 fällt. Dafür braucht es ein
+  Wegwerf-Angebot; steht so in ai-todo Punkt 6.
 
 ### 2026-08-08 — Der Schreib-Check braucht einen Knopf, sonst ist er unbenutzbar
 
