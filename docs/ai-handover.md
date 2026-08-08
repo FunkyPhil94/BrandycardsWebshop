@@ -43,6 +43,45 @@ Sitzung danebengebaut. Wer hier hereinkommt und beide auf `LÄUFT` findet: Der
 Code beider Punkte ist unabhängig voneinander, sie können sich nicht in die
 Quere kommen.
 
+### 2026-08-08 — PayPal auf Live (ai-todo Punkt 0)
+
+- **Stand:** LÄUFT
+- **Datum:** 2026-08-08
+- **Ziel:** Punkt 0 — der Punkt, der jeden Verkauf blockierte. `lib/paypal/config.ts`
+  fiel mangels `PAYPAL_ENVIRONMENT` auf `sandbox` zurück, der Shop sprach mit
+  `api-m.sandbox.paypal.com`, **ein echter Kunde konnte nicht bezahlen.**
+- **Der Betreiber hat die Schritte 1–3 gemeldet:** Live-App bei PayPal angelegt,
+  Live-Webhook auf `https://shop.brandycards.de/api/paypal/webhook` eingerichtet
+  und die drei Secrets `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`,
+  `PAYPAL_WEBHOOK_ID` ersetzt.
+- **Mein Teil, Schritt 4:** `PAYPAL_ENVIRONMENT = "production"` in `[vars]` der
+  `wrangler.toml` eintragen und deployen. **Kein Geheimnis** — der Wert gehört
+  bewusst nicht zu den Secrets, sondern in die versionierte Konfiguration.
+- **Dazu ein Riegel, der vorher fehlte:** `getPayPalConfig` fällt bei fehlendem
+  oder falsch geschriebenem Wert **still** auf `sandbox` zurück. Das ist als
+  Verhalten richtig (kein Absturz), als Betriebszustand aber der schlimmste
+  denkbare: Der Shop sähe gesund aus und nähme trotzdem kein Geld ein — genau
+  der Zustand, der seit dem 2026-08-06 unbemerkt bestand. Ein Test in
+  `tests/hardening.test.mjs` hält deshalb fest, dass `wrangler.toml` den Wert
+  auf `production` setzt. Wer ihn je entfernt, bekommt einen roten Lauf statt
+  eines stillen Ausfalls.
+- **Betroffen:** `wrangler.toml`, `tests/hardening.test.mjs`. **Kein
+  Anwendungscode**, keine Migration, keine Änderung an Produktionsdaten.
+- **Das Fenster, in dem der Checkout nicht funktioniert, ist jetzt offen** und
+  schließt sich mit diesem Deploy: Seit dem Tausch der Secrets liegen
+  Live-Zugangsdaten vor, während der Shop noch den Sandbox-Endpunkt anspricht.
+  Deshalb hat dieser Durchlauf Vorrang vor allem anderen.
+- **Verifikation, und ihre Grenze:** Prüfkette und Deploy belegen, dass die
+  Konfiguration steht — `wrangler deploy` listet die Variable auf, und der
+  Webhook antwortet mit 400 statt 503 (503 hieße: Webhook-ID leer). **Ob die
+  hinterlegten Zugangsdaten gültig sind, kann nur ein echter Kauf zeigen.** Das
+  ist keine Nachlässigkeit, sondern eine Grenze: Ein Tokenaufruf gegen
+  `api-m.paypal.com` mit fremden Zugangsdaten ist von hier aus nicht führbar,
+  ohne die Geheimnisse anzufassen.
+- **Rückweg:** Die Zeile entfernen und deployen — der Shop spricht dann wieder
+  mit der Sandbox.
+- **Ergebnis:** _(wird nach dem Durchlauf eingetragen)_
+
 ### 2026-08-08 — Der Dubletten-Webhook hinterlässt keine falsche Spur mehr
 
 - **Stand:** LÄUFT
