@@ -9,6 +9,31 @@ const {
 const SHOP = "https://shop.brandycards.de";
 const EUR = (cents) => ({ cents, currency: "EUR" });
 
+/** Eine Gegenstelle, die nie antwortet — und den Event-Loop dabei wach hält.
+ *
+ * **Der ref'd Timer ist der Kern und keine Zutat.** `AbortSignal.timeout()`
+ * benutzt intern einen unref'd Timer, hält Node also nicht am Leben. Ist die
+ * stumme Zusage das einzige offene Handle, stellt Node fest, dass nichts mehr
+ * Fortschritt machen kann, und räumt den Test ab, **bevor** die Zeitgrenze
+ * greift — als `cancelledByParent`. Node 24 gewinnt dieses Rennen meist,
+ * Node 22 verliert es; die CI läuft auf 22. Genau daran ist am 2026-08-07
+ * schon `tests/ebay-sync-timeout.test.mjs` gescheitert, und ich bin am
+ * 2026-08-08 in dieselbe Falle gelaufen.
+ *
+ * Im Worker gibt es das Problem nicht: Dort hält die laufende Anfrage den
+ * Kontext offen. Der Timer bildet also nur nach, was in Produktion ohnehin
+ * gilt.
+ */
+function stummeGegenstelle() {
+  return (_url, init) => new Promise((_aufloesen, ablehnen) => {
+    const wachhalten = setTimeout(() => {}, 5_000);
+    init?.signal?.addEventListener("abort", () => {
+      clearTimeout(wachhalten);
+      ablehnen(new Error("aborted"));
+    });
+  });
+}
+
 /** Der Versender liest `process.env` beim Aufruf, nicht beim Laden. Jeder Test
  *  setzt die Umgebung deshalb selbst und räumt hinterher auf. */
 async function mitUmgebung(werte, aufgabe) {
@@ -210,9 +235,7 @@ test("sendEmail wirft nie, egal was die Gegenstelle tut", async () => {
       ["Netzfehler", async () => { throw new Error("ECONNREFUSED"); }],
       ["Fehlerstatus", async () => new Response("nope", { status: 500 })],
       ["kaputtes JSON", async () => new Response("<html>", { status: 200 })],
-      ["haengt", (_u, init) => new Promise((_aufloesen, ablehnen) => {
-        init?.signal?.addEventListener("abort", () => ablehnen(new Error("aborted")));
-      })],
+      ["haengt", stummeGegenstelle()],
     ];
     try {
       for (const [name, stub] of faelle) {
@@ -232,12 +255,7 @@ test("eine haengende Gegenstelle laeuft in die Zeitgrenze statt ewig zu warten",
   await mitUmgebung({ RESEND_API_KEY: "re_test", EMAIL_TIMEOUT_MS: "120" }, async () => {
     const { sendEmail } = await import("../lib/email/send.ts");
     const echtesFetch = globalThis.fetch;
-    globalThis.fetch = (_u, init) => new Promise((_aufloesen, ablehnen) => {
-      // Ein ref'd Timer haelt den Event-Loop wach; ohne ihn raeumt Node den
-      // Versuch ab, bevor die Zeitgrenze greift (siehe ebay-sync-timeout).
-      const halten = setTimeout(() => {}, 5_000);
-      init?.signal?.addEventListener("abort", () => { clearTimeout(halten); ablehnen(new Error("aborted")); });
-    });
+    globalThis.fetch = stummeGegenstelle();
     try {
       const start = Date.now();
       const ergebnis = await sendEmail("kunde@example.com", inquiryReceived({ title: "K", shopUrl: SHOP }));
