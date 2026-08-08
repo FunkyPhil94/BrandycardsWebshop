@@ -143,6 +143,31 @@ test("style-src behält 'unsafe-inline', und das ist bekannt", () => {
   assert.match(contentSecurityPolicy(undefined), /style-src [^;]*'unsafe-inline'/);
 });
 
+// --- PayPal läuft live, und das darf nicht still zurückfallen --------------
+
+test("PayPal steht auf production, nicht auf sandbox", async () => {
+  // Der teuerste Fehler, den dieses Projekt hatte: `PAYPAL_ENVIRONMENT` war
+  // **nirgends** gesetzt, `lib/paypal/config.ts` fiel auf `sandbox` zurück, und
+  // der Shop sprach zwei Tage lang mit `api-m.sandbox.paypal.com`. Nichts war
+  // kaputt, nichts wurde gemeldet — es kam nur kein Geld an. Gefunden wurde es
+  // erst beim Testkauf am 2026-08-08.
+  //
+  // Der Rückfall ist **still**, deshalb steht hier ein Test und kein Kommentar.
+  const wrangler = await readFile(new URL("../wrangler.toml", import.meta.url), "utf8");
+  const vars = wrangler.slice(wrangler.indexOf("[vars]"), wrangler.indexOf("[triggers]"));
+  assert.match(vars, /^PAYPAL_ENVIRONMENT = "production"$/m,
+    "Ohne diesen Wert nimmt der Shop kein echtes Geld ein, sieht dabei aber gesund aus.");
+});
+
+test("die Zugangsdaten stehen nicht in der versionierten Konfiguration", async () => {
+  // Die Umstellung auf Live ist der Moment, in dem jemand versucht sein könnte,
+  // Client ID und Secret „kurz" hier abzulegen.
+  const wrangler = await readFile(new URL("../wrangler.toml", import.meta.url), "utf8");
+  for (const name of ["PAYPAL_CLIENT_ID", "PAYPAL_CLIENT_SECRET", "PAYPAL_WEBHOOK_ID"]) {
+    assert.ok(!new RegExp(`^\\s*${name}\\s*=`, "m").test(wrangler), `${name} gehört als Cloudflare-Secret hinterlegt, nicht ins Repository`);
+  }
+});
+
 test("die Übertragungsziele bleiben eng begrenzt", () => {
   const policy = contentSecurityPolicy("https://project.supabase.co");
   assert.match(policy, /connect-src 'self' https:\/\/project\.supabase\.co(;|$)/,

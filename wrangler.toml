@@ -13,6 +13,21 @@ routes = [
 ]
 
 [vars]
+# Seit dem 2026-08-08 nimmt der Shop echtes Geld ein.
+#
+# **Diese Zeile ist die einzige, die darüber entscheidet.** Fehlt sie oder
+# steht hier etwas anderes als exakt "production", fällt `lib/paypal/config.ts`
+# **still** auf `sandbox` zurück: Der Shop sähe vollkommen gesund aus, der
+# Checkout liefe durch — und es käme kein Geld an. Genau dieser Zustand bestand
+# vom 2026-08-06 bis heute unbemerkt und wurde erst beim Testkauf gefunden.
+#
+# Deshalb hält `tests/hardening.test.mjs` den Wert fest. Wer ihn ändern will,
+# ändert dort mit — und merkt dabei, was er tut.
+#
+# Kein Geheimnis: Der Wert gehört bewusst hierher und nicht zu den
+# Cloudflare-Secrets. Die drei Zugangsdaten (`PAYPAL_CLIENT_ID`,
+# `PAYPAL_CLIENT_SECRET`, `PAYPAL_WEBHOOK_ID`) liegen dort.
+PAYPAL_ENVIRONMENT = "production"
 EBAY_ENVIRONMENT = "production"
 EBAY_MARKETPLACE_ID = "EBAY_DE"
 EBAY_OAUTH_SCOPE = "https://api.ebay.com/oauth/api_scope/sell.inventory.readonly"
