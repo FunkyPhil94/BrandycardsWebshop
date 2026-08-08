@@ -733,13 +733,21 @@ Verknüpfung (Art. 17 Abs. 3 lit. b DSGVO). `tests/account-data.test.mjs` liest
 `db/schema.ts` und schlägt an, sobald eine neue Tabelle mit `user_id` in
 Auskunft oder Löschung fehlt.
 
-> **Zwei Dinge stehen daran noch offen.** Erstens muss der Betreiber
-> `SUPABASE_SERVICE_ROLE_KEY` als Cloudflare-Secret anlegen — ohne ihn zeigt
-> `/account` statt des Löschknopfes den Hinweis auf die E-Mail-Adresse, und die
-> Route bricht mit 503 ab, **bevor** sie etwas löscht. Zweitens ist **kein
-> echter Löschlauf** gelaufen; er ist unwiderruflich und braucht ein
-> Wegwerfkonto. Danach in D1 prüfen: `price_offers`, `inquiries`,
-> `card_submissions`, `users` leer — Bestellzeile steht, `user_id` ist `NULL`.
+> **Am 2026-08-08 an echten Daten abgenommen.** `SUPABASE_SERVICE_ROLE_KEY`
+> liegt als Cloudflare-Secret, ein Wegwerfkonto wurde angelegt und gelöscht:
+> `users` enthält danach nur noch das Adminkonto, Anfrage weg, die drei
+> Bestellungen stehen unverändert am Adminkonto, Bestätigungsmail kam an, ein
+> erneuter Login wird abgewiesen.
+>
+> **Der Testlauf hat einen Fehler zutage gefördert, den kein Test hätte finden
+> können:** `/anfragen` und `/verkaufen` sind öffentliche Formulare und setzen
+> `user_id` nie, auch bei angemeldetem Absender. Auskunft und Löschung suchten
+> nur über `user_id` — die Anfrage wäre verschwiegen und nicht gelöscht worden,
+> und beides hätte erfolgreich ausgesehen. Die Zuordnung greift jetzt über
+> `user_id` **oder** die bestätigte Kontoadresse (`a2c3cc3`, Version
+> `681ff2f7`). Wer hier etwas anfasst: **Vor einem Löschlauf immer erst in D1
+> sehen.** Der Schritt ist unwiderruflich, und der Fehler war von außen
+> unsichtbar.
 
 ---
 

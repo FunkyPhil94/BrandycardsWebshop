@@ -39,21 +39,6 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 *(leer — bereit für den nächsten Auftrag.)*
 
-### **Der Betreiber muss ein Secret anlegen, sonst bleibt die halbe Funktion aus**
-
-Die Selbstbedienungslöschung ist gebaut und deployed, **schaltet sich aber erst
-mit `SUPABASE_SERVICE_ROLE_KEY` frei**:
-
-```bash
-npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY
-```
-
-Wert: Supabase → Project Settings → API → `service_role`. Solange er fehlt, zeigt
-`/account` statt des Löschknopfes den Hinweis auf die E-Mail-Adresse, und die
-Route antwortet mit 503, **bevor** sie etwas löscht. Der Download der eigenen
-Daten funktioniert unabhängig davon schon jetzt. Kein zweites Deployment nötig —
-die Oberfläche fragt den Zustand bei jedem Aufruf ab.
-
 **Eine Abnahme steht noch aus, die nur der Betreiber machen kann:** Die neue
 Bestellansicht in `/admin` ist deployed, aber **hinter der Anmeldung** — von
 außen ist nur belegt, dass `/api/admin/orders` ohne Token mit 401 antwortet und
@@ -392,6 +377,37 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
 
 ## Historie
 
+### 2026-08-08 — Löschlauf an echten Daten abgenommen, ein Fehler dabei gefunden
+
+- **Stand:** ABGESCHLOSSEN — Punkt 8 ist damit vollständig erledigt.
+- **Der Fund, und warum er fast durchgerutscht wäre:** Die Momentaufnahme **vor**
+  dem Löschen zeigte die Testanfrage mit `user_id = NULL` und nur
+  `guest_email`. `/anfragen` und `/verkaufen` sind öffentliche Formulare und
+  setzen die Kontoverknüpfung nie, auch bei angemeldetem Absender — nur
+  Preisvorschläge tun das. Auskunft und Löschung suchten aber ausschließlich
+  über `user_id`. **Die Auskunft hätte die Anfrage verschwiegen, die Löschung
+  hätte die E-Mail-Adresse stehen lassen, und beides hätte erfolgreich
+  ausgesehen.** Aufgefallen ist es nur, weil vor dem unwiderruflichen Schritt in
+  die Datenbank gesehen wurde statt danach.
+- **Behoben:** Die Zuordnung greift jetzt über `user_id` **oder** die bestätigte
+  Kontoadresse (`lower()` auf beiden Seiten — die Kontoadresse ist normalisiert,
+  die Formularadresse steht so da, wie sie getippt wurde). Die Adresse ist ein
+  zulässiger Schlüssel, weil ein Konto erst nach bestätigter E-Mail entsteht.
+  Commit `a2c3cc3`, deployed als Version `681ff2f7`.
+- **Abnahme in Produktion**, Wegwerfkonto `p.brand94+loeschtest@…`:
+  Vorher 2 Zeilen in `users` und 1 Anfrage; nachher **nur das Adminkonto, 0
+  Anfragen, 0 Preisvorschläge, 0 Kartenangebote, 0 Bilder**. Die **3
+  Bestellungen stehen unverändert am Adminkonto** (`user_id IS NULL`: 0), die 3
+  Reservierungen sind unangetastet. Die JSON-Auskunft enthielt die Anfrage,
+  die Bestätigungsmail kam an, und ein erneuter Login mit der Wegwerfadresse
+  wird abgewiesen — das Supabase-Konto ist also wirklich weg.
+- **Bewusst nicht geändert:** Die öffentlichen Formulare setzen weiterhin kein
+  `user_id`. Über die Adresse ist der Fall abgedeckt, und ein Bearer-Token durch
+  die öffentlichen Formulare zu schleusen wäre Aufwand ohne Gewinn. Wer die
+  Verknüpfung später doch braucht (etwa um im Adminbereich zu sehen, ob eine
+  Anfrage von einem Kunden kommt), fasst `app/api/inquiries/route.ts` und
+  `app/api/card-submissions/route.ts` an — **nicht** die Löschung.
+
 ### 2026-08-08 — Auskunft und Kontolöschung zur Selbstbedienung (ai-todo Punkt 8)
 
 - **Stand:** ABGESCHLOSSEN, mit einem offenen Handgriff beim Betreiber
@@ -425,10 +441,8 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
   261/261. In Produktion antworten `/api/account/data` und
   `/api/account/delete` ohne Token mit 401, `/account` lädt, der neue
   Datenschutzabsatz steht auf `/datenschutz`.
-- **Nicht geprüft:** Ein echter Löschlauf. Er ist unwiderruflich, und ein
-  Testnutzer stand nicht zur Verfügung. **Wer das nachholt, legt sich ein
-  Wegwerfkonto an** — und prüft danach in D1, dass `price_offers`, `inquiries`,
-  `card_submissions` und `users` leer sind, die Bestellzeile aber steht.
+- **Am 2026-08-08 an echten Daten abgenommen** — samt einem Fehler, den erst der
+  Testlauf zutage brachte. Siehe den Eintrag darunter.
 
 ### 2026-08-08 — Zwei Gestaltungskorrekturen vom Betreiber
 

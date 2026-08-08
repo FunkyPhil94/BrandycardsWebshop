@@ -531,3 +531,44 @@ nicht auf einen Kunden. Genau diese Sorte Fund ist der Zweck.
 geschrieben. Ein Auskunftsrecht ist kein Grund, Abwicklungsdaten eines Dritten
 herauszugeben. Die Spalte wird deshalb gar nicht erst gelesen, statt sie
 hinterher zu entfernen — was man vergessen kann.
+
+## 2026-08-08 – Was der Löschlauf ans Licht brachte
+
+**Der Fehler war von außen unsichtbar, und genau das ist der Punkt.** Die
+Zuordnung von Daten zu einem Konto lief über `user_id`. `/anfragen` und
+`/verkaufen` sind aber **öffentliche** Formulare: Sie schreiben `guest_email`
+und lassen `user_id` leer, auch wenn der Absender angemeldet ist. Nur
+Preisvorschläge setzen die Verknüpfung, weil ihre Route eine Anmeldung
+verlangt.
+
+Die Folge wäre gewesen: Die Auskunft liefert eine Datei ohne die Anfrage des
+Kunden aus — vollständig aussehend, aber unvollständig. Die Löschung meldet
+Erfolg und lässt die E-Mail-Adresse in `inquiries` stehen. **Beide Antworten
+wären grün gewesen.** Kein Statuscode, kein Protokolleintrag, keine Ausnahme
+hätte es verraten.
+
+**Warum kein Test das gefunden hat.** `tests/account-data.test.mjs` prüfte, ob
+*jede Tabelle mit Nutzerbezug vorkommt*. Sie kamen alle vor. Der Test prüfte
+nicht, ob der **Schlüssel trifft** — und das ist die schwerere Frage, weil sie
+nicht aus dem Schema folgt, sondern daraus, wie die Zeilen entstehen. Der Test
+prüft jetzt beides; die Erweiterung entstand aus dem Fund, nicht aus einer
+Vorahnung.
+
+**Gefunden wurde er nur durch die Reihenfolge.** Vor dem unwiderruflichen
+Schritt wurde eine Momentaufnahme der Produktionsdatenbank gemacht — nicht als
+Formalie, sondern um hinterher vergleichen zu können. Dabei stand `user_id`
+auf `NULL`, wo eine Kennung hätte stehen müssen. Wäre erst nach dem Löschen
+nachgesehen worden, hätte man eine stehengebliebene Anfrage gesehen und sie
+womöglich für einen Nebeneffekt gehalten.
+
+**Warum die E-Mail-Adresse als Schlüssel zulässig ist.** Ein Konto entsteht in
+diesem Shop erst nach bestätigter E-Mail (`findOrCreateAppUser` verweigert
+vorher). Wer unter einer Adresse angemeldet ist, hat den Zugriff auf dieses
+Postfach nachgewiesen — Daten, die unter dieser Adresse eingereicht wurden,
+gehören ihm. Verglichen wird über `lower()` auf beiden Seiten: Die Kontoadresse
+wird normalisiert gespeichert, die Formularadresse so, wie sie getippt wurde.
+
+**Was bewusst so blieb.** Die öffentlichen Formulare setzen weiterhin kein
+`user_id`. Über die Adresse ist der Fall abgedeckt, und ein Bearer-Token durch
+ein öffentliches Formular zu schleusen wäre Aufwand ohne Gewinn — zumal Gäste
+ohne Konto einreichen dürfen und ihre Zeilen ohnehin nur an der Adresse hängen.
