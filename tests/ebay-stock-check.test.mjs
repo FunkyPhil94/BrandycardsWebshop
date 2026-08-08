@@ -126,33 +126,70 @@ test("der Wächter gibt bei eigenem Fehler frei statt zu blockieren", async () =
     "ein Fehler in der Prüfung selbst darf den Verkauf nicht anhalten");
 });
 
-test("der Import-Takt bleibt innerhalb des D1-Schreibbudgets", async () => {
-  // Am 2026-08-07 stand hier für ein paar Stunden `*/10 * * * *`. Das war ein
-  // Fehler: Geprüft worden war nur das eBay-Kontingent und die Laufzeit, nicht
-  // das Schreibbudget von D1.
+test("der Import-Takt bleibt innerhalb des eBay-Tageskontingents", async () => {
+  // **Die Grenze ist eBay, nicht Cloudflare.** Bis zum 2026-08-08 stand hier
+  // das Gegenteil: ein D1-Schreibbudget von 100 000 Zeilen/Tag bei 5 396
+  // Zeilen je Lauf. Beide Zahlen sind überholt — das Projekt läuft seit dem
+  // 2026-08-07 auf Workers Paid (D1-Budget tausendfach höher), und seit dem
+  // Diff-Umbau schreibt ein ruhiger Lauf **0** Zeilen statt 5 396. Der Test
+  // hätte jeden Takt unter ~78 Minuten abgelehnt, aus Gründen, die es nicht
+  // mehr gibt.
   //
-  // Gemessen mit `wrangler d1 insights`: ein Sync-Lauf schreibt ~5 396 Zeilen.
-  // D1 zählt Indexschreibvorgänge mit (ein `update products` kostet 3 Zeilen,
-  // ein `update ebay_listings` 5), und der Lauf schreibt jedes Mal alles neu,
-  // auch Unverändertes. Gegen 100 000 Zeilen/Tag im Free-Tarif ist damit schon
-  // stündlich die Obergrenze.
+  // eBays Tageslimit für die Trading API ist ein **gemeinsamer Topf** für alle
+  // Trading-Aufrufe, nicht eines je Aufrufart. Bei uns teilen ihn vier:
+  //   1. der Sync (`GetMyeBaySelling`, eine Seite je 200 Angebote)
+  //   2. die Beschreibungsabfrage beim ersten Öffnen einer Karte (`GetItem`)
+  //   3. die Bestandsprüfung an der Kasse (`GetItem` je Position)
+  //   4. die Rücknahme verkaufter Karten (`ReviseInventoryStatus`)
   //
-  // Dieser Test ist kein Verbot schnellerer Takte, sondern eine Kopplung: Wer
-  // beschleunigen will, muss zuerst den Lauf billiger machen und dann
-  // ZEILEN_JE_LAUF hier senken. Siehe docs/ai-todo.md.
-  const ZEILEN_JE_LAUF = 5396;
-  const BUDGET_PRO_TAG = 100_000;
+  // Deshalb bekommt der Sync hier nur einen **Anteil**. Ein Test, der ihm alle
+  // 5 000 zugestände, ginge genau dann durch, wenn die Kasse keine
+  // Bestandsprüfung mehr machen kann — die Reserve ist der Zweck der Übung.
+  const EBAY_TAGESLIMIT = 5000;       // Trading API, Standardkontingent
+  const ANTEIL_FUER_SYNC = 0.5;       // die andere Hälfte gehört 2. bis 4.
+
+  // Ein Lauf holt die Aktivliste seitenweise zu je 200 Angeboten. **Der
+  // Verbrauch steigt sprunghaft, nicht gleitend:** bis 400 Angebote sind es
+  // zwei Aufrufe, ab 401 drei, ab 601 vier. Wer das Sortiment vergrößert, muss
+  // diese Zahl nachziehen — sonst reißt der Deckel ohne Vorwarnung.
+  const ANGEBOTE = 294;               // Stand 2026-08-08
+  const JE_SEITE = 200;
+  const AUFRUFE_JE_LAUF = Math.ceil(ANGEBOTE / JE_SEITE);
 
   const wrangler = await read("wrangler.toml");
   const cron = wrangler.match(/crons\s*=\s*\[\s*"([^"]+)"/)?.[1];
   assert.ok(cron, "wrangler.toml muss einen Cron deklarieren");
 
-  const zeilenProTag = Math.round(laeufeProTag(cron) * ZEILEN_JE_LAUF);
+  const aufrufeProTag = Math.round(laeufeProTag(cron) * AUFRUFE_JE_LAUF);
+  const erlaubt = EBAY_TAGESLIMIT * ANTEIL_FUER_SYNC;
 
   assert.ok(
-    zeilenProTag <= BUDGET_PRO_TAG,
-    `Takt "${cron}" schreibt ~${zeilenProTag.toLocaleString("de-DE")} Zeilen/Tag ` +
-    `gegen ein Budget von ${BUDGET_PRO_TAG.toLocaleString("de-DE")}. ` +
-    "Erst den Sync billiger machen (nur Änderungen schreiben), dann den Takt erhöhen.",
+    aufrufeProTag <= erlaubt,
+    `Takt "${cron}" kostet ~${aufrufeProTag.toLocaleString("de-DE")} eBay-Aufrufe/Tag ` +
+    `gegen einen Sync-Anteil von ${erlaubt.toLocaleString("de-DE")} ` +
+    `(${EBAY_TAGESLIMIT.toLocaleString("de-DE")} geteilt mit Beschreibung, Kasse und Rücknahme). ` +
+    "Erst den Lauf billiger machen, dann den Takt erhöhen.",
+  );
+});
+
+test("der Import-Takt bleibt innerhalb des D1-Budgets", async () => {
+  // Die D1-Prüfung bleibt, nur mit gemessenen Zahlen und dem Budget des
+  // bezahlten Tarifs. Sie ist heute weit von der Grenze entfernt — der Wert
+  // liegt darin, dass ein künftiger Umbau, der den Lauf wieder teuer macht,
+  // hier auffällt und nicht erst auf der Rechnung.
+  //
+  // Gemessen am 2026-08-08 (`wrangler d1 insights`, Fenster mit genau einem
+  // Lauf): ~6 500 Zeilen gelesen, 0 geschrieben.
+  const ZEILEN_GELESEN_JE_LAUF = 6500;
+  const BUDGET_GELESEN_PRO_MONAT = 25_000_000_000;
+
+  const wrangler = await read("wrangler.toml");
+  const cron = wrangler.match(/crons\s*=\s*\[\s*"([^"]+)"/)?.[1];
+  const gelesenProMonat = laeufeProTag(cron) * 30 * ZEILEN_GELESEN_JE_LAUF;
+
+  assert.ok(
+    gelesenProMonat <= BUDGET_GELESEN_PRO_MONAT,
+    `Takt "${cron}" liest ~${Math.round(gelesenProMonat).toLocaleString("de-DE")} Zeilen/Monat ` +
+    `gegen ${BUDGET_GELESEN_PRO_MONAT.toLocaleString("de-DE")}.`,
   );
 });

@@ -69,7 +69,7 @@ EBAY_OAUTH_CALLBACK_URL = "https://shop.brandycards.de/api/admin/ebay/oauth/call
 # vor der Zahlung (lib/ebay-stock-check.ts) sichert den entscheidenden Moment
 # ohnehin ab, unabhängig vom Import-Takt.
 [triggers]
-crons = ["0 */2 * * *"]
+crons = ["*/3 * * * *"]
 
 [assets]
 binding = "ASSETS"

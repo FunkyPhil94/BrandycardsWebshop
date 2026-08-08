@@ -111,11 +111,12 @@ nachgeprüft:
 - **Der Testartikel** wurde vom 08:00-Lauf ohne Zutun abgeräumt und danach für
   den Live-Abnahmekauf mit 1 Cent reaktiviert.
 
-**Noch offen, aber terminiert:** `ZEILEN_JE_LAUF` in
-`tests/ebay-stock-check.test.mjs` (5 396) und der Cron-Takt `0 */2 * * *` gehören
-zusammen und sollten **ab dem 2026-08-09** auf Grundlage der Tageszahlen
-angepasst werden — vorher enthält `wrangler d1 insights --timePeriod 1d` noch
-Läufe von vor dem Deploy.
+~~**Noch offen, aber terminiert:** `ZEILEN_JE_LAUF` und der Cron-Takt.~~
+**Erledigt am 2026-08-08**, und ohne auf den 2026-08-09 warten zu müssen: Ein
+Fenster von einer Stunde enthält genau einen Lauf und ist damit frei von
+Läufen vor dem Deploy. Takt steht auf `*/3 * * * *`; der Test misst jetzt die
+**eBay**-Grenze statt eines Gratis-Tarif-Budgets, das es hier nicht mehr gibt.
+Siehe den Eintrag „Import-Takt auf 3 Minuten" unter Historie.
 
 <details><summary>Stand am Ende der <b>ersten</b> Sitzung vom 2026-08-08, zur Nachvollziehbarkeit</summary>
 
