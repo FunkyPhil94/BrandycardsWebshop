@@ -37,25 +37,15 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-### 2026-08-08 — Adminkonsole, Teilschritt „Bestellungen sehen" (Punkt 12.2)
+*(leer — bereit für den nächsten Auftrag.)*
 
-- **Stand:** LÄUFT
-- **Ziel:** Der Betreiber soll Bestellungen samt Positionen, Zahlung und
-  Lieferadresse in `/admin` sehen, statt sie über `wrangler d1 execute` zu
-  erfragen. Neue Route `app/api/admin/orders/route.ts` (nur `GET`, `requireAdmin`
-  aus `lib/admin-access.ts`), neue Oberfläche `app/admin/orders-panel.tsx` nach
-  dem Muster von `offers-panel.tsx`, Stile in `app/globals.css`.
-- **Vorbefund, der die Aufgabe verkleinert hat:** Punkt 12.3 (Preisvorschläge
-  entscheiden) ist **komplett fertig** — nicht nur die API. `offers-panel.tsx`
-  existiert seit `a0d4367`, wird in `app/admin/page.tsx` gerendert, Stile stehen
-  in `globals.css`. Die Notiz im Arbeitsvorrat („die Oberfläche fehlt") war
-  veraltet und wird in diesem Lauf richtiggestellt.
-- **Ausgewählt vom Betreiber** aus vier Teilschritten; 12.1 (Angebote einzeln
-  bearbeiten) bleibt liegen, weil dort die Entwurfsfrage „Sync überschreibt
-  Handeingaben" noch offen ist.
-- **Abnahme:** `npx tsc --noEmit`, `npm run lint`, `npm test` grün; danach Deploy
-  aus dem **Hauptverzeichnis** (Worktree hat keine `.env.local`) und `/admin` im
-  Browser prüfen.
+**Eine Abnahme steht noch aus, die nur der Betreiber machen kann:** Die neue
+Bestellansicht in `/admin` ist deployed, aber **hinter der Anmeldung** — von
+außen ist nur belegt, dass `/api/admin/orders` ohne Token mit 401 antwortet und
+`/admin` sauber lädt. Ob die Liste die Bestellungen richtig zeigt, sieht erst,
+wer als Admin eingeloggt ist. Erwartet wird mindestens
+`BC-20260808-89309FCA` mit Status `PAID` und der PayPal-Capture-Id
+`1LC23949C0153504L`.
 
 Zwei Entscheidungen hat der Betreiber am selben Tag ausdrücklich vertagt:
 **PayPal-Gebühren** („gerade erstmal egal") und die **Bestandsprüfung**
@@ -386,6 +376,32 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
 ---
 
 ## Historie
+
+### 2026-08-08 — Bestellungen im Adminbereich sichtbar (ai-todo Punkt 12.2)
+
+- **Stand:** ABGESCHLOSSEN
+- **Ziel:** Bestellungen samt Positionen, Zahlung und Lieferadresse in `/admin`
+  zeigen, statt sie über `wrangler d1 execute` zu erfragen.
+- **Ergebnis:** Neue Leseroute `app/api/admin/orders/route.ts` (`GET`,
+  `requireAdmin` aus `lib/admin-access.ts`) und `app/admin/orders-panel.tsx`:
+  25 jüngste Bestellungen, aufklappbar mit Positionen, Beträgen, Zahlungsstand
+  samt PayPal-Capture-Id und Lieferadresse. Stile in `app/globals.css`.
+  `npx tsc --noEmit` sauber, `npm run lint` 0 Fehler, `npm test` 254/254.
+  Deployed aus dem Hauptverzeichnis als Version `f2fb960e`. Commits `0cefb27`
+  und `cfd11cf`.
+- **Warum die Seitengröße 25 ist:** Positionen und Zahlungen werden über
+  `inArray` an den Bestell-Ids nachgeladen, `D1_SAFE_ID_LIST` steht bei 40.
+  `tests/d1-limits.test.mjs` liest die Zahl jetzt aus der Route und misst die
+  erzeugten Abfragen — dieselbe Falle hat am 2026-08-06 den Sync zerlegt.
+- **Befund, der Arbeit gespart hat:** Punkt 12.3 (Preisvorschläge entscheiden)
+  war **schon vollständig fertig**, Oberfläche eingeschlossen —
+  `app/admin/offers-panel.tsx` seit `a0d4367`. Die Notiz im Arbeitsvorrat („es
+  fehlt ausschließlich die Oberfläche") war falsch und ist richtiggestellt.
+- **Nicht geprüft, weil hinter der Anmeldung:** Ob die Liste die Bestellungen
+  richtig darstellt, sieht nur ein eingeloggter Admin. Von außen belegt sind
+  401 ohne Token und ein sauberes `/admin`. Siehe „Aktueller Auftrag".
+- **Offen an dieser Ansicht:** Blättern über die 25 jüngsten hinaus, und
+  Statuswechsel von Hand („versandt" setzt heute niemand).
 
 ### 2026-08-08 — „eBay synchronisiert" raus, und Punkt 10 auf Stand bringen
 
