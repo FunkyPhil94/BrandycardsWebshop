@@ -141,6 +141,31 @@ Quere kommen.
   mitten im Neubau nachzuladen. **Die Prüfungen liefen davor**, gegen einen
   antwortenden Server. Wer beides zugleich braucht: erst prüfen, dann testen.
 
+#### In Produktion nachgeprüft — deployed als `d230f425`
+
+- **Der Angriff ist tot, wo er vor Minuten noch lief.** Auf
+  `https://shop.brandycards.de` ergibt derselbe eingeschleuste `<img onerror=…>`
+  jetzt `angriffLief: false` und einen `script-src-attr`-Verstoß. Vor dem Deploy
+  war die Antwort an derselben Stelle `true`.
+- **Der Shop läuft:** Startseite, `/karten`, `/anfragen`, `/ueber-uns`,
+  `/checkout` und `/admin` hydrieren und navigieren; der **einzige** gemeldete
+  Verstoß ist der absichtlich ausgelöste. `/admin` zeigt nicht „noch nicht
+  konfiguriert".
+- **Die gefährliche Mischung wurde ausdrücklich gesucht und nicht gefunden.**
+  Beim Ausrollen liefern die Ränder minutenlang alte und neue Fassung
+  nebeneinander. Tödlich wäre **neue Kopfzeile mit Zufallswert auf altem Rumpf
+  ohne** — die Seite bliebe leer. 12 Abrufe, bei jedem Kopfzeile **und** Rumpf
+  derselben Antwort verglichen: 8× neu und stimmig, 4× durchgehend alt,
+  **kein einziger gemischter Fall**. Kopfzeile und Rumpf kommen immer aus
+  derselben Fassung, weil beide im selben Worker entstehen. 45 Sekunden später
+  15 von 15 Abrufen auf der neuen Fassung.
+- **Eine Falle beim Nachprüfen, in die ich zuerst getappt bin:** Getrennte
+  Abrufe für Kopfzeile und Rumpf zu vergleichen ist während eines Ausrollens
+  **wertlos** — die erste Messung meldete „Kopfzeile passt NEIN" für drei
+  Seiten, und es war nur eine alte Antwort gegen eine neue Kopfzeile aus einem
+  anderen Abruf. Wer das prüft, muss Kopfzeile und Rumpf **derselben** Antwort
+  vergleichen (`curl -D kopf.txt … -o rumpf.html`).
+
 ### 2026-08-08 — Der Checkout zeigt den ausgehandelten Preis (ai-todo Punkt 5)
 
 - **Stand:** LÄUFT
