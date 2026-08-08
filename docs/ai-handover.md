@@ -37,8 +37,49 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-_Kein laufender Auftrag._ Vorlage: Stand, Datum, Ziel, geplante Schritte,
-betroffene Dateien, Verifikation, Ergebnis.
+- **Stand:** LÄUFT
+- **Datum:** 2026-08-08
+- **Ziel:** Zwei **schreibende Eingriffe in Produktionsdaten**, beide vom
+  Betreiber ausdrücklich beauftragt.
+  1. Die zwei Zeilen der Zustellproben aus `inquiries` löschen.
+  2. Einen kaufbaren **Testartikel** anlegen, damit sich der Bestellpfad samt
+     Bestellbestätigung einmal echt durchspielen lässt.
+- **Kein Code, keine Migration, kein Deploy.** Nur Daten.
+
+### Was vorher geprüft wurde, damit der Testkauf nicht am Bezahlen scheitert
+
+- **Die Bestandsprüfung vor der Zahlung blockiert nicht.** Sie ruft für jede
+  Karte `GetItem` bei eBay auf. Unsere erfundene ItemID kennt eBay nicht, eBay
+  antwortet mit `Ack=FAILURE`, `getEbayAvailability` verschluckt das und legt
+  **keinen** Eintrag an — und ohne Eintrag gilt die Karte als „unbekannt", was
+  den Kauf durchlässt (`lib/ebay-stock-check.ts`). Nachgelesen, nicht gehofft.
+- **Der Import räumt den Testartikel von selbst wieder ab.** `runEbaySync`
+  setzt jedes `ACTIVE`-Listing, dessen ItemID nicht in der eBay-Aktivliste
+  steht, auf `ENDED`, das Produkt auf `INACTIVE` und den Bestand auf
+  `UNAVAILABLE`. Der Cron läuft `0 */2 * * *`. **Das ist erwünscht** — der
+  Artikel verschwindet ohne Zutun. Es begrenzt aber das Zeitfenster für den
+  Kauf auf die Zeit bis zum nächsten geraden UTC-Stundenschlag.
+- **Der Artikel ist öffentlich sichtbar**, solange er lebt. Einen versteckten
+  Weg gibt es nicht: `/api/products` liefert nur, was `ACTIVE` ist, und nur
+  ein aktives Listing ist kaufbar. Gegenmaßnahmen: unmissverständlicher Titel
+  und ein niedriger Preis.
+
+### Anzulegen
+
+- `products`: `kind = EBAY_SYNCED`, `status = ACTIVE`, Titel unmissverständlich
+  als Testartikel.
+- `ebay_listings`: `status = ACTIVE`, `listing_type = FIXED_PRICE`,
+  `quantity = 1`, Preis **1,00 €**, erfundene `ebay_item_id`.
+- `inventory`: `available_quantity = 1`, `status = AVAILABLE` — ohne diese
+  Zeile lehnt `app/api/orders/route.ts` die Bestellung ab (`innerJoin`).
+
+- **Verifikation:** Der Artikel taucht in `/api/products` und auf `/karten`
+  auf; die zwei `inquiries`-Zeilen sind weg; die Zählung vorher/nachher wird
+  festgehalten.
+- **Rückweg:** Der Testartikel lässt sich jederzeit löschen; die gelöschten
+  Anfragen **nicht** — sie sind weg. Ihr Inhalt ist in dieser Datei
+  dokumentiert (Titel „ZUSTELLPROBE …", Empfänger der Betreiber selbst), es
+  geht also nichts Unwiederbringliches verloren.
 
 ---
 
