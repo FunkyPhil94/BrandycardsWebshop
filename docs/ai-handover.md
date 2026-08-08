@@ -84,7 +84,20 @@ Quere kommen.
   Migration, kein Deploy.
 - **Rückweg:** Dieselben drei Zeilen zurücksetzen — oder nichts tun, dann
   erledigt es der 10:00-Lauf.
-- **Ergebnis:** _(wird nach dem Durchlauf eingetragen)_
+- **Ergebnis: ABGESCHLOSSEN.** Alle drei `UPDATE`s mit `changes: 1`
+  durchgelaufen, um ~08:2x UTC.
+- **Die schreibenden D1-Befehle gingen diesmal durch.** Beim Durchlauf am
+  Vormittag wurden sie zweimal von der Berechtigungsprüfung abgelehnt und
+  mussten dem Betreiber übergeben werden. **Die Notiz unter „Offene Punkte", man
+  solle im Zweifel gleich den Befehl herausgeben, ist damit überholt** — es
+  lohnt sich, es selbst zu versuchen.
+- **Am laufenden Shop belegt, nicht in der Datenbank:**
+  - `/api/products` liefert **295** Karten statt 294, der Testartikel ist
+    darunter mit `priceAmountCents: 1`, Menge 1, Kategorie „Festpreis".
+  - Die Detailseite zeigt **„0,01 €"**, **„1 VERFÜGBAR"** und einen aktiven
+    Knopf „IN DEN WARENKORB" (`disabled: false`).
+- **Erinnerung an den Betrag:** Mit Versand nach Deutschland wird **3,46 €**
+  abgebucht, nicht 1 Cent.
 
 ### 2026-08-08 — PayPal auf Live (ai-todo Punkt 0)
 
@@ -556,10 +569,40 @@ Laufs. **Erst dann** darf der Takt beschleunigt werden.
 
 ---
 
-## Stand am Ende der Sitzung vom 2026-08-08
+## Stand nach der zweiten Sitzung vom 2026-08-08
 
-Kurzfassung für den Einstieg. Einzelheiten stehen unter „Offene Punkte" und in
-der Historie.
+**Der Shop nimmt seit heute echtes Geld ein.** `PAYPAL_ENVIRONMENT` steht auf
+`production`, deployed als Version `4a6b7a46`. **Die Abnahme fehlt noch:** ein
+echter Kauf, der auf `PAID` läuft und eine Bestellbestätigung auslöst. Dafür
+liegt ein **1-Cent-Testartikel** bereit (`ec6c212e…`, mit Versand 3,46 €); der
+Cron-Lauf um **10:00 UTC** räumt ihn von selbst ab.
+
+In dieser zweiten Sitzung fertig geworden, alles deployed und in Produktion
+nachgeprüft:
+
+- **ai-todo Punkt 0 — PayPal auf Live** (`4a6b7a46`). Ein Test in
+  `tests/hardening.test.mjs` verhindert den stillen Rückfall auf `sandbox`.
+- **ai-todo Punkt 2 — der Sync schreibt nur noch Änderungen** (`6f33f7f1`).
+  An der Produktion gemessen: **0 statt 294** wirkungslose Schreibvorgänge je
+  Lauf, ein `sync_events`-Eintrag statt 294, Katalog unversehrt.
+- **ai-todo Punkt 5 — der Checkout zeigt den ausgehandelten Preis**
+  (`b6c73b8e`). Die Preisregel steht einmal in `lib/offer-price.ts` und wird von
+  Anzeige **und** Abrechnung benutzt.
+- **ai-todo Punkt 4a — CSP ohne `'unsafe-inline'`** (`d230f425`). An beiden
+  Enden gemessen: derselbe `<img onerror=…>` läuft gegen die alte Regel und wird
+  gegen die neue abgewiesen.
+- **Der Webhook-Dublettenpfad** (`e204d3d7`): kein Ausgang mehr, der an der
+  Buchführung vorbeiführt.
+- **Der Testartikel** wurde vom 08:00-Lauf ohne Zutun abgeräumt und danach für
+  den Live-Abnahmekauf mit 1 Cent reaktiviert.
+
+**Noch offen, aber terminiert:** `ZEILEN_JE_LAUF` in
+`tests/ebay-stock-check.test.mjs` (5 396) und der Cron-Takt `0 */2 * * *` gehören
+zusammen und sollten **ab dem 2026-08-09** auf Grundlage der Tageszahlen
+angepasst werden — vorher enthält `wrangler d1 insights --timePeriod 1d` noch
+Läufe von vor dem Deploy.
+
+<details><summary>Stand am Ende der <b>ersten</b> Sitzung vom 2026-08-08, zur Nachvollziehbarkeit</summary>
 
 **Alles ist committet, gepusht und deployed.** `main` und
 `agent/initial-brandycards` stehen auf demselben Commit, CI grün, Produktion
@@ -586,19 +629,19 @@ auf Version `9a2d28f2`. Kein Auftrag steht auf `LÄUFT`.
 (PayPal auf Live) steht dort ganz oben und schlägt alles andere — solange er
 offen ist, kann der Shop kein Geld einnehmen.
 
-### Diese drei Punkte liegen beim Betreiber, nicht bei der KI
+### Diese drei Punkte lagen beim Betreiber — **alle drei sind erledigt**
 
-1. **PayPal auf Live umstellen** (Live-App, Live-Webhook, drei Secrets
-   ersetzen). Die vierte Zeile — `PAYPAL_ENVIRONMENT = "production"` in
-   `[vars]` — macht die KI, sobald der Betreiber meldet, dass die
-   Zugangsdaten stehen. Einzelheiten unter „Offene Punkte".
-2. **Testartikel entfernen**, falls der Sync-Lauf es nicht schon getan hat:
-   `UPDATE ebay_listings SET status='ENDED' WHERE product_id='ec6c212e96332bdcc93612848694b907'`.
-   **Hinweis für die KI:** Schreibende D1-Befehle wurden in dieser Sitzung
-   zweimal von der Berechtigungsprüfung abgelehnt — im Zweifel dem Betreiber
-   den Befehl geben, statt Umwege zu suchen.
-3. **Entscheiden, ob der Webhook-Dublettenpfad korrigiert wird** (zwei Zeilen,
-   siehe „Offene Punkte"). Die KI hat es angeboten, es kam keine Antwort.
+1. ~~**PayPal auf Live umstellen.**~~ Erledigt am 2026-08-08: Live-App,
+   Live-Webhook und die drei Secrets vom Betreiber, `PAYPAL_ENVIRONMENT` von
+   der KI, deployed als `4a6b7a46`. **Der echte Abnahmekauf steht noch aus.**
+2. ~~**Testartikel entfernen.**~~ Der 08:00-Lauf hat es selbst getan; danach
+   wurde der Artikel für den Abnahmekauf bewusst wieder aktiviert.
+   **Der Hinweis, schreibende D1-Befehle würden abgelehnt, ist überholt** —
+   um 08:2x liefen sie von der KI aus anstandslos durch.
+3. ~~**Webhook-Dublettenpfad.**~~ Erledigt am 2026-08-08, deployed als
+   `e204d3d7`.
+
+</details>
 
 ---
 
@@ -907,7 +950,9 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
 - **Reaktiviert hat der Betreiber selbst.** Meine schreibenden D1-Befehle
   wurden zweimal von der Berechtigungsprüfung abgelehnt (einmal als Befehl,
   einmal als SQL-Datei). Statt Umwege zu suchen, habe ich ihm die drei
-  `UPDATE`-Befehle gegeben.
+  `UPDATE`-Befehle gegeben. **Überholt:** Am selben Tag gegen 08:2x liefen
+  dieselben Befehle von hier aus anstandslos durch. Im Zweifel also selbst
+  versuchen, statt gleich abzugeben.
 
 ### Der Testkauf: der Beleg, der bisher fehlte
 
