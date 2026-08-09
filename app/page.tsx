@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
 import { Gallery } from "./gallery";
+import { useI18n } from "./i18n";
 import { SiteFooter, SiteHeader } from "./site-chrome";
 
 const DESTINATIONS = [
@@ -41,17 +44,18 @@ const DESTINATIONS = [
 ];
 
 export default function Home() {
+  const { t } = useI18n();
   return <main>
     <SiteHeader />
 
     <section className="hero" id="top">
       <div className="hero-copy">
-        <p className="eyebrow">THE HOME OF SPORTS CARDS</p>
-        <h1>Cards with<br /><em>character.</em></h1>
-        <p className="hero-text">Ausgewählte Sportkarten für Sammler und Liebhaber, sicher verpackt und mit Liebe zum Detail.</p>
+        <p className="eyebrow">{t("THE HOME OF SPORTS CARDS")}</p>
+        <h1>{t("Cards with")}<br /><em>{t("character.")}</em></h1>
+        <p className="hero-text">{t("Ausgewählte Sportkarten für Sammler und Liebhaber, sicher verpackt und mit Liebe zum Detail.")}</p>
         <div className="hero-actions">
-          <Link className="button button-primary" href="/karten">Kollektion entdecken <span>↘</span></Link>
-          <Link className="text-link" href="/ueber-uns">Mehr über BrandyCards <span>→</span></Link>
+          <Link className="button button-primary" href="/karten">{t("Kollektion entdecken")} <span>↘</span></Link>
+          <Link className="text-link" href="/ueber-uns">{t("Mehr über BrandyCards")} <span>→</span></Link>
         </div>
       </div>
       {/* Zierrat, kein Inhalt: Die „Karte" ist aus CSS gezeichnet, ihre
@@ -72,7 +76,7 @@ export default function Home() {
       </div>
     </section>
 
-    <section className="ticker" aria-label="BrandyCards Werte">
+    <section className="ticker" aria-label={t("BrandyCards Werte")}>
       <span>AUTHENTIC CARDS</span><i>✦</i><span>FAIR PRICES</span><i>✦</i><span>FAST SHIPPING</span><i>✦</i><span>MADE FOR COLLECTORS</span>
     </section>
 
@@ -85,36 +89,28 @@ export default function Home() {
         wäre schlimmer als gar keine Werbung. */}
     <section className="split-section" aria-labelledby="verhandeln-title">
       <div className="split-copy">
-        <p className="eyebrow">JEDER PREIS IST EIN ANFANG</p>
-        <h2 id="verhandeln-title">Mach uns ein Angebot.</h2>
-        <p>
-          Du kannst jede Karte zum angegebenen Preis kaufen — oder uns sagen, was sie dir wert ist.
-          Wir sind zwei Brüder mit einer Sammelleidenschaft, keine Preisautomatik. Wenn dein
-          Vorschlag passt, nehmen wir ihn an, und der Betrag wird im Checkout automatisch verrechnet.
-        </p>
-        <p>
-          Drei Vorschläge je Karte, mindestens 50 Cent unter dem Preis, ein angenommener Preis gilt
-          48 Stunden. Mehr Regeln gibt es nicht — nur ein Kundenkonto, damit wir wissen, für wen der
-          Preis gilt.
-        </p>
-        <Link className="text-link" href="/karten">Karten ansehen und vorschlagen <span>→</span></Link>
+        <p className="eyebrow">{t("JEDER PREIS IST EIN ANFANG")}</p>
+        <h2 id="verhandeln-title">{t("Mach uns ein Angebot.")}</h2>
+        <p>{t("Du kannst jede Karte zum angegebenen Preis kaufen — oder uns sagen, was sie dir wert ist. Wir sind zwei Brüder mit einer Sammelleidenschaft, keine Preisautomatik. Wenn dein Vorschlag passt, nehmen wir ihn an, und der Betrag wird im Checkout automatisch verrechnet.")}</p>
+        <p>{t("Drei Vorschläge je Karte, mindestens 50 Cent unter dem Preis, ein angenommener Preis gilt 48 Stunden. Mehr Regeln gibt es nicht — nur ein Kundenkonto, damit wir wissen, für wen der Preis gilt.")}</p>
+        <Link className="text-link" href="/karten">{t("Karten ansehen und vorschlagen")} <span>→</span></Link>
       </div>
       <div className="split-panel" aria-hidden="true">
         <div className="panel-card">
-          <span>Dein<br />Preis</span>
+          <span>{t("Dein")}<br />{t("Preis")}</span>
           <b>?</b>
         </div>
-        <p className="panel-note">DREI VERSUCHE<br /><strong>48 STUNDEN GÜLTIG</strong></p>
+        <p className="panel-note">{t("DREI VERSUCHE")}<br /><strong>{t("48 STUNDEN GÜLTIG")}</strong></p>
       </div>
     </section>
 
-    <section className="destinations" aria-label="Bereiche des Shops">
+    <section className="destinations" aria-label={t("Bereiche des Shops")}>
       {DESTINATIONS.map((entry) => (
         <Link className="destination-card" key={entry.href} href={entry.href}>
-          <p className="eyebrow">{entry.eyebrow}</p>
-          <h2>{entry.title}</h2>
-          <p className="destination-text">{entry.text}</p>
-          <span className="text-link">{entry.cta} <span>→</span></span>
+          <p className="eyebrow">{t(entry.eyebrow)}</p>
+          <h2>{t(entry.title)}</h2>
+          <p className="destination-text">{t(entry.text)}</p>
+          <span className="text-link">{t(entry.cta)} <span>→</span></span>
         </Link>
       ))}
     </section>

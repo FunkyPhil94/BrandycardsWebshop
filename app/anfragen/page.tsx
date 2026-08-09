@@ -2,29 +2,31 @@
 
 import Link from "next/link";
 import { BotGuardFields, Field, FormFeedback, PrivacyNotice, botGuardPayload, postJson, useFormSubmit } from "../forms";
+import { useI18n } from "../i18n";
 import { SiteFooter, SiteHeader } from "../site-chrome";
 
 export default function AnfragenPage() {
   const inquiry = useFormSubmit();
+  const { t } = useI18n();
 
   return <main>
     <SiteHeader active="/anfragen" />
 
     <section className="page-intro">
-      <p className="eyebrow">DU SUCHST ETWAS BESTIMMTES?</p>
-      <h1>Wir helfen<br /><em>beim Finden.</em></h1>
+      <p className="eyebrow">{t("DU SUCHST ETWAS BESTIMMTES?")}</p>
+      <h1>{t("Wir helfen")}<br /><em>{t("beim Finden.")}</em></h1>
       {/* Der Satz „liegt schon in unserer Sammlung, aber noch nicht im Shop"
           beschrieb bis zum 2026-08-09 einen Zustand ohne Ort. Seitdem gibt es
           den Vorverkauf — dort stehen genau diese Karten, und wer erst dort
           nachsieht, spart sich die Anfrage. */}
-      <p>Manche Karten liegen schon in unserer Sammlung, aber noch nicht bei eBay — die findest du im <Link className="text-link" href="/vorverkauf">Vorverkauf</Link>. Ist deine nicht dabei, schreib uns, wonach du suchst. Ein Kundenkonto brauchst du dafür nicht, deine E-Mail-Adresse genügt.</p>
+      <p>{t("Manche Karten liegen schon in unserer Sammlung, aber noch nicht bei eBay — die findest du im")} <Link className="text-link" href="/vorverkauf">{t("Vorverkauf")}</Link>. {t("Ist deine nicht dabei, schreib uns, wonach du suchst. Ein Kundenkonto brauchst du dafür nicht, deine E-Mail-Adresse genügt.")}</p>
     </section>
 
     <section className="forms-section single">
       <div className="form-card">
-        <p className="eyebrow">KONTAKT</p>
-        <h2>Karte anfragen</h2>
-        <p>Je genauer der Titel, desto schneller finden wir sie. Set, Spieler und Kartennummer helfen uns am meisten.</p>
+        <p className="eyebrow">{t("KONTAKT")}</p>
+        <h2>{t("Karte anfragen")}</h2>
+        <p>{t("Je genauer der Titel, desto schneller finden wir sie. Set, Spieler und Kartennummer helfen uns am meisten.")}</p>
         <form onSubmit={(event) => inquiry.run(event, async (form) => {
           const data = new FormData(form);
           return postJson("/api/inquiries", {
@@ -32,18 +34,18 @@ export default function AnfragenPage() {
             title: data.get("title"),
             message: data.get("message"),
             email: data.get("email"),
-          });
+          }, t("Danke! Deine Anfrage ist bei uns eingegangen. Wir melden uns per E-Mail."), t("Die Anfrage konnte nicht gesendet werden."));
         })}>
           <BotGuardFields />
-          <Field label="Kartentitel" name="title" placeholder="z. B. 2024 Topps Chrome UCC Lamine Yamal" />
+          <Field label={t("Kartentitel")} name="title" placeholder={t("z. B. 2024 Topps Chrome UCC Lamine Yamal")} />
           <label className="form-field">
-            <span>Nachricht<b aria-hidden="true"> *</b></span>
-            <textarea name="message" required maxLength={4000} rows={5} placeholder="Wonach suchst du? Zustand, Variante, Preisrahmen …" />
+            <span>{t("Nachricht")}<b aria-hidden="true"> *</b></span>
+            <textarea name="message" required maxLength={4000} rows={5} placeholder={t("Wonach suchst du? Zustand, Variante, Preisrahmen …")} />
           </label>
-          <Field label="E-Mail-Adresse" name="email" type="email" />
+          <Field label={t("E-Mail-Adresse")} name="email" type="email" />
           <PrivacyNotice />
           <button className="button button-primary" type="submit" disabled={inquiry.pending}>
-            {inquiry.pending ? "Wird gesendet …" : "Anfrage senden"}
+            {inquiry.pending ? t("Wird gesendet …") : t("Anfrage senden")}
           </button>
           <FormFeedback feedback={inquiry.feedback} />
         </form>
@@ -51,8 +53,8 @@ export default function AnfragenPage() {
     </section>
 
     <section className="cta-strip">
-      <p>Vielleicht liegt sie schon im Bestand.</p>
-      <Link className="button button-outline" href="/karten">Alle Karten ansehen <span>→</span></Link>
+      <p>{t("Vielleicht liegt sie schon im Bestand.")}</p>
+      <Link className="button button-outline" href="/karten">{t("Alle Karten ansehen")} <span>→</span></Link>
     </section>
 
     <SiteFooter />

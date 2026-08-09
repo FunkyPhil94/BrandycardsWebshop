@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { HONEYPOT_FIELD, RENDERED_AT_FIELD } from "../lib/form-bot-guard.ts";
+import { useI18n } from "./i18n";
 
 export type Feedback = { type: "success" | "error"; message: string } | null;
 
@@ -14,6 +15,7 @@ export type Feedback = { type: "success" | "error"; message: string } | null;
  * See lib/form-bot-guard.ts and docs/security-findings.md, E-2.
  */
 export function BotGuardFields() {
+  const { t } = useI18n();
   // The stamp is written straight to the input after mount rather than held in
   // React state: the clock is not something a component may read while
   // rendering, and the server has no business deciding when the visitor's page
@@ -38,7 +40,7 @@ export function BotGuardFields() {
     <input ref={stamp} type="hidden" name={RENDERED_AT_FIELD} defaultValue="0" />
     <div aria-hidden="true" style={{ position: "absolute", left: "-9999px", width: 1, height: 1, overflow: "hidden" }}>
       <label>
-        Bitte dieses Feld leer lassen
+        {t("Bitte dieses Feld leer lassen")}
         <input type="text" name={HONEYPOT_FIELD} tabIndex={-1} autoComplete="off" defaultValue="" />
       </label>
     </div>
@@ -64,7 +66,8 @@ export function Field({ label, name, type = "text", required = true, placeholder
 }
 
 export function PrivacyNotice() {
-  return <p className="form-feedback">Wir verwenden deine Angaben nur zur Bearbeitung deiner Anfrage. Mehr dazu in unserer <Link href="/datenschutz">Datenschutz- und Löschinformation</Link>.</p>;
+  const { t } = useI18n();
+  return <p className="form-feedback">{t("Wir verwenden deine Angaben nur zur Bearbeitung deiner Anfrage. Mehr dazu in unserer")} <Link href="/datenschutz">{t("Datenschutz- und Löschinformation")}</Link>.</p>;
 }
 
 function errorMessage(data: unknown, fallback: string) {
@@ -72,22 +75,23 @@ function errorMessage(data: unknown, fallback: string) {
   return typeof error?.message === "string" ? error.message : fallback;
 }
 
-export async function postJson(path: string, payload: Record<string, unknown>) {
+export async function postJson(path: string, payload: Record<string, unknown>, successMessage = "Danke! Deine Anfrage ist bei uns eingegangen. Wir melden uns per E-Mail.", fallback = "Die Anfrage konnte nicht gesendet werden.") {
   const response = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(errorMessage(data, "Die Anfrage konnte nicht gesendet werden."));
-  return "Danke! Deine Anfrage ist bei uns eingegangen. Wir melden uns per E-Mail.";
+  if (!response.ok) throw new Error(errorMessage(data, fallback));
+  return successMessage;
 }
 
-export async function postMultipart(path: string, form: HTMLFormElement) {
+export async function postMultipart(path: string, form: HTMLFormElement, successMessage = "Danke! Dein Kartenangebot und die Bilder sind sicher bei uns eingegangen.", fallback = "Die Anfrage konnte nicht gesendet werden.") {
   const response = await fetch(path, { method: "POST", body: new FormData(form) });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(errorMessage(data, "Die Anfrage konnte nicht gesendet werden."));
-  return "Danke! Dein Kartenangebot und die Bilder sind sicher bei uns eingegangen.";
+  if (!response.ok) throw new Error(errorMessage(data, fallback));
+  return successMessage;
 }
 
 /** Wraps the submit/pending/feedback cycle every public form shares. */
 export function useFormSubmit() {
+  const { t } = useI18n();
   const [feedback, setFeedback] = useState<Feedback>(null);
   const [pending, setPending] = useState(false);
 
@@ -100,7 +104,7 @@ export function useFormSubmit() {
       setFeedback({ type: "success", message: await send(form) });
       form.reset();
     } catch (error) {
-      setFeedback({ type: "error", message: error instanceof Error ? error.message : "Es ist ein Fehler aufgetreten." });
+      setFeedback({ type: "error", message: error instanceof Error ? t(error.message) : t("Es ist ein Fehler aufgetreten.") });
     } finally {
       setPending(false);
     }

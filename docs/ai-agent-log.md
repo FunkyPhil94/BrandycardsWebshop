@@ -739,3 +739,21 @@ Ein Quelltext-Wächter schützt die drei entscheidenden Verdrahtungen — Bestan
 gemeinsame Sichtbarkeit und Filter-vor-Limit. Verifikation vor dem Deploy:
 F-01-Zieltests 30/30, `npm test` 311/311, `npx tsc --noEmit` und `npm run lint`
 ohne Fehler. Es wurden keine Produktionsdaten geschrieben.
+
+## 2026-08-09 — Englische Sprachversion im Kundenbereich
+
+Die Sprachumschaltung sitzt zentral in einem clientseitigen Provider. Die
+Auswahl wird im Browser und als Cookie gespeichert, damit sie über Navigation
+und neue Sitzungen erhalten bleibt; die Kopfzeile bietet mit DE- und EN-Flagge
+eine per Tastatur bedienbare Auswahl. Preise und Versand werden für Englisch
+weiterhin in Euro formatiert.
+
+Die Übersetzung läuft bewusst über die deutschen Quelltexte als Schlüssel.
+Dadurch bleiben Kartentitel und eBay-Beschreibungen, die aus dem Katalog kommen,
+unverändert deutsch, während Shoptexte, Formulare, Konto, Checkout, PayPal-
+Rückläufe und Rechtstexte eine englische Fassung erhalten. Bekannte API-Fehler
+werden im Client ebenfalls über denselben Katalog aufgelöst.
+
+Verifikation vor dem Abschluss: TypeScript ohne Fehler, Lint ohne Fehler
+(eine bestehende Hook-Warnung im Konto bleibt), Produktions-Build erfolgreich,
+315 Tests grün inklusive Sprachtest. Es wurden keine Produktionsdaten geändert.

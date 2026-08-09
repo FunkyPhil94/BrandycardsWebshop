@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { cartButtonState } from "../lib/cart.ts";
+import { useI18n } from "./i18n";
 import { EBAY_SHOP_URL, formatPrice, useCart } from "./site-chrome";
 
 const ROTATE_MS = 2000;
@@ -50,6 +51,7 @@ export function Gallery() {
   const [paused, setPaused] = useState(false);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const reducedMotion = usePrefersReducedMotion();
+  const { t, locale } = useI18n();
   const { cart, addToCart, removeFromCart } = useCart();
   const regionRef = useRef<HTMLDivElement>(null);
 
@@ -107,10 +109,10 @@ export function Gallery() {
   return <section className="gallery-section" aria-labelledby="gallery-title">
     <div className="gallery-heading">
       <div>
-        <p className="eyebrow">AUS DEM BESTAND</p>
-        <h2 id="gallery-title">Fünf Karten,<br /><em>frisch gezeigt.</em></h2>
+        <p className="eyebrow">{t("AUS DEM BESTAND")}</p>
+        <h2 id="gallery-title">{t("Fünf Karten,")}<br /><em>{t("frisch gezeigt.")}</em></h2>
       </div>
-      <div className="gallery-views" role="tablist" aria-label="Auswahl der Galerie">
+      <div className="gallery-views" role="tablist" aria-label={t("Auswahl der Galerie")}>
         {VIEWS.map((entry) => (
           <button
             key={entry.id}
@@ -119,8 +121,8 @@ export function Gallery() {
             aria-selected={view === entry.id}
             className={view === entry.id ? "active" : ""}
             onClick={() => selectView(entry.id)}
-            title={entry.hint}
-          >{entry.label}</button>
+            title={t(entry.hint)}
+          >{t(entry.label)}</button>
         ))}
       </div>
     </div>
@@ -129,8 +131,8 @@ export function Gallery() {
       className="gallery-stage"
       ref={regionRef}
       role="region"
-      aria-roledescription="Karussell"
-      aria-label="Ausgewählte Karten"
+      aria-roledescription={t("Karussell")}
+      aria-label={t("Ausgewählte Karten")}
       tabIndex={0}
       onKeyDown={onKeyDown}
       onMouseEnter={() => setPaused(true)}
@@ -138,16 +140,16 @@ export function Gallery() {
       onFocus={() => setPaused(true)}
       onBlur={() => setPaused(false)}
     >
-      {status === "loading" && <p className="gallery-empty">Karten werden geladen …</p>}
-      {status === "error" && <p className="gallery-empty">Die Karten konnten gerade nicht geladen werden. <Link className="text-link" href="/karten">Zum Kartenbestand <span>→</span></Link></p>}
-      {status === "ready" && total === 0 && <p className="gallery-empty">Zurzeit sind keine Karten verfügbar.</p>}
+      {status === "loading" && <p className="gallery-empty">{t("Karten werden geladen …")}</p>}
+      {status === "error" && <p className="gallery-empty">{t("Die Karten konnten gerade nicht geladen werden.")} <Link className="text-link" href="/karten">{t("Zum Kartenbestand")} <span>→</span></Link></p>}
+      {status === "ready" && total === 0 && <p className="gallery-empty">{t("Zurzeit sind keine Karten verfügbar.")}</p>}
 
       {current && <>
         <button
           type="button"
           className="gallery-card"
           onClick={() => advance(1)}
-          aria-label={`Nächste Karte. Aktuell: ${current.title}`}
+          aria-label={t("Nächste Karte. Aktuell: {{title}}", { title: current.title })}
         >
           <span className="gallery-frame">
             {current.imageUrl
@@ -163,11 +165,11 @@ export function Gallery() {
                 />
               : <span className="gallery-fallback" aria-hidden="true">BC</span>}
           </span>
-          <span className="gallery-badge">{current.category === "Auktion" ? "eBay Auktion" : "Sofort-Kaufen"}</span>
+          <span className="gallery-badge">{current.category === "Auktion" ? t("eBay Auktion") : t("Sofort-Kaufen")}</span>
         </button>
 
         <div className="gallery-detail">
-          <p className="product-meta">{current.category === "Auktion" ? "Auktion auf eBay" : "Sofort verfügbar"}</p>
+          <p className="product-meta">{current.category === "Auktion" ? t("Auktion auf eBay") : t("Sofort verfügbar")}</p>
           <h3>
             {current.category === "Auktion"
               ? <a href={current.listingUrl || EBAY_SHOP_URL} target="_blank" rel="noreferrer">{current.title}</a>
@@ -178,9 +180,9 @@ export function Gallery() {
               lässt das Layout bei jedem Wechsel springen. */}
           <p className="gallery-description">{current.description}</p>
           <div className="gallery-actions">
-            {formatPrice(current.priceAmountCents, current.priceCurrency) && <strong>{formatPrice(current.priceAmountCents, current.priceCurrency)}</strong>}
+            {formatPrice(current.priceAmountCents, current.priceCurrency, locale) && <strong>{formatPrice(current.priceAmountCents, current.priceCurrency, locale)}</strong>}
             {current.category === "Auktion"
-              ? <a className="button button-primary" href={current.listingUrl || EBAY_SHOP_URL} target="_blank" rel="noreferrer">Auf eBay ansehen <span>↗</span></a>
+              ? <a className="button button-primary" href={current.listingUrl || EBAY_SHOP_URL} target="_blank" rel="noreferrer">{t("Auf eBay ansehen")} <span>↗</span></a>
               : (() => {
                   const state = cartButtonState(current.quantity, cart[current.id] ?? 0);
                   return <button
@@ -189,31 +191,31 @@ export function Gallery() {
                     disabled={state.disabled}
                     onClick={() => state.action === "remove" ? removeFromCart(current.id) : addToCart(current.id, current.quantity)}
                   >
-                    {state.label}{state.action && <span>{state.action === "remove" ? "×" : "+"}</span>}
+                    {t(state.label)}{state.action && <span>{state.action === "remove" ? "×" : "+"}</span>}
                   </button>;
                 })()}
           </div>
         </div>
 
         <div className="gallery-controls">
-          <button type="button" onClick={() => advance(-1)} aria-label="Vorherige Karte">←</button>
-          <div className="gallery-dots" role="tablist" aria-label="Karte auswählen">
+          <button type="button" onClick={() => advance(-1)} aria-label={t("Vorherige Karte")}>←</button>
+          <div className="gallery-dots" role="tablist" aria-label={t("Karte auswählen")}>
             {cards.map((card, dot) => (
               <button
                 key={card.id}
                 type="button"
                 role="tab"
                 aria-selected={dot === index}
-                aria-label={`Karte ${dot + 1} von ${total}`}
+                aria-label={t("Karte {{index}} von {{total}}", { index: dot + 1, total })}
                 className={dot === index ? "active" : ""}
                 onClick={() => setIndex(dot)}
               />
             ))}
           </div>
-          <button type="button" onClick={() => advance(1)} aria-label="Nächste Karte">→</button>
+          <button type="button" onClick={() => advance(1)} aria-label={t("Nächste Karte")}>→</button>
         </div>
 
-        <p className="gallery-live" role="status" aria-live="polite">Karte {index + 1} von {total}</p>
+        <p className="gallery-live" role="status" aria-live="polite">{t("Karte {{index}} von {{total}}", { index: index + 1, total })}</p>
       </>}
     </div>
   </section>;

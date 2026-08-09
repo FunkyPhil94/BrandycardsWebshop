@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { GlobalLegalNav, I18nProvider } from "./i18n";
 
 export const metadata: Metadata = {
   title: "BrandyCards — Sports Cards",
@@ -8,5 +9,5 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="de"><body>{children}<nav className="legal-nav" aria-label="Rechtliche Informationen"><a href="/impressum">Impressum</a><a href="/datenschutz">Datenschutz</a><a href="/agb">AGB</a><a href="/widerruf">Widerruf</a><a href="/versand-zahlung">Versand &amp; Zahlung</a></nav></body></html>;
+  return <html lang="de" suppressHydrationWarning><body><I18nProvider>{children}<GlobalLegalNav /></I18nProvider></body></html>;
 }

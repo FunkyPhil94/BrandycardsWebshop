@@ -5,6 +5,7 @@ import Link from "next/link";
 import { istKaufbareKategorie } from "../../lib/catalog-availability";
 import { effectiveUnitPrice } from "../../lib/offer-price";
 import { getSupabaseBrowserClient } from "../../lib/supabase-browser";
+import { useI18n } from "../i18n";
 
 type Product = {
   id: string;
@@ -21,11 +22,12 @@ const countryNames: Record<string, string> = {
   IT: "Italien", NL: "Niederlande", ES: "Spanien",
 };
 
-function formatMoney(cents: number, currency = "EUR") {
-  return (cents / 100).toLocaleString("de-DE", { style: "currency", currency });
+function formatMoney(cents: number, currency = "EUR", locale: "de" | "en" = "de") {
+  return (cents / 100).toLocaleString(locale === "en" ? "en-IE" : "de-DE", { style: "currency", currency });
 }
 
 export default function CheckoutPage() {
+  const { t, locale } = useI18n();
   const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<Record<string, number>>({});
   const [address, setAddress] = useState<Address>({ name: "", street: "", postalCode: "", city: "", country: "DE" });
@@ -40,9 +42,9 @@ export default function CheckoutPage() {
     fetch("/api/products")
       .then((response) => response.json())
       .then((data) => setProducts(data.products ?? []))
-      .catch(() => setMessage("Produkte konnten nicht geladen werden."));
+      .catch(() => setMessage(t("Produkte konnten nicht geladen werden.")));
     return () => window.clearTimeout(timer);
-  }, []);
+  }, [t]);
 
   // Die ausgehandelten Preise sind reine Anzeige. Was am Ende berechnet wird,
   // entscheidet allein der Server (`app/api/orders/route.ts`) — er schlägt die
@@ -135,7 +137,7 @@ export default function CheckoutPage() {
     setMessage("");
     try {
       const session = (await getSupabaseBrowserClient().auth.getSession()).data.session;
-      if (!session) throw new Error("Bitte melde dich zuerst an, bevor du zur Zahlung gehst.");
+      if (!session) throw new Error(t("Bitte melde dich zuerst an, bevor du zur Zahlung gehst."));
 
       const orderResponse = await fetch("/api/orders", {
         method: "POST",
@@ -143,7 +145,7 @@ export default function CheckoutPage() {
         body: JSON.stringify({ items: items.map(({ product, quantity }) => ({ productId: product.id, quantity })), shippingAddress: address }),
       });
       const orderData = await orderResponse.json();
-      if (!orderResponse.ok) throw new Error(orderData.error ?? "Bestellung konnte nicht angelegt werden.");
+      if (!orderResponse.ok) throw new Error(orderData.error ?? t("Bestellung konnte nicht angelegt werden."));
 
       sessionStorage.setItem("brandycards-pending-order", orderData.order.id);
       const paypalResponse = await fetch("/api/paypal/orders", {
@@ -152,12 +154,12 @@ export default function CheckoutPage() {
         body: JSON.stringify({ orderId: orderData.order.id }),
       });
       const paypalData = await paypalResponse.json();
-      if (!paypalResponse.ok) throw new Error(paypalData.error ?? "PayPal ist derzeit nicht verfügbar.");
+      if (!paypalResponse.ok) throw new Error(paypalData.error ?? t("PayPal ist derzeit nicht verfügbar."));
       const approval = paypalData.links?.find((link: { rel?: string }) => link.rel === "approve");
-      if (!approval?.href) throw new Error("PayPal-Freigabelink fehlt.");
+      if (!approval?.href) throw new Error(t("PayPal-Freigabelink fehlt."));
       window.location.assign(approval.href);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Checkout fehlgeschlagen.");
+      setMessage(error instanceof Error ? t(error.message) : t("Checkout fehlgeschlagen."));
       setBusy(false);
     }
   }
@@ -165,37 +167,37 @@ export default function CheckoutPage() {
   return (
     <main className="checkout-page">
       <div className="checkout-shell">
-        <Link className="checkout-back" href="/">← Zurück zum Shop</Link>
-        <p className="eyebrow">BRANDYCARDS CHECKOUT</p>
+        <Link className="checkout-back" href="/">{t("← Zurück zum Shop")}</Link>
+        <p className="eyebrow">{t("BRANDYCARDS CHECKOUT")}</p>
         <div className="checkout-heading">
-          <div><h1>Deine Bestellung</h1><p>Prüfe deine Auswahl und gib die Lieferadresse ein.</p></div>
-          <span className="checkout-step">SCHRITT 1 VON 2</span>
+          <div><h1>{t("Deine Bestellung")}</h1><p>{t("Prüfe deine Auswahl und gib die Lieferadresse ein.")}</p></div>
+          <span className="checkout-step">{t("SCHRITT 1 VON 2")}</span>
         </div>
 
         {items.length === 0 ? (
-          <section className="checkout-empty"><h2>Dein Warenkorb ist leer.</h2><p>Füge zuerst einen verfügbaren Artikel hinzu.</p><Link className="button button-primary" href="/">Zum Shop</Link></section>
+          <section className="checkout-empty"><h2>{t("Dein Warenkorb ist leer.")}</h2><p>{t("Füge zuerst einen verfügbaren Artikel hinzu.")}</p><Link className="button button-primary" href="/">{t("Zum Shop")}</Link></section>
         ) : (
           <div className="checkout-layout">
             <form onSubmit={startPayPal} className="checkout-form">
-              <section className="checkout-panel"><div className="panel-heading"><span>01</span><h2>Lieferadresse</h2></div><p className="panel-intro">Wir versenden innerhalb Deutschlands und der EU.</p>
+              <section className="checkout-panel"><div className="panel-heading"><span>01</span><h2>{t("Lieferadresse")}</h2></div><p className="panel-intro">{t("Wir versenden innerhalb Deutschlands und der EU.")}</p>
                 <div className="checkout-fields">
-                  {(["name", "street", "postalCode", "city"] as const).map((field) => <label key={field}>{field === "name" ? "Name" : field === "street" ? "Straße und Hausnummer" : field === "postalCode" ? "Postleitzahl" : "Ort"}<input required autoComplete={field === "postalCode" ? "postal-code" : field} value={address[field]} onChange={(event) => setAddress({ ...address, [field]: event.target.value })} /></label>)}
-                  <label>Land<select value={address.country} onChange={(event) => setAddress({ ...address, country: event.target.value })}>{Object.entries(countryNames).map(([code, name]) => <option key={code} value={code}>{name}</option>)}</select></label>
+                  {(["name", "street", "postalCode", "city"] as const).map((field) => <label key={field}>{t(field === "name" ? "Name" : field === "street" ? "Straße und Hausnummer" : field === "postalCode" ? "Postleitzahl" : "Ort")}<input required autoComplete={field === "postalCode" ? "postal-code" : field} value={address[field]} onChange={(event) => setAddress({ ...address, [field]: event.target.value })} /></label>)}
+                  <label>{t("Land")}<select value={address.country} onChange={(event) => setAddress({ ...address, country: event.target.value })}>{Object.entries(countryNames).map(([code, name]) => <option key={code} value={code}>{t(name)}</option>)}</select></label>
                 </div>
               </section>
-              <section className="checkout-panel checkout-payment"><div className="panel-heading"><span>02</span><h2>Zahlung</h2></div><p className="panel-intro">Die Zahlung wird sicher über PayPal abgewickelt. Du wirst anschließend zu PayPal weitergeleitet.</p><div className="paypal-note"><strong>PayPal</strong><span>Nur PayPal-Zahlung verfügbar</span></div></section>
+              <section className="checkout-panel checkout-payment"><div className="panel-heading"><span>02</span><h2>{t("Zahlung")}</h2></div><p className="panel-intro">{t("Die Zahlung wird sicher über PayPal abgewickelt. Du wirst anschließend zu PayPal weitergeleitet.")}</p><div className="paypal-note"><strong>PayPal</strong><span>{t("Nur PayPal-Zahlung verfügbar")}</span></div></section>
               {message && <p className="form-feedback error" role="alert">{message}</p>}
-              <button className="button button-primary checkout-submit" disabled={busy}>{busy ? "Weiterleitung zu PayPal …" : "Mit PayPal fortfahren"}<span>→</span></button>
+              <button className="button button-primary checkout-submit" disabled={busy}>{busy ? t("Weiterleitung zu PayPal …") : t("Mit PayPal fortfahren")}<span>→</span></button>
             </form>
 
-            <aside className="checkout-summary"><p className="eyebrow">DEINE AUSWAHL</p><h2>Bestellübersicht</h2><div className="checkout-items">{items.map(({ product, quantity, listPrice, unitPrice, ausgehandelt, akzeptiert }) => <div className="checkout-item" key={product.id}><div><strong>{product.title}</strong><span>{ausgehandelt ? <>
-              <s className="checkout-listenpreis">{formatMoney(listPrice ?? 0, product.priceCurrency)}</s>{" "}
-              <span className="checkout-verhandelt">{formatMoney(unitPrice, product.priceCurrency)}</span>
-            </> : formatMoney(unitPrice, product.priceCurrency)} × {quantity}</span>{(ausgehandelt || akzeptiert) && <span className="checkout-verhandelt-hinweis">{ausgehandelt ? "Dein ausgehandelter Preis" : "Dein akzeptierter Preis"}</span>}</div><button type="button" onClick={() => updateQuantity(product.id, quantity - 1)}>Entfernen</button></div>)}</div><div className="checkout-total"><div><span>Zwischensumme</span><strong>{formatMoney(subtotal)}</strong></div>{ersparnis > 0 && <div className="checkout-ersparnis"><span>Deine Ersparnis</span><strong>−{formatMoney(ersparnis)}</strong></div>}<div><span>Versand</span><strong>{formatMoney(shipping)}</strong></div><div className="total-line"><span>Gesamt</span><strong>{formatMoney(total)}</strong></div></div><p className="checkout-hint">Mit dem Klick auf „Mit PayPal fortfahren“ stimmst du den Bestellbedingungen zu.</p></aside>
+            <aside className="checkout-summary"><p className="eyebrow">{t("DEINE AUSWAHL")}</p><h2>{t("Bestellübersicht")}</h2><div className="checkout-items">{items.map(({ product, quantity, listPrice, unitPrice, ausgehandelt, akzeptiert }) => <div className="checkout-item" key={product.id}><div><strong>{product.title}</strong><span>{ausgehandelt ? <>
+              <s className="checkout-listenpreis">{formatMoney(listPrice ?? 0, product.priceCurrency, locale)}</s>{" "}
+              <span className="checkout-verhandelt">{formatMoney(unitPrice, product.priceCurrency, locale)}</span>
+            </> : formatMoney(unitPrice, product.priceCurrency, locale)} × {quantity}</span>{(ausgehandelt || akzeptiert) && <span className="checkout-verhandelt-hinweis">{t(ausgehandelt ? "Dein ausgehandelter Preis" : "Dein akzeptierter Preis")}</span>}</div><button type="button" onClick={() => updateQuantity(product.id, quantity - 1)}>{t("Entfernen")}</button></div>)}</div><div className="checkout-total"><div><span>{t("Zwischensumme")}</span><strong>{formatMoney(subtotal, "EUR", locale)}</strong></div>{ersparnis > 0 && <div className="checkout-ersparnis"><span>{t("Deine Ersparnis")}</span><strong>−{formatMoney(ersparnis, "EUR", locale)}</strong></div>}<div><span>{t("Versand")}</span><strong>{formatMoney(shipping, "EUR", locale)}</strong></div><div className="total-line"><span>{t("Gesamt")}</span><strong>{formatMoney(total, "EUR", locale)}</strong></div></div><p className="checkout-hint">{t("Mit dem Klick auf „Mit PayPal fortfahren“ stimmst du den Bestellbedingungen zu.")}</p></aside>
           </div>
         )}
       </div>
-      <nav className="legal-nav"><a href="/impressum">Impressum</a><a href="/datenschutz">Datenschutz</a><a href="/agb">AGB</a><a href="/widerruf">Widerruf</a><a href="/versand-zahlung">Versand &amp; Zahlung</a></nav>
+      <nav className="legal-nav"><a href="/impressum">{t("Impressum")}</a><a href="/datenschutz">{t("Datenschutz")}</a><a href="/agb">{t("AGB")}</a><a href="/widerruf">{t("Widerruf")}</a><a href="/versand-zahlung">{t("Versand & Zahlung")}</a></nav>
     </main>
   );
 }

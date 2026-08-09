@@ -37,7 +37,7 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-**Englische Sprachversion** — Stand: LÄUFT (2026-08-09)
+**Englische Sprachversion** — Stand: ABGESCHLOSSEN (2026-08-09)
 
 - Der Betreiber hat entschieden, den gesamten Kundenbereich zu übersetzen:
   Oberfläche, Formulierungen und Rechtstexte. Die Rechtstexte werden als
@@ -55,6 +55,13 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
   erreichbar. Danach `npx tsc --noEmit`, `npm run lint`, `npm test`, committen,
   pushen, deployen und die Sprachumschaltung live prüfen. Keine
   Produktionsdaten schreiben.
+- Ergebnis: DE/EN-Schalter in der Kopfzeile mit Flaggen und Geräte-Persistenz;
+  öffentliche Seiten, Formulare, Konto, Checkout, PayPal-Rückläufe und
+  Rechtstexte verwenden die englische Fassung. Kartentitel und eBay-
+  Beschreibungen bleiben deutsch, Preise und Versandkosten bleiben in Euro.
+- Verifikation: npx tsc --noEmit, npm run lint (0 Fehler), npm test
+  (315/315) und der zusätzliche Sprachtest grün. Commit, Push und Deployment
+  stehen noch als Abschlussaktion dieses Durchlaufs aus.
 
 ### **Der Betreiber muss zwei Dinge selbst prüfen**
 

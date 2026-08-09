@@ -6,6 +6,8 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "
 // Punktdichte ab. Die Vorlage liegt daneben als …-original.png und wird
 // bewusst nicht importiert, landet also nicht im Bauergebnis.
 import logo from "./brand/brandycards-logo.png";
+import { LanguageSwitch, useI18n } from "./i18n";
+import type { Locale } from "../lib/i18n";
 
 export const EBAY_SHOP_URL = "https://www.ebay.de/str/brandycards";
 const CART_KEY = "brandycards-cart";
@@ -111,6 +113,7 @@ const NAV = [
 
 export function SiteHeader({ active }: { active?: string }) {
   const { count } = useCart();
+  const { t } = useI18n();
   const [menuOffen, setMenuOffen] = useState(false);
   const leisteRef = useRef<HTMLDivElement>(null);
 
@@ -131,24 +134,25 @@ export function SiteHeader({ active }: { active?: string }) {
   }, [menuOffen]);
 
   return <>
-    <div className="announcement"><span>✦</span> Versand innerhalb Deutschlands 3,45 € · EU 14,49 € <span>→</span></div>
+    <div className="announcement"><span>✦</span> {t("Versand innerhalb Deutschlands 3,45 € · EU 14,49 €")} <span>→</span></div>
     {/* Der Balken trägt das Kleben und den Hintergrund, nicht die Kopfzeile
         selbst: `.site-header` ist auf 1400px begrenzt und zentriert, ein
         `position:sticky` darauf ließe den Inhalt an den Rändern durchscheinen. */}
     <div className="site-header-bar" ref={leisteRef}>
       <header className="site-header">
-        <Link className="brand" href="/" aria-label="BrandyCards Startseite">
+        <Link className="brand" href="/" aria-label={t("BrandyCards Startseite")}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img className="brand-logo" src={logo.src} width={logo.width} height={logo.height} alt="BrandyCards" />
         </Link>
-        <nav className="main-nav" aria-label="Hauptnavigation">
+        <nav className="main-nav" aria-label={t("Hauptnavigation")}>
           {NAV.map((item) => (
-            <Link key={item.href} href={item.href} aria-current={active === item.href ? "page" : undefined}>{item.label}</Link>
+            <Link key={item.href} href={item.href} aria-current={active === item.href ? "page" : undefined}>{t(item.label)}</Link>
           ))}
         </nav>
         <div className="header-actions">
-          <Link className="account-link" href="/account">Konto <span>↗</span></Link>
-          <Link className="cart-button" href="/checkout" aria-label={`Warenkorb, ${count} Artikel`}>Warenkorb <b>{count}</b></Link>
+          <LanguageSwitch />
+          <Link className="account-link" href="/account">{t("Konto")} <span>↗</span></Link>
+          <Link className="cart-button" href="/checkout" aria-label={t("Warenkorb, {{count}} Artikel", { count })}>{t("Warenkorb")} <b>{count}</b></Link>
           {/* Nur unter 850px sichtbar. Oberhalb blendet CSS Schaltfläche und
               Liste aus — ein offen gelassenes Menü ist beim Vergrößern des
               Fensters dadurch folgenlos, ohne dass Zustand aufgeräumt wird. */}
@@ -157,7 +161,7 @@ export function SiteHeader({ active }: { active?: string }) {
             type="button"
             aria-expanded={menuOffen}
             aria-controls="mobile-nav"
-            aria-label={menuOffen ? "Menü schließen" : "Menü öffnen"}
+            aria-label={menuOffen ? t("Menü schließen") : t("Menü öffnen")}
             onClick={() => setMenuOffen((offen) => !offen)}
           >
             <span className={menuOffen ? "nav-toggle-icon offen" : "nav-toggle-icon"} aria-hidden="true">
@@ -168,14 +172,14 @@ export function SiteHeader({ active }: { active?: string }) {
       </header>
       {/* Absolut positioniert, nicht im Fluss: Die Leiste muss ihre Höhe
           behalten, sonst stimmt --header-h im geöffneten Zustand nicht mehr. */}
-      <nav id="mobile-nav" className={menuOffen ? "mobile-nav offen" : "mobile-nav"} aria-label="Hauptnavigation" hidden={!menuOffen}>
+      <nav id="mobile-nav" className={menuOffen ? "mobile-nav offen" : "mobile-nav"} aria-label={t("Hauptnavigation")} hidden={!menuOffen}>
         {NAV.map((item) => (
           <Link
             key={item.href}
             href={item.href}
             aria-current={active === item.href ? "page" : undefined}
             onClick={() => setMenuOffen(false)}
-          >{item.label}</Link>
+          >{t(item.label)}</Link>
         ))}
       </nav>
     </div>
@@ -183,37 +187,38 @@ export function SiteHeader({ active }: { active?: string }) {
 }
 
 export function SiteFooter() {
+  const { t } = useI18n();
   return <footer id="contact">
     <div className="footer-top">
-      <Link className="brand" href="/" aria-label="BrandyCards Startseite">
+      <Link className="brand" href="/" aria-label={t("BrandyCards Startseite")}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img className="brand-logo" src={logo.src} width={logo.width} height={logo.height} alt="BrandyCards" />
       </Link>
       <p>Collect the moment.</p>
       <div className="footer-links">
-        <Link href="/karten">Karten</Link>
-        <Link href="/anfragen">Karte anfragen</Link>
-        <Link href="/verkaufen">Karten verkaufen</Link>
-        <Link href="/ueber-uns">Über uns</Link>
-        <Link href="/account">Konto ↗</Link>
-        <a href={EBAY_SHOP_URL} target="_blank" rel="noreferrer">eBay-Shop ↗</a>
+        <Link href="/karten">{t("Karten")}</Link>
+        <Link href="/anfragen">{t("Karte anfragen")}</Link>
+        <Link href="/verkaufen">{t("Karten verkaufen")}</Link>
+        <Link href="/ueber-uns">{t("Über uns")}</Link>
+        <Link href="/account">{t("Konto ↗")}</Link>
+        <a href={EBAY_SHOP_URL} target="_blank" rel="noreferrer">{t("eBay-Shop ↗")}</a>
       </div>
     </div>
     <div className="footer-bottom">
       <span>© 2026 BrandyCards · Leverkusen</span>
       <span className="legal-nav">
-        <Link href="/impressum">Impressum</Link>
-        <Link href="/datenschutz">Datenschutz</Link>
-        <Link href="/agb">AGB</Link>
-        <Link href="/widerruf">Widerruf</Link>
-        <Link href="/versand-zahlung">Versand &amp; Zahlung</Link>
+        <Link href="/impressum">{t("Impressum")}</Link>
+        <Link href="/datenschutz">{t("Datenschutz")}</Link>
+        <Link href="/agb">{t("AGB")}</Link>
+        <Link href="/widerruf">{t("Widerruf")}</Link>
+        <Link href="/versand-zahlung">{t("Versand & Zahlung")}</Link>
       </span>
       <span>Designed for collectors</span>
     </div>
   </footer>;
 }
 
-export function formatPrice(cents: number | null, currency = "EUR") {
+export function formatPrice(cents: number | null, currency = "EUR", locale: Locale = "de") {
   if (cents === null) return null;
-  return new Intl.NumberFormat("de-DE", { style: "currency", currency }).format(cents / 100);
+  return new Intl.NumberFormat(locale === "en" ? "en-IE" : "de-DE", { style: "currency", currency }).format(cents / 100);
 }

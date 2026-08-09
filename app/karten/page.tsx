@@ -6,6 +6,7 @@ import { cartButtonState } from "../../lib/cart.ts";
 import { ebayImageVariant } from "../../lib/ebay-images.ts";
 import { DEFAULT_PAGE_SIZE, PAGE_SIZES, PageSize, clampPage, pageNumbers, pageSlice, toPageSize } from "../../lib/pagination.ts";
 import { BotGuardFields, Field, FormFeedback, PrivacyNotice, botGuardPayload, postJson, useFormSubmit } from "../forms";
+import { useI18n } from "../i18n";
 import { EBAY_SHOP_URL, SiteFooter, SiteHeader, formatPrice, useCart } from "../site-chrome";
 
 type Product = {
@@ -51,6 +52,7 @@ export default function KartenPage() {
   const [page, setPage] = useState(1);
   const { cart, addToCart, removeFromCart } = useCart();
   const interest = useFormSubmit();
+  const { t, locale } = useI18n();
 
   useEffect(() => {
     let cancelled = false;
@@ -111,21 +113,20 @@ export default function KartenPage() {
     <SiteHeader active="/karten" />
 
     <section className="page-intro">
-      <p className="eyebrow">DER BESTAND</p>
-      <h1>Alle Karten.</h1>
-      <p>Unser gesamter Bestand. Jede Karte einzeln geprüft, beschrieben und sicher verpackt.</p>
+      <p className="eyebrow">{t("DER BESTAND")}</p>
+      <h1>{t("Alle Karten.")}</h1>
+      <p>{t("Unser gesamter Bestand. Jede Karte einzeln geprüft, beschrieben und sicher verpackt.")}</p>
       {/* Hier entscheidet sich der Blick: Wer im Raster steht, hat den
           Verhandlungsabschnitt der Startseite womöglich nie gesehen. */}
       <p>
-        <strong>Bei jeder Karte kannst du verhandeln.</strong> Öffne sie und schlag uns deinen Preis
-        vor — drei Versuche je Karte, ein angenommener Preis gilt 48 Stunden.
+        <strong>{t("Bei jeder Karte kannst du verhandeln.")}</strong> {t("Öffne sie und schlag uns deinen Preis vor — drei Versuche je Karte, ein angenommener Preis gilt 48 Stunden.")}
       </p>
     </section>
 
     <section className="shop-section" id="shop">
       <div className="shop-toolbar">
         <label className="page-size" htmlFor="page-size">
-          Karten je Seite
+          {t("Karten je Seite")}
           <select
             id="page-size"
             value={pageSize}
@@ -138,18 +139,18 @@ export default function KartenPage() {
           <span aria-hidden="true">⌕</span>
           {/* Jede Sucheingabe setzt auf Seite 1 zurück — sonst sucht man von
               Seite 7 aus und bekommt eine leere Ansicht zu sehen. */}
-          <input id="search" value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }} placeholder="Spieler, Set oder Kartennummer" aria-label="Karten durchsuchen" />
+          <input id="search" value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }} placeholder={t("Spieler, Set oder Kartennummer")} aria-label={t("Karten durchsuchen")} />
         </label>
       </div>
 
-      {status === "loading" && <div className="empty-state">Karten werden geladen …</div>}
-      {status === "error" && <div className="empty-state">Die Karten konnten gerade nicht geladen werden. Bitte lade die Seite neu.</div>}
+      {status === "loading" && <div className="empty-state">{t("Karten werden geladen …")}</div>}
+      {status === "error" && <div className="empty-state">{t("Die Karten konnten gerade nicht geladen werden. Bitte lade die Seite neu.")}</div>}
 
       {status === "ready" && <>
         <p className="result-count" role="status">
           {view.total === catalog.length
-            ? <>Karte {view.first}–{view.last} von {view.total}</>
-            : <>Karte {view.first}–{view.last} von {view.total} Treffern · {catalog.length} Karten im Bestand</>}
+            ? <>{t("Karte {{first}}–{{last}} von {{total}}", { first: view.first, last: view.last, total: view.total })}</>
+            : <>{t("Karte {{first}}–{{last}} von {{total}} Treffern · {{count}} Karten im Bestand", { first: view.first, last: view.last, total: view.total, count: catalog.length })}</>}
         </p>
         <div className="product-grid">
           {view.items.map((product) => (
@@ -172,20 +173,20 @@ export default function KartenPage() {
                       />
                     : <div className="card-art card-art-gold" aria-hidden="true"><span className="art-mark">BC</span></div>}
                 </Link>
-                <span className="product-badge">{badge(product.category)}</span>
+                <span className="product-badge">{t(badge(product.category))}</span>
               </div>
               <div className="product-info">
                 {/* Nur zeichnen, wenn es etwas zu sagen gibt — ein leerer
                     Absatz hinterließe seinen Abstand und risse ein Loch. */}
-                {meta(product.category) && <p className="product-meta">{meta(product.category)}</p>}
+                {meta(product.category) && <p className="product-meta">{t(meta(product.category) ?? "")}</p>}
                 <h2><Link href={`/karten/${product.id}`}>{product.title}</Link></h2>
                 {product.description && <p className="product-description">{product.description}</p>}
                 <div className="product-footer">
-                  {formatPrice(product.priceAmountCents, product.priceCurrency)
-                    ? <strong>{formatPrice(product.priceAmountCents, product.priceCurrency)}</strong>
-                    : <strong className="interest-price">Interesse bekunden</strong>}
+                  {formatPrice(product.priceAmountCents, product.priceCurrency, locale)
+                    ? <strong>{formatPrice(product.priceAmountCents, product.priceCurrency, locale)}</strong>
+                    : <strong className="interest-price">{t("Interesse bekunden")}</strong>}
                   {product.category === "Vormerkliste"
-                    ? <button className="product-cta" type="button" onClick={() => { interest.setFeedback(null); setSelected(product); }}>Vormerken <span>→</span></button>
+                    ? <button className="product-cta" type="button" onClick={() => { interest.setFeedback(null); setSelected(product); }}>{t("Vormerken")} <span>→</span></button>
                     : (() => {
                           const state = cartButtonState(product.quantity, cart[product.id] ?? 0);
                           return <button
@@ -194,17 +195,17 @@ export default function KartenPage() {
                             disabled={state.disabled}
                             onClick={() => state.action === "remove" ? removeFromCart(product.id) : addToCart(product.id, product.quantity)}
                             title={state.label}
-                          >{state.label}{state.action && <span>{state.action === "remove" ? "×" : "+"}</span>}</button>;
+                          >{t(state.label)}{state.action && <span>{state.action === "remove" ? "×" : "+"}</span>}</button>;
                         })()}
                 </div>
               </div>
             </article>
           ))}
         </div>
-        {filtered.length === 0 && <div className="empty-state">Keine Karten für diese Suche gefunden.</div>}
+        {filtered.length === 0 && <div className="empty-state">{t("Keine Karten für diese Suche gefunden.")}</div>}
 
-        {view.pages > 1 && <nav className="pager" aria-label="Seiten">
-          <button type="button" className="pager-step" onClick={() => goToPage(view.page - 1)} disabled={view.page <= 1}>← Zurück</button>
+        {view.pages > 1 && <nav className="pager" aria-label={t("Seiten")}>
+          <button type="button" className="pager-step" onClick={() => goToPage(view.page - 1)} disabled={view.page <= 1}>← {t("Zurück")}</button>
           <div className="pager-pages">
             {pageNumbers(view.page, view.pages).map((nummer, index) => nummer === null
               ? <span key={`luecke-${index}`} className="pager-gap" aria-hidden="true">…</span>
@@ -213,44 +214,44 @@ export default function KartenPage() {
                   type="button"
                   className={nummer === view.page ? "pager-page aktiv" : "pager-page"}
                   onClick={() => goToPage(nummer)}
-                  aria-label={`Seite ${nummer}`}
+                  aria-label={t("Seite {{number}}", { number: nummer })}
                   aria-current={nummer === view.page ? "page" : undefined}
                 >{nummer}</button>)}
           </div>
-          <button type="button" className="pager-step" onClick={() => goToPage(view.page + 1)} disabled={view.page >= view.pages}>Weiter →</button>
+          <button type="button" className="pager-step" onClick={() => goToPage(view.page + 1)} disabled={view.page >= view.pages}>{t("Weiter")} →</button>
         </nav>}
       </>}
 
       <div className="center-action">
-        <a className="button button-outline" href={EBAY_SHOP_URL} target="_blank" rel="noreferrer">Alle eBay-Angebote ansehen <span>↗</span></a>
+        <a className="button button-outline" href={EBAY_SHOP_URL} target="_blank" rel="noreferrer">{t("Alle eBay-Angebote ansehen")} <span>↗</span></a>
       </div>
     </section>
 
     {selected && <section className="form-section compact-form" aria-labelledby="interest-title">
       <div className="form-heading">
-        <p className="eyebrow">VORMERKEN</p>
+        <p className="eyebrow">{t("VORMERKEN")}</p>
         <h2 id="interest-title">{selected.title}</h2>
-        <p>Hinterlasse deine E-Mail-Adresse. Wir melden uns, sobald die Karte in den Verkauf geht.</p>
+        <p>{t("Hinterlasse deine E-Mail-Adresse. Wir melden uns, sobald die Karte in den Verkauf geht.")}</p>
       </div>
       <form onSubmit={(event) => interest.run(event, async (form) => postJson("/api/prelisted-interest", {
         ...botGuardPayload(form),
         productId: selected.id,
         email: new FormData(form).get("email"),
-      }))}>
+      }, t("Danke! Deine Vormerkung ist bei uns eingegangen. Wir melden uns, sobald die Karte verfügbar ist."), t("Die Anfrage konnte nicht gesendet werden.")))}>
         <BotGuardFields />
-        <Field label="E-Mail-Adresse" name="email" type="email" />
+        <Field label={t("E-Mail-Adresse")} name="email" type="email" />
         <PrivacyNotice />
         <div className="form-row">
-          <button className="button button-primary" type="submit" disabled={interest.pending}>{interest.pending ? "Wird gesendet …" : "Vormerkung senden"}</button>
-          <button className="text-link" type="button" onClick={() => setSelected(null)}>Abbrechen</button>
+          <button className="button button-primary" type="submit" disabled={interest.pending}>{interest.pending ? t("Wird gesendet …") : t("Vormerkung senden")}</button>
+          <button className="text-link" type="button" onClick={() => setSelected(null)}>{t("Abbrechen")}</button>
         </div>
         <FormFeedback feedback={interest.feedback} />
       </form>
     </section>}
 
     <section className="cta-strip">
-      <p>Nicht gefunden, wonach du suchst?</p>
-      <Link className="button button-primary" href="/anfragen">Karte anfragen <span>↘</span></Link>
+      <p>{t("Nicht gefunden, wonach du suchst?")}</p>
+      <Link className="button button-primary" href="/anfragen">{t("Karte anfragen")} <span>↘</span></Link>
     </section>
 
     <SiteFooter />

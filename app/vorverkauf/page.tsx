@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useI18n } from "../i18n";
 import { SiteFooter, SiteHeader } from "../site-chrome";
 
 type Product = {
@@ -29,6 +30,7 @@ type Product = {
 export default function VorverkaufPage() {
   const [cards, setCards] = useState<Product[]>([]);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const { t } = useI18n();
 
   useEffect(() => {
     let cancelled = false;
@@ -48,17 +50,17 @@ export default function VorverkaufPage() {
       <SiteHeader active="/vorverkauf" />
       <section className="shop-section">
         <div className="section-heading">
-          <h2>Vorverkauf.</h2>
-          <p>Karten, die du hier bekommst, bevor sie bei eBay stehen.</p>
+          <h2>{t("Vorverkauf.")}</h2>
+          <p>{t("Karten, die du hier bekommst, bevor sie bei eBay stehen.")}</p>
         </div>
 
-        {status === "loading" && <p className="empty-state">Lade …</p>}
-        {status === "error" && <p className="empty-state">Die Karten konnten gerade nicht geladen werden. Bitte lade die Seite neu.</p>}
+        {status === "loading" && <p className="empty-state">{t("Lade …")}</p>}
+        {status === "error" && <p className="empty-state">{t("Die Karten konnten gerade nicht geladen werden. Bitte lade die Seite neu.")}</p>}
         {/* Ein leerer Bereich braucht mehr als „keine Treffer": Wer hierher
             klickt, soll nicht denken, der Shop sei kaputt. */}
         {status === "ready" && cards.length === 0 && <div className="empty-state">
-          <p><strong>Gerade ist nichts im Vorverkauf.</strong></p>
-          <p>Hier stehen Karten, die wir direkt anbieten, bevor sie in unseren eBay-Shop wandern. Schau später wieder vorbei — oder sieh dir den <Link className="text-link" href="/karten">gesamten Bestand <span>→</span></Link> an.</p>
+          <p><strong>{t("Gerade ist nichts im Vorverkauf.")}</strong></p>
+          <p>{t("Hier stehen Karten, die wir direkt anbieten, bevor sie in unseren eBay-Shop wandern. Schau später wieder vorbei — oder sieh dir den")} <Link className="text-link" href="/karten">{t("gesamten Bestand")} <span>→</span></Link> {t("an.")}</p>
         </div>}
 
         {status === "ready" && cards.length > 0 && <div className="product-grid">
@@ -74,15 +76,15 @@ export default function VorverkaufPage() {
                     ? <img className="card-art product-photo" src={card.imageUrls[0]} alt={card.title} loading="lazy" decoding="async" width={450} height={800} />
                     : <div className="card-art card-art-gold" aria-hidden="true"><span className="art-mark">BC</span></div>}
                 </Link>
-                <span className="product-badge">Vorverkauf</span>
+                <span className="product-badge">{t("Vorverkauf")}</span>
               </div>
               <div className="product-info">
-                <p className="product-meta">Direkt bei uns</p>
+                <p className="product-meta">{t("Direkt bei uns")}</p>
                 <h3><Link href={`/karten/${card.id}`}>{card.title}</Link></h3>
                 {card.description && <p className="product-description">{card.description}</p>}
                 <div className="product-footer">
-                  <strong>Preis auf Anfrage</strong>
-                  <Link className="product-cta" href={`/karten/${card.id}`}>Preis vorschlagen <span>→</span></Link>
+                  <strong>{t("Preis auf Anfrage")}</strong>
+                  <Link className="product-cta" href={`/karten/${card.id}`}>{t("Preis vorschlagen")} <span>→</span></Link>
                 </div>
               </div>
             </article>;

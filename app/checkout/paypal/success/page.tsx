@@ -1,14 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getSupabaseBrowserClient } from "../../../../lib/supabase-browser";
+import { useI18n } from "../../../i18n";
 
 type CaptureState = "loading" | "success" | "error";
 
 export default function PayPalSuccessPage() {
+  const { t } = useI18n();
+  const tRef = useRef(t);
+  useEffect(() => {
+    tRef.current = t;
+  }, [t]);
   const [state, setState] = useState<CaptureState>("loading");
-  const [message, setMessage] = useState("Wir bestätigen deine Zahlung …");
+  const [message, setMessage] = useState(() => t("Wir bestätigen deine Zahlung …"));
   const [orderReference, setOrderReference] = useState("");
 
   useEffect(() => {
@@ -20,7 +26,7 @@ export default function PayPalSuccessPage() {
 
       if (!paypalOrderId || !session || !orderId) {
         setState("error");
-        setMessage("Die Zahlung konnte nicht eindeutig zugeordnet werden.");
+        setMessage(tRef.current("Die Zahlung konnte nicht eindeutig zugeordnet werden."));
         return;
       }
 
@@ -34,14 +40,14 @@ export default function PayPalSuccessPage() {
 
       if (!response.ok) {
         setState("error");
-        setMessage(data.error ?? "Die Zahlung konnte nicht bestätigt werden.");
+        setMessage(data.error ?? tRef.current("Die Zahlung konnte nicht bestätigt werden."));
         return;
       }
 
       sessionStorage.removeItem("brandycards-pending-order");
       sessionStorage.removeItem("brandycards-cart");
       setState("success");
-      setMessage("Zahlung erfolgreich bestätigt.");
+      setMessage(tRef.current("Zahlung erfolgreich bestätigt."));
     };
 
     void run();
@@ -50,22 +56,22 @@ export default function PayPalSuccessPage() {
   return (
     <main className="paypal-return-page" aria-labelledby="paypal-return-title">
       <div className="paypal-return-shell">
-        <Link className="checkout-back" href="/">← Zurück zum Shop</Link>
+        <Link className="checkout-back" href="/">{t("← Zurück zum Shop")}</Link>
         <section className={`paypal-return-card paypal-return-card-${state}`}>
-          <p className="eyebrow">PayPal · {state === "success" ? "Zahlung bestätigt" : "Bestellstatus"}</p>
+          <p className="eyebrow">PayPal · {t(state === "success" ? "Zahlung bestätigt" : "Bestellstatus")}</p>
           <div className="paypal-return-icon" aria-hidden="true">{state === "loading" ? "…" : state === "success" ? "✓" : "!"}</div>
-          <h1 id="paypal-return-title">{state === "success" ? "Vielen Dank für deine Bestellung." : state === "loading" ? "Zahlung wird verarbeitet" : "Zahlung nicht abgeschlossen"}</h1>
+          <h1 id="paypal-return-title">{t(state === "success" ? "Vielen Dank für deine Bestellung." : state === "loading" ? "Zahlung wird verarbeitet" : "Zahlung nicht abgeschlossen")}</h1>
           <p className="paypal-return-message" aria-live="polite">{message}</p>
-          {state === "success" && <p className="paypal-return-reference">Bestellreferenz <strong>BC-{orderReference}</strong></p>}
-          {state === "success" && <p className="paypal-return-note">Wir bereiten deine Bestellung jetzt für den Versand vor. Eine Bestätigung erhältst du per E-Mail.</p>}
-          {state === "error" && <p className="paypal-return-note">Bitte versuche es erneut. Falls der Betrag bereits abgebucht wurde, kontaktiere uns bitte vor einem weiteren Versuch.</p>}
+          {state === "success" && <p className="paypal-return-reference">{t("Bestellreferenz")} <strong>BC-{orderReference}</strong></p>}
+          {state === "success" && <p className="paypal-return-note">{t("Wir bereiten deine Bestellung jetzt für den Versand vor. Eine Bestätigung erhältst du per E-Mail.")}</p>}
+          {state === "error" && <p className="paypal-return-note">{t("Bitte versuche es erneut. Falls der Betrag bereits abgebucht wurde, kontaktiere uns bitte vor einem weiteren Versuch.")}</p>}
           <div className="paypal-return-actions">
-            {state === "success" ? <Link className="button button-primary" href="/">Zum Shop <span>→</span></Link> : <Link className="button button-primary" href="/checkout">Erneut zum Checkout <span>→</span></Link>}
-            {state === "error" && <Link className="text-link" href="/">Weiter einkaufen</Link>}
+            {state === "success" ? <Link className="button button-primary" href="/">{t("Zum Shop")} <span>→</span></Link> : <Link className="button button-primary" href="/checkout">{t("Erneut zum Checkout")} <span>→</span></Link>}
+            {state === "error" && <Link className="text-link" href="/">{t("Weiter einkaufen")}</Link>}
           </div>
         </section>
       </div>
-      <nav className="legal-nav"><a href="/impressum">Impressum</a><a href="/datenschutz">Datenschutz</a><a href="/agb">AGB</a><a href="/widerruf">Widerruf</a><a href="/versand-zahlung">Versand &amp; Zahlung</a></nav>
+      <nav className="legal-nav"><a href="/impressum">{t("Impressum")}</a><a href="/datenschutz">{t("Datenschutz")}</a><a href="/agb">{t("AGB")}</a><a href="/widerruf">{t("Widerruf")}</a><a href="/versand-zahlung">{t("Versand & Zahlung")}</a></nav>
     </main>
   );
 }
