@@ -64,8 +64,7 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
   mit verifizierter Signatur und eine Betreiberaktion erforderlich sind.
 - Verifikation abgeschlossen: 330 Tests, `npx tsc --noEmit`, `npm run lint`,
   Build und `git diff --check` waren erfolgreich. Commit `bc5b2b5` ist nach
-  GitHub gepusht. Der produktive Cloudflare-Worker wurde zuletzt als Version
-  `52e487a9-5bf9-4afb-9158-bc49ed1fb7a8` auf
+  GitHub gepusht. Der produktive Cloudflare-Worker wurde auf
   `https://shop.brandycards.de/` deployt; Startseite antwortet mit HTTP 200,
   der signaturlose POST mit HTTP 412. Die Challenge antwortet bis zum Setzen
   des noch fehlenden Verification-Secrets erwartungsgemäß mit HTTP 503. Es
