@@ -37,7 +37,20 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-*(kein aktueller Auftrag)*
+**N4: Datenschutz, Aufbewahrung und Wiederherstellung** — Stand: LÄUFT (2026-08-09)
+
+- Aufbewahrungs- und Minimierungsregeln für `payments.raw_data` und
+  `webhook_events.payload` anhand ihrer tatsächlichen Nutzung festlegen.
+- Eine automatische, datensparsame Bereinigung für abgelaufene Zahlungs- und
+  Webhook-Nutzlasten in den Scheduled Worker aufnehmen; Bestell- und
+  Rechnungsdaten dürfen dabei nicht unzulässig entfernt werden.
+- D1- und R2-Backup-/Wiederherstellungsablauf als reproduzierbare, dokumentierte
+  Betreiberprozedur einrichten und lokal testbar machen, ohne Produktionsdaten
+  eigenmächtig zu verändern.
+- Datenschutztext und Auskunfts-/Löschlogik mit den Entscheidungen abgleichen.
+- Nach Umsetzung Tests, Typprüfung, Lint und Build ausführen, committen,
+  pushen, deployen und eine Wiederherstellung in einer isolierten Umgebung
+  nachweisen.
 
 **N2 eBay-Notification-Endpoint und Order-Event umsetzen** — Stand: ABGESCHLOSSEN (2026-08-09)
 
