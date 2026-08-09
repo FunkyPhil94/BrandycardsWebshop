@@ -37,13 +37,15 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-**MFA-Status im Adminbereich sichtbar machen** — Stand: ABGESCHLOSSEN (2026-08-09)
+**MFA-Status im echten Cloudflare-Produktivdeploy veröffentlichen** — Stand: LÄUFT (2026-08-09)
 
-- Die Live-Prüfung zeigt eine bereits auf AAL2 erhöhte Adminsitzung; deshalb wird
-  das Dashboard korrekt geöffnet, der aktive MFA-Schutz ist aber nicht sichtbar.
 - Der Admin zeigt bei einer AAL2-Sitzung jetzt sichtbar „MFA aktiv“ und
-  „Authenticator-App bestätigt · AAL2“ an. Die Änderung wurde geprüft und
-  ohne Produktionsdatenänderung nach GitHub und Sites-Prod veröffentlicht.
+  „Authenticator-App bestätigt · AAL2“ an. Die Sites-Adresse wurde aktualisiert,
+  aber `shop.brandycards.de` ist ein separater Cloudflare-Worker und nicht an
+  dieses Sites-Projekt gebunden.
+- `npx wrangler deploy` ausführen, den echten Adminbereich live prüfen, danach
+  Ergebnis eintragen und das temporäre Sites-Archiv löschen. Keine
+  Produktionsdaten verändern.
 - `npx tsc --noEmit`, `npm run lint`, `npm test` mit 320 Tests und Build waren
   erfolgreich. Die aktive Sitzung wurde live geprüft.
 
