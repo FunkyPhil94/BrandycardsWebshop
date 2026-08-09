@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import type { User } from "@supabase/supabase-js";
 import { getSupabaseBrowserClient } from "../../lib/supabase-browser";
@@ -51,6 +51,13 @@ export default function AccountPage() {
     }
   }
 
+  const accessToken = useCallback(async () => {
+    const { data } = await getSupabaseBrowserClient().auth.getSession();
+    const token = data.session?.access_token;
+    if (!token) throw new Error(t("Bitte melde dich erneut an."));
+    return token;
+  }, [t]);
+
   useEffect(() => {
     try {
       const supabase = getSupabaseBrowserClient();
@@ -85,14 +92,7 @@ export default function AccountPage() {
       }
     })();
     return () => { cancelled = true; };
-  }, [user]);
-
-  async function accessToken() {
-    const { data } = await getSupabaseBrowserClient().auth.getSession();
-    const token = data.session?.access_token;
-    if (!token) throw new Error(t("Bitte melde dich erneut an."));
-    return token;
-  }
+  }, [accessToken, user]);
 
   /** Auskunft nach Art. 15 DSGVO. Der Browser lädt die Datei selbst herunter —
    *  der Umweg über ein `<a download>` ist nötig, weil die Route ein

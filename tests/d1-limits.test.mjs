@@ -75,3 +75,19 @@ test("die Bestellansicht laedt Positionen und Zahlungen unter der Grenze nach", 
     assert.ok(used <= D1_MAX_BOUND_PARAMS, `Nachladen bindet ${used} Parameter, Grenze ist ${D1_MAX_BOUND_PARAMS}`);
   }
 });
+
+test("die Admin-Bestellansicht paginiert und liefert die Gesamtseiten", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const quelle = await readFile(new URL("../app/api/admin/orders/route.ts", import.meta.url), "utf8");
+  assert.match(quelle, /searchParams\.get\("page"\)/u, "die Seite muss aus der Anfrage gelesen werden");
+  assert.match(quelle, /\.offset\(\(page - 1\) \* PAGE_SIZE\)/u, "die Datenbankabfrage muss die Seite überspringen");
+  assert.match(quelle, /totalPages/u, "die Route muss die Gesamtseitenzahl zurückgeben");
+});
+
+test("Bestellungen lassen sich nur nach Bezahlt oder In Bearbeitung als versendet markieren", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const quelle = await readFile(new URL("../app/api/admin/orders/route.ts", import.meta.url), "utf8");
+  assert.match(quelle, /status: "SHIPPED"/u, "der Versandstatus muss gesetzt werden");
+  assert.match(quelle, /inArray\(orders\.status, \[\.\.\.SHIPPABLE_STATUSES\]\)/u, "der Übergang muss serverseitig beschränkt sein");
+  assert.match(quelle, /if \(body\.status !== "SHIPPED"\)/u, "andere Statuswechsel dürfen nicht durch die Route gehen");
+});

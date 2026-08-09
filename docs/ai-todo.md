@@ -13,33 +13,19 @@ dabei, damit niemand den Gesprächsverlauf braucht.
 
 ## Warum diese Reihenfolge
 
-**Stand 2026-08-08:** Die Punkte 0 bis 5 sind allesamt erledigt und deployed —
-PayPal steht auf Live und hat echtes Geld eingenommen, der Sync schreibt nur
-noch Änderungen, die Kunden-E-Mails sind scharf, die Sicherheitskorrekturen
-samt CSP ohne `'unsafe-inline'` sind in Produktion, und der Checkout zeigt den
-ausgehandelten Preis. **Punkt 6 (eBay-Schreibpfad) ist am 2026-08-08 abgenommen
-worden** — der Schalter steht auf `true`, ein Auftrag ist an echten Daten
-durchgelaufen; offen bleibt nur der Erfolgsfall am laufenden Angebot, den der
-nächste Verkauf ohnehin beweist. **Punkt 7 (Verhandeln bewerben) ist am
-2026-08-08 erledigt.** Damit ist der nächste offene Punkt **Punkt 8** — die
-Reste der Sicherheitsprüfung, von denen der Selbstbedienungsweg für Auskunft
-und Kontolöschung vor dem Verkaufsstart stehen sollte.
+**Stand 2026-08-09:** Punkte 0 bis 9, 11, 12 und A sind erledigt und deployed.
+Punkt 10 bleibt bewusst eine laufende Sammelstelle für ausdrücklich bestätigte
+Text- und Inhaltswünsche; derzeit gibt es dort keine offenen Wünsche.
 
-**Stand 2026-08-09: Die Punkte 0 bis 8 sowie 11, 12 und A sind erledigt.**
-Offen sind nur noch **Punkt 9** (englische Sprachversion, sehr groß, vier Fragen
-an den Betreiber) und **Punkt 10** (laufende Sammelstelle für Textwünsche,
-derzeit ohne bestätigte Einträge). Punkt 6 hat einen Rest, der sich mit dem
-nächsten echten Verkauf von selbst erledigt.
+**Technisch offen bzw. als Betriebsnachweis ausstehend:** Der nächste echte
+Verkauf soll noch die Verkäufernachricht und den eBay-Erfolgsfall auf einem
+laufenden Angebot belegen. Außerdem kann eine manuell eingestellte Karte einmal
+vollständig durchgekauft werden. Beides blockiert keine weitere Entwicklung.
 
-**Zwei Abnahmen liegen beim Betreiber**, beide ohne Programmierarbeit: eine
-erste von Hand eingestellte Karte durchkaufen (Kriterium von Punkt 11) und die
-Bestellansicht in `/admin` einmal ansehen.
-
-**Am 2026-08-08 kamen drei Punkte vom Betreiber dazu (10 bis 12).** Sie stehen
-am Ende, aber **11 und 12 gehören zusammen und ziehen 8 mit sich**: Karten von
-Hand einzustellen braucht eine eigene Produktart, die braucht eine Migration,
-und auf genau diese Migration wartete SEC-12 aus Punkt 8. Die Migration ist
-inzwischen angewandt (`0006`), siehe Punkt A.
+Die Bestellansicht besitzt jetzt Blättern und den manuellen Statuswechsel
+„Versendet“; die ESLint-Warnung und die veralteten Statusnotizen wurden am
+2026-08-09 bereinigt. Die Weiterleitung der Apex-Domain wurde separat durch den
+Betreiber erledigt.
 
 **Seit 2026-08-07 läuft das Projekt auf Workers Paid (5 $/Monat).** Damit sind
 die harten Tagesdeckel weg (D1 wird nach Verbrauch abgerechnet), `Email
@@ -47,7 +33,7 @@ Sending` steht zur Verfügung, und die Grenze von 50 Unteranfragen je Anfrage
 ist auf 10 000 gestiegen. Das entschärft mehrere Punkte unten — es macht sie
 aber nicht überflüssig, siehe Punkt 2.
 
-Drei Überlegungen bestimmen die Reihenfolge:
+Die folgenden Überlegungen erklären die historische Reihenfolge:
 
 1. **Der Import ist unzuverlässig, und das ist schlimmer als langsam.** Am
    2026-08-07 blieb ein Lauf hängen und legte den Import über eine Stunde
@@ -741,14 +727,15 @@ Der Text darf das nicht versprechen.
 
 ---
 
-## 8. Reste aus der Sicherheitsprüfung
+## 8. ~~Reste aus der Sicherheitsprüfung~~ — ERLEDIGT am 2026-08-09
 
-**Aufwand:** klein bis mittel · **Hängt an:** nichts
+Alle 18 Befunde sind geschlossen. SEC-12 wurde zusammen mit der manuellen
+Kartenverwaltung und Migration `0006` erledigt; der OAuth-Token wird geparkt,
+im geschützten Adminbereich einmalig abgeholt und danach entfernt. Die
+Selbstbedienung für Auskunft und Kontolöschung aus SEC-15 bleibt ebenfalls
+aktiv und ist an echten Daten geprüft.
 
-Die Prüfung selbst ist durch (siehe „Erledigt"). **17 von 18 Befunden sind
-geschlossen** — SEC-15 (90 Tage Aufbewahrung) und SEC-16 (Datenschutztext)
-wurden am 2026-08-07 nachgezogen, nachdem der Betreiber entschieden hatte,
-SEC-18 (Kontowiederherstellung) ebenfalls. Ein Befund bleibt offen:
+<details><summary>Ursprünglicher SEC-12-Befund</summary>
 
 **SEC-12 — eBay-OAuth-Rückseite zeigt den Refresh-Token ohne Anmeldung.**
 `app/api/admin/ebay/oauth/callback/route.ts` ist die einzige Route unter
@@ -789,9 +776,20 @@ Auskunft oder Löschung fehlt.
 > sehen.** Der Schritt ist unwiderruflich, und der Fehler war von außen
 > unsichtbar.
 
+</details>
+
 ---
 
-## 9. Englische Sprachversion
+## 9. ~~Englische Sprachversion~~ — ERLEDIGT am 2026-08-09
+
+Die vollständige Oberfläche, Formulierungen, Rechtstexte und Datei-Inputs sind
+in Deutsch und Englisch verfügbar. Die Sprache wechselt über den Schalter in
+der Kopfzeile; Kartentitel und eBay-Beschreibungen bleiben als Katalogdaten
+deutsch, Preise und Versandkosten bleiben in Euro. Die vier ursprünglichen
+Entscheidungsfragen sind damit beantwortet und die öffentlichen Unterseiten in
+beiden Sprachen geprüft.
+
+<details><summary>Ursprünglicher Umfang und Entscheidungsfragen</summary>
 
 **Aufwand:** sehr groß · **Hängt an:** einer Entscheidung des Nutzers
 
@@ -815,6 +813,8 @@ jede Route einzeln) sowie die Rechtstexte.
 **Empfehlung:** Nicht ohne Bibliothek anfangen — Next.js bringt Bausteine für
 lokalisiertes Routing mit. Und erst beginnen, wenn die vier Fragen beantwortet
 sind.
+
+</details>
 
 ---
 
@@ -873,7 +873,14 @@ unten.)*
 
 ---
 
-## 11. Karten von Hand einstellen („Vorverkauf" / „Lagerverkauf")
+## 11. ~~Karten von Hand einstellen („Vorverkauf" / „Lagerverkauf")~~ — ERLEDIGT am 2026-08-09
+
+Die Adminkonsole kann manuelle Karten mit `PRELISTED` und `MANUAL` anlegen und
+bearbeiten. Der Vorverkaufsbereich zeigt sie mit bis zu zwei Bildern und ohne
+Festpreis; nur angenommene Preisvorschläge führen in den Warenkorb. Migration,
+Katalog, Detailseite, Checkout und Sync sind live geprüft.
+
+<details><summary>Ursprünglicher Umfang und Abnahmekriterien</summary>
 
 > **ZUR HÄLFTE ERLEDIGT am 2026-08-08 — weiterarbeiten steht in Punkt A.**
 > Migration, Schema, Katalog, Detailseite und Sync stehen und sind deployed
@@ -929,16 +936,23 @@ sie gar nicht erst ein. Beide Wege sind also schon vorbereitet.
 mehrere Sync-Läufe, lässt sich kaufen, und die Bestellung läuft bis zur
 Versandmail durch.
 
+</details>
+
 ---
 
 ## 12. ~~Eine richtige Adminkonsole~~ — ERLEDIGT am 2026-08-09
 
-> **Teilschritt 2 (Bestellungen) und 3 (Preisvorschläge) sind erledigt.**
-> Teilschritt 1 (Angebote bearbeiten) hat seit dem 2026-08-08 seinen Unterbau:
-> Die Entwurfsfrage ist vom Betreiber entschieden — **pro Feld eine
-> Handmarkierung**, die der Sync respektiert (`products.manual_overrides`,
-> Logik in `lib/manual-overrides.ts`). Es fehlt nur noch die Oberfläche,
-> beschrieben in **Punkt A**.
+> Alle fünf Teilbereiche sind erledigt: Angebote bearbeiten, Bestellungen
+> durchsuchen und paginieren, Versandstatus setzen, Preisvorschläge entscheiden,
+> Anfragen/Kartenangebote bearbeiten und die eBay-Outbox einsehen. Der Sync
+> respektiert dabei die pro Feld gesetzten Handmarkierungen.
+
+Die Bestellansicht lädt 25 Einträge je Seite, zeigt ältere Seiten über Zurück/
+Weiter und erlaubt den abgesicherten Übergang von „Bezahlt“ oder „In Bearbeitung"
+zu „Versendet". Der Status wird serverseitig nur für Administratoren und nur
+für diese erlaubten Ausgangszustände geändert.
+
+<details><summary>Ursprünglicher Umfang und technische Begründung</summary>
 
 **Aufwand:** groß · **Hängt an:** nichts · **Blockiert:** Punkt 11
 
@@ -965,9 +979,9 @@ Tag mehrfach `wrangler d1 execute` gegen die Produktion nötig war.
    **Die Seitengröße ist keine Geschmacksfrage:** Positionen und Zahlungen
    werden über `inArray` an den Bestell-Ids nachgeladen, `D1_SAFE_ID_LIST` steht
    bei 40, und `tests/d1-limits.test.mjs` misst das nach. Wer die Zahl anhebt,
-   muss stückeln. Noch offen an der Ansicht: **Blättern** (älter als die 25
-   jüngsten ist unsichtbar) und **Statuswechsel von Hand** — „versandt" setzt
-   heute niemand, weil es dafür keinen Knopf gibt.
+   muss stückeln. Seit 2026-08-09 bietet die Ansicht außerdem Blättern über
+   alle Seiten und den Statuswechsel von „Bezahlt"/„In Bearbeitung" auf
+   „Versendet".
 3. ~~**Preisvorschläge annehmen und ablehnen**~~ — **war schon fertig**, am
    2026-08-08 nachgesehen statt vermutet: `app/api/admin/offers/route.ts`
    **und** `app/admin/offers-panel.tsx` (seit `a0d4367`, in `app/admin/page.tsx`
@@ -995,6 +1009,8 @@ neue Route automatisch ab.
 
 **Fertig, wenn:** Der Betreiber kann eine Woche lang arbeiten, ohne einmal
 `wrangler d1 execute` zu brauchen.
+
+</details>
 
 ---
 

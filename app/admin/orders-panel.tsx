@@ -20,6 +20,18 @@ type AdminOrder = {
   payments: Array<{ provider: string; status: string; providerCaptureId: string | null }>;
 };
 
+type OrdersResponse = { orders?: AdminOrder[]; error?: string; page?: number; pageSize?: number; total?: number; totalPages?: number };
+
+const ORDER_STATUS_LABELS: Record<string, string> = {
+  PENDING: "Offen",
+  PAID: "Bezahlt",
+  PROCESSING: "In Bearbeitung",
+  SHIPPED: "Versendet",
+  COMPLETED: "Abgeschlossen",
+  CANCELLED: "Storniert",
+  REFUNDED: "Erstattet",
+};
+
 async function authHeaders(): Promise<HeadersInit> {
   const { data } = await getSupabaseBrowserClient().auth.getSession();
   const token = data.session?.access_token;
@@ -32,19 +44,36 @@ function formatDate(value: string | null) {
   return Number.isNaN(date.getTime()) ? value : date.toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" });
 }
 
+function statusLabel(status: string) {
+  return ORDER_STATUS_LABELS[status] ?? status;
+}
+
 export function OrdersPanel() {
   const [orders, setOrders] = useState<AdminOrder[] | null>(null);
   const [note, setNote] = useState("");
   const [open, setOpen] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [pageInfo, setPageInfo] = useState({ page: 1, pageSize: 25, total: 0, totalPages: 1 });
+  const [updatingOrder, setUpdatingOrder] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     void (async () => {
       try {
-        const response = await fetch("/api/admin/orders", { headers: await authHeaders() });
-        const data = await response.json() as { orders?: AdminOrder[]; error?: string };
+        const response = await fetch(`/api/admin/orders?page=${page}`, { headers: await authHeaders() });
+        const data = await response.json() as OrdersResponse;
         if (!response.ok || !data.orders) throw new Error(data.error ?? "Bestellungen konnten nicht geladen werden.");
-        if (!cancelled) setOrders(data.orders);
+        if (!cancelled) {
+          const nextPageInfo = {
+            page: data.page ?? page,
+            pageSize: data.pageSize ?? 25,
+            total: data.total ?? data.orders.length,
+            totalPages: data.totalPages ?? 1,
+          };
+          setOrders(data.orders);
+          setPageInfo(nextPageInfo);
+          if (nextPageInfo.page !== page) setPage(nextPageInfo.page);
+        }
       } catch (error) {
         if (cancelled) return;
         setNote(error instanceof Error ? error.message : "Bestellungen konnten nicht geladen werden.");
@@ -52,12 +81,34 @@ export function OrdersPanel() {
       }
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [page]);
+
+  async function markShipped(orderId: string) {
+    setUpdatingOrder(orderId);
+    setNote("");
+    try {
+      const response = await fetch("/api/admin/orders", {
+        method: "PATCH",
+        headers: { ...await authHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId, status: "SHIPPED" }),
+      });
+      const data = await response.json() as { status?: string; error?: string };
+      if (!response.ok) throw new Error(data.error ?? "Bestellung konnte nicht aktualisiert werden.");
+      setOrders((current) => current?.map((order) => order.id === orderId ? { ...order, status: data.status ?? "SHIPPED" } : order) ?? current);
+    } catch (error) {
+      setNote(error instanceof Error ? error.message : "Bestellung konnte nicht aktualisiert werden.");
+    } finally {
+      setUpdatingOrder(null);
+    }
+  }
 
   if (!orders) return null;
 
   return <section className="admin-section">
-    <h2>Bestellungen ({orders.length})</h2>
+    <div className="admin-orders-heading">
+      <h2>Bestellungen ({pageInfo.total})</h2>
+      {pageInfo.totalPages > 1 && <span>Seite {pageInfo.page} von {pageInfo.totalPages}</span>}
+    </div>
     {note && <p className="form-feedback" role="status">{note}</p>}
     {orders.length === 0
       ? <p className="form-feedback">Noch keine Bestellungen.</p>
@@ -70,7 +121,7 @@ export function OrdersPanel() {
             return <article className={`admin-order${expanded ? " is-open" : ""}`} key={order.id}>
               <button type="button" className="admin-order-head" onClick={() => setOpen(expanded ? null : order.id)} aria-expanded={expanded}>
                 <span className="admin-order-number">{order.orderNumber}</span>
-                <span className={`admin-order-status status-${order.status.toLowerCase()}`}>{order.status}</span>
+                <span className={`admin-order-status status-${order.status.toLowerCase()}`}>{statusLabel(order.status)}</span>
                 <span>{order.email ?? "unbekannt"}</span>
                 <span>{formatPrice(order.totalAmountCents, order.currency)}</span>
                 <span>{formatDate(order.createdAt)}</span>
@@ -92,6 +143,9 @@ export function OrdersPanel() {
                       lässt sich eine Rückerstattung dort nicht zuordnen. */}
                   {payment?.providerCaptureId && <div><dt>Capture-Id</dt><dd className="admin-order-mono">{payment.providerCaptureId}</dd></div>}
                 </dl>
+                {(order.status === "PAID" || order.status === "PROCESSING") && <button className="button button-outline admin-order-ship" type="button" onClick={() => void markShipped(order.id)} disabled={updatingOrder === order.id}>
+                  {updatingOrder === order.id ? "Wird gespeichert …" : "Als versendet markieren"}
+                </button>}
                 {order.shippingAddress
                   ? <address className="admin-order-address">
                       {order.shippingAddress.name}<br />
@@ -104,5 +158,10 @@ export function OrdersPanel() {
             </article>;
           })}
         </div>}
+    {pageInfo.totalPages > 1 && <nav className="admin-orders-pagination" aria-label="Bestellseiten">
+      <button className="button button-outline" type="button" onClick={() => setPage((current) => Math.max(1, current - 1))} disabled={pageInfo.page <= 1}>Zurück</button>
+      <span>Seite {pageInfo.page} / {pageInfo.totalPages}</span>
+      <button className="button button-outline" type="button" onClick={() => setPage((current) => Math.min(pageInfo.totalPages, current + 1))} disabled={pageInfo.page >= pageInfo.totalPages}>Weiter</button>
+    </nav>}
   </section>;
 }

@@ -651,6 +651,9 @@ footer { background:var(--ink); color:#fff; padding:52px max(48px,calc((100vw - 
 @media (max-width:640px) { .admin-product-head { grid-template-columns:1fr; } }
 
 /* --- Bestellungen im Adminbereich --- */
+.admin-orders-heading { align-items:baseline; display:flex; gap:18px; justify-content:space-between; }
+.admin-orders-heading h2 { margin:0; }
+.admin-orders-heading > span,.admin-orders-pagination > span { color:var(--muted); font-family:'DM Mono',monospace; font-size:10px; letter-spacing:.06em; }
 .admin-orders { display:grid; gap:8px; margin-top:14px; }
 .admin-order { background:#ebe8e1; }
 .admin-order-head { align-items:center; background:none; border:0; color:inherit; cursor:pointer; display:grid; font-size:12px; gap:10px; grid-template-columns:minmax(150px,auto) 90px 1fr auto auto; padding:14px 18px; text-align:left; width:100%; }
@@ -666,6 +669,8 @@ footer { background:var(--ink); color:#fff; padding:52px max(48px,calc((100vw - 
    des Hauses — dieselben drei Bedeutungen wie vorher, nur auf hellem Grund. */
 .admin-order-status.status-paid { background:#2f7d3b; color:#fff; }
 .admin-order-status.status-pending { background:var(--gold); color:var(--ink); }
+.admin-order-status.status-processing { background:#d8d4cc; color:var(--ink); }
+.admin-order-status.status-shipped,.admin-order-status.status-completed { background:var(--ink); color:#fff; }
 .admin-order-status.status-cancelled,.admin-order-status.status-refunded { background:var(--red); color:#fff; }
 .admin-order-body { border-top:1px solid var(--line); display:grid; gap:14px; padding:16px 18px; }
 .admin-order-items { display:grid; gap:6px; list-style:none; margin:0; padding:0; }
@@ -676,4 +681,6 @@ footer { background:var(--ink); color:#fff; padding:52px max(48px,calc((100vw - 
 .admin-order-facts dd { margin:0; }
 .admin-order-mono { font-family:'DM Mono',monospace; font-size:10px; }
 .admin-order-address { color:var(--muted); font-size:12px; font-style:normal; line-height:1.7; }
+.admin-order-ship { justify-self:start; min-width:220px; }
+.admin-orders-pagination { align-items:center; display:flex; gap:16px; justify-content:center; margin-top:18px; }
 @media (max-width:640px) { .admin-order-head { grid-template-columns:1fr; } }
