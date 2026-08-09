@@ -28,6 +28,7 @@ export default function AdminPage() {
   const [ebayToken, setEbayToken] = useState<string | null>(null);
   const [assetUrls, setAssetUrls] = useState<Record<string, string>>({});
   const [mfaBlocked, setMfaBlocked] = useState(false);
+  const [mfaActive, setMfaActive] = useState(false);
 
   const loadDashboard = useCallback(async () => {
     const headers = await authHeaders();
@@ -52,7 +53,9 @@ export default function AdminPage() {
         const response = await fetch("/api/admin/mfa/status", { headers });
         const status = await response.json() as { error?: string; currentLevel?: string };
         if (!response.ok) throw new Error(status.error ?? "Zugriff verweigert.");
-        if (status.currentLevel !== "aal2") {
+        const active = status.currentLevel === "aal2";
+        if (!cancelled) setMfaActive(active);
+        if (!active) {
           if (!cancelled) setMfaBlocked(true);
           return;
         }
@@ -192,11 +195,15 @@ export default function AdminPage() {
       <SiteHeader />
       <section className="account-page">
       <Link className="back-link" href="/">← Zurück zum Shop</Link>
-      {mfaBlocked ? <MfaPanel onVerified={() => { setMfaBlocked(false); void loadDashboard(); }} /> : <section className="account-card admin-card" aria-labelledby="admin-title">
+      {mfaBlocked ? <MfaPanel onVerified={() => { setMfaBlocked(false); setMfaActive(true); void loadDashboard(); }} /> : <section className="account-card admin-card" aria-labelledby="admin-title">
         <p className="eyebrow">BRANDYCARDS ADMIN</p>
         <h1 id="admin-title">Übersicht.</h1>
         {dashboard ? <>
           <p>Angemeldet als <strong>{dashboard.user.email}</strong>.</p>
+          {mfaActive && <div className="admin-security-banner" role="status">
+            <span className="admin-security-dot" aria-hidden="true" />
+            <div><strong>MFA aktiv</strong><span>Authenticator-App bestätigt · AAL2</span></div>
+          </div>}
           <div className="admin-stats">
             <div><strong>{dashboard.counts.products}</strong><span>Produkte</span></div>
             <div><strong>{dashboard.counts.inquiries}</strong><span>Anfragen</span></div>

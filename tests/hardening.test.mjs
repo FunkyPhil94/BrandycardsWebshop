@@ -437,6 +437,14 @@ test("kritische Adminaktionen verlangen frische MFA und schreiben Auditspuren", 
   assert.match(await read("app/api/admin/offers/route.ts"), /recordAdminAudit/u);
 });
 
+test("Admin-Dashboard zeigt den aktiven MFA-Schutz sichtbar an", async () => {
+  const page = await read("app/admin/page.tsx");
+  assert.match(page, /admin-security-banner/u);
+  assert.match(page, /MFA aktiv/u);
+  const styles = await read("app/globals.css");
+  assert.match(styles, /admin-security-dot/u);
+});
+
 // --- S-01, der geplante Lauf darf nicht am ersten Fehler abbrechen ----------
 
 test("der geplante Lauf benutzt allSettled, nicht all", async () => {

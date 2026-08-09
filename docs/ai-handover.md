@@ -37,12 +37,15 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-**MFA-Status im Adminbereich sichtbar machen** — Stand: LÄUFT (2026-08-09)
+**MFA-Status im Adminbereich sichtbar machen** — Stand: ABGESCHLOSSEN (2026-08-09)
 
 - Die Live-Prüfung zeigt eine bereits auf AAL2 erhöhte Adminsitzung; deshalb wird
   das Dashboard korrekt geöffnet, der aktive MFA-Schutz ist aber nicht sichtbar.
-- Einen eindeutigen MFA-Status im Dashboard ergänzen, prüfen, committen, pushen
-  und erneut produktiv deployen. Keine Produktionsdaten verändern.
+- Der Admin zeigt bei einer AAL2-Sitzung jetzt sichtbar „MFA aktiv“ und
+  „Authenticator-App bestätigt · AAL2“ an. Die Änderung wurde geprüft und
+  ohne Produktionsdatenänderung nach GitHub und Sites-Prod veröffentlicht.
+- `npx tsc --noEmit`, `npm run lint`, `npm test` mit 320 Tests und Build waren
+  erfolgreich. Die aktive Sitzung wurde live geprüft.
 
 - `/api/admin/orders` paginiert jetzt mit 25 Einträgen, liefert Gesamtseiten
   und sortiert bei gleichen Zeitstempeln stabil. Ein geschütztes `PATCH` setzt
