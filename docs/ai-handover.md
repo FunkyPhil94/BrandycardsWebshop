@@ -53,9 +53,9 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
   mit verifizierter Signatur und eine Betreiberaktion erforderlich sind.
 - Verifikation abgeschlossen: 323 Tests, `npx tsc --noEmit`, `npm run lint`,
   Build und `git diff --check` waren erfolgreich. Commit `d4df219` ist nach
-  GitHub gepusht. Der produktive Cloudflare-Worker läuft als Version
-  `372fcda2-475f-4d72-81a1-7b69442c7acc`; `https://shop.brandycards.de/` antwortet
-  mit HTTP 200. Es wurden keine Produktionsdaten geschrieben.
+  GitHub gepusht. Der produktive Cloudflare-Worker wurde auf
+  `https://shop.brandycards.de/` deployt; die Startseite antwortete danach mit
+  HTTP 200. Es wurden keine Produktionsdaten geschrieben.
 
 - `/api/admin/orders` paginiert jetzt mit 25 Einträgen, liefert Gesamtseiten
   und sortiert bei gleichen Zeitstempeln stabil. Ein geschütztes `PATCH` setzt
