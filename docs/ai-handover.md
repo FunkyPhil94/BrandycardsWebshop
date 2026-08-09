@@ -37,7 +37,28 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-*(leer — bereit für den nächsten Auftrag.)*
+**S-03 und S-06: die beiden Befunde, die auf F-02 gewartet haben** — Stand:
+LÄUFT (2026-08-09)
+
+- **F-02 ist abgeschlossen und in D1 nachgeprüft** (Bestellung
+  `BC-20260809-E998831E` auf `PAID`, Bestand `SOLD`, Reservierung `CONVERTED`,
+  Webhook `PROCESSED`, **kein** Outbox-Auftrag — richtig, eine manuelle Karte
+  hat kein eBay-Angebot). Damit sind die beiden Befunde dran, die bewusst darauf
+  gewartet haben.
+- **S-03:** `PATCH /api/admin/products` schreibt `availableQuantity` absolut und
+  übergeht `reservedQuantity`. Während ein Kunde die Karte im Checkout hält,
+  entsteht dadurch Bestand, den es nicht gibt. Zweitens setzt die Route bei
+  Menge 0 den Status auf `SOLD`, obwohl nichts verkauft wurde — `UNAVAILABLE`
+  ist der ehrliche Wert.
+- **S-06:** `existingProduct(…, prelistedOnly)` prüft `kind !== 'PRELISTED'`,
+  aber manuelle Karten tragen genau dieses `kind`. **Die Korrektur läuft über
+  `origin`, niemals über `kind`** — die CHECK-Bedingung darauf ist auf D1
+  unveränderlich, Begründung im Kopf von `drizzle/0006_…`.
+- **Was angefasst wird:** `app/api/admin/products.ts` (PATCH), `lib/public-form.ts`,
+  dazu Tests. Kein Schemaschritt, keine Migration.
+- **Deploy nach grüner Kette aus dem Hauptverzeichnis**, wie zuletzt.
+- **Falls diese Zeile noch auf LÄUFT steht:** Produktion ist unversehrt —
+  beide Korrekturen sind Verschärfungen, ein halber Stand würde nicht deployed.
 
 > **Schritt 2 der Befundabarbeitung (F-02) läuft beim Betreiber und ist zur
 > Hälfte durch.** Die erste von Hand eingestellte Karte existiert:

@@ -260,3 +260,66 @@ test("die eBay-Warteschlange zeigt Fehlergrund und nächsten Versuch", async () 
   // Die Rohdaten des Auftrags gehören nicht in die Antwort.
   assert.ok(!/payload: ebayOutbox\.payload/u.test(outbox));
 });
+
+// --- S-03: die Menge nicht unter einer laufenden Reservierung verstellen ----
+//
+// `PATCH /api/admin/products` schreibt `availableQuantity` absolut. Liegt
+// daneben eine aktive Reservierung, entsteht dadurch Bestand, den es nicht
+// gibt: Der Kunde im Checkout bekommt sein Stueck, der naechste kauft dasselbe
+// noch einmal. Bei Einzelstuecken ist das der Doppelverkauf im eigenen Haus.
+
+test("die Mengenaenderung bricht ab, solange die Karte reserviert ist", async () => {
+  const route = await readFile(new URL("../app/api/admin/products/route.ts", import.meta.url), "utf8");
+  const patch = route.slice(route.indexOf("export async function PATCH"));
+  const mengenblock = patch.slice(patch.indexOf("body.quantity !== undefined"));
+
+  assert.match(mengenblock, /eq\(reservations\.status, "ACTIVE"\)/u,
+    "ohne diese Abfrage schreibt die Route in einen gehaltenen Bestand");
+  assert.match(mengenblock, /status: 409/u, "ein Konflikt ist kein Serverfehler");
+  // Die Abfrage muss **vor** dem Schreiben stehen. Danach waere sie Zierde.
+  assert.ok(mengenblock.indexOf("reservations.status") < mengenblock.indexOf("db.update(inventory)"),
+    "die Pruefung steht hinter dem Schreibvorgang und wirkt damit nicht");
+});
+
+test("Menge 0 von Hand heisst UNAVAILABLE, nicht SOLD", async () => {
+  // `soldQuantity` bleibt dabei 0 — ein `SOLD` daneben waere schlicht falsch.
+  // Fuer die Sichtbarkeit macht es keinen Unterschied, fuer die Wahrheit der
+  // Zeile schon. `SOLD` setzt allein settlePaidOrder, nach echter Zahlung.
+  const route = await readFile(new URL("../app/api/admin/products/route.ts", import.meta.url), "utf8");
+  const patch = route.slice(route.indexOf("export async function PATCH"));
+  assert.match(patch, /status: menge > 0 \? "AVAILABLE" : "UNAVAILABLE"/u);
+  assert.ok(!/menge > 0 \? "AVAILABLE" : "SOLD"/u.test(patch),
+    "verkauft ist etwas anderes als nicht angeboten");
+});
+
+test("beide Statuswerte lassen die Karte gleich verschwinden", () => {
+  // Damit die Korrektur oben nichts an der Sichtbarkeit aendert — sonst waere
+  // aus einer Wahrheitskorrektur unbemerkt eine Verhaltensaenderung geworden.
+  for (const status of ["SOLD", "UNAVAILABLE"]) {
+    assert.equal(verfuegbareMenge(null, { availableQuantity: 0, status }, "MANUAL"), 0);
+    assert.equal(istImKatalogSichtbar("PRELISTED", null, null, { availableQuantity: 0, status }, "MANUAL"), false);
+  }
+});
+
+// --- S-06: die Vormerkliste erkennt man an origin UND kind ------------------
+
+test("Vormerken erkennt die Vormerkliste an origin und kind", async () => {
+  // `kind === 'PRELISTED'` allein reicht seit `0006` nicht mehr: Von Hand
+  // eingestellte Karten tragen dasselbe `kind`. Ohne `origin` haette
+  // /api/prelisted-interest ein „Vormerken" auf eine sofort kaufbare Karte
+  // angenommen.
+  const quelle = await readFile(new URL("../lib/public-form.ts", import.meta.url), "utf8");
+  assert.match(quelle, /origin === "EBAY" && product\.kind === "PRELISTED"/u,
+    "beide Spalten muessen stimmen, nicht nur kind");
+  assert.ok(!/prelistedOnly && product\.kind !== "PRELISTED"/u.test(quelle),
+    "genau diese Pruefung liess manuelle Karten als Vormerkliste durchgehen");
+});
+
+test("kind bleibt unangetastet — die CHECK-Bedingung ist auf D1 unveraenderlich", async () => {
+  // Der naheliegende „Aufraeumer" waere ein dritter kind-Wert. Er laesst sich
+  // auf dieser Datenbank nicht anlegen, und der Versuch kostete beim ersten Mal
+  // beinahe den Katalog (DROP TABLE loest ON DELETE CASCADE aus).
+  const schema = await readFile(new URL("../db/schema.ts", import.meta.url), "utf8");
+  assert.match(schema, /IN \('EBAY_SYNCED', 'PRELISTED'\)/u,
+    "wer hier einen dritten Wert eintraegt, hat die Migration 0006 nicht gelesen");
+});

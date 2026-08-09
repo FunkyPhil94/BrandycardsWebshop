@@ -1,7 +1,7 @@
 import { and, desc, eq, like, sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { getDb } from "../../../../db";
-import { ebayListings, inventory, products } from "../../../../db/schema";
+import { ebayListings, inventory, products, reservations } from "../../../../db/schema";
 import { requireAdmin } from "../../../../lib/admin-access";
 import { HANDFELDER, handfelder, type Handfeld } from "../../../../lib/manual-overrides";
 
@@ -197,9 +197,35 @@ export async function PATCH(request: Request) {
       if (!manuell) return NextResponse.json({ error: "Die Menge einer eBay-Karte kommt von eBay." }, { status: 409 });
       const menge = typeof body.quantity === "number" && Number.isInteger(body.quantity) && body.quantity >= 0 && body.quantity <= MAX_QUANTITY ? body.quantity : null;
       if (menge === null) return NextResponse.json({ error: "Die Menge muss zwischen 0 und 99 liegen." }, { status: 400 });
+
+      // **Nicht schreiben, während ein Kunde die Karte hält.** Die Zahl steht
+      // für „so viele sind noch zu haben" und landet in `availableQuantity`.
+      // Liegt daneben eine aktive Reservierung, ist unklar, ob sie mitgemeint
+      // ist — und die falsche Auslegung erzeugt Bestand, den es nicht gibt:
+      // Der Kunde im Checkout bekommt sein Stück, der nächste kauft dasselbe
+      // noch einmal. Bei Einzelstücken ist das der Doppelverkauf im eigenen
+      // Haus, ohne eBay. Deshalb hier abbrechen statt raten; die Reservierung
+      // läuft nach 15 Minuten von selbst ab.
+      // Siehe docs/pruefbericht-2026-08-09.md, S-03.
+      const [gehalten] = await db.select({ menge: sql<number>`COALESCE(SUM(${reservations.quantity}), 0)` })
+        .from(reservations)
+        .where(and(eq(reservations.productId, id), eq(reservations.status, "ACTIVE")));
+      const reserviert = Number(gehalten?.menge ?? 0);
+      if (reserviert > 0) {
+        return NextResponse.json({
+          error: `Diese Karte liegt gerade in einer offenen Bestellung (${reserviert} Stück reserviert). Die Menge lässt sich erst ändern, wenn die Bestellung bezahlt oder abgelaufen ist — das dauert höchstens 15 Minuten.`,
+        }, { status: 409 });
+      }
+
       anweisungen.push(db.update(inventory).set({
         availableQuantity: menge,
-        status: menge > 0 ? "AVAILABLE" : "SOLD",
+        // **`UNAVAILABLE`, nicht `SOLD`.** Menge 0 von Hand heißt „biete ich
+        // gerade nicht an", nicht „verkauft" — `soldQuantity` bleibt dabei 0,
+        // und ein `SOLD` daneben wäre schlicht falsch. Für die Sichtbarkeit
+        // macht es keinen Unterschied (`verfuegbareMenge` behandelt beide
+        // gleich), für die Wahrheit der Zeile schon. `SOLD` setzt allein
+        // `settlePaidOrder`, nach einer echten Zahlung.
+        status: menge > 0 ? "AVAILABLE" : "UNAVAILABLE",
         updatedAt: new Date().toISOString(),
       }).where(eq(inventory.productId, id)));
     }

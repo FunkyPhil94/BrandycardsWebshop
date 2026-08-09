@@ -127,6 +127,21 @@ export function optionalPrice(body: UnknownRecord, key: string): number | null {
   return price;
 }
 
+/** Eine Karte der Vormerkliste — und **nur** eine solche.
+ *
+ * **`kind === 'PRELISTED'` allein reicht dafür nicht mehr.** Seit `0006` tragen
+ * von Hand eingestellte Karten dasselbe `kind`, weil die CHECK-Bedingung auf
+ * `products.kind` auf D1 unveränderlich ist (Begründung im Kopf der Migration).
+ * Die Vormerkliste erkennt man erst an **beidem**: `origin = 'EBAY'` und
+ * `kind = 'PRELISTED'`.
+ *
+ * **Hier nichts über `kind` reparieren.** Wer die Spalte „aufräumt", zerstört
+ * den Katalog. Siehe docs/pruefbericht-2026-08-09.md, S-06.
+ */
+function istVormerkliste(product: { kind: string; origin: string }) {
+  return product.origin === "EBAY" && product.kind === "PRELISTED";
+}
+
 export async function existingProduct(productId: string, prelistedOnly = false) {
   if (!/^[a-f0-9]{32}$/iu.test(productId)) {
     throw new PublicFormError(400, "INVALID_PRODUCT", "Die Produktreferenz ist ungültig.");
@@ -139,7 +154,10 @@ export async function existingProduct(productId: string, prelistedOnly = false) 
   }
   const result = await db.select().from(products).where(eq(products.id, productId)).limit(1);
   const product = result[0];
-  if (!product || product.status !== "ACTIVE" || (prelistedOnly && product.kind !== "PRELISTED")) {
+  // `prelistedOnly` bedient `/api/prelisted-interest` — „Vormerken" auf eine
+  // Karte, die man sofort kaufen kann, ist keine Vormerkung, sondern eine
+  // Anfrage ins Leere.
+  if (!product || product.status !== "ACTIVE" || (prelistedOnly && !istVormerkliste(product))) {
     throw new PublicFormError(404, "PRODUCT_NOT_FOUND", "Die angegebene Karte ist nicht verfügbar.");
   }
   return { db, product };
