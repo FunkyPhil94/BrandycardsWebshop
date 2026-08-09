@@ -37,7 +37,36 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-*(leer — bereit für den nächsten Auftrag.)*
+**Der Checkout wirft manuelle Karten aus dem Warenkorb** — Stand: LÄUFT
+(2026-08-09)
+
+- **Gemeldet vom Betreiber beim Durchstich F-02:** „Kann eine Karte manuell
+  anlegen und in den Warenkorb legen, dort wird sie mir aber nicht angezeigt,
+  weshalb der Warenkorb auf Leer steht."
+- **Ursache, gefunden und belegt:** `app/checkout/page.tsx:81` filtert
+  `product.category === "Festpreis"`. Eine von Hand eingestellte Karte trägt
+  „Direkt bei uns" und fällt damit stillschweigend heraus. Der Server ist
+  gesund: `/api/products` liefert die Karte mit `quantity: 1` und
+  `priceAmountCents: 1` aus, und `/api/orders` würde sie annehmen — es ist
+  reine Anzeige.
+- **Es ist die vierte Stelle derselben Sorte.** Checkout-Route, Preisvorschlag
+  und Detailseite hingen am 2026-08-09 schon am eBay-Listing; an der
+  Detailseite steht seitdem ausdrücklich „**Nicht `=== "Festpreis"` prüfen**".
+  Der Checkout hat dieselbe Zeile behalten. Deshalb wird die Entscheidung
+  diesmal **nicht** noch einmal inline geschrieben, sondern wandert als
+  Funktion nach `lib/catalog-availability.ts`, wo sie ein Test halten kann.
+- **Was angefasst wird:** `lib/catalog-availability.ts` (neue reine Funktion),
+  `app/checkout/page.tsx` (eine Zeile), `tests/catalog-availability.test.mjs`
+  (Tests samt Rot-Nachweis).
+- **Deploy ist vorgesehen**, weil der Betreiber gerade daran hängt: nach grüner
+  Kette (`tsc`, Lint, `npm test`, Bundle-Probe) aus dem **Hauptverzeichnis**,
+  nie aus diesem Worktree.
+- **Falls diese Zeile beim nächsten Start noch auf LÄUFT steht:** `git status`
+  und `git log` zeigen, wie weit es kam; die Produktion ist in jedem Fall
+  unversehrt, weil der Fehler reine Anzeige ist und ein halber Stand gar nicht
+  erst deployed würde.
+
+---
 
 > **Beim Betreiber liegt gerade Schritt 2 der Befundabarbeitung: F-02.** Eine
 > Karte von Hand einstellen (`/admin` → „Karte von Hand einstellen") und bis zur

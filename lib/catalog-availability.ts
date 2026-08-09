@@ -17,6 +17,34 @@
 
 export type BestandsZeile = { availableQuantity: number; status: string } | null | undefined;
 
+/** Die Kategorien, die `/api/products` ausliefert, und ob man sie kaufen kann.
+ *
+ * **Warum das eine Funktion ist und keine Zeichenkette im Checkout:** Genau
+ * diese Frage ist inzwischen viermal falsch beantwortet worden — Bestellroute,
+ * Preisvorschlag und Detailseite hingen alle am eBay-Listing und sperrten von
+ * Hand eingestellte Karten aus, während sie im Schaufenster standen. Am
+ * 2026-08-09 fiel die vierte auf: `app/checkout/page.tsx` filterte auf
+ * `category === "Festpreis"`, und damit verschwand eine manuelle Karte
+ * **stillschweigend** aus dem Warenkorb. Der Kunde legt etwas hinein, der
+ * Warenkorb sagt „leer", und keine Fehlermeldung erklärt es.
+ *
+ * Eine Allowlist, keine Blockliste: Käme je eine weitere Kategorie dazu, wäre
+ * sie erst einmal **nicht** kaufbar. Das ist die vorsichtige Richtung — eine
+ * Karte zu wenig im Warenkorb ist ein Anruf, eine zu viel ist ein Verkauf, den
+ * es nicht gibt.
+ */
+export const KAUFBARE_KATEGORIEN = ["Festpreis", "Direkt bei uns"] as const;
+
+/** Ob eine Karte dieser Kategorie in den Warenkorb und an die Kasse darf.
+ *
+ * **„Vormerkliste" ist die eine, die es nicht darf** — sie ist eine
+ * Ankündigung, hat `quantity` fest auf 0 und trägt die Aktion „Vormerken"
+ * statt „In den Warenkorb".
+ */
+export function istKaufbareKategorie(kategorie: string | null | undefined): boolean {
+  return typeof kategorie === "string" && (KAUFBARE_KATEGORIEN as readonly string[]).includes(kategorie);
+}
+
 /** Die Menge, die im Shop erscheinen darf.
  *
  * Drei Fälle, und die letzten beiden sind der Grund, warum das eine eigene

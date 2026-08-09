@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { istKaufbareKategorie } from "../../lib/catalog-availability";
 import { effectiveUnitPrice } from "../../lib/offer-price";
 import { getSupabaseBrowserClient } from "../../lib/supabase-browser";
 
@@ -77,8 +78,15 @@ export default function CheckoutPage() {
   // Karte noch mehrfach gab — oder von Hand gesetzt worden sein. Der Server
   // lehnt zu viel ohnehin ab (app/api/orders/route.ts); hier verhindert es,
   // dass jemand erst nach der Adresseingabe davon erfährt.
+  //
+  // **`istKaufbareKategorie` statt `=== "Festpreis"`.** Bis zum 2026-08-09 stand
+  // hier die Zeichenkette, und eine von Hand eingestellte Karte („Direkt bei
+  // uns") fiel damit stillschweigend aus dem Warenkorb: hineinlegen ging, der
+  // Checkout meldete „Dein Warenkorb ist leer". Beim Durchstich gefunden, nicht
+  // von einem Test. Die Entscheidung steht jetzt einmal in
+  // `lib/catalog-availability.ts` und wird dort geprüft.
   const items = useMemo(() => products
-    .filter((product) => product.category === "Festpreis" && cart[product.id] > 0 && product.quantity > 0)
+    .filter((product) => istKaufbareKategorie(product.category) && cart[product.id] > 0 && product.quantity > 0)
     .map((product) => {
       const listPrice = product.priceAmountCents ?? 0;
       // Dieselbe Regel wie auf dem Bestellweg, aus derselben Datei — ein

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { readFile } from "node:fs/promises";
 
-const { verfuegbareMenge, istImKatalogSichtbar } = await import("../lib/catalog-availability.ts");
+const { verfuegbareMenge, istImKatalogSichtbar, istKaufbareKategorie, KAUFBARE_KATEGORIEN } = await import("../lib/catalog-availability.ts");
 
 // Am 2026-08-08, direkt nach dem ersten echten Verkauf: Die verkaufte Karte
 // stand weiter mit „1 VERFÜGBAR" im Katalog. Grund war, dass Katalog und
@@ -99,4 +99,57 @@ test("die Vormerkliste bleibt sichtbar, auch ohne Angebotstyp", () => {
   // Falle wie beim letzten Umbau dieser Datei.
   assert.equal(istImKatalogSichtbar("PRELISTED", null, null, null), true);
   assert.equal(istImKatalogSichtbar("PRELISTED", "AUCTION", null, null), true);
+});
+
+// --- Was in den Warenkorb darf ---------------------------------------------
+//
+// Am 2026-08-09 beim Durchstich mit der ersten von Hand eingestellten Karte
+// gefunden, nicht von einem Test: Der Checkout filterte auf
+// `category === "Festpreis"`. Die Karte liess sich hinzufuegen, der Warenkorb
+// meldete danach „leer". Kein Fehler, keine Meldung — sie war einfach weg.
+
+test("eine von Hand eingestellte Karte ist kaufbar", () => {
+  assert.equal(istKaufbareKategorie("Direkt bei uns"), true,
+    "genau dieser Fall liess den Warenkorb leer aussehen");
+});
+
+test("eine eBay-Karte bleibt kaufbar", () => {
+  assert.equal(istKaufbareKategorie("Festpreis"), true);
+});
+
+test("die Vormerkliste ist nicht kaufbar", () => {
+  // Sie ist eine Ankuendigung: quantity steht fest auf 0, die Aktion heisst
+  // „Vormerken". Genau dafuer gab es den Filter im Checkout ueberhaupt.
+  assert.equal(istKaufbareKategorie("Vormerkliste"), false);
+});
+
+test("Unbekanntes gilt als nicht kaufbar", () => {
+  // Allowlist, keine Blockliste: Eine kuenftige Kategorie ist erst einmal
+  // draussen. Eine Karte zu wenig im Warenkorb ist ein Anruf, eine zu viel ist
+  // ein Verkauf, den es nicht gibt.
+  for (const wert of ["Auktion", "", "festpreis", null, undefined, 0, {}]) {
+    assert.equal(istKaufbareKategorie(wert), false, `durchgelassen: ${JSON.stringify(wert)}`);
+  }
+});
+
+test("der Checkout benutzt die Funktion und nicht wieder eine Zeichenkette", async () => {
+  // Der eigentliche Schutz. Die Entscheidung ist an dieser Stelle viermal
+  // falsch getroffen worden (Bestellroute, Preisvorschlag, Detailseite,
+  // Checkout); ein Test auf die Funktion allein haette den Rueckfall auf einen
+  // Vergleich im Checkout nicht bemerkt.
+  const quelle = await readFile(new URL("../app/checkout/page.tsx", import.meta.url), "utf8");
+  assert.match(quelle, /istKaufbareKategorie\(product\.category\)/,
+    "der Checkout muss die geteilte Entscheidung benutzen");
+  assert.ok(!/category === "Festpreis"/.test(quelle),
+    "genau dieser Vergleich hat die manuelle Karte aus dem Warenkorb geworfen");
+});
+
+test("jede kaufbare Kategorie kommt auch wirklich aus der Katalogroute", async () => {
+  // Sonst schuetzt die Allowlist vor nichts: Eine Kategorie, die hier steht,
+  // die Route aber nie ausliefert, ist tot — und eine, die die Route
+  // ausliefert und die hier fehlt, verschwindet still aus dem Warenkorb.
+  const quelle = await readFile(new URL("../app/api/products/route.ts", import.meta.url), "utf8");
+  for (const kategorie of KAUFBARE_KATEGORIEN) {
+    assert.ok(quelle.includes(`"${kategorie}"`), `die Katalogroute kennt "${kategorie}" nicht`);
+  }
 });
