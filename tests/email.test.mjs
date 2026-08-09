@@ -3,7 +3,7 @@ import test from "node:test";
 
 const {
   cardSubmissionReceived, escapeHtml, formatMoney, inquiryReceived,
-  bestandshinweis, offerAccepted, offerRejected, orderConfirmation, sanitizeSubject, sellerOrderNotification,
+  bestandshinweis, offerAccepted, offerRejected, operationalAlert, orderConfirmation, sanitizeSubject, sellerOrderNotification,
 } = await import("../lib/email/templates.ts");
 
 const SHOP = "https://shop.brandycards.de";
@@ -194,6 +194,28 @@ test("die Absage bleibt freundlich und laedt zu einem neuen Vorschlag ein", () =
   const nachricht = offerRejected({ title: "Karte", productUrl: SHOP, shopUrl: SHOP });
   assert.match(nachricht.text, /neuer Vorschlag ist jederzeit willkommen/u);
   assert.ok(!/Sehr geehrte/u.test(nachricht.text));
+});
+
+test("Betriebsalarme maskieren Diagnose und enthalten eine Kennung", () => {
+  const nachricht = operationalAlert({
+    key: "ebay-outbox:job-1:failed",
+    category: "eBay-Rücknahme",
+    title: "<Fehler>",
+    detail: "<script>alert(1)</script>",
+    occurredAt: "2026-08-09T12:00:00.000Z",
+    shopUrl: SHOP,
+  });
+  assert.ok(nachricht.text.includes("ebay-outbox:job-1:failed"));
+  assert.ok(nachricht.html.includes("&lt;script&gt;alert(1)&lt;/script&gt;"));
+  assert.ok(!nachricht.html.includes("<script>"));
+  assert.match(nachricht.subject, /^Betriebsalarm:/u);
+});
+
+test("Betriebsalarmdetails bleiben kompakt und einzeilig", async () => {
+  const { kurzeAlarmdetails } = await import("../lib/ops-alerts.ts");
+  const detail = kurzeAlarmdetails(`erste Zeile\n\t${"x".repeat(800)}`);
+  assert.ok(detail.length <= 600);
+  assert.ok(!/[\r\n\t]/u.test(detail));
 });
 
 // --- Der Versand: die zentrale Zusage ---------------------------------------

@@ -17,6 +17,15 @@ export type Nachricht = { subject: string; text: string; html: string };
 
 export type Betrag = { cents: number; currency: string };
 
+export type BetriebsalarmDaten = {
+  key: string;
+  category: string;
+  title: string;
+  detail: string;
+  occurredAt: string;
+  shopUrl: string;
+};
+
 /** Fremdeingabe für HTML unschädlich machen.
  *
  * Kartentitel stammen von eBay, Namen und Nachrichten vom Kunden. Ohne
@@ -74,6 +83,36 @@ function rahmen(inhalt: string, shopUrl: string): string {
 
 function fussText(shopUrl: string): string {
   return `\n\n--\nBrandyCards · Leverkusen\nImpressum: ${shopUrl}/impressum\nDatenschutz: ${shopUrl}/datenschutz\n`;
+}
+
+/** Interne Nachricht an den Betreiber. Sie enthält nur die kurze Diagnose und
+ * eine fachliche Kennung, keine Kundenadresse oder vollständige Fremdpayload. */
+export function operationalAlert(daten: BetriebsalarmDaten): Nachricht {
+  const text = [
+    `BrandyCards Betriebsalarm`,
+    ``,
+    `Bereich: ${daten.category}`,
+    `Problem: ${daten.title}`,
+    `Details: ${daten.detail}`,
+    `Kennung: ${daten.key}`,
+    `Zeit: ${daten.occurredAt}`,
+    ``,
+    `Bitte im Adminbereich und beim jeweiligen Anbieter prüfen.`,
+    fussText(daten.shopUrl),
+  ].join("\n");
+
+  const html = rahmen([
+    `<h1 style="font-size:22px;margin:0 0 16px">BrandyCards Betriebsalarm</h1>`,
+    `<p style="margin:0 0 6px;color:#7c7770;font-size:13px">Bereich</p>`,
+    `<p style="margin:0 0 16px;font-weight:bold">${escapeHtml(daten.category)}</p>`,
+    `<p style="margin:0 0 6px;color:#7c7770;font-size:13px">Problem</p>`,
+    `<p style="margin:0 0 16px;font-weight:bold">${escapeHtml(daten.title)}</p>`,
+    `<p style="margin:0 0 6px;color:#7c7770;font-size:13px">Details</p>`,
+    `<p style="margin:0 0 16px">${escapeHtml(daten.detail)}</p>`,
+    `<p style="margin:0;color:#7c7770;font-size:13px">Kennung: ${escapeHtml(daten.key)}<br>Zeit: ${escapeHtml(daten.occurredAt)}</p>`,
+  ].join(""), daten.shopUrl);
+
+  return { subject: sanitizeSubject(`Betriebsalarm: ${daten.category} - ${daten.title}`), text, html };
 }
 
 // --- 1. Bestellbestätigung --------------------------------------------------

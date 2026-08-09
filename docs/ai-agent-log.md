@@ -2,6 +2,23 @@
 
 Dieses Protokoll hält fest, welche spezialisierten Agents im Projekt eingesetzt wurden, welche Prüfaufträge sie erhielten und wie ihre Ergebnisse in die Umsetzung eingeflossen sind.
 
+## 2026-08-09 – N2 Betriebsalarme ergänzt
+
+- **Umsetzung:** Fehlgeschlagene eBay-Synchronisierungen, erstmals wieder
+  aufgenommene hängende Outbox-Aufträge, endgültig fehlgeschlagene Outbox-
+  Aufträge, erste PayPal-Webhook-Fehler je Event und nicht zugestellte wichtige
+  E-Mails lösen jetzt eine zentrale Betreiberwarnung aus.
+- **Sicherheit und Rauschen:** Wiederholungen bleiben bis zum endgültigen
+  Zustand still. Alarmdetails werden einzeilig auf 600 Zeichen begrenzt und in
+  HTML maskiert; Empfängeradressen und vollständige Fremdpayloads werden nicht
+  in die Alarmkennung übernommen. Der Alarmversand darf den auslösenden Ablauf
+  nicht scheitern lassen.
+- **Grenze:** Die offizielle eBay-Seller-Notification-Integration und der
+  echte bidirektionale Verkaufsnachweis bleiben als Betreiber-/eBay-Aufgabe
+  offen. Es wurden keine Produktionsdaten geschrieben.
+- **Verifikation:** `npx tsc --noEmit`, `npm run lint`, Build und `npm test`
+  mit 323 Tests erfolgreich.
+
 ## 2026-08-09 – N1 Admin-Sicherheit umgesetzt
 
 - **Umsetzung:** Supabase-AAL2 ist jetzt die zentrale Servervoraussetzung für

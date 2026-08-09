@@ -4,6 +4,7 @@ import { orderItems, orders, priceOffers, products, users } from "../../db/schem
 import { getEmailConfig } from "./config.ts";
 import { protokolliereVersand, sendEmail, versucheVersand } from "./send.ts";
 import { accountDeleted, cardSubmissionReceived, inquiryReceived, offerAccepted, offerRejected, orderConfirmation, sellerOrderNotification } from "./templates.ts";
+import { notifyOperationalAlert } from "../ops-alerts.ts";
 
 /** Die Brücke zwischen Datenbank und Vorlagen.
  *
@@ -23,6 +24,25 @@ type Db = ReturnType<typeof getDb>;
  *  erzeugbar und damit prüfbar. */
 function shopUrl(): string {
   return getEmailConfig()?.shopUrl ?? "https://shop.brandycards.de";
+}
+
+async function sendeMitBetriebsalarm(
+  anlass: string,
+  empfaenger: string,
+  nachricht: Parameters<typeof sendEmail>[1],
+  alertKey: string,
+  kennung: Record<string, string> = {},
+): Promise<void> {
+  const result = await sendEmail(empfaenger, nachricht);
+  protokolliereVersand(anlass, result, kennung);
+  if (result.ok) return;
+  const status = result.grund === "abgelehnt" ? ` Status ${result.status}.` : "";
+  await notifyOperationalAlert({
+    key: `email:${alertKey}`,
+    category: "E-Mail",
+    title: `${anlass} nicht zugestellt`,
+    detail: `Versandgrund: ${result.grund}.${status}`,
+  });
 }
 
 /** Die Adresse eines Bestellers: entweder das Konto oder die Gastadresse. */
@@ -55,6 +75,12 @@ export async function notifyOrderPaid(
     if (!daten) return;
     if (!daten.empfaenger) {
       console.error("[email] Bestellung ohne Empfängeradresse, keine Bestätigung.", { orderId });
+      await notifyOperationalAlert({
+        key: `email:order:${orderId}:customer-missing`,
+        category: "E-Mail",
+        title: "Bestellbestätigung nicht möglich",
+        detail: "Die bezahlte Bestellung hat keine Empfängeradresse.",
+      });
       return;
     }
 
@@ -67,7 +93,7 @@ export async function notifyOrderPaid(
       shopUrl: shopUrl(),
     });
 
-    protokolliereVersand("Bestellbestätigung", await sendEmail(daten.empfaenger, nachricht), { orderId });
+    await sendeMitBetriebsalarm("Bestellbestätigung", daten.empfaenger, nachricht, `order:${orderId}:customer`, { orderId });
   });
 
   await versucheVersand("Verkäufernachricht", async () => {
@@ -79,6 +105,12 @@ export async function notifyOrderPaid(
       // Ohne Adresse ist die Nachricht wertlos — aber der Betreiber muss von
       // der Bestellung trotzdem erfahren, sonst bleibt sie unbemerkt liegen.
       console.error("[email] Bestellung ohne verwertbare Lieferadresse.", { orderId });
+      await notifyOperationalAlert({
+        key: `email:order:${orderId}:address-missing`,
+        category: "E-Mail",
+        title: "Verkäufernachricht nicht möglich",
+        detail: "Die bezahlte Bestellung hat keine verwertbare Lieferadresse.",
+      });
       return;
     }
 
@@ -98,7 +130,7 @@ export async function notifyOrderPaid(
       shopUrl: shopUrl(),
     });
 
-    protokolliereVersand("Verkäufernachricht", await sendEmail(ziel, nachricht), { orderId });
+    await sendeMitBetriebsalarm("Verkäufernachricht", ziel, nachricht, `order:${orderId}:seller`, { orderId });
   });
 }
 
@@ -172,9 +204,11 @@ export async function notifyOfferDecision(db: Db, offerId: string, entscheidung:
         })
       : offerRejected({ title: titel, productUrl, shopUrl: basis });
 
-    protokolliereVersand(
+    await sendeMitBetriebsalarm(
       entscheidung === "accept" ? "Preisvorschlag angenommen" : "Preisvorschlag abgelehnt",
-      await sendEmail(empfaenger, nachricht),
+      empfaenger,
+      nachricht,
+      `offer:${offerId}`,
       { offerId },
     );
   });
@@ -183,14 +217,14 @@ export async function notifyOfferDecision(db: Db, offerId: string, entscheidung:
 /** Eingangsbestätigung für eine Kartenanfrage. */
 export async function notifyInquiryReceived(empfaenger: string, gesucht: string): Promise<void> {
   await versucheVersand("Anfragebestätigung", async () => {
-    protokolliereVersand("Anfragebestätigung", await sendEmail(empfaenger, inquiryReceived({ title: gesucht, shopUrl: shopUrl() })));
+    await sendeMitBetriebsalarm("Anfragebestätigung", empfaenger, inquiryReceived({ title: gesucht, shopUrl: shopUrl() }), "inquiry");
   });
 }
 
 /** Eingangsbestätigung für ein Ankaufsangebot. */
 export async function notifyCardSubmissionReceived(empfaenger: string, karte: string): Promise<void> {
   await versucheVersand("Ankaufbestätigung", async () => {
-    protokolliereVersand("Ankaufbestätigung", await sendEmail(empfaenger, cardSubmissionReceived({ title: karte, shopUrl: shopUrl() })));
+    await sendeMitBetriebsalarm("Ankaufbestätigung", empfaenger, cardSubmissionReceived({ title: karte, shopUrl: shopUrl() }), "card-submission");
   });
 }
 
@@ -201,6 +235,6 @@ export async function notifyCardSubmissionReceived(empfaenger: string, karte: st
  */
 export async function notifyAccountDeleted(empfaenger: string, bestellungen: number): Promise<void> {
   await versucheVersand("Löschbestätigung", async () => {
-    protokolliereVersand("Löschbestätigung", await sendEmail(empfaenger, accountDeleted({ bestellungen, shopUrl: shopUrl() })));
+    await sendeMitBetriebsalarm("Löschbestätigung", empfaenger, accountDeleted({ bestellungen, shopUrl: shopUrl() }), "account-deleted");
   });
 }

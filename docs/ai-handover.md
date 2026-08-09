@@ -37,13 +37,20 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-**N2 Betriebsstabilität und Doppelverkaufsschutz umsetzen** — Stand: LÄUFT (2026-08-09)
+**N2 Betriebsstabilität und Doppelverkaufsschutz umsetzen** — Stand: TEILWEISE ABGESCHLOSSEN (2026-08-09)
 
 - Alarmierung für fehlgeschlagene eBay-Syncs, endgültig fehlgeschlagene
   eBay-Outbox-Aufträge, PayPal-Webhook-Fehler und wichtige Mailfehler ergänzen.
 - Fehlerzustände und Wiederholungen idempotent testen. Die offizielle eBay
   Notification API anschließend nur mit verifizierter Signatur anschließen;
   keine Produktionsdaten verändern.
+
+- Eine zentrale Alarm-Mail an die Betreiberadresse ist jetzt an die relevanten
+  Fehlerzustände angeschlossen. Retries bleiben bis zum endgültigen Zustand
+  still; Alarmdetails werden begrenzt und HTML-maskiert.
+- Die eBay-Seller-Notification-Integration und der echte Verkauf auf einem
+  laufenden Angebot bleiben offen, weil dafür eine eBay-Developer-Konfiguration
+  mit verifizierter Signatur und eine Betreiberaktion erforderlich sind.
 
 - `/api/admin/orders` paginiert jetzt mit 25 Einträgen, liefert Gesamtseiten
   und sortiert bei gleichen Zeitstempeln stabil. Ein geschütztes `PATCH` setzt

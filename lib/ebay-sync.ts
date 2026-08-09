@@ -8,6 +8,7 @@ import { bilderStehenSchonSo, stehtSchonSo } from "./ebay-sync-diff";
 import { darfUebernommenWerden, handfelder, ohneHandfelder, titelSchluessel } from "./manual-overrides";
 import { D1_SAFE_ID_LIST, maxInsertRows } from "./d1-limits";
 import { ExpiringLock, isSyncRunStale, SYNC_RUN_DEADLINE_MS, withDeadline } from "./sync-lock";
+import { notifyOperationalAlert } from "./ops-alerts";
 
 /** syncRunId, ebayItemId, productId, status, message, createdAt */
 const SYNC_EVENT_INSERT_COLUMNS = 6;
@@ -349,7 +350,14 @@ async function runEbaySyncInternal() {
     // Adminfläche ordnet es ein.
     return { runId: run.id, importedCount, updatedCount, deactivatedCount, skippedCount, unchangedCount, mergedCount };
   } catch (error) {
-    await finalizeRun({ status: "FAILED", importedCount, updatedCount, failedCount: Math.max(1, failedCount), errorMessage: error instanceof Error ? error.message : "Unbekannter eBay-Fehler.", finishedAt: new Date().toISOString() });
+    const message = error instanceof Error ? error.message : "Unbekannter eBay-Fehler.";
+    await finalizeRun({ status: "FAILED", importedCount, updatedCount, failedCount: Math.max(1, failedCount), errorMessage: message, finishedAt: new Date().toISOString() });
+    await notifyOperationalAlert({
+      key: `ebay-sync:${run.id}`,
+      category: "eBay-Synchronisierung",
+      title: "Lauf fehlgeschlagen",
+      detail: message,
+    });
     throw error;
   }
 }

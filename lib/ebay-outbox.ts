@@ -3,6 +3,7 @@ import { getDb } from "../db";
 import { ebayListings, ebayOutbox } from "../db/schema";
 import { reviseEbayItemQuantity, withdrawEbayOffer } from "./ebay-client";
 import { REVISE_QUANTITY, WITHDRAW_OFFER, bestimmeAuftragsziel, planeEbayRuecknahme } from "./ebay-outbox-plan";
+import { notifyOperationalAlert } from "./ops-alerts";
 
 type Db = ReturnType<typeof getDb>;
 
@@ -53,8 +54,9 @@ async function claimNext(db: Db) {
     .limit(1);
   const job = candidate[0];
   if (!job) return null;
+  const staleProcessing = job.status === "PROCESSING" && Boolean(job.lockedAt && job.attemptCount === 1);
   const result = await db.batch([db.update(ebayOutbox).set({ status: "PROCESSING", lockedAt: now, lastAttemptAt: now, attemptCount: sql`${ebayOutbox.attemptCount} + 1`, updatedAt: now }).where(and(eq(ebayOutbox.id, job.id), or(eq(ebayOutbox.status, "PENDING"), eq(ebayOutbox.status, "RETRY_WAIT"), and(eq(ebayOutbox.status, "PROCESSING"), lte(ebayOutbox.lockedAt, stale)))))]);
-  return result[0].meta.changes === 1 ? { ...job, attemptCount: job.attemptCount + 1 } : null;
+  return result[0].meta.changes === 1 ? { ...job, attemptCount: job.attemptCount + 1, recoveredFromStale: staleProcessing } : null;
 }
 
 /** Carries out one queued job. Which call to make is decided in the plan module. */
@@ -72,6 +74,14 @@ export async function processEbayOutbox(db: Db = getDb(), optionen: { timeoutMs?
   for (let i = 0; i < maxJobs; i += 1) {
     const job = await claimNext(db);
     if (!job) break;
+    if (job.recoveredFromStale) {
+      await notifyOperationalAlert({
+        key: `ebay-outbox:${job.id}:stale`,
+        category: "eBay-Rücknahme",
+        title: "Hängender Auftrag wurde wieder aufgenommen",
+        detail: `Der Auftrag ${job.operation} für eBay-Artikel ${job.ebayItemId ?? "unbekannt"} hatte keine lebende Sperre mehr.`,
+      });
+    }
     try {
       const ergebnis = await runJob(job, optionen.timeoutMs);
       // Welcher Weg es war, gehört ins Protokoll. `SUCCEEDED` allein
@@ -89,6 +99,14 @@ export async function processEbayOutbox(db: Db = getDb(), optionen: { timeoutMs?
       const retry = job.attemptCount < 5;
       const next = new Date(Date.now() + Math.min(60, 5 * 2 ** Math.max(0, job.attemptCount - 1)) * 60_000).toISOString();
       await db.update(ebayOutbox).set({ status: retry ? "RETRY_WAIT" : "FAILED", availableAt: next, lockedAt: null, lastError: message, updatedAt: new Date().toISOString() }).where(eq(ebayOutbox.id, job.id));
+      if (!retry) {
+        await notifyOperationalAlert({
+          key: `ebay-outbox:${job.id}:failed`,
+          category: "eBay-Rücknahme",
+          title: "Auftrag endgültig fehlgeschlagen",
+          detail: `${job.operation} für eBay-Artikel ${job.ebayItemId ?? "unbekannt"}: ${message}`,
+        });
+      }
     }
   }
   return processed;

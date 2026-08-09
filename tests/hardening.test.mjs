@@ -472,3 +472,20 @@ test("jede Aufgabe des geplanten Laufs wird einzeln benannt", async () => {
   }
   assert.match(scheduled, /ergebnis\.status !== "rejected"/u, "jeder Fehlschlag muss einzeln protokolliert werden");
 });
+
+test("kritische Betriebsfehler erzeugen einen Betreiberalarm, Retries bleiben still", async () => {
+  const [outbox, sync, paypal, notify] = await Promise.all([
+    read("lib/ebay-outbox.ts"),
+    read("lib/ebay-sync.ts"),
+    read("app/api/paypal/webhook/route.ts"),
+    read("lib/email/notify.ts"),
+  ]);
+  assert.match(outbox, /recoveredFromStale/u, "ein hängender Outbox-Auftrag wird nicht erkannt");
+  const finalFailure = outbox.slice(outbox.indexOf("if (!retry)"));
+  assert.match(finalFailure, /notifyOperationalAlert/u, "ein endgültiger Outbox-Fehler bleibt lautlos");
+  assert.match(outbox, /status: retry \? "RETRY_WAIT" : "FAILED"/u);
+  assert.match(sync, /key: `ebay-sync:/u, "ein fehlgeschlagener Sync-Lauf alarmiert den Betreiber nicht");
+  assert.match(paypal, /previousFailure/u);
+  assert.match(paypal, /key: `paypal-webhook:/u);
+  assert.match(notify, /sendeMitBetriebsalarm/u, "nicht zugestellte wichtige Mails erzeugen keinen Alarm");
+});

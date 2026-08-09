@@ -118,6 +118,21 @@ schließen:
 **Fertig, wenn:** ein echter Verkauf in beide Richtungen nachweisbar sauber
 verarbeitet wird und ein Fehler nicht mehr still unbemerkt bleiben kann.
 
+**Teilumsetzung 2026-08-09:** Eine zentrale, sekretfreie Betriebsalarmierung
+verschickt Meldungen an die Betreiberadresse, sobald ein eBay-Sync endgültig
+fehlschlägt, ein hängender Outbox-Auftrag erstmals wieder aufgenommen wird, ein
+PayPal-Webhook erstmals fehlschlägt oder eine wichtige E-Mail nicht zugestellt
+wird. eBay-Outbox-Retries bis zum fünften Versuch bleiben still; PayPal-Dubletten
+mit bereits gemeldetem Fehler lösen keinen zweiten Alarm aus. Diagnose-Text wird
+gekürzt und HTML-maskiert, Kundenadressen und vollständige Payloads gelangen
+nicht in den Alarm.
+
+**Noch offen:** Die eBay-Seller-Notification bzw. passende offizielle
+Verkaufs-API ist noch nicht verbunden. Das braucht eine eBay-Developer-
+Konfiguration mit verifizierter Signatur sowie einen echten Verkauf auf einem
+laufenden Angebot; dieser Nachweis darf nicht simuliert und nicht ohne
+Betreiberaktion in Produktionsdaten geschrieben werden.
+
 ### N3. Ausfallsicherheit, Ressourcenlimits und automatische Bereinigung — **Nutzen: hoch · Kosten: niedrig bis mittel**
 
 Die Basis für stabile Synchronisation, Uploads und Webhooks vervollständigen:

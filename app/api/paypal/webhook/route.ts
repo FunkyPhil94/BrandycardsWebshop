@@ -9,6 +9,7 @@ import { webhookCaptureAction } from "../../../../lib/paypal/webhook-decision";
 import { PAYPAL_WEBHOOK_RECEIVED_RETRY_AFTER_MS, receivedWebhookRetryDue } from "../../../../lib/paypal/webhook-retry";
 import { releaseOrderReservations, settlePaidOrder } from "../../../../lib/paypal/settle-order";
 import { centsToPayPalValue } from "../../../../lib/paypal/money";
+import { notifyOperationalAlert } from "../../../../lib/ops-alerts";
 
 type PayPalWebhookEvent = {
   id?: unknown;
@@ -53,6 +54,7 @@ export async function POST(request: Request) {
   const rawBody = await request.text();
   let db: ReturnType<typeof getDb> | undefined;
   let eventId = "";
+  let previousFailure = false;
   try {
     const config = getPayPalConfig();
     if (!config.webhookId) return NextResponse.json({ error: "PayPal-Webhook ist noch nicht konfiguriert." }, { status: 503 });
@@ -67,6 +69,7 @@ export async function POST(request: Request) {
 
     db = getDb();
     const existing = await db.query.webhookEvents.findFirst({ where: and(eq(webhookEvents.provider, "PAYPAL"), eq(webhookEvents.externalEventId, eventId)) });
+    previousFailure = existing?.status === "FAILED";
     if (existing?.status === "PROCESSED") return NextResponse.json({ ok: true, duplicate: true });
     if (existing?.status === "RECEIVED" && !receivedWebhookRetryDue(existing.receivedAt)) {
       return NextResponse.json({ ok: false, retryable: true }, { status: 503, headers: { "retry-after": String(PAYPAL_WEBHOOK_RECEIVED_RETRY_AFTER_MS / 1000) } });
@@ -151,6 +154,14 @@ export async function POST(request: Request) {
         await db.update(webhookEvents).set({ status: "FAILED", processedAt: new Date().toISOString(), errorMessage: error instanceof Error ? error.message : "Unbekannter Fehler." }).where(and(eq(webhookEvents.provider, "PAYPAL"), eq(webhookEvents.externalEventId, eventId)));
       } catch (statusError) {
         console.error("PayPal webhook status update failed", statusError);
+      }
+      if (!previousFailure) {
+        await notifyOperationalAlert({
+          key: `paypal-webhook:${eventId}`,
+          category: "PayPal-Webhook",
+          title: "Webhook konnte nicht verarbeitet werden",
+          detail: error instanceof Error ? error.message : "Unbekannter Fehler.",
+        });
       }
     }
     return NextResponse.json({ error: "Webhook konnte nicht verarbeitet werden." }, { status: 400 });
