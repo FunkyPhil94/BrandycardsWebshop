@@ -37,6 +37,15 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
+**Galerie-CTA stabilisieren** — Stand: LÄUFT (2026-08-09)
+
+- Der Galerie-Preis und der CTA sollen unabhängig von Preisbreite, Kartentitel
+  und DE/EN an derselben Stelle stehen.
+- Preis erhält eine feste Spalte; der CTA bekommt eine feste Breite und bleibt
+  bei allen Galerie-Karten sowie in beiden Sprachen stabil.
+- Danach lokale/live Prüfung, Tests, Commit, Push und Deployment; keine
+  Produktionsdaten schreiben.
+
 **Sprachlayout und vollständige Unterseitenprüfung** — Stand: ABGESCHLOSSEN (2026-08-09)
 
 - Buttons und andere Bedienelemente sollen in Deutsch und Englisch dieselben
