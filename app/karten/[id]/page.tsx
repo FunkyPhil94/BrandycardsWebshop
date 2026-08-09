@@ -4,7 +4,7 @@ import Link from "next/link";
 import { use, useCallback, useEffect, useState } from "react";
 import { ebayImageVariant } from "../../../lib/ebay-images.ts";
 import { cartButtonState } from "../../../lib/cart.ts";
-import { EBAY_SHOP_URL, SiteFooter, SiteHeader, formatPrice, useCart } from "../../site-chrome";
+import { SiteFooter, SiteHeader, formatPrice, useCart } from "../../site-chrome";
 import { OfferForm } from "./offer-form";
 
 type CardSpec = { label: string; value: string };
@@ -17,7 +17,7 @@ type Detail = {
   descriptionHtml: string | null;
   specs: CardSpec[];
   sections: CardSection[];
-  category: "Festpreis" | "Auktion" | "Direkt bei uns";
+  category: "Festpreis" | "Direkt bei uns";
   priceAmountCents: number | null;
   priceCurrency: string;
   quantity: number;
@@ -121,36 +121,33 @@ export default function KartenDetailPage({ params }: { params: Promise<{ id: str
         </div>
 
         <div className="detail-info">
-          <p className="eyebrow">{card.category === "Auktion" ? "EBAY AUKTION" : card.category === "Direkt bei uns" ? "VORVERKAUF" : "SOFORT-KAUFEN"}</p>
+          <p className="eyebrow">{card.category === "Direkt bei uns" ? "VORVERKAUF" : "SOFORT-KAUFEN"}</p>
           <h1>{card.title}</h1>
           {price && <p className="detail-price">{price}</p>}
           <p className="detail-stock">{card.quantity > 0 ? `${card.quantity} verfügbar` : "Derzeit nicht verfügbar"}</p>
 
           <div className="detail-actions">
-            {card.category === "Auktion"
-              ? <a className="button button-primary" href={card.listingUrl || EBAY_SHOP_URL} target="_blank" rel="noreferrer">Auf eBay bieten <span>↗</span></a>
-              : (() => {
-                  const state = cartButtonState(card.quantity, cart[card.id] ?? 0);
-                  return <button
-                    className={state.action === "remove" ? "button button-outline" : "button button-primary"}
-                    type="button"
-                    disabled={state.disabled}
-                    onClick={() => state.action === "remove" ? removeFromCart(card.id) : addToCart(card.id, card.quantity)}
-                  >
-                    {state.label}{state.action && <span>{state.action === "remove" ? "×" : "+"}</span>}
-                  </button>;
-                })()}
+            {(() => {
+              const state = cartButtonState(card.quantity, cart[card.id] ?? 0);
+              return <button
+                className={state.action === "remove" ? "button button-outline" : "button button-primary"}
+                type="button"
+                disabled={state.disabled}
+                onClick={() => state.action === "remove" ? removeFromCart(card.id) : addToCart(card.id, card.quantity)}
+              >
+                {state.label}{state.action && <span>{state.action === "remove" ? "×" : "+"}</span>}
+              </button>;
+            })()}
             {card.listingUrl && <a className="text-link" href={card.listingUrl} target="_blank" rel="noreferrer">Angebot bei eBay <span>↗</span></a>}
           </div>
 
-          {/* **`!== "Auktion"`, nicht `=== "Festpreis"`.** Von Hand eingestellte
-              Karten tragen die Kategorie „Direkt bei uns" und sollen laut
-              Entscheidung des Betreibers vom 2026-08-08 **genauso verhandelbar**
-              sein wie eBay-Karten. Mit der alten Prüfung auf „Festpreis" fehlte
-              ihnen der Kasten stillschweigend — der Shop bewirbt Verhandeln,
-              und ausgerechnet die eigenen Karten hätten es nicht angeboten.
-              Auktionen bleiben draußen: Dort bietet man bei eBay. */}
-          {card.category !== "Auktion" && card.quantity > 0 &&
+          {/* **Nicht `=== "Festpreis"` prüfen.** Von Hand eingestellte Karten
+              tragen die Kategorie „Direkt bei uns" und sollen laut Entscheidung
+              des Betreibers vom 2026-08-08 **genauso verhandelbar** sein wie
+              eBay-Karten. Mit einer Prüfung auf „Festpreis" fehlte ihnen der
+              Kasten stillschweigend — der Shop bewirbt Verhandeln, und
+              ausgerechnet die eigenen Karten hätten es nicht angeboten. */}
+          {card.quantity > 0 &&
             <OfferForm productId={card.id} listPriceCents={card.priceAmountCents} currency={card.priceCurrency} />}
 
           <dl className="detail-facts">

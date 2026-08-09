@@ -225,8 +225,12 @@ test("manuelle Karten sind kaufbar und verhandelbar", async () => {
   assert.match(vorschlag, /manuell \? row\.product\.priceAmountCents/u, "der Listenpreis kommt bei manuellen Karten vom Produkt");
 
   const detailseite = await readFile(new URL("../app/karten/[id]/page.tsx", import.meta.url), "utf8");
-  assert.match(detailseite, /card\.category !== "Auktion" && card\.quantity > 0/u,
-    "der Preisvorschlag-Kasten darf nicht mehr an der Kategorie Festpreis hängen");
+  // Der Kasten hängt an der Verfügbarkeit, **nicht** an der Kategorie. Mit einer
+  // Prüfung auf „Festpreis" fehlte er manuellen Karten stillschweigend — sie
+  // tragen „Direkt bei uns".
+  assert.ok(!/category === "Festpreis"/u.test(detailseite),
+    "der Preisvorschlag-Kasten darf nicht an der Kategorie Festpreis hängen");
+  assert.match(detailseite, /\{card\.quantity > 0 &&\s*\n\s*<OfferForm/u);
 });
 
 // --- Adminkonsole 12.4 und 12.5 --------------------------------------------

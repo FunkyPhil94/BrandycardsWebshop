@@ -13,7 +13,11 @@ export default function AnfragenPage() {
     <section className="page-intro">
       <p className="eyebrow">DU SUCHST ETWAS BESTIMMTES?</p>
       <h1>Wir helfen<br /><em>beim Finden.</em></h1>
-      <p>Manche Karten liegen schon in unserer Sammlung, aber noch nicht im Shop. Schreib uns, wonach du suchst. Ein Kundenkonto brauchst du dafür nicht, deine E-Mail-Adresse genügt.</p>
+      {/* Der Satz „liegt schon in unserer Sammlung, aber noch nicht im Shop"
+          beschrieb bis zum 2026-08-09 einen Zustand ohne Ort. Seitdem gibt es
+          den Vorverkauf — dort stehen genau diese Karten, und wer erst dort
+          nachsieht, spart sich die Anfrage. */}
+      <p>Manche Karten liegen schon in unserer Sammlung, aber noch nicht bei eBay — die findest du im <Link className="text-link" href="/vorverkauf">Vorverkauf</Link>. Ist deine nicht dabei, schreib uns, wonach du suchst. Ein Kundenkonto brauchst du dafür nicht, deine E-Mail-Adresse genügt.</p>
     </section>
 
     <section className="forms-section single">

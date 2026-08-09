@@ -12,7 +12,7 @@ type Product = {
   id: string;
   title: string;
   description: string | null;
-  category: "Festpreis" | "Auktion" | "Vormerkliste";
+  category: "Festpreis" | "Vormerkliste" | "Direkt bei uns";
   priceAmountCents: number | null;
   priceCurrency: string;
   quantity: number;
@@ -32,14 +32,13 @@ type Product = {
  * Die Vormerkliste behält ihren Hinweis — dort steht echte Information.
  */
 function meta(category: Product["category"]) {
-  if (category === "Auktion") return "Auktion auf eBay · Kauf direkt bei eBay";
   if (category === "Vormerkliste") return "Noch nicht im Verkauf · Interesse vormerken";
   return null;
 }
 
 function badge(category: Product["category"]) {
-  if (category === "Auktion") return "eBay Auktion";
   if (category === "Vormerkliste") return "Vormerkliste";
+  if (category === "Direkt bei uns") return "Vorverkauf";
   return "Sofort-Kaufen";
 }
 
@@ -185,11 +184,9 @@ export default function KartenPage() {
                   {formatPrice(product.priceAmountCents, product.priceCurrency)
                     ? <strong>{formatPrice(product.priceAmountCents, product.priceCurrency)}</strong>
                     : <strong className="interest-price">Interesse bekunden</strong>}
-                  {product.category === "Auktion"
-                    ? <a className="product-cta ebay" href={product.listingUrl || EBAY_SHOP_URL} target="_blank" rel="noreferrer">Auf eBay ansehen ↗</a>
-                    : product.category === "Vormerkliste"
-                      ? <button className="product-cta" type="button" onClick={() => { interest.setFeedback(null); setSelected(product); }}>Vormerken <span>→</span></button>
-                      : (() => {
+                  {product.category === "Vormerkliste"
+                    ? <button className="product-cta" type="button" onClick={() => { interest.setFeedback(null); setSelected(product); }}>Vormerken <span>→</span></button>
+                    : (() => {
                           const state = cartButtonState(product.quantity, cart[product.id] ?? 0);
                           return <button
                             className={state.action === "remove" ? "product-cta entfernen" : "product-cta"}

@@ -47,7 +47,7 @@ export async function GET() {
       .orderBy(desc(products.createdAt));
     const byId = new Map<string, {
       id: string; title: string; description: string | null;
-      category: "Festpreis" | "Auktion" | "Vormerkliste" | "Direkt bei uns"; priceAmountCents: number | null;
+      category: "Festpreis" | "Vormerkliste" | "Direkt bei uns"; priceAmountCents: number | null;
       priceCurrency: string; quantity: number; listingUrl: string | null; imageUrls: string[]; origin: string;
     }>();
     for (const row of rows) {
