@@ -37,49 +37,23 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-**Der Checkout wirft manuelle Karten aus dem Warenkorb** — Stand: LÄUFT
-(2026-08-09)
+*(leer — bereit für den nächsten Auftrag.)*
 
-- **Gemeldet vom Betreiber beim Durchstich F-02:** „Kann eine Karte manuell
-  anlegen und in den Warenkorb legen, dort wird sie mir aber nicht angezeigt,
-  weshalb der Warenkorb auf Leer steht."
-- **Ursache, gefunden und belegt:** `app/checkout/page.tsx:81` filtert
-  `product.category === "Festpreis"`. Eine von Hand eingestellte Karte trägt
-  „Direkt bei uns" und fällt damit stillschweigend heraus. Der Server ist
-  gesund: `/api/products` liefert die Karte mit `quantity: 1` und
-  `priceAmountCents: 1` aus, und `/api/orders` würde sie annehmen — es ist
-  reine Anzeige.
-- **Es ist die vierte Stelle derselben Sorte.** Checkout-Route, Preisvorschlag
-  und Detailseite hingen am 2026-08-09 schon am eBay-Listing; an der
-  Detailseite steht seitdem ausdrücklich „**Nicht `=== "Festpreis"` prüfen**".
-  Der Checkout hat dieselbe Zeile behalten. Deshalb wird die Entscheidung
-  diesmal **nicht** noch einmal inline geschrieben, sondern wandert als
-  Funktion nach `lib/catalog-availability.ts`, wo sie ein Test halten kann.
-- **Was angefasst wird:** `lib/catalog-availability.ts` (neue reine Funktion),
-  `app/checkout/page.tsx` (eine Zeile), `tests/catalog-availability.test.mjs`
-  (Tests samt Rot-Nachweis).
-- **Deploy ist vorgesehen**, weil der Betreiber gerade daran hängt: nach grüner
-  Kette (`tsc`, Lint, `npm test`, Bundle-Probe) aus dem **Hauptverzeichnis**,
-  nie aus diesem Worktree.
-- **Falls diese Zeile beim nächsten Start noch auf LÄUFT steht:** `git status`
-  und `git log` zeigen, wie weit es kam; die Produktion ist in jedem Fall
-  unversehrt, weil der Fehler reine Anzeige ist und ein halber Stand gar nicht
-  erst deployed würde.
-
----
-
-> **Beim Betreiber liegt gerade Schritt 2 der Befundabarbeitung: F-02.** Eine
-> Karte von Hand einstellen (`/admin` → „Karte von Hand einstellen") und bis zur
-> Bestellbestätigung durchkaufen. Es gibt bis heute **keine** Karte mit
-> `origin = 'MANUAL'` in Produktion; der ganze Vorverkaufszweig ist allein durch
-> Tests gedeckt. **Die Befunde S-03 und S-06 warten bewusst auf das Ergebnis** —
-> sie liegen in denselben Dateien, und der letzte Durchstich förderte drei
-> Fehler zutage, die kein Test gefunden hatte.
+> **Schritt 2 der Befundabarbeitung (F-02) läuft beim Betreiber und ist zur
+> Hälfte durch.** Die erste von Hand eingestellte Karte existiert:
+> `b44ee5d7a3a94f6b91d2e895a9ffd0b0`, „Testartikel von Hand", 0,01 €. Sie steht
+> im Katalog, auf `/vorverkauf`, hat eine Detailseite und liegt seit dem Deploy
+> `b1f2ad62` auch richtig im Warenkorb — bis dahin nicht, siehe Historie.
+>
+> **Offen ist der Rest des Wegs:** Bestellung anlegen, PayPal, Bestell-
+> bestätigung, Verkäufernachricht, und danach `inventory` auf `SOLD` prüfen.
+> **Erst dann ist F-02 abgehakt** — und erst dann sind S-03 und S-06 dran, die
+> bewusst darauf warten.
 
 ### **Der Betreiber muss zwei Dinge selbst prüfen**
 
-1. **Eine erste Karte von Hand einstellen** — `/admin` → „Karte von Hand
-   einstellen". Sie erscheint danach unter `/vorverkauf` und in `/karten`.
+1. ~~**Eine erste Karte von Hand einstellen**~~ — **erledigt am 2026-08-09.**
+   Der Rest des Durchstichs steht noch aus, siehe oben.
 2. **Den eBay-Anschluss einmal neu verbinden**, sobald ohnehin ein neuer
    Refresh-Token fällig ist: Der Token steht jetzt **nicht mehr** auf der
    Rückkehrseite, sondern erscheint genau einmal im Adminbereich. Wer die Seite
@@ -443,6 +417,43 @@ Sicherheits- und Funktionsbefunde im
 ---
 
 ## Historie
+
+### 2026-08-09 — Der Checkout warf manuelle Karten aus dem Warenkorb
+
+- **Stand:** ABGESCHLOSSEN, deployed als `b1f2ad62`, Commit `90ad08f`.
+- **Gemeldet vom Betreiber**, mitten im Durchstich F-02: Karte anlegen ging, in
+  den Warenkorb legen ging, der Checkout meldete danach „Dein Warenkorb ist
+  leer". Kein Fehler, keine Meldung — sie war einfach weg.
+- **Ursache:** `app/checkout/page.tsx` filterte `category === "Festpreis"`. Eine
+  manuelle Karte trägt „Direkt bei uns" und fiel stillschweigend heraus.
+  **Der Server war die ganze Zeit gesund** — `/api/products` lieferte sie mit
+  `quantity: 1` aus, `/api/orders` hätte sie angenommen. Reine Anzeige.
+- **Es war die vierte Stelle derselben Sorte.** Bestellroute, Preisvorschlag und
+  Detailseite hingen am selben Tag schon am eBay-Listing; an der Detailseite
+  steht seitdem ausdrücklich „**Nicht `=== "Festpreis"` prüfen**". Der Checkout
+  hat die Zeile trotzdem behalten — weil die Entscheidung an **jeder** Stelle
+  neu geschrieben wurde. Deshalb steht sie jetzt genau einmal:
+  `istKaufbareKategorie` in `lib/catalog-availability.ts`.
+- **Allowlist, keine Blockliste.** Eine künftige Kategorie ist erst einmal nicht
+  kaufbar. Eine Karte zu wenig im Warenkorb ist ein Anruf, eine zu viel ist ein
+  Verkauf, den es nicht gibt.
+- **Sechs Tests, Rot-Nachweis geführt** (alle sechs ohne die Korrektur rot).
+  **Zwei davon prüfen nicht die Funktion, sondern ihre Verwendung:** dass der
+  Checkout sie benutzt und den Vergleich nicht wieder einführt, und dass jede
+  Kategorie der Allowlist auch wirklich aus der Katalogroute kommt. Ein Test auf
+  die Funktion allein hätte genau diesen Rückfall nicht bemerkt — und der
+  Rückfall ist hier der wahrscheinliche Fehler, nicht die Logik.
+- **Nachgeprüft:** `tsc` sauber, Lint 0 Fehler, `npm test` **294/294**,
+  Bundle-Probe bestanden, aus dem **Hauptverzeichnis** gebaut und deployed.
+  In Produktion durchgeklickt: `/vorverkauf` → „In den Warenkorb" → `/checkout`
+  zeigt „Testartikel von Hand · 0,01 € × 1 · Zwischensumme 0,01 € · Versand
+  3,45 € · Gesamt 3,46 €", keine Konsolenfehler. **Vor „Mit PayPal fortfahren"
+  gestoppt** — den Kauf macht der Betreiber, es sollte keine fremde Bestellung
+  in den Daten stehen.
+- **Die Lehre, und sie ist dieselbe wie beim letzten Durchstich:** Diese vier
+  Fehler haben **alle** Tests bestanden. Gefunden hat sie jedes Mal jemand, der
+  eine echte Karte angelegt und durchgeklickt hat. Wer am Vorverkauf weiterbaut,
+  klickt durch.
 
 ### 2026-08-09 — Schritt 1 der Befundabarbeitung: die Dokumentation richtiggestellt
 

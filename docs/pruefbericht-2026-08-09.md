@@ -29,12 +29,31 @@ einzige Stelle, die veralten kann.
 
 | Stand | Befunde |
 |---|---|
-| **erledigt** | F-06, F-07, F-08 (2026-08-09, Dokumentation richtiggestellt — Commit siehe [ai-handover.md](ai-handover.md), Historie) |
-| **beim Betreiber** | F-02 (eine manuelle Karte anlegen und durchkaufen) |
+| **erledigt** | F-06, F-07, F-08 (Dokumentation richtiggestellt) · **F-09** (siehe unten), deployed als `b1f2ad62` |
+| **beim Betreiber, zur Hälfte durch** | F-02 — die Karte existiert und liegt richtig im Warenkorb; Bestellung, PayPal und Bestätigung stehen aus |
 | **wartet auf F-02** | S-03, S-06 |
 | **offen** | S-01, S-02, S-04, F-01 |
 | **wartet auf eine Entscheidung** | S-05 (DSGVO), F-05 (Erstattung), F-01 Teil b (manuelle Karten in der Galerie) |
 | **erledigt sich von selbst** | F-03 (nächster echter Verkauf), S-07 (nächster Next-Minor), F-04 (nächster Schemaschritt) |
+
+### F-09 · mittel · Der Checkout warf manuelle Karten aus dem Warenkorb — behoben am 2026-08-09
+
+**Nicht von dieser Prüfung gefunden, sondern von F-02.** Genau dafür stand F-02
+so weit vorne, und es ist der Beleg für seine Begründung.
+
+`app/checkout/page.tsx` filterte `category === "Festpreis"`; eine von Hand
+eingestellte Karte trägt „Direkt bei uns" und fiel **stillschweigend** aus dem
+Warenkorb — hineinlegen ging, der Checkout meldete „Dein Warenkorb ist leer".
+Der Server war gesund, es war reine Anzeige.
+
+**Die vierte Stelle derselben Sorte** nach Bestellroute, Preisvorschlag und
+Detailseite. Die Entscheidung steht deshalb jetzt einmal als
+`istKaufbareKategorie` in `lib/catalog-availability.ts`, mit sechs Tests —
+zwei davon prüfen die *Verwendung* im Checkout, nicht die Funktion.
+
+**Was das über die Testabdeckung sagt:** Alle vier Fehler haben die Testsuite
+bestanden. Gefunden hat sie jedes Mal ein Mensch, der eine echte Karte angelegt
+und durchgeklickt hat.
 
 Die Begründung dieser Reihenfolge steht am Ende unter „Abschluss".
 
