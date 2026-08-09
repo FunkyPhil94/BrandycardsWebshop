@@ -37,7 +37,26 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-*(leer — bereit für den nächsten Auftrag.)*
+### 2026-08-09 — Punkt A: die drei Oberflächen des großen Blocks
+
+- **Stand:** LÄUFT
+- **Ziel:** Die zweite Hälfte des Blocks, wie in ai-todo Punkt A beschrieben:
+  (1) Adminoberfläche zum Anlegen und Bearbeiten von Karten samt
+  Handmarkierungen, (2) Vorverkaufsbereich in der Navigation, (3) SEC-12 —
+  Anspruchs-Kennung statt Token in der OAuth-Umleitung.
+- **Der Betreiber hat die Übergabe an eine andere KI zurückgezogen** und diese
+  Sitzung weiterarbeiten lassen. Punkt A bleibt trotzdem die maßgebliche
+  Beschreibung.
+- **Migration ist angewandt**, es kommt keine weitere dazu. Neue Tabelle
+  `ebay_oauth_claims` steht bereits leer bereit.
+- **Reihenfolge:** Adminroute + Oberfläche → Vorverkaufsseite → SEC-12. Nach
+  jedem Stück Prüfkette und Commit, damit ein Abbruch nichts Halbes hinterlässt.
+- **Gefährlichste Stelle:** Eine manuelle Karte braucht **zwingend** eine
+  `inventory`-Zeile, sonst erscheint sie nicht im Katalog und lässt sich nicht
+  kaufen. Produkt und Bestand gehören deshalb in **einen** Batch.
+- **Zweitgefährlichste:** Beim Bearbeiten einer eBay-Karte muss jedes geänderte
+  Feld in `manual_overrides` landen, sonst überschreibt der Import es binnen
+  drei Minuten — die Änderung sähe erfolgreich aus und wäre trotzdem weg.
 
 ### **Übergabe an die nächste KI: der große Block ist zur Hälfte gebaut**
 
