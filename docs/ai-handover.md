@@ -37,7 +37,26 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-*(leer — bereit für den nächsten Auftrag.)*
+**Vorverkauf — Bilder und Preisvorschläge neu ausrichten** — Stand: LÄUFT (2026-08-09)
+
+- Vorverkaufskarten sollen bei der Admin-Anlage bis zu zwei JPG-, PNG- oder
+  WebP-Bilder erhalten. Die Dateien werden im privaten R2-Bucket gespeichert,
+  über eine geprüfte öffentliche Produkt-Asset-Route ausgeliefert und als
+  `product_assets` am Produkt verknüpft.
+- Eine manuelle Vorverkaufskarte trägt keinen Festpreis mehr:
+  `priceAmountCents` bleibt `null`, die Adminoberfläche zeigt kein Preisfeld,
+  und die öffentliche Vorverkaufsseite bietet nur den Preisvorschlag an.
+  Ein positiver Vorschlag ist auch ohne Listenpreis zulässig.
+- Wird der Vorschlag angenommen, wird die Karte beim nächsten Laden der
+  Produktseite automatisch einmal in den Warenkorb gelegt. Ohne angenommenen,
+  gültigen Vorschlag darf eine Vorverkaufskarte weder aus einem alten
+  `sessionStorage`-Warenkorb noch über die Bestellroute gekauft werden.
+- Abnahmekriterien: maximal zwei echte Bilder je manuell angelegter Karte,
+  keine Festpreis- oder Direktkaufdarstellung, angenommene Angebote landen im
+  Warenkorb, abgelehnte/offene/abgelaufene Angebote nicht. Danach
+  `npx tsc --noEmit`, `npm run lint`, `npm test`, committen, pushen, deployen
+  und `/`, `/admin`, `/account` sowie eine Vorverkaufs-/Detailroute live
+  prüfen. Keine Produktionsdaten schreiben.
 
 ### **Der Betreiber muss zwei Dinge selbst prüfen**
 
