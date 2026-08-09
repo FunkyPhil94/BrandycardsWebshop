@@ -37,7 +37,15 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-**Punkte 3 bis 5 umsetzen** — Stand: ABGESCHLOSSEN (2026-08-09)
+**Neue priorisierte Todo aus Sicherheits- und Funktionsanalyse aufnehmen** — Stand: LÄUFT (2026-08-09)
+
+- Die vom Betreiber gewünschten offenen Punkte werden als gebündelte Aufgaben
+  nach Nutzen und Kosten in `docs/ai-todo.md` ergänzt.
+- Die Begründung und die bewussten Reihenfolgen kommen zusätzlich in
+  `docs/ai-agent-log.md`.
+- Es werden keine Produktivdaten verändert; nach der Dokumentationsänderung
+  werden die Prüfung, der Commit, Push und der Veröffentlichungsstand
+  festgehalten.
 
 - `/api/admin/orders` paginiert jetzt mit 25 Einträgen, liefert Gesamtseiten
   und sortiert bei gleichen Zeitstempeln stabil. Ein geschütztes `PATCH` setzt
