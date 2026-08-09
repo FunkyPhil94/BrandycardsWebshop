@@ -37,57 +37,21 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-**Drei Dinge: Testartikel löschen, F-10, S-01** — Stand: LÄUFT (2026-08-09)
+**Main auf den aktuellen Arbeitsstand bringen und S-02 beheben** — Stand: LÄUFT (2026-08-09)
 
-- **🔴 Schreibender Eingriff in Produktionsdaten, vom Betreiber ausdrücklich
-  angeordnet** („Bitte lösche den Artikel aus der DB"). Betroffen ist die
-  manuelle Testkarte `b44ee5d7a3a94f6b91d2e895a9ffd0b0`.
-  **Vorher in D1 nachgesehen, wie es die Regel verlangt:** 1 `inventory`-Zeile,
-  1 `reservations`-Zeile (`CONVERTED`, blockiert per **RESTRICT** das Löschen
-  des Produkts), 1 `order_items`-Zeile (fällt per `SET NULL` auf null), 0
-  Angebote, 0 Bilder, 0 Sync-Ereignisse.
-  **Gelöscht wird der Artikel, nicht der Verkauf:** Reservierung, Bestand und
-  Produkt fallen; die bezahlte Bestellung `BC-20260809-E998831E` bleibt mit
-  Titel-Momentaufnahme, Betrag und Capture-Id stehen. Dieselbe Linie wie bei
-  der Kontolöschung — ein Rechnungsbeleg überlebt.
-  **Reihenfolge zwingend:** erst die Reservierung, dann das Produkt. Andersherum
-  bricht `RESTRICT` ab.
-- **F-10** — die Adminkachel soll nur noch **verkaufbare** Karten zählen
-  (Entscheidung des Betreibers). Heute zählt sie `products.status = 'ACTIVE'`
-  und driftet mit jeder verkauften manuellen Karte um eins.
-- **S-01** — `Promise.all` im geplanten Lauf durch `allSettled` ersetzen, damit
-  ein eBay-Fehler nicht die eBay-Rücknahme, die Freigabe abgelaufener
-  Reservierungen und die Löschfrist mitreißt.
-- **Falls diese Zeile noch auf LÄUFT steht:** Zuerst prüfen, ob die Löschung
-  ganz oder halb durchlief — `SELECT COUNT(*) FROM products WHERE
-  id='b44ee5d7a3a94f6b91d2e895a9ffd0b0'` und dieselbe Abfrage auf
-  `reservations`. Ein halber Stand hieße: Reservierung weg, Produkt noch da.
-  Das ist unschädlich (die Karte ist ohnehin verkauft), aber nachzuziehen.
-
-> **Der Vorverkauf ist durchgespielt und trägt.** Die erste von Hand
-> eingestellte Karte ist angelegt, verkauft, bezahlt und aus dem Schaufenster
-> verschwunden — Bestellung `BC-20260809-E998831E`, Bestand `SOLD`,
-> Reservierung `CONVERTED`, Webhook `PROCESSED`, **kein** Outbox-Auftrag
-> (richtig: eine manuelle Karte hat kein eBay-Angebot, das zurückzunehmen wäre).
->
-> **Zwei Kleinigkeiten, die dabei aufgefallen sind und noch offen sind:**
-> Die verkaufte Karte bleibt als Produktzeile auf `ACTIVE` stehen — unsichtbar
-> im Shop, aber die Kachel „Karten" in `/admin` zählt sie mit und driftet damit
-> um eins von den aktiven eBay-Angeboten weg (**F-10** im
-> [Prüfbericht](pruefbericht-2026-08-09.md)). Und der **Testartikel selbst**
-> steht noch in den Produktionsdaten; ob er dort bleiben soll, entscheidet der
-> Betreiber — Löschen wäre ein schreibender Eingriff.
-
-> **Schritt 2 der Befundabarbeitung (F-02) läuft beim Betreiber und ist zur
-> Hälfte durch.** Die erste von Hand eingestellte Karte existiert:
-> `b44ee5d7a3a94f6b91d2e895a9ffd0b0`, „Testartikel von Hand", 0,01 €. Sie steht
-> im Katalog, auf `/vorverkauf`, hat eine Detailseite und liegt seit dem Deploy
-> `b1f2ad62` auch richtig im Warenkorb — bis dahin nicht, siehe Historie.
->
-> **Offen ist der Rest des Wegs:** Bestellung anlegen, PayPal, Bestell-
-> bestätigung, Verkäufernachricht, und danach `inventory` auf `SOLD` prüfen.
-> **Erst dann ist F-02 abgehakt** — und erst dann sind S-03 und S-06 dran, die
-> bewusst darauf warten.
+- **Phase 1 — Git-Stand:** Der lokale Checkout steht auf `agent/initial-brandycards`
+  bei `af841f1`; GitHub führt denselben Branch bei `7760ce1`. `main` steht bei
+  `17ef207` und ist ohne Divergenz acht Commits zurück. Nach der Protokollierung
+  wird `main` per Fast-Forward auf den Arbeitsstand gebracht und der Abgleich
+  auf GitHub geprüft.
+- **Phase 2 — S-02:** PayPal-Webhooks mit `RECEIVED` dürfen nicht als erledigte
+  Duplikate gelten. Nur `PROCESSED` ist ein Duplikat; ein liegengebliebener
+  `RECEIVED`-Eintrag muss nach kurzer Frist erneut verarbeitet werden. Die
+  bestehende Idempotenz für echte `PROCESSED`-Duplikate bleibt erhalten.
+- **Abnahmekriterien:** Regressionstest für `RECEIVED` und `PROCESSED`,
+  `npx tsc --noEmit`, `npm run lint` und `npm test` grün. Keine schreibenden
+  Eingriffe in Produktionsdaten. Ergebnis, Commit und GitHub-Abgleich werden
+  anschließend hier unter „Historie" nachgetragen.
 
 ### **Der Betreiber muss zwei Dinge selbst prüfen**
 
