@@ -37,26 +37,7 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-**Vorverkauf — Bilder und Preisvorschläge neu ausrichten** — Stand: LÄUFT (2026-08-09)
-
-- Vorverkaufskarten sollen bei der Admin-Anlage bis zu zwei JPG-, PNG- oder
-  WebP-Bilder erhalten. Die Dateien werden im privaten R2-Bucket gespeichert,
-  über eine geprüfte öffentliche Produkt-Asset-Route ausgeliefert und als
-  `product_assets` am Produkt verknüpft.
-- Eine manuelle Vorverkaufskarte trägt keinen Festpreis mehr:
-  `priceAmountCents` bleibt `null`, die Adminoberfläche zeigt kein Preisfeld,
-  und die öffentliche Vorverkaufsseite bietet nur den Preisvorschlag an.
-  Ein positiver Vorschlag ist auch ohne Listenpreis zulässig.
-- Wird der Vorschlag angenommen, wird die Karte beim nächsten Laden der
-  Produktseite automatisch einmal in den Warenkorb gelegt. Ohne angenommenen,
-  gültigen Vorschlag darf eine Vorverkaufskarte weder aus einem alten
-  `sessionStorage`-Warenkorb noch über die Bestellroute gekauft werden.
-- Abnahmekriterien: maximal zwei echte Bilder je manuell angelegter Karte,
-  keine Festpreis- oder Direktkaufdarstellung, angenommene Angebote landen im
-  Warenkorb, abgelehnte/offene/abgelaufene Angebote nicht. Danach
-  `npx tsc --noEmit`, `npm run lint`, `npm test`, committen, pushen, deployen
-  und `/`, `/admin`, `/account` sowie eine Vorverkaufs-/Detailroute live
-  prüfen. Keine Produktionsdaten schreiben.
+Keine offene KI-Aufgabe.
 
 ### **Der Betreiber muss zwei Dinge selbst prüfen**
 
@@ -426,6 +407,30 @@ Sicherheits- und Funktionsbefunde im
 ---
 
 ## Historie
+
+### 2026-08-09 — Vorverkauf ohne Festpreis, mit Bildern deployed
+
+- **Stand:** abgeschlossen und live. Vorverkaufskarten können in der
+  Adminanlage bis zu zwei geprüfte JPG-, PNG- oder WebP-Bilder erhalten. Die
+  Dateien liegen im privaten R2-Bucket und werden über die öffentliche,
+  statusgeschützte Asset-Route aus `product_assets` ausgeliefert.
+- **Preislogik:** Manuelle Karten tragen dauerhaft `priceAmountCents: null`.
+  Admin, Vorverkaufsseite und Detailseite zeigen keinen Festpreis; es gibt nur
+  den Preisvorschlag. Ein positiver Vorschlag ist ohne Listenpreis zulässig.
+  Ein angenommener, noch gültiger Vorschlag legt die Karte beim Laden der
+  Detailseite einmal in den Warenkorb. Alte Warenkorbeinträge ohne gültige
+  Zusage werden im Checkout verworfen und von der Bestellroute abgelehnt.
+- **Verifikation:** `npx tsc --noEmit`, `npm run lint` und `npm test` ohne
+  Fehler; der vollständige Lauf meldete 313/313 Tests. Die Live-Prüfung lieferte
+  für `/`, `/admin`, `/account`, `/vorverkauf` und `/api/products` HTTP 200;
+  die API meldete 294 Produkte und 0 manuelle Karten. Die neue Asset-Route
+  antwortete für eine ungültige Referenz erwartungsgemäß mit HTTP 404.
+- **Veröffentlichung:** Commit `f385fdf` nach `main` und
+  `agent/initial-brandycards` gepusht. Cloudflare-Version
+  `22cfc913-f8a6-4e45-8e20-c5aa1b21c2ef` ist aktiv. Es wurden keine
+  Produktionsdaten geschrieben.
+- Die dauerhafte Vorgabe des Betreibers bleibt: Änderungen immer committen,
+  pushen und deployen.
 
 ### 2026-08-09 — F-01 technisch umgesetzt und deployed
 
