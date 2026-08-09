@@ -387,6 +387,36 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
 
 ## Historie
 
+### 2026-08-09 — Vollständige Prüfung von Sicherheit und Funktion
+
+- **Stand:** ABGESCHLOSSEN
+- **Ziel:** Reiner Prüfauftrag über den ganzen Shop, Bericht als eigene Datei.
+  Nichts ändern, nichts deployen, nichts in die Produktionsdatenbank schreiben.
+- **Ergebnis:** [pruefbericht-2026-08-09.md](pruefbericht-2026-08-09.md).
+  16 Befunde (2 mittel Sicherheit, 2 mittel Funktion, der Rest niedrig oder
+  Hinweis) und 22 ausdrücklich als tragfähig bestätigte Bereiche.
+- **Geschrieben wurde ausschließlich** die Berichtsdatei und dieser Eintrag.
+  Kein Code, keine Konfiguration, kein Deploy, kein schreibender D1-Befehl.
+- **Die drei dringendsten Punkte:** (1) `worker/index.ts` reicht `Promise.all`
+  an `waitUntil` — ein eBay-Fehler kann die eBay-Rücknahme, die Freigabe
+  abgelaufener Reservierungen und die Löschfrist mit abwürgen (`allSettled`).
+  (2) Der Vorverkaufszweig ist in Produktion **unerprobt**: 0 Karten mit
+  `origin = 'MANUAL'`, die Abnahme von Punkt 11 steht aus. (3) Der Abschnitt
+  „Offene Punkte" oben in dieser Datei ist überholt und behauptet in Rot, der
+  Shop könne kein Geld einnehmen — er kann es seit dem 2026-08-08.
+- **Prüfkette am geprüften Stand:** `npx tsc --noEmit` sauber, `npm run lint`
+  0 Fehler und 0 Warnungen, `npm test` **288/288**. Produktion läuft auf dem
+  aktuellen Code (`11c2dd57` = Codecommit `9b45c67`).
+- **Der Katalog ist gesund:** 294 aktive Produkte = 294 aktive eBay-Listings =
+  294 von `/api/products` ausgelieferte Karten, alle mit Preis und Bild, keine
+  Waisen. Seit dem 2026-08-07 kein einziger fehlgeschlagener Sync-Lauf.
+- **Nebenbefund, der jemandem auffallen wird:** Die Zeile
+  `WH-4MD290111R3948627-…` in `webhook_events` steht seit dem 2026-08-08 auf
+  `RECEIVED` statt `PROCESSED`. Das ist ein Überbleibsel des vor `e204d3d7`
+  behobenen Dublettenpfads, **nicht** ein hängender Vorgang — die zugehörige
+  Bestellung steht auf `PAID`, die Zahlung auf `CAPTURED`. Der Bericht nennt
+  unter S-02 trotzdem die Lücke, die dahinter steckt.
+
 ### 2026-08-09 — Die zwei Kandidaten aus Punkt 10
 
 - **Stand:** ABGESCHLOSSEN. Deployed als `11c2dd57`, Commit `9b45c67`.
