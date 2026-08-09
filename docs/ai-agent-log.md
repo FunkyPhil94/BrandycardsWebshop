@@ -1,5 +1,31 @@
 # BrandyCards Agentenprotokoll
 
+## 2026-08-09 — N4: Datenschutz, Aufbewahrung und Wiederherstellung
+
+- **Minimierung:** `payments.raw_data` wird nur für abgeschlossene PayPal-
+  Vorgänge (`CAPTURED`, `FAILED`, `VOIDED`, `REFUNDED`) nach 30 Tagen gelöscht.
+  `webhook_events.payload` wird für endgültig verarbeitete oder fehlgeschlagene
+  Ereignisse nach 30 Tagen geleert. Status, Beträge, Provider-IDs und Zeitpunkte
+  bleiben als Nachvollziehbarkeits-Metadaten erhalten. Die PayPal-Capture-Route
+  gibt keine Rohantwort mehr zurück.
+- **Backup:** `scripts/backup-production.mjs` exportiert D1 und lädt nur echte,
+  referenzierte R2-Uploads aus `products/` und `card-submissions/`. Die 302
+  `ebay/...`-Schlüssel sind in der aktuellen Datenbank keine R2-Objekte,
+  sondern Verweise auf direkt von eBay geladene Bild-URLs; sie werden deshalb
+  als `externalAssets` im Manifest dokumentiert und nicht fälschlich als
+  fehlende R2-Dateien gemeldet.
+- **Restore:** `scripts/restore-backup.mjs` akzeptiert ausschließlich lokale
+  Restore-Ziele. Der D1-Export wird für die isolierte Testinstanz nach
+  Tabellen-/Fremdschlüsselabhängigkeiten geordnet. Der Testlauf am 2026-08-09
+  stellte 543 Produkte, 4 Bestellungen, 4 Zahlungen und 7 Webhook-Ereignisse
+  lokal wieder her; im Produktions-Backup gab es 0 fehlende R2-Objekte und 302
+  externe eBay-Assets.
+- **Dokumentation und offener Betriebspunkt:** Datenschutztext,
+  [backup-restore.md](backup-restore.md) und N4 im Todo sind aktualisiert. Ein
+  regelmäßig eingeplanter, verschlüsselter Offsite-Backup-Job ist bewusst noch
+  nicht aktiviert, weil Zielsystem, Token, Aufbewahrung und Alarmierung eine
+  Betreiberentscheidung benötigen.
+
 ## 2026-08-09 — N3: Ausfallsicherheit, Ressourcenlimits und automatische Bereinigung
 
 - **Umsetzung:** Der geplante Worker-Lauf räumt verwaiste Uploads in den R2-

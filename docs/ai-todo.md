@@ -156,7 +156,7 @@ abgewiesen, verwaiste R2-Objekte werden automatisch und begrenzt bereinigt,
 Fremdservices haben feste Zeitlimits und die CSP erlaubt keine Inline-Styles
 ohne Antwort-Nonce.
 
-### N4. Datenschutz, Aufbewahrung und Wiederherstellung — **Nutzen: hoch · Kosten: mittel**
+### N4. Datenschutz, Aufbewahrung und Wiederherstellung — **TEILWEISE ERLEDIGT am 2026-08-09 · Nutzen: hoch · Kosten: mittel**
 
 Bevor Bestellhistorien und weitere Kundenprozesse hinzukommen, die Daten- und
 Notfallregeln sauber festlegen:
@@ -164,10 +164,27 @@ Notfallregeln sauber festlegen:
 - für `payments.raw_data` und `webhook_events.payload` entscheiden, was in
   Auskunft/Löschung gehört, wie lange es aufbewahrt wird und wann es
   pseudonymisiert oder gelöscht wird;
-- D1- und R2-Backups einrichten und eine echte Wiederherstellung regelmäßig
-  testen;
+- D1- und R2-Backups als reproduzierbaren Betreiberlauf einrichten und eine
+  echte Wiederherstellung regelmäßig testen;
 - die Aufbewahrungs- und Löschentscheidungen in Datenschutztext und
   Betriebsdokumentation konsistent festhalten.
+
+Umgesetzt: `payments.raw_data` und abgeschlossene `webhook_events.payload`
+werden nach 30 Tagen datensparsam gelöscht; Status-, Betrags-, Provider- und
+Zeitmetadaten sowie gesetzlich aufzubewahrende Bestell-/Rechnungsdaten bleiben
+erhalten. Die PayPal-Capture-Antwort gibt keine Rohantwort mehr aus. `npm run
+backup:production` exportiert D1 und tatsächlich in R2 gespeicherte Uploads;
+eBay-Bild-URLs werden als externe Quellen dokumentiert. Der Backup-Lauf vom
+2026-08-09 enthielt 543 Produkte, 4 Bestellungen, 4 Zahlungen und 7 Webhook-
+Ereignisse, ohne fehlende R2-Objekte. `npm run restore:backup` stellte diesen
+Stand anschließend lokal isoliert wieder her und verifizierte die Zählwerte.
+Die Betriebsprozedur steht in [backup-restore.md](backup-restore.md).
+
+Offen für den vollständigen Abschluss: ein regelmäßig eingeplanter,
+verschlüsselter Offsite-Backup-Zielort inklusive Zugriffstoken,
+Aufbewahrungsfrist und Alarmierung. Dafür ist eine Betreiberentscheidung zum
+Zielsystem erforderlich; der lokale Restore-Nachweis und die technische
+Backup-Prozedur sind bereits vorhanden.
 
 **Fertig, wenn:** ein Datenexport vollständig begründet ist, Fristen technisch
 greifen und eine Wiederherstellung aus einem Backup nachweislich funktioniert.

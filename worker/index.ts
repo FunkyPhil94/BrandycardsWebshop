@@ -9,6 +9,7 @@ import { cleanupOrphanedUploads, deleteExpiredCardSubmissions } from "../lib/car
 import { releaseExpiredReservations } from "../lib/paypal/settle-order";
 import { processEbayOutbox } from "../lib/ebay-outbox";
 import { expireLapsedOffers } from "../lib/price-offers";
+import { purgeExpiredSensitivePayloads } from "../lib/sensitive-data-retention";
 import { createNonce, isHtmlResponse, withSecurityHeaders } from "../lib/security-headers";
 
 interface Env {
@@ -139,6 +140,7 @@ const worker = {
       // die jemand von Hand auslösen muss, ist keine.
       ["Aufbewahrungsfrist für Kartenangebote", deleteExpiredCardSubmissions()],
       ["Verwaiste Uploads", cleanupOrphanedUploads()],
+      ["Abgelaufene Zahlungs- und Webhook-Rohdaten", purgeExpiredSensitivePayloads()],
       // Abgelaufene eBay-OAuth-Ansprüche (SEC-12). Die Abholroute räumt zwar
       // selbst auf, aber nur wenn sie gerufen wird — ein abgebrochener
       // Anschlussversuch ruft sie nie, und die Zeile trüge weiter einen

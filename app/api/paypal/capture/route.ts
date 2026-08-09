@@ -19,8 +19,8 @@ function readIds(body: CaptureRequest): { orderId: string; paypalOrderId: string
   return { orderId, paypalOrderId };
 }
 
-function captureDetails(payment: { providerCaptureId: string | null; rawData: unknown }) {
-  return { captureId: payment.providerCaptureId, status: "CAPTURED", rawData: payment.rawData };
+function captureDetails(payment: { providerCaptureId: string | null }) {
+  return { captureId: payment.providerCaptureId, status: "CAPTURED" };
 }
 
 export async function POST(request: Request) {
