@@ -37,7 +37,18 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-*(kein aktueller Auftrag)*
+**N3: Ausfallsicherheit, Ressourcenlimits und automatische Bereinigung** — Stand: LÄUFT (2026-08-09)
+
+- Die vom Betreiber bestätigte MFA-Einrichtung ist erledigt; die Secret-Rotation
+  läuft parallel beim Betreiber und wird nicht automatisch verändert.
+- Die geplante R2-Bereinigung verwaister Uploads in den Scheduled Worker
+  aufnehmen, inklusive sicherer Altersgrenze und begrenzter Löschmenge.
+- JSON- und Webhook-Nutzlasten vor dem vollständigen Puffern begrenzen sowie
+  Zeitlimits für Supabase- und OAuth-Aufrufe ergänzen.
+- `style-src 'unsafe-inline'` nur entfernen, wenn die aktuelle vinext-Ausgabe
+  ohne Inline-Stile funktioniert; andernfalls den Befund dokumentieren.
+- Nach Umsetzung Tests, Typprüfung, Lint und Build ausführen, committen,
+  pushen, deployen und öffentliche Produktionsrouten prüfen.
 
 **N2 eBay-Notification-Endpoint und Order-Event umsetzen** — Stand: ABGESCHLOSSEN (2026-08-09)
 
