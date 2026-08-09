@@ -766,3 +766,17 @@ alle öffentlichen Shop-Routen und `/api/products` live mit HTTP 200. Das
 zusätzliche Sites-Projekt wurde wegen `.openai/hosting.json` angelegt; die
 Version ist gespeichert, aber eine neue öffentliche Sites-Zieladresse bleibt
 bis zu einer separaten Freigabe unpubliziert.
+
+## 2026-08-09 — Sites öffentlich freigegeben und Apex-Domain geprüft
+
+Nach ausdrücklicher Freigabe wurde Sites-Version 2 aus dem aktuellen Stand
+gespeichert, veröffentlicht und auf `public` gestellt. Die Sites-Adresse ist
+`https://brandycards-webshop.p-brand94.chatgpt.site`; ein normaler Browser-
+User-Agent erhält HTTP 200.
+
+Die bestehende Produktion bleibt `https://shop.brandycards.de`. In
+`wrangler.toml` ist nur dieser Host als Custom Domain eingetragen. Für
+`brandycards.de` gibt es keine Redirect-Regel; die beiden Cloudflare-A-Records
+stellen nur DNS-Zustellung her und erzeugen keine HTTP-Weiterleitung. Der
+Apex-Aufruf endet derzeit mit Cloudflare HTTP 525, bevor der Worker greift.
+Eine separate 301-Weiterleitung des Apex auf den Shop ist daher noch offen.

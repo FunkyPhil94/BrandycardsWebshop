@@ -37,6 +37,18 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
+**Sites-Freigabe und Apex-Domain-Prüfung** — Stand: ABGESCHLOSSEN (2026-08-09)
+
+- Die öffentliche Sites-Version 2 wurde mit dem aktuellen Repository-Stand
+  veröffentlicht und die Zugriffsebene auf `public` gestellt. Erreichbar unter
+  `https://brandycards-webshop.p-brand94.chatgpt.site`.
+- `brandycards.de` leitet nicht weiter, weil `wrangler.toml` ausschließlich
+  `shop.brandycards.de` als Custom Domain bindet. DNS-Einträge auf Cloudflare
+  sind keine HTTP-Weiterleitung; für den Apex-Host existiert keine Redirect-
+  Regel und der Aufruf endet aktuell vor der Anwendung mit Cloudflare HTTP 525.
+  Eine 301-Regel für `brandycards.de/*` ist eine separate, noch nicht
+  beauftragte Änderung.
+
 **Englische Sprachversion** — Stand: ABGESCHLOSSEN (2026-08-09)
 
 - Der Betreiber hat entschieden, den gesamten Kundenbereich zu übersetzen:
