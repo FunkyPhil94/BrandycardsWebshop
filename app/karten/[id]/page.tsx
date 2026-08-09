@@ -17,7 +17,7 @@ type Detail = {
   descriptionHtml: string | null;
   specs: CardSpec[];
   sections: CardSection[];
-  category: "Festpreis" | "Auktion";
+  category: "Festpreis" | "Auktion" | "Direkt bei uns";
   priceAmountCents: number | null;
   priceCurrency: string;
   quantity: number;
@@ -121,7 +121,7 @@ export default function KartenDetailPage({ params }: { params: Promise<{ id: str
         </div>
 
         <div className="detail-info">
-          <p className="eyebrow">{card.category === "Auktion" ? "EBAY AUKTION" : "SOFORT-KAUFEN"}</p>
+          <p className="eyebrow">{card.category === "Auktion" ? "EBAY AUKTION" : card.category === "Direkt bei uns" ? "VORVERKAUF" : "SOFORT-KAUFEN"}</p>
           <h1>{card.title}</h1>
           {price && <p className="detail-price">{price}</p>}
           <p className="detail-stock">{card.quantity > 0 ? `${card.quantity} verfügbar` : "Derzeit nicht verfügbar"}</p>
@@ -143,7 +143,14 @@ export default function KartenDetailPage({ params }: { params: Promise<{ id: str
             {card.listingUrl && <a className="text-link" href={card.listingUrl} target="_blank" rel="noreferrer">Angebot bei eBay <span>↗</span></a>}
           </div>
 
-          {card.category === "Festpreis" && card.quantity > 0 &&
+          {/* **`!== "Auktion"`, nicht `=== "Festpreis"`.** Von Hand eingestellte
+              Karten tragen die Kategorie „Direkt bei uns" und sollen laut
+              Entscheidung des Betreibers vom 2026-08-08 **genauso verhandelbar**
+              sein wie eBay-Karten. Mit der alten Prüfung auf „Festpreis" fehlte
+              ihnen der Kasten stillschweigend — der Shop bewirbt Verhandeln,
+              und ausgerechnet die eigenen Karten hätten es nicht angeboten.
+              Auktionen bleiben draußen: Dort bietet man bei eBay. */}
+          {card.category !== "Auktion" && card.quantity > 0 &&
             <OfferForm productId={card.id} listPriceCents={card.priceAmountCents} currency={card.priceCurrency} />}
 
           <dl className="detail-facts">

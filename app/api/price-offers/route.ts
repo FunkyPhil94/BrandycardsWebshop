@@ -28,19 +28,31 @@ export async function POST(request: Request) {
     const message = optionalString(body, "message", "Nachricht", 1000);
 
     const db = getDb();
+    // **`leftJoin`, seit es von Hand eingestellte Karten gibt.** Sie haben kein
+    // Listing; mit `innerJoin` lief jeder Vorschlag auf sie in ein 404, obwohl
+    // der Kasten auf der Kartenseite stand. Der Betreiber hat am 2026-08-08
+    // entschieden, dass auch diese Karten verhandelbar sind.
     const rows = await db.select({ product: products, listing: ebayListings })
       .from(products)
-      .innerJoin(ebayListings, eq(ebayListings.productId, products.id))
-      .where(and(eq(products.id, productId), eq(products.status, "ACTIVE"), eq(ebayListings.status, "ACTIVE")))
+      .leftJoin(ebayListings, eq(ebayListings.productId, products.id))
+      .where(and(eq(products.id, productId), eq(products.status, "ACTIVE")))
       .limit(1);
 
     const row = rows[0];
     if (!row) throw new PublicFormError(404, "PRODUCT_NOT_FOUND", "Diese Karte ist nicht verfügbar.");
-    if (row.listing.listingType === "AUCTION") {
+    const manuell = row.product.origin === "MANUAL";
+    // Eine eBay-Karte ohne aktives Listing steht nicht im Verkauf; bei einer
+    // manuellen Karte gibt es kein Listing, das aktiv sein könnte.
+    if (!manuell && row.listing?.status !== "ACTIVE") {
+      throw new PublicFormError(404, "PRODUCT_NOT_FOUND", "Diese Karte ist nicht verfügbar.");
+    }
+    if (row.listing?.listingType === "AUCTION") {
       throw new PublicFormError(400, "AUCTION_NOT_NEGOTIABLE", "Bei Auktionen wird direkt auf eBay geboten.");
     }
 
-    const listPrice = row.listing.priceAmountCents;
+    // Der Listenpreis, gegen den der Vorschlag gemessen wird: bei manuellen
+    // Karten steht er am Produkt, sonst im Listing.
+    const listPrice = manuell ? row.product.priceAmountCents : row.listing?.priceAmountCents ?? null;
     if (!listPrice) throw new PublicFormError(400, "NO_LIST_PRICE", "Für diese Karte liegt kein Preis vor.");
 
     const amount = Math.round(proposed * 100);
@@ -72,7 +84,7 @@ export async function POST(request: Request) {
       userId: appUser.id,
       guestEmail: appUser.email,
       proposedAmountCents: amount,
-      currency: row.listing.priceCurrency,
+      currency: manuell ? row.product.priceCurrency : row.listing?.priceCurrency ?? "EUR",
       message,
       status: "NEW",
     }).returning({ id: priceOffers.id });

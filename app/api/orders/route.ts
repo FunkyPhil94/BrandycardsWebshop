@@ -63,23 +63,37 @@ export async function POST(request: Request) {
     if (!capacity.allowed) throw new OrderIssue(capacity.message);
 
     const ids = Array.from(requested.keys());
+    // **Das Listing hängt per `leftJoin`, der Bestand weiterhin zwingend.**
+    // Von Hand eingestellte Karten haben kein Listing; mit `innerJoin` ließen
+    // sie sich nicht kaufen — die Bestellung scheiterte mit „nicht mehr
+    // verfügbar", obwohl die Karte im Schaufenster stand. Der Bestand dagegen
+    // bleibt bei **jeder** Karte Pflicht: ohne ihn gibt es nichts zu reservieren.
     const rows = await db.select({ product: products, listing: ebayListings, stock: inventory }).from(products)
-        .innerJoin(ebayListings, and(eq(ebayListings.productId, products.id), eq(ebayListings.status, "ACTIVE"), eq(ebayListings.listingType, "FIXED_PRICE")))
+        .leftJoin(ebayListings, and(eq(ebayListings.productId, products.id), eq(ebayListings.status, "ACTIVE"), eq(ebayListings.listingType, "FIXED_PRICE")))
         .innerJoin(inventory, eq(inventory.productId, products.id)).where(and(inArray(products.id, ids), eq(products.status, "ACTIVE")));
     if (rows.length !== ids.length) throw new OrderIssue("Ein Artikel ist nicht mehr verfügbar.");
+    // Eine eBay-Karte ohne aktives Festpreis-Listing gehört nicht in eine
+    // Bestellung. Vor dem `leftJoin` erledigte das die Verknüpfung selbst.
+    for (const row of rows) {
+        if (row.product.origin !== "MANUAL" && !row.listing) throw new OrderIssue(`Artikel nicht mehr verfügbar: ${row.product.title}`);
+    }
     // Negotiated prices are resolved here, never taken from the request. The
     // browser only names product ids; what each one costs for this customer is
     // decided server-side from their accepted, unexpired offers.
     const negotiated = await acceptedOfferPrices(db, appUser.id, ids);
     const lineItems = rows.map(({ product, listing, stock }) => {
         const quantity = requested.get(product.id) ?? 0;
-        if (!listing.priceAmountCents || listing.priceAmountCents < 1 || stock.availableQuantity < quantity || stock.status === "UNAVAILABLE" || stock.status === "SOLD") throw new OrderIssue(`Artikel nicht mehr verfügbar: ${product.title}`);
+        // Der Listenpreis kommt bei manuellen Karten vom Produkt, sonst aus dem
+        // Listing. Beides bleibt serverseitig ermittelt — der Browser nennt nur
+        // Kennungen, nie Beträge.
+        const listenpreis = product.origin === "MANUAL" ? product.priceAmountCents : listing?.priceAmountCents ?? null;
+        if (!listenpreis || listenpreis < 1 || stock.availableQuantity < quantity || stock.status === "UNAVAILABLE" || stock.status === "SOLD") throw new OrderIssue(`Artikel nicht mehr verfügbar: ${product.title}`);
         // An accepted offer only ever lowers the price; should the list price
         // have dropped below it in the meantime, the customer pays the lower one.
         // Die Regel steht in `lib/price-offers.ts`, weil der Checkout sie seit
         // dem 2026-08-08 zum Anzeigen ebenfalls braucht — zweimal geschrieben
         // wäre sie zweimal zu pflegen.
-        const unitPrice = effectiveUnitPrice(listing.priceAmountCents, negotiated.get(product.id));
+        const unitPrice = effectiveUnitPrice(listenpreis, negotiated.get(product.id));
         return { product, listing, stock, quantity, unitPrice, total: unitPrice * quantity };
     });
     const subtotal = lineItems.reduce((sum, item) => sum + item.total, 0);
@@ -124,7 +138,10 @@ export async function POST(request: Request) {
     }
     const writes = [
       db.insert(orders).values({ id, orderNumber: number, userId: appUser.id, status: "PENDING", currency: "EUR", subtotalAmountCents: subtotal, shippingAmountCents: shipping, totalAmountCents: total, shippingAddress, billingAddress: shippingAddress }),
-      ...lineItems.map((item) => db.insert(orderItems).values({ orderId: id, productId: item.product.id, titleSnapshot: item.product.title, skuSnapshot: item.listing.sku, quantity: item.quantity, unitAmountCents: item.unitPrice, totalAmountCents: item.total, productSnapshot: { title: item.product.title, listingId: item.listing.id } })),
+      // `listing` fehlt bei manuellen Karten. Die Momentaufnahme in der
+      // Bestellposition hält dann fest, dass es keine gab — der Beleg soll
+      // sagen, was war, nicht so tun, als wäre alles gleich.
+      ...lineItems.map((item) => db.insert(orderItems).values({ orderId: id, productId: item.product.id, titleSnapshot: item.product.title, skuSnapshot: item.listing?.sku ?? null, quantity: item.quantity, unitAmountCents: item.unitPrice, totalAmountCents: item.total, productSnapshot: { title: item.product.title, listingId: item.listing?.id ?? null, origin: item.product.origin } })),
       ...lineItems.map((item) => db.insert(reservations).values({ orderId: id, productId: item.product.id, inventoryId: item.stock.id, userId: appUser.id, quantity: item.quantity, status: "ACTIVE", expiresAt })),
     ] as const;
     await db.batch(writes);

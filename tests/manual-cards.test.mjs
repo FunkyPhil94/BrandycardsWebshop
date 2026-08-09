@@ -210,3 +210,21 @@ test("SEC-12: abgelaufene Ansprüche räumt der geplante Lauf ab", async () => {
   const worker = await readFile(new URL("../worker/index.ts", import.meta.url), "utf8");
   assert.match(worker, /delete\(ebayOauthClaims\)\.where\(lte\(/u);
 });
+
+test("manuelle Karten sind kaufbar und verhandelbar", async () => {
+  // **Drei Stellen hingen noch am eBay-Listing** und hätten manuelle Karten
+  // stillschweigend ausgesperrt: der Checkout (Bestellung scheiterte mit
+  // „nicht mehr verfügbar"), der Preisvorschlag (404, obwohl der Kasten
+  // dastand) und die Detailseite (Kasten wurde gar nicht erst gezeigt).
+  const bestellung = await readFile(new URL("../app/api/orders/route.ts", import.meta.url), "utf8");
+  assert.ok(!/innerJoin\(ebayListings/u.test(bestellung), "das Listing darf den Kauf nicht mehr erzwingen");
+  assert.match(bestellung, /innerJoin\(inventory/u, "der Bestand bleibt Pflicht: ohne ihn gibt es nichts zu reservieren");
+
+  const vorschlag = await readFile(new URL("../app/api/price-offers/route.ts", import.meta.url), "utf8");
+  assert.ok(!/innerJoin\(ebayListings/u.test(vorschlag));
+  assert.match(vorschlag, /manuell \? row\.product\.priceAmountCents/u, "der Listenpreis kommt bei manuellen Karten vom Produkt");
+
+  const detailseite = await readFile(new URL("../app/karten/[id]/page.tsx", import.meta.url), "utf8");
+  assert.match(detailseite, /card\.category !== "Auktion" && card\.quantity > 0/u,
+    "der Preisvorschlag-Kasten darf nicht mehr an der Kategorie Festpreis hängen");
+});
