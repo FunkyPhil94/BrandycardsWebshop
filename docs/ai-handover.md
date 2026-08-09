@@ -37,24 +37,7 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-### 2026-08-09 — Die zwei Kandidaten aus ai-todo Punkt 10
-
-- **Stand:** LÄUFT
-- **Vom Betreiber freigegeben**, beide standen bis heute als unbestätigte
-  Kandidaten in Punkt 10 („vor dem Ändern fragen").
-- **Kandidat 1 — toter Auktionscode.** Die Auktionszweige in `meta()` und
-  `badge()` (`app/karten/page.tsx`) sind seit dem 2026-08-08 unerreichbar:
-  `istImKatalogSichtbar` filtert Auktionen aus. Sie erwecken beim Lesen den
-  Eindruck, der Shop zeige Auktionen. **Vor dem Löschen prüfen, ob die API sie
-  wirklich nicht mehr ausliefert** — sonst stünde plötzlich „Sofort-Kaufen" an
-  einer Auktion.
-- **Kandidat 2 — Texte auf `/verkaufen` und `/anfragen`.** Seit dem 2026-08-06
-  unverändert, während der Shop inzwischen echtes Geld einnimmt, Verhandeln
-  bewirbt und einen Vorverkauf hat. **Nur Sachfehler und veraltete Aussagen
-  ändern, keine Neutextung auf Verdacht** — der Arbeitsvorrat warnt
-  ausdrücklich davor, Texte anzufassen, die niemand angefordert hat.
-- **Jede Textänderung wird dem Betreiber mit Vorher/Nachher vorgelegt**, damit
-  er widersprechen kann.
+*(leer — bereit für den nächsten Auftrag.)*
 
 ### **Der Betreiber muss zwei Dinge selbst prüfen**
 
@@ -403,6 +386,31 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
 ---
 
 ## Historie
+
+### 2026-08-09 — Die zwei Kandidaten aus Punkt 10
+
+- **Stand:** ABGESCHLOSSEN. Deployed als `11c2dd57`, Commit `9b45c67`.
+  `tsc` sauber, Lint 0 Warnungen, `npm test` 288/288.
+- **Kandidat 1, toter Auktionscode — entfernt.** Die Auktionszweige in
+  `app/karten/page.tsx` (`meta()`, `badge()`, der Knopf „Auf eBay ansehen") und
+  in `app/karten/[id]/page.tsx` (Ausweis, „Auf eBay bieten") sind ersatzlos
+  gestrichen, ebenso die Kategorie `"Auktion"` aus den Typen von
+  `app/api/products/route.ts` und beiden Seiten.
+  **Vor dem Löschen geprüft, nicht angenommen:** `istImKatalogSichtbar` weist
+  `listingType === "AUCTION"` ab, und `/api/products` liefert in Produktion nur
+  noch `"Festpreis"` — nachgemessen nach dem Deploy.
+  Nebenbei kam heraus, dass `badge()` für manuelle Karten „Sofort-Kaufen"
+  gezeigt hätte; steht jetzt auf „Vorverkauf".
+- **Kandidat 2, Texte auf `/verkaufen` und `/anfragen` — geprüft, eine Stelle
+  geändert.** Auf `/anfragen` stand „Manche Karten liegen schon in unserer
+  Sammlung, aber noch nicht im Shop" — ein Zustand ohne Ort, seit es den
+  Vorverkauf gibt. Der Satz zeigt jetzt dorthin.
+- **`/verkaufen` blieb unverändert, und das ist der Befund, nicht das
+  Ausbleiben eines Befunds.** Die Angaben stimmen mit dem Code überein:
+  fünf Bilder, 10 MB je Bild, JPG/PNG/WebP — gegen
+  `app/api/card-submissions/route.ts` geprüft. Die drei Schritte beschreiben
+  den Ankauf weiterhin richtig. Punkt 10 warnt ausdrücklich davor, Texte
+  anzufassen, die niemand angefordert hat.
 
 ### 2026-08-09 — Adminkonsole fertig: 12.4 und 12.5
 

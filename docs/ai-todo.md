@@ -853,14 +853,23 @@ lassen.
 Vor dem Ändern fragen. Sie stehen hier, damit sie nicht verlorengehen, **nicht**
 als Auftrag.
 
-- **Die Auktionszweige in `meta()` und `badge()`** (`app/karten/page.tsx`) sind
-  seit dem 2026-08-08 unerreichbar — Auktionen erscheinen nicht mehr im
-  Katalog. Toter Code, der beim Lesen den falschen Eindruck erweckt, der Shop
-  zeige Auktionen. Dasselbe gilt für den Auktionszweig in
-  `app/api/products/route.ts`, falls dort noch einer steht.
-- **`/verkaufen` und `/anfragen`** sind seit dem 2026-08-06 unverändert. Ob
-  ihre Texte noch zum heutigen Shop passen — der inzwischen echtes Geld
-  einnimmt und Verhandeln bewirbt —, hat niemand geprüft.
+*(derzeit keine — die beiden bisherigen sind am 2026-08-09 abgearbeitet, siehe
+unten.)*
+
+### Erledigt, zweite Runde
+
+- ~~**Toter Auktionscode.**~~ Erledigt am 2026-08-09, deployed als `11c2dd57`.
+  Auktionszweige in `app/karten/page.tsx` und `app/karten/[id]/page.tsx`
+  ersatzlos gestrichen, Kategorie `"Auktion"` aus den Typen entfernt. Vorher
+  geprüft, dass `/api/products` sie wirklich nicht mehr ausliefert. Dabei fiel
+  auf, dass `badge()` manuellen Karten „Sofort-Kaufen" gegeben hätte — steht
+  jetzt auf „Vorverkauf".
+- ~~**Texte auf `/verkaufen` und `/anfragen`.**~~ Geprüft am 2026-08-09.
+  **Geändert wurde genau ein Satz** auf `/anfragen`: „liegen schon in unserer
+  Sammlung, aber noch nicht im Shop" war seit dem Vorverkauf ein Zustand ohne
+  Ort und zeigt jetzt dorthin. **`/verkaufen` blieb unverändert** — die
+  Angaben (fünf Bilder, 10 MB, JPG/PNG/WebP) decken sich mit
+  `app/api/card-submissions/route.ts`, die drei Schritte stimmen weiterhin.
 
 ---
 
