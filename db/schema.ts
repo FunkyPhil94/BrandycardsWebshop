@@ -76,7 +76,7 @@ export const products = sqliteTable("products", {
   // products intentionally remain title-first with optional assets.
   description: text("description"),
   // Preis am Produkt. Bei eBay-Karten steht er im Listing und bleibt hier leer;
-  // eine manuelle Karte hat kein Listing und trägt ihn deshalb bei sich.
+  // eine manuelle Vorverkaufskarte hat bewusst ebenfalls keinen Festpreis.
   priceAmountCents: integer("price_amount_cents"),
   priceCurrency: text("price_currency").notNull().default("EUR"),
   // Welche Felder von Hand gesetzt wurden, als JSON-Liste von Feldnamen. Der

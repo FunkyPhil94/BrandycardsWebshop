@@ -127,17 +127,19 @@ export default function KartenDetailPage({ params }: { params: Promise<{ id: str
           <p className="detail-stock">{card.quantity > 0 ? `${card.quantity} verfügbar` : "Derzeit nicht verfügbar"}</p>
 
           <div className="detail-actions">
-            {(() => {
-              const state = cartButtonState(card.quantity, cart[card.id] ?? 0);
-              return <button
-                className={state.action === "remove" ? "button button-outline" : "button button-primary"}
-                type="button"
-                disabled={state.disabled}
-                onClick={() => state.action === "remove" ? removeFromCart(card.id) : addToCart(card.id, card.quantity)}
-              >
-                {state.label}{state.action && <span>{state.action === "remove" ? "×" : "+"}</span>}
-              </button>;
-            })()}
+            {card.category === "Direkt bei uns"
+              ? <span className="detail-offer-only">Nur Preisvorschlag möglich</span>
+              : (() => {
+                  const state = cartButtonState(card.quantity, cart[card.id] ?? 0);
+                  return <button
+                    className={state.action === "remove" ? "button button-outline" : "button button-primary"}
+                    type="button"
+                    disabled={state.disabled}
+                    onClick={() => state.action === "remove" ? removeFromCart(card.id) : addToCart(card.id, card.quantity)}
+                  >
+                    {state.label}{state.action && <span>{state.action === "remove" ? "×" : "+"}</span>}
+                  </button>;
+                })()}
             {card.listingUrl && <a className="text-link" href={card.listingUrl} target="_blank" rel="noreferrer">Angebot bei eBay <span>↗</span></a>}
           </div>
 

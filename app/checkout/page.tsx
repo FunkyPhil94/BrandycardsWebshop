@@ -85,17 +85,36 @@ export default function CheckoutPage() {
   // Checkout meldete „Dein Warenkorb ist leer". Beim Durchstich gefunden, nicht
   // von einem Test. Die Entscheidung steht jetzt einmal in
   // `lib/catalog-availability.ts` und wird dort geprüft.
-  const items = useMemo(() => products
-    .filter((product) => istKaufbareKategorie(product.category) && cart[product.id] > 0 && product.quantity > 0)
-    .map((product) => {
-      const listPrice = product.priceAmountCents ?? 0;
-      // Dieselbe Regel wie auf dem Bestellweg, aus derselben Datei — ein
-      // angenommenes Angebot senkt nur.
-      const unitPrice = effectiveUnitPrice(listPrice, offers[product.id]);
-      return { product, quantity: Math.min(cart[product.id], product.quantity), listPrice, unitPrice, ausgehandelt: unitPrice < listPrice };
-    }), [cart, products, offers]);
+  const items = useMemo(() => {
+    const result: Array<{
+      product: Product;
+      quantity: number;
+      listPrice: number | null;
+      unitPrice: number;
+      ausgehandelt: boolean;
+      akzeptiert: boolean;
+    }> = [];
+    for (const product of products) {
+      if (!istKaufbareKategorie(product.category) || cart[product.id] <= 0 || product.quantity <= 0) continue;
+      const listPrice = product.priceAmountCents;
+      // Ohne Festpreis darf nur ein angenommenes Angebot die Karte in den
+      // Checkout bringen. Die verbindliche Prüfung macht der Server erneut.
+      const agreed = offers[product.id];
+      const unitPrice = effectiveUnitPrice(listPrice, agreed);
+      if (unitPrice === null) continue;
+      result.push({
+        product,
+        quantity: Math.min(cart[product.id], product.quantity),
+        listPrice,
+        unitPrice,
+        ausgehandelt: listPrice !== null && unitPrice < listPrice,
+        akzeptiert: agreed !== undefined,
+      });
+    }
+    return result;
+  }, [cart, products, offers]);
   const subtotal = items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
-  const ersparnis = items.reduce((sum, item) => sum + (item.listPrice - item.unitPrice) * item.quantity, 0);
+  const ersparnis = items.reduce((sum, item) => sum + (item.listPrice === null ? 0 : item.listPrice - item.unitPrice) * item.quantity, 0);
   const shipping = address.country === "DE" ? 345 : 1449;
   const total = subtotal + shipping;
 
@@ -169,10 +188,10 @@ export default function CheckoutPage() {
               <button className="button button-primary checkout-submit" disabled={busy}>{busy ? "Weiterleitung zu PayPal …" : "Mit PayPal fortfahren"}<span>→</span></button>
             </form>
 
-            <aside className="checkout-summary"><p className="eyebrow">DEINE AUSWAHL</p><h2>Bestellübersicht</h2><div className="checkout-items">{items.map(({ product, quantity, listPrice, unitPrice, ausgehandelt }) => <div className="checkout-item" key={product.id}><div><strong>{product.title}</strong><span>{ausgehandelt ? <>
-              <s className="checkout-listenpreis">{formatMoney(listPrice, product.priceCurrency)}</s>{" "}
+            <aside className="checkout-summary"><p className="eyebrow">DEINE AUSWAHL</p><h2>Bestellübersicht</h2><div className="checkout-items">{items.map(({ product, quantity, listPrice, unitPrice, ausgehandelt, akzeptiert }) => <div className="checkout-item" key={product.id}><div><strong>{product.title}</strong><span>{ausgehandelt ? <>
+              <s className="checkout-listenpreis">{formatMoney(listPrice ?? 0, product.priceCurrency)}</s>{" "}
               <span className="checkout-verhandelt">{formatMoney(unitPrice, product.priceCurrency)}</span>
-            </> : formatMoney(unitPrice, product.priceCurrency)} × {quantity}</span>{ausgehandelt && <span className="checkout-verhandelt-hinweis">Dein ausgehandelter Preis</span>}</div><button type="button" onClick={() => updateQuantity(product.id, quantity - 1)}>Entfernen</button></div>)}</div><div className="checkout-total"><div><span>Zwischensumme</span><strong>{formatMoney(subtotal)}</strong></div>{ersparnis > 0 && <div className="checkout-ersparnis"><span>Deine Ersparnis</span><strong>−{formatMoney(ersparnis)}</strong></div>}<div><span>Versand</span><strong>{formatMoney(shipping)}</strong></div><div className="total-line"><span>Gesamt</span><strong>{formatMoney(total)}</strong></div></div><p className="checkout-hint">Mit dem Klick auf „Mit PayPal fortfahren“ stimmst du den Bestellbedingungen zu.</p></aside>
+            </> : formatMoney(unitPrice, product.priceCurrency)} × {quantity}</span>{(ausgehandelt || akzeptiert) && <span className="checkout-verhandelt-hinweis">{ausgehandelt ? "Dein ausgehandelter Preis" : "Dein akzeptierter Preis"}</span>}</div><button type="button" onClick={() => updateQuantity(product.id, quantity - 1)}>Entfernen</button></div>)}</div><div className="checkout-total"><div><span>Zwischensumme</span><strong>{formatMoney(subtotal)}</strong></div>{ersparnis > 0 && <div className="checkout-ersparnis"><span>Deine Ersparnis</span><strong>−{formatMoney(ersparnis)}</strong></div>}<div><span>Versand</span><strong>{formatMoney(shipping)}</strong></div><div className="total-line"><span>Gesamt</span><strong>{formatMoney(total)}</strong></div></div><p className="checkout-hint">Mit dem Klick auf „Mit PayPal fortfahren“ stimmst du den Bestellbedingungen zu.</p></aside>
           </div>
         )}
       </div>

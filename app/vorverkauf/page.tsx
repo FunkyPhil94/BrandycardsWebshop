@@ -2,8 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { cartButtonState } from "../../lib/cart.ts";
-import { SiteFooter, SiteHeader, formatPrice, useCart } from "../site-chrome";
+import { SiteFooter, SiteHeader } from "../site-chrome";
 
 type Product = {
   id: string;
@@ -30,7 +29,6 @@ type Product = {
 export default function VorverkaufPage() {
   const [cards, setCards] = useState<Product[]>([]);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
-  const { cart, addToCart, removeFromCart } = useCart();
 
   useEffect(() => {
     let cancelled = false;
@@ -65,7 +63,6 @@ export default function VorverkaufPage() {
 
         {status === "ready" && cards.length > 0 && <div className="product-grid">
           {cards.map((card) => {
-            const knopf = cartButtonState(card.quantity, cart[card.id] ?? 0);
             return <article className="product-card" key={card.id}>
               <div className="product-image">
                 <Link href={`/karten/${card.id}`} className="product-image-link" aria-label={card.title}>
@@ -84,10 +81,8 @@ export default function VorverkaufPage() {
                 <h3><Link href={`/karten/${card.id}`}>{card.title}</Link></h3>
                 {card.description && <p className="product-description">{card.description}</p>}
                 <div className="product-footer">
-                  <strong>{formatPrice(card.priceAmountCents, card.priceCurrency) ?? "Preis auf Anfrage"}</strong>
-                  {knopf.action === "remove"
-                    ? <button type="button" className="product-cta" onClick={() => removeFromCart(card.id)}>{knopf.label} <span>×</span></button>
-                    : <button type="button" className="product-cta" disabled={knopf.disabled} onClick={() => addToCart(card.id, card.quantity)}>{knopf.label} <span>→</span></button>}
+                  <strong>Preis auf Anfrage</strong>
+                  <Link className="product-cta" href={`/karten/${card.id}`}>Preis vorschlagen <span>→</span></Link>
                 </div>
               </div>
             </article>;

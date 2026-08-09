@@ -1,7 +1,7 @@
 import { and, desc, eq, like, sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
-import { getDb } from "../../../../db";
-import { ebayListings, inventory, products, reservations } from "../../../../db/schema";
+import { getAssetBucket, getDb } from "../../../../db";
+import { ebayListings, inventory, productAssets, products, reservations } from "../../../../db/schema";
 import { requireAdmin } from "../../../../lib/admin-access";
 import { HANDFELDER, handfelder, type Handfeld } from "../../../../lib/manual-overrides";
 
@@ -10,18 +10,21 @@ const MAX_TITLE = 200;
 const MAX_DESCRIPTION = 4000;
 /** 100 000 Cent = 1000 €. Keine technische Grenze, sondern eine Bremse gegen
  *  den verrutschten Dezimalpunkt: 1500 statt 15,00 ist der teure Tippfehler. */
-const MAX_PRICE_CENTS = 100_000;
 const MAX_QUANTITY = 99;
+const MAX_MANUAL_IMAGES = 2;
+const MAX_IMAGE_BYTES = 10_000_000;
+const MAX_MANUAL_UPLOAD_BYTES = 22_000_000;
+
+class AdminProductInputError extends Error {
+  constructor(public readonly status: 400 | 411 | 413, message: string) {
+    super(message);
+  }
+}
 
 function text(wert: unknown, maxLaenge: number): string | null {
   if (typeof wert !== "string") return null;
   const sauber = wert.trim();
   return sauber.length === 0 || sauber.length > maxLaenge ? null : sauber;
-}
-
-function cents(wert: unknown): number | null {
-  if (typeof wert !== "number" || !Number.isInteger(wert) || wert < 1 || wert > MAX_PRICE_CENTS) return null;
-  return wert;
 }
 
 /** Alle Karten für die Adminliste — eBay-Karten und manuelle nebeneinander.
@@ -72,7 +75,7 @@ export async function GET(request: Request) {
         // Der wirksame Preis: Bei eBay-Karten das Listing, bei manuellen das
         // Produkt. Die Oberfläche soll nicht dieselbe Fallunterscheidung noch
         // einmal treffen müssen.
-        effectivePriceCents: row.origin === "MANUAL" ? row.priceAmountCents : row.listingPriceCents,
+        effectivePriceCents: row.origin === "MANUAL" ? null : row.listingPriceCents,
       })),
       handfelder: [...HANDFELDER],
     }, { headers: { "cache-control": "no-store" } });
@@ -84,7 +87,7 @@ export async function GET(request: Request) {
 
 /** Legt eine von Hand eingestellte Karte an.
  *
- * **Produkt und Bestandszeile gehören in einen Batch.** Bleibt die
+ * **Produkt, Bestandszeile und Bilder gehören in einen Batch.** Bleibt die
  * Bestandszeile aus, ist die Karte unsichtbar (`verfuegbareMenge` liefert 0 für
  * manuelle Karten ohne Bestand) und unverkäuflich (`app/api/orders/route.ts`
  * lehnt ab) — und zwar ohne Fehlermeldung. Das war Falle Nummer 4 aus ai-todo
@@ -95,13 +98,15 @@ export async function POST(request: Request) {
   if (guard.response) return guard.response;
 
   try {
-    const body = await request.json() as { title?: unknown; description?: unknown; priceAmountCents?: unknown; quantity?: unknown };
+    if (request.headers.get("content-type")?.startsWith("multipart/form-data")) {
+      return await createManualProductWithImages(request, guard.user?.id ?? null);
+    }
+    const body = await request.json() as { title?: unknown; description?: unknown; quantity?: unknown };
     const title = text(body.title, MAX_TITLE);
     const description = typeof body.description === "string" && body.description.trim() ? text(body.description, MAX_DESCRIPTION) : null;
-    const preis = cents(body.priceAmountCents);
     const menge = typeof body.quantity === "number" && Number.isInteger(body.quantity) && body.quantity >= 1 && body.quantity <= MAX_QUANTITY ? body.quantity : null;
-    if (!title || !preis || !menge) {
-      return NextResponse.json({ error: "Titel, Preis (1 Cent bis 1000 €) und Menge (1 bis 99) müssen stimmen." }, { status: 400 });
+    if (!title || !menge) {
+      return NextResponse.json({ error: "Titel und Menge (1 bis 99) müssen stimmen." }, { status: 400 });
     }
 
     const db = getDb();
@@ -113,7 +118,7 @@ export async function POST(request: Request) {
       // Begründung im Kopf von drizzle/0006_manual_cards_and_oauth_claims.sql.
       db.insert(products).values({
         id, kind: "PRELISTED", origin: "MANUAL", status: "ACTIVE",
-        title, description, priceAmountCents: preis, priceCurrency: "EUR",
+        title, description, priceAmountCents: null, priceCurrency: "EUR",
         createdByUserId: guard.user?.id ?? null, createdAt: now, updatedAt: now,
       }),
       db.insert(inventory).values({ productId: id, availableQuantity: menge, status: "AVAILABLE", updatedAt: now }),
@@ -121,9 +126,113 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ ok: true, id }, { status: 201 });
   } catch (error) {
+    if (error instanceof AdminProductInputError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
     console.error("admin product create failed", error);
     return NextResponse.json({ error: "Die Karte konnte nicht angelegt werden." }, { status: 503 });
   }
+}
+
+type UploadedManualImage = { bytes: Uint8Array; mimeType: string; extension: string };
+
+async function createManualProductWithImages(request: Request, createdByUserId: string | null) {
+  const declaredLength = request.headers.get("content-length");
+  if (declaredLength === null) throw new AdminProductInputError(411, "Die Upload-Anfrage muss ihre Größe angeben.");
+  const contentLength = Number(declaredLength);
+  if (!Number.isFinite(contentLength) || contentLength < 0) throw new AdminProductInputError(400, "Die angegebene Upload-Größe ist ungültig.");
+  if (contentLength > MAX_MANUAL_UPLOAD_BYTES) throw new AdminProductInputError(413, "Die Bilder sind zusammen zu groß.");
+
+  const form = await request.formData();
+  const title = text(form.get("title"), MAX_TITLE);
+  const rawDescription = form.get("description");
+  const description = typeof rawDescription === "string" && rawDescription.trim() ? text(rawDescription, MAX_DESCRIPTION) : null;
+  const mengeNumber = Number(form.get("quantity"));
+  const menge = Number.isInteger(mengeNumber) && mengeNumber >= 1 && mengeNumber <= MAX_QUANTITY ? mengeNumber : null;
+  if (!title || !menge) throw new AdminProductInputError(400, "Titel und Menge (1 bis 99) müssen stimmen.");
+  if (typeof rawDescription === "string" && rawDescription.trim() && !description) {
+    throw new AdminProductInputError(400, "Die Beschreibung ist zu lang.");
+  }
+
+  const files = form.getAll("images").filter((value): value is File => value instanceof File && value.size > 0);
+  if (files.length > MAX_MANUAL_IMAGES) throw new AdminProductInputError(400, "Maximal zwei Bilder pro Vorverkaufskarte sind erlaubt.");
+  const uploads = await Promise.all(files.map(readManualImage));
+  if (uploads.reduce((total, upload) => total + upload.bytes.byteLength, 0) > MAX_MANUAL_UPLOAD_BYTES) {
+    throw new AdminProductInputError(413, "Die Bilder sind zusammen zu groß.");
+  }
+
+  const db = getDb();
+  const bucket = getAssetBucket();
+  const id = crypto.randomUUID().replaceAll("-", "");
+  const now = new Date().toISOString();
+  const assets = uploads.map((upload, sortOrder) => {
+    const assetId = crypto.randomUUID().replaceAll("-", "");
+    return {
+      id: assetId,
+      productId: id,
+      storageKey: `products/${id}/${assetId}.${upload.extension}`,
+      sourceUrl: `/api/products/${id}/assets/${assetId}`,
+      mimeType: upload.mimeType,
+      byteSize: upload.bytes.byteLength,
+      sortOrder,
+      isPublic: true,
+      createdAt: now,
+      upload,
+    };
+  });
+  const storedKeys: string[] = [];
+
+  try {
+    for (const asset of assets) {
+      await bucket.put(asset.storageKey, asset.upload.bytes, { httpMetadata: { contentType: asset.mimeType } });
+      storedKeys.push(asset.storageKey);
+    }
+    const writes = [
+      db.insert(products).values({
+        id, kind: "PRELISTED", origin: "MANUAL", status: "ACTIVE",
+        title, description, priceAmountCents: null, priceCurrency: "EUR",
+        createdByUserId, createdAt: now, updatedAt: now,
+      }),
+      db.insert(inventory).values({ productId: id, availableQuantity: menge, status: "AVAILABLE", updatedAt: now }),
+      ...assets.map((asset) => db.insert(productAssets).values({
+        id: asset.id,
+        productId: asset.productId,
+        storageKey: asset.storageKey,
+        sourceUrl: asset.sourceUrl,
+        mimeType: asset.mimeType,
+        byteSize: asset.byteSize,
+        sortOrder: asset.sortOrder,
+        isPublic: asset.isPublic,
+        createdAt: asset.createdAt,
+      })),
+    ] as const;
+    await db.batch(writes);
+  } catch (error) {
+    console.error("manual product upload failed", error);
+    await Promise.allSettled(storedKeys.map((storageKey) => bucket.delete(storageKey)));
+    throw error;
+  }
+
+  return NextResponse.json({ ok: true, id, images: assets.length }, { status: 201 });
+}
+
+async function readManualImage(file: File): Promise<UploadedManualImage> {
+  if (file.size < 1 || file.size > MAX_IMAGE_BYTES) {
+    throw new AdminProductInputError(400, "Jedes Bild muss zwischen 1 Byte und 10 MB groß sein.");
+  }
+  const mimeType = file.type.toLowerCase();
+  if (!/^image\/(jpeg|png|webp)$/u.test(mimeType)) {
+    throw new AdminProductInputError(400, "Nur JPG-, PNG- und WebP-Bilder sind erlaubt.");
+  }
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const pngHeader = [137, 80, 78, 71, 13, 10, 26, 10];
+  const valid = mimeType === "image/jpeg"
+    ? bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff
+    : mimeType === "image/png"
+      ? bytes.length >= pngHeader.length && bytes.slice(0, pngHeader.length).every((value, index) => value === pngHeader[index])
+      : new TextDecoder().decode(bytes.slice(0, 12)).startsWith("RIFF") && new TextDecoder().decode(bytes.slice(8, 12)) === "WEBP";
+  if (!valid) throw new AdminProductInputError(400, "Der tatsächliche Bildtyp stimmt nicht mit dem Dateityp überein.");
+  return { bytes, mimeType, extension: mimeType === "image/jpeg" ? "jpg" : mimeType.slice("image/".length) };
 }
 
 /** Ändert eine bestehende Karte.
@@ -176,10 +285,8 @@ export async function PATCH(request: Request) {
       // Der Preis einer eBay-Karte steht im Listing und wird von dort
       // überschrieben. Ihn hier zu ändern, hielte einen Tag lang und wäre dann
       // weg — also gar nicht erst anbieten, statt eine Änderung vorzutäuschen.
+      if (manuell) return NextResponse.json({ error: "Vorverkaufskarten haben keinen Festpreis. Der Preis entsteht aus einem angenommenen Preisvorschlag." }, { status: 409 });
       if (!manuell) return NextResponse.json({ error: "Der Preis einer eBay-Karte kommt von eBay und lässt sich hier nicht ändern." }, { status: 409 });
-      const preis = cents(body.priceAmountCents);
-      if (!preis) return NextResponse.json({ error: "Der Preis muss zwischen 1 Cent und 1000 € liegen." }, { status: 400 });
-      if (preis !== vorher.priceAmountCents) werte.priceAmountCents = preis;
     }
 
     const anweisungen = [];

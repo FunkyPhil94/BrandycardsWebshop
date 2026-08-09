@@ -510,6 +510,7 @@ footer { background:var(--ink); color:#fff; padding:52px max(48px,calc((100vw - 
 .detail-price { font-size:32px; font-weight:700; margin:0 0 8px; }
 .detail-stock { color:var(--muted); font-family:'DM Mono',monospace; font-size:10px; letter-spacing:.1em; margin:0 0 30px; text-transform:uppercase; }
 .detail-actions { align-items:center; display:flex; flex-wrap:wrap; gap:24px; margin-bottom:40px; }
+.detail-offer-only { color:var(--red); font-family:'DM Mono',monospace; font-size:10px; letter-spacing:.08em; text-transform:uppercase; }
 .detail-facts { border-top:1px solid var(--line); display:grid; gap:0; margin:0; }
 .detail-facts > div { border-bottom:1px solid var(--line); display:grid; gap:16px; grid-template-columns:130px 1fr; padding:15px 0; }
 .detail-facts dt { color:var(--muted); font-family:'DM Mono',monospace; font-size:9px; letter-spacing:.1em; text-transform:uppercase; }

@@ -2,6 +2,13 @@
 
 Dieses Protokoll hält fest, welche spezialisierten Agents im Projekt eingesetzt wurden, welche Prüfaufträge sie erhielten und wie ihre Ergebnisse in die Umsetzung eingeflossen sind.
 
+## 2026-08-09 – Vorverkauf ohne Festpreis, mit Bildern
+
+- Auslöser: Vorverkaufskarten sollten bis zu zwei eigene Bilder aufnehmen können; zugleich sollte ein manuell angelegter Artikel keinen Festpreis mehr vortäuschen.
+- Umsetzung: Die Adminanlage akzeptiert bis zu zwei geprüfte JPG-, PNG- oder WebP-Dateien, legt sie privat in R2 ab und verknüpft sie über `product_assets` mit einer öffentlichen, statusgeschützten Asset-Route. Die Vorverkaufs- und Detailansicht zeigen nur „Preis auf Anfrage“ und den Preisvorschlag.
+- Preislogik: Manuelle Produkte bleiben mit `priceAmountCents: null` gespeichert. Ein Vorschlag darf ohne Listenpreis abgegeben werden; erst ein gültiger angenommener Vorschlag macht die Karte über die serverseitige Preisauflösung bestellbar. Beim Öffnen der Detailseite wird sie einmal in den Warenkorb gelegt. Alte Warenkorbeinträge ohne gültige Zusage werden im Checkout verworfen und die Bestellroute lehnt sie ab.
+- Verifikation: `npx tsc --noEmit`, `npm run lint` und `npm test` mit 313/313 Tests erfolgreich. Es wurden keine Produktionsdaten geschrieben.
+
 ## 2026-08-06 – Capture/Expiry-Prüfung
 
 - Agent: Dewey (`gpt-5.6-luna`, mittleres Reasoning)

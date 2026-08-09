@@ -18,6 +18,10 @@
  * entsteht ausschließlich serverseitig aus den angenommenen Angeboten des
  * Kunden; aus dem Browser wird nie ein Betrag übernommen.
  */
-export function effectiveUnitPrice(listPriceCents: number, agreedCents: number | undefined) {
+export function effectiveUnitPrice(listPriceCents: number | null, agreedCents: number | undefined): number | null {
+  // Vorverkaufskarten haben bewusst keinen Festpreis. Ohne angenommenes
+  // Angebot sind sie deshalb nicht kaufbar; sobald eines gilt, ist es der
+  // verbindliche Betrag. Bei eBay-Karten senkt ein Angebot weiterhin nur.
+  if (listPriceCents === null) return agreedCents ?? null;
   return agreedCents !== undefined ? Math.min(agreedCents, listPriceCents) : listPriceCents;
 }

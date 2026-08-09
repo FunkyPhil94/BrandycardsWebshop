@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getSupabaseBrowserClient } from "../../../lib/supabase-browser";
-import { formatPrice } from "../../site-chrome";
+import { formatPrice, useCart } from "../../site-chrome";
 
 type Offer = {
   id: string;
@@ -39,6 +39,7 @@ export function OfferForm({ productId, listPriceCents, currency }: { productId: 
   const [state, setState] = useState<State | null>(null);
   const [pending, setPending] = useState(false);
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const { cart, addToCart } = useCart();
 
   // A counter rather than a callback: every state change happens after an
   // await, which keeps the effect free of synchronous setState cascades.
@@ -84,6 +85,14 @@ export function OfferForm({ productId, listPriceCents, currency }: { productId: 
     }
   }
 
+  const accepted = state?.offers.find((offer) => offer.status === "ACCEPTED");
+  useEffect(() => {
+    if (!accepted || !accepted.expiresAt || Date.parse(accepted.expiresAt) <= Date.now() || cart[productId] > 0) return;
+    // Das Angebot ist personengebunden und wird serverseitig erneut geprüft.
+    // Im Browser legen wir nur die Karte hinein, nie den Betrag.
+    addToCart(productId, 1);
+  }, [accepted, addToCart, cart, productId]);
+
   if (!state) return null;
 
   if (!state.signedIn) {
@@ -97,13 +106,13 @@ export function OfferForm({ productId, listPriceCents, currency }: { productId: 
     </div>;
   }
 
-  const accepted = state.offers.find((offer) => offer.status === "ACCEPTED");
   const open = state.offers.find((offer) => offer.status === "NEW" || offer.status === "IN_REVIEW");
 
   if (accepted) {
     return <div className="offer-box offer-accepted">
       <h3>Dein Preis steht</h3>
-      <p>Wir haben <strong>{formatPrice(accepted.amount, accepted.currency)}</strong> angenommen. Der Betrag wird im Checkout automatisch verrechnet.</p>
+      <p>Wir haben <strong>{formatPrice(accepted.amount, accepted.currency)}</strong> angenommen. Die Karte liegt jetzt in deinem Warenkorb und der Betrag wird im Checkout automatisch verwendet.</p>
+      <Link className="button button-primary" href="/checkout">Zum Warenkorb <span>→</span></Link>
       {accepted.expiresAt && <p className="offer-meta">Gültig bis {new Date(accepted.expiresAt).toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" })}</p>}
     </div>;
   }
@@ -116,24 +125,23 @@ export function OfferForm({ productId, listPriceCents, currency }: { productId: 
           <p className="offer-meta">Status: {LABEL[open.status]}</p>
         </>
       : state.attemptsLeft <= 0
-        ? <p>Für diese Karte hast du alle Vorschläge genutzt. Der reguläre Preis gilt weiterhin.</p>
+        ? <p>{listPriceCents
+          ? "Für diese Karte hast du alle Vorschläge genutzt. Der reguläre Preis gilt weiterhin."
+          : "Für diese Karte hast du alle Vorschläge genutzt. Ein neuer Vorschlag ist derzeit nicht möglich."}</p>
         : <>
             {/* Der Mindestabstand muss vor dem Absenden sichtbar sein, sonst
                 bekommt der Kunde eine Ablehnung, die er nicht versteht. Er hatte
                 am 2026-08-08 erst einen eigenen Absatz in Versalien, dann eine
                 graue Zeile am Feld — beides hat der Betreiber verworfen. Jetzt
                 steht er als halber Satz im Fließtext, ohne eigene Gestaltung. */}
-            <p>
-              Nenn uns deinen Preis
-              {listPriceCents
-                ? <> — mindestens 50 Cent unter den {formatPrice(listPriceCents, currency)}, die die Karte aktuell kostet</>
-                : <> — mindestens 50 Cent unter dem Kartenpreis</>}.
-              {" "}Nehmen wir an, gilt dein Preis 48 Stunden und wird im Checkout automatisch verrechnet.
-            </p>
+            <p>{listPriceCents
+              ? <>Nenn uns deinen Preis — mindestens 50 Cent unter den {formatPrice(listPriceCents, currency)}, die die Karte aktuell kostet.</>
+              : <>Für diese Karte gibt es keinen Festpreis. Nenn uns einfach deinen Preis.</>}
+              {" "}Nehmen wir an, gilt dein Preis 48 Stunden und wird im Checkout automatisch verwendet.</p>
             <form onSubmit={submit}>
               <label className="form-field">
                 <span>Dein Preis in €<b aria-hidden="true"> *</b></span>
-                <input name="price" type="number" step="0.01" min="0.5" required
+                <input name="price" type="number" step="0.01" min={listPriceCents ? "0.5" : "0.01"} required
                   max={listPriceCents ? ((listPriceCents - 50) / 100).toFixed(2) : undefined} />
               </label>
               <label className="form-field">

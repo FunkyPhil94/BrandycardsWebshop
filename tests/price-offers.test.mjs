@@ -113,3 +113,8 @@ test("ein unter das Angebot gefallener Listenpreis gewinnt", () => {
 test("ein Angebot in Höhe des Listenpreises ändert nichts", () => {
   assert.equal(effectiveUnitPrice(2200, 2200), 2200);
 });
+
+test("eine Vorverkaufskarte ist ohne Festpreis nur mit Angebot kaufbar", () => {
+  assert.equal(effectiveUnitPrice(null, undefined), null);
+  assert.equal(effectiveUnitPrice(null, 2200), 2200);
+});

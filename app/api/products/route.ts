@@ -59,8 +59,9 @@ export async function GET() {
         id: row.product.id, title: row.product.title, description: row.product.description,
         // Kein „Auktion" mehr: Auktionen sind oben schon ausgefiltert.
         category: manuell ? "Direkt bei uns" : row.product.kind === "PRELISTED" ? "Vormerkliste" : "Festpreis",
-        // Bei manuellen Karten steht der Preis am Produkt, es gibt kein Listing.
-        priceAmountCents: manuell ? row.product.priceAmountCents : row.listing?.priceAmountCents ?? null,
+        // Vorverkaufskarten haben keinen Festpreis. Der Betrag entsteht erst
+        // aus einem angenommenen Preisvorschlag.
+        priceAmountCents: manuell ? null : row.listing?.priceAmountCents ?? null,
         priceCurrency: manuell ? row.product.priceCurrency : row.listing?.priceCurrency ?? "EUR",
         quantity: manuell
           ? verfuegbareMenge(null, row.stock, "MANUAL")

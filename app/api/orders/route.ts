@@ -83,17 +83,15 @@ export async function POST(request: Request) {
     const negotiated = await acceptedOfferPrices(db, appUser.id, ids);
     const lineItems = rows.map(({ product, listing, stock }) => {
         const quantity = requested.get(product.id) ?? 0;
-        // Der Listenpreis kommt bei manuellen Karten vom Produkt, sonst aus dem
-        // Listing. Beides bleibt serverseitig ermittelt — der Browser nennt nur
-        // Kennungen, nie Beträge.
-        const listenpreis = product.origin === "MANUAL" ? product.priceAmountCents : listing?.priceAmountCents ?? null;
-        if (!listenpreis || listenpreis < 1 || stock.availableQuantity < quantity || stock.status === "UNAVAILABLE" || stock.status === "SOLD") throw new OrderIssue(`Artikel nicht mehr verfügbar: ${product.title}`);
-        // An accepted offer only ever lowers the price; should the list price
-        // have dropped below it in the meantime, the customer pays the lower one.
-        // Die Regel steht in `lib/price-offers.ts`, weil der Checkout sie seit
-        // dem 2026-08-08 zum Anzeigen ebenfalls braucht — zweimal geschrieben
-        // wäre sie zweimal zu pflegen.
+        // eBay-Karten haben einen serverseitig ermittelten Listing-Preis.
+        // Vorverkaufskarten haben keinen Festpreis und dürfen nur mit einem
+        // angenommenen, noch gültigen Angebot bestellt werden.
+        const listenpreis = product.origin === "MANUAL" ? null : listing?.priceAmountCents ?? null;
+        if (stock.availableQuantity < quantity || stock.status === "UNAVAILABLE" || stock.status === "SOLD") throw new OrderIssue(`Artikel nicht mehr verfügbar: ${product.title}`);
+        // Bei eBay senkt ein accepted offer nur; bei Vorverkauf ist es der
+        // gesamte Preis. Die Regel steht in `lib/offer-price.ts`.
         const unitPrice = effectiveUnitPrice(listenpreis, negotiated.get(product.id));
+        if (unitPrice === null) throw new OrderIssue(`Für ${product.title} gibt es noch keinen angenommenen Preisvorschlag.`);
         return { product, listing, stock, quantity, unitPrice, total: unitPrice * quantity };
     });
     const subtotal = lineItems.reduce((sum, item) => sum + item.total, 0);

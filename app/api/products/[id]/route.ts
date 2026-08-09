@@ -107,8 +107,9 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
       // Immer Festpreis: Auktionen sind oben schon mit 404 abgewiesen worden.
       category: manuell ? "Direkt bei uns" : "Festpreis",
       origin: row.product.origin,
-      // Bei manuellen Karten trägt das Produkt den Preis, es gibt kein Listing.
-      priceAmountCents: manuell ? row.product.priceAmountCents : row.listing?.priceAmountCents ?? null,
+      // Vorverkaufskarten haben keinen Festpreis. Der Betrag entsteht erst
+      // aus einem angenommenen Preisvorschlag.
+      priceAmountCents: manuell ? null : row.listing?.priceAmountCents ?? null,
       priceCurrency: manuell ? row.product.priceCurrency : row.listing?.priceCurrency ?? "EUR",
       quantity: menge,
       listingUrl: row.listing?.listingUrl ?? null,

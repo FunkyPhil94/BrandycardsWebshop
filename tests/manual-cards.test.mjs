@@ -150,6 +150,18 @@ test("das Anlegen schreibt Produkt und Bestand in einem Batch", async () => {
   assert.match(batch, /db\.insert\(inventory\)/u);
 });
 
+test("Vorverkaufskarten können höchstens zwei Bilder ohne Festpreis anlegen", async () => {
+  const route = await readFile(new URL("../app/api/admin/products/route.ts", import.meta.url), "utf8");
+  const panel = await readFile(new URL("../app/admin/products-panel.tsx", import.meta.url), "utf8");
+  assert.match(route, /MAX_MANUAL_IMAGES = 2/u);
+  assert.match(route, /files\.length > MAX_MANUAL_IMAGES/u);
+  assert.match(route, /db\.insert\(productAssets\)/u);
+  assert.match(route, /priceAmountCents: null/u);
+  assert.match(route, /products\/\$\{id\}\/assets/u);
+  assert.match(panel, /name="images"/u);
+  assert.ok(!/name="preis"/u.test(panel), "Vorverkauf darf kein Festpreisfeld mehr anbieten");
+});
+
 test("eine neue Karte trägt PRELISTED und MANUAL", async () => {
   const quelle = await readFile(new URL("../app/api/admin/products/route.ts", import.meta.url), "utf8");
   assert.match(quelle, /kind: "PRELISTED", origin: "MANUAL"/u,
@@ -211,7 +223,7 @@ test("SEC-12: abgelaufene Ansprüche räumt der geplante Lauf ab", async () => {
   assert.match(worker, /delete\(ebayOauthClaims\)\.where\(lte\(/u);
 });
 
-test("manuelle Karten sind kaufbar und verhandelbar", async () => {
+test("manuelle Karten sind verhandelbar, aber nicht direkt kaufbar", async () => {
   // **Drei Stellen hingen noch am eBay-Listing** und hätten manuelle Karten
   // stillschweigend ausgesperrt: der Checkout (Bestellung scheiterte mit
   // „nicht mehr verfügbar"), der Preisvorschlag (404, obwohl der Kasten
@@ -222,7 +234,8 @@ test("manuelle Karten sind kaufbar und verhandelbar", async () => {
 
   const vorschlag = await readFile(new URL("../app/api/price-offers/route.ts", import.meta.url), "utf8");
   assert.ok(!/innerJoin\(ebayListings/u.test(vorschlag));
-  assert.match(vorschlag, /manuell \? row\.product\.priceAmountCents/u, "der Listenpreis kommt bei manuellen Karten vom Produkt");
+  assert.match(vorschlag, /const listPrice = manuell \? null/u, "manuelle Karten haben keinen Listenpreis");
+  assert.match(vorschlag, /if \(!manuell && \(listPrice === null/u, "nur eBay-Angebote werden gegen einen Listenpreis geprüft");
 
   const detailseite = await readFile(new URL("../app/karten/[id]/page.tsx", import.meta.url), "utf8");
   // Der Kasten hängt an der Verfügbarkeit, **nicht** an der Kategorie. Mit einer
@@ -230,7 +243,18 @@ test("manuelle Karten sind kaufbar und verhandelbar", async () => {
   // tragen „Direkt bei uns".
   assert.ok(!/category === "Festpreis"/u.test(detailseite),
     "der Preisvorschlag-Kasten darf nicht an der Kategorie Festpreis hängen");
+  assert.match(detailseite, /card\.category === "Direkt bei uns"/u, "manuelle Karten dürfen nicht direkt gekauft werden");
   assert.match(detailseite, /\{card\.quantity > 0 &&\s*\n\s*<OfferForm/u);
+
+  const offerForm = await readFile(new URL("../app/karten/[id]/offer-form.tsx", import.meta.url), "utf8");
+  assert.match(offerForm, /addToCart\(productId, 1\)/u, "ein angenommenes Angebot muss die Karte automatisch einlegen");
+
+  const checkout = await readFile(new URL("../app/checkout/page.tsx", import.meta.url), "utf8");
+  assert.match(checkout, /if \(unitPrice === null\) continue/u, "ohne angenommenes Angebot darf kein Preis entstehen");
+
+  const assetRoute = await readFile(new URL("../app/api/products/[id]/assets/[assetId]/route.ts", import.meta.url), "utf8");
+  assert.match(assetRoute, /getAssetBucket\(\)/u, "Vorverkaufsbilder müssen aus R2 kommen");
+  assert.match(assetRoute, /products\.status, "ACTIVE"/u, "inaktive Produktbilder dürfen nicht öffentlich bleiben");
 });
 
 // --- Adminkonsole 12.4 und 12.5 --------------------------------------------

@@ -52,13 +52,13 @@ export async function POST(request: Request) {
       throw new PublicFormError(400, "AUCTION_NOT_NEGOTIABLE", "Bei Auktionen wird direkt auf eBay geboten.");
     }
 
-    // Der Listenpreis, gegen den der Vorschlag gemessen wird: bei manuellen
-    // Karten steht er am Produkt, sonst im Listing.
-    const listPrice = manuell ? row.product.priceAmountCents : row.listing?.priceAmountCents ?? null;
-    if (!listPrice) throw new PublicFormError(400, "NO_LIST_PRICE", "Für diese Karte liegt kein Preis vor.");
+    // Vorverkaufskarten haben bewusst keinen Listenpreis. Bei eBay-Karten wird
+    // der Vorschlag weiterhin gegen den aktuellen Listing-Preis geprüft.
+    const listPrice = manuell ? null : row.listing?.priceAmountCents ?? null;
+    if (!manuell && !listPrice) throw new PublicFormError(400, "NO_LIST_PRICE", "Für diese Karte liegt kein Preis vor.");
 
     const amount = Math.round(proposed * 100);
-    if (amount > listPrice - MIN_DISCOUNT_CENTS) {
+    if (!manuell && (listPrice === null || amount > listPrice - MIN_DISCOUNT_CENTS)) {
       throw new PublicFormError(400, "OFFER_TOO_HIGH", "Dein Vorschlag muss unter dem aktuellen Preis liegen.");
     }
 
@@ -125,10 +125,16 @@ export async function GET(request: Request) {
       .where(and(eq(priceOffers.userId, appUser.id), eq(priceOffers.productId, productId)))
       .orderBy(desc(priceOffers.createdAt));
 
-    const active = offers.filter((offer) => offer.status !== "WITHDRAWN");
+    const now = Date.now();
+    const displayOffers = offers.map((offer) => (
+      offer.status === "ACCEPTED" && (!offer.expiresAt || Date.parse(offer.expiresAt) <= now)
+        ? { ...offer, status: "EXPIRED" as const }
+        : offer
+    ));
+    const active = displayOffers.filter((offer) => offer.status !== "WITHDRAWN");
     return NextResponse.json({
       signedIn: true,
-      offers,
+      offers: displayOffers,
       attemptsLeft: Math.max(0, MAX_OFFERS_PER_PRODUCT - active.length),
     });
   } catch (error) {

@@ -27,13 +27,6 @@ async function authHeaders(json = false): Promise<HeadersInit> {
   return { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(json ? { "Content-Type": "application/json" } : {}) };
 }
 
-/** Euro-Eingabe zu Cent. Über `Math.round`, weil `19.99 * 100` in Gleitkomma
- *  `1998.9999…` ergibt — ein `Math.floor` machte daraus 19,98 €. */
-function zuCent(eingabe: string): number | null {
-  const zahl = Number(eingabe.replace(",", "."));
-  return Number.isFinite(zahl) && zahl > 0 ? Math.round(zahl * 100) : null;
-}
-
 export function ProductsPanel() {
   const [products, setProducts] = useState<AdminProduct[] | null>(null);
   const [suche, setSuche] = useState("");
@@ -67,7 +60,6 @@ export function ProductsPanel() {
     setNote("");
     try {
       const manuell = product.origin === "MANUAL";
-      const preisEingabe = String(formular.get("preis") ?? "").trim();
       const rumpf: Record<string, unknown> = {
         id: product.id,
         title: String(formular.get("title") ?? ""),
@@ -75,9 +67,6 @@ export function ProductsPanel() {
         status: String(formular.get("status") ?? "ACTIVE"),
       };
       if (manuell) {
-        const preis = zuCent(preisEingabe);
-        if (!preis) throw new Error("Bitte einen gültigen Preis eintragen.");
-        rumpf.priceAmountCents = preis;
         rumpf.quantity = Number(formular.get("menge") ?? 0);
       }
       const response = await fetch("/api/admin/products", { method: "PATCH", headers: await authHeaders(true), body: JSON.stringify(rumpf) });
@@ -115,16 +104,15 @@ export function ProductsPanel() {
     setBusy("neu");
     setNote("");
     try {
-      const preis = zuCent(String(formular.get("preis") ?? ""));
-      if (!preis) throw new Error("Bitte einen gültigen Preis eintragen.");
+      const bilder = formular.getAll("images").filter((wert): wert is File => wert instanceof File && wert.size > 0);
+      if (bilder.length > 2) throw new Error("Maximal zwei Bilder pro Vorverkaufskarte sind erlaubt.");
+      const upload = new FormData();
+      upload.set("title", String(formular.get("title") ?? ""));
+      upload.set("description", String(formular.get("description") ?? ""));
+      upload.set("quantity", String(formular.get("menge") ?? ""));
+      for (const bild of bilder) upload.append("images", bild);
       const response = await fetch("/api/admin/products", {
-        method: "POST", headers: await authHeaders(true),
-        body: JSON.stringify({
-          title: String(formular.get("title") ?? ""),
-          description: String(formular.get("description") ?? ""),
-          priceAmountCents: preis,
-          quantity: Number(formular.get("menge") ?? 1),
-        }),
+        method: "POST", headers: await authHeaders(), body: upload,
       });
       const data = await response.json() as { error?: string };
       if (!response.ok) throw new Error(data.error ?? "Anlegen fehlgeschlagen.");
@@ -154,9 +142,10 @@ export function ProductsPanel() {
       <label className="form-field"><span>Titel *</span><input name="title" required maxLength={200} /></label>
       <label className="form-field"><span>Beschreibung</span><textarea name="description" rows={3} maxLength={4000} /></label>
       <div className="admin-product-row">
-        <label className="form-field"><span>Preis in € *</span><input name="preis" type="number" step="0.01" min="0.01" required /></label>
         <label className="form-field"><span>Menge *</span><input name="menge" type="number" min="1" max="99" defaultValue={1} required /></label>
       </div>
+      <label className="form-field"><span>Bilder (max. 2, JPG/PNG/WebP)</span><input name="images" type="file" accept="image/jpeg,image/png,image/webp" multiple /></label>
+      <p className="admin-product-hint">Kein Festpreis. Ein Artikel wird erst nach einem angenommenen Preisvorschlag kaufbar.</p>
       <button className="button button-primary" type="submit" disabled={busy === "neu"}>{busy === "neu" ? "Lege an …" : "Karte anlegen"}</button>
     </form>}
 
@@ -170,7 +159,7 @@ export function ProductsPanel() {
               <button type="button" className="admin-product-head" onClick={() => setOffen(aufgeklappt ? null : product.id)} aria-expanded={aufgeklappt}>
                 <span className={`admin-product-origin${manuell ? " manuell" : ""}`}>{manuell ? "Vorverkauf" : "eBay"}</span>
                 <span className="admin-product-title">{product.title}</span>
-                <span>{formatPrice(product.effectivePriceCents, product.priceCurrency) ?? "—"}</span>
+                <span>{formatPrice(product.effectivePriceCents, product.priceCurrency) ?? "Preis auf Anfrage"}</span>
                 <span>{product.status === "ACTIVE" ? `${product.availableQuantity ?? 0} verfügbar` : product.status}</span>
               </button>
               {aufgeklappt && <div className="admin-product-body">
@@ -193,14 +182,13 @@ export function ProductsPanel() {
                         <option value="INACTIVE">Ausgeblendet</option>
                       </select>
                     </label>
-                    {manuell && <label className="form-field"><span>Preis in €</span>
-                      <input name="preis" type="number" step="0.01" min="0.01" defaultValue={product.priceAmountCents ? (product.priceAmountCents / 100).toFixed(2) : ""} required />
-                    </label>}
                     {manuell && <label className="form-field"><span>Menge</span>
                       <input name="menge" type="number" min="0" max="99" defaultValue={product.availableQuantity ?? 0} required />
                     </label>}
                   </div>
-                  {!manuell && <p className="admin-product-hint">Preis und Menge kommen von eBay und lassen sich hier nicht ändern — der nächste Import würde sie ohnehin zurückschreiben.</p>}
+                  {manuell
+                    ? <p className="admin-product-hint">Kein Festpreis. Der Artikel wird erst nach einem angenommenen Preisvorschlag in den Warenkorb gelegt.</p>
+                    : <p className="admin-product-hint">Preis und Menge kommen von eBay und lassen sich hier nicht ändern — der nächste Import würde sie ohnehin zurückschreiben.</p>}
                   <button className="button button-primary" type="submit" disabled={busy === product.id}>{busy === product.id ? "Speichere …" : "Speichern"}</button>
                 </form>
                 {product.listingUrl && <p className="admin-product-hint"><a href={product.listingUrl} target="_blank" rel="noreferrer">Angebot bei eBay ansehen ↗</a></p>}
