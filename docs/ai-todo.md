@@ -139,20 +139,22 @@ echte Verkauf auf einem laufenden Angebot als Betriebsnachweis aus. Dieser
 Nachweis darf nicht simuliert und nicht ohne Betreiberaktion in
 Produktionsdaten geschrieben werden.
 
-### N3. Ausfallsicherheit, Ressourcenlimits und automatische Bereinigung — **Nutzen: hoch · Kosten: niedrig bis mittel**
+### ~~N3. Ausfallsicherheit, Ressourcenlimits und automatische Bereinigung~~ — **ERLEDIGT am 2026-08-09**
 
-Die Basis für stabile Synchronisation, Uploads und Webhooks vervollständigen:
+Die Basis für stabile Synchronisation, Uploads und Webhooks ist vervollständigt:
 
-- die R2-Bereinigung verwaister Uploads in den geplanten Worker-Lauf aufnehmen;
+- die R2-Bereinigung verwaister Uploads in den geplanten Worker-Lauf aufnehmen,
+  mit 24 Stunden Sicherheitsabstand und höchstens 100 Löschungen je Lauf;
 - harte Größenlimits auch für JSON-Anfragen **vor** dem vollständigen Puffern
   erzwingen;
 - Zeitlimits für Supabase-Auth, Supabase-Admin und OAuth-Aufrufe ergänzen;
-- die verbleibende CSP-Freigabe `style-src 'unsafe-inline'` langfristig
-  entfernen, sobald die verwendete UI-Ausgabe das zulässt.
+- die CSP-Freigabe für Styles auf Antwort-Nonces umstellen und
+  `style-src 'unsafe-inline'` entfernen.
 
-**Fertig, wenn:** ein chunked/übergroßer Request nicht den Worker speicher-
-belastet, verwaiste R2-Objekte automatisch verschwinden und Fremdservices
-keinen Request unbegrenzt festhalten können.
+**Ergebnis:** Ein chunked/übergroßer Request wird vor unbounded buffering
+abgewiesen, verwaiste R2-Objekte werden automatisch und begrenzt bereinigt,
+Fremdservices haben feste Zeitlimits und die CSP erlaubt keine Inline-Styles
+ohne Antwort-Nonce.
 
 ### N4. Datenschutz, Aufbewahrung und Wiederherstellung — **Nutzen: hoch · Kosten: mittel**
 
@@ -648,8 +650,9 @@ Antwort mehr.
 machen, während alles Nachgeladene ohnehin von dieser Herkunft kommt. Begründung
 in [ai-handover.md](ai-handover.md).
 
-**`style-src` behält `'unsafe-inline'`** — React und vinext setzen Inline-Stile.
-Das bleibt offen und ist eine eigene Aufgabe.
+**`style-src` nutzt jetzt einen Antwort-Nonce.** Der Worker versieht Style-
+Blöcke mit demselben Nonce; das verbliebene React-Honeypot-Attribut wurde in
+eine CSS-Klasse umgewandelt. Damit ist auch diese CSP-Lücke geschlossen.
 
 <details><summary>Ursprünglicher Eintrag, zur Nachvollziehbarkeit</summary>
 

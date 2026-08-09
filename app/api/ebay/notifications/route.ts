@@ -11,6 +11,7 @@ import {
   verifyEbayNotificationSignature,
 } from "../../../../lib/ebay-notifications";
 import { receivedWebhookRetryDue } from "../../../../lib/paypal/webhook-retry";
+import { readTextBody, RequestBodyError } from "../../../../lib/request-body";
 
 const EBAY_WEBHOOK_PROVIDER = "EBAY";
 const EBAY_WEBHOOK_RECEIVED_RETRY_AFTER_SECONDS = 300;
@@ -37,9 +38,11 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const rawBody = await request.text();
-  if (new TextEncoder().encode(rawBody).byteLength > EBAY_NOTIFICATION_MAX_BODY_BYTES) {
-    return jsonError("eBay-Notification ist zu groß.", 413);
+  let rawBody: string;
+  try {
+    rawBody = await readTextBody(request, EBAY_NOTIFICATION_MAX_BODY_BYTES);
+  } catch (error) {
+    return jsonError(error instanceof RequestBodyError ? error.message : "eBay-Notification konnte nicht gelesen werden.", error instanceof RequestBodyError ? error.status : 400);
   }
 
   const signature = request.headers.get("x-ebay-signature")?.trim() || "";

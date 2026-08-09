@@ -4,6 +4,7 @@ import { getDb } from "../db";
 import { products } from "../db/schema";
 import { HONEYPOT_FIELD, RENDERED_AT_FIELD, inspectSubmission } from "./form-bot-guard";
 import { RateLimitError } from "./rate-limit";
+import { readTextBody, RequestBodyError } from "./request-body";
 
 export class PublicFormError extends Error {
   constructor(
@@ -31,19 +32,14 @@ export async function readJsonBody(request: Request): Promise<UnknownRecord> {
   if (!contentType.startsWith("application/json")) {
     throw new PublicFormError(415, "UNSUPPORTED_MEDIA_TYPE", "Die Anfrage muss JSON verwenden.");
   }
-  const declaredLength = Number(request.headers.get("content-length") ?? "0");
-  if (declaredLength > 64_000) {
-    throw new PublicFormError(413, "PAYLOAD_TOO_LARGE", "Die Anfrage ist zu groß.");
-  }
-
   let rawBody: string;
   try {
-    rawBody = await request.text();
-  } catch {
+    rawBody = await readTextBody(request, 64_000);
+  } catch (error) {
+    if (error instanceof RequestBodyError) {
+      throw new PublicFormError(error.status, error.status === 413 ? "PAYLOAD_TOO_LARGE" : "INVALID_LENGTH", error.message);
+    }
     throw new PublicFormError(400, "INVALID_JSON", "Die Anfrage muss gültiges JSON enthalten.");
-  }
-  if (new TextEncoder().encode(rawBody).byteLength > 64_000) {
-    throw new PublicFormError(413, "PAYLOAD_TOO_LARGE", "Die Anfrage ist zu groß.");
   }
 
   let body: unknown;

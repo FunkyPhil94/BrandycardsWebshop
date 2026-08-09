@@ -9,7 +9,7 @@
 /* Schriften liegen unter app/fonts und werden vom Shop selbst ausgeliefert,
    nicht von Google.
 
-   Grund: Die CSP erlaubt nur `style-src 'self' 'unsafe-inline'`. Der frühere
+   Grund: Die CSP erlaubt Styles nur aus der eigenen Antwort mit Nonce. Der frühere
    `@import` von fonts.googleapis.com wurde dadurch blockiert — der Shop lief
    unbemerkt auf Ersatzschriften. Die Regel zu öffnen wäre der andere Weg
    gewesen; selbst ausliefern spart zwei Fremdhosts, einen Rundlauf beim Laden
@@ -126,6 +126,7 @@ body { margin:0; background:var(--paper); color:var(--ink); font-family:'Manrope
 a { color:inherit; text-decoration:none; }
 button,input { font:inherit; }
 button { cursor:pointer; }
+.bot-guard { height:1px; left:-9999px; overflow:hidden; position:absolute; width:1px; }
 .announcement { align-items:center; background:var(--red); color:#fff; display:flex; font-family:'DM Mono',monospace; font-size:10px; gap:18px; justify-content:center; letter-spacing:.08em; min-height:30px; text-transform:uppercase; }
 .announcement span:last-child { opacity:.7; }
 /* Der Balken klebt, nicht die Kopfzeile: `.site-header` ist zentriert und auf

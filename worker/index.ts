@@ -5,7 +5,7 @@ import { lte } from "drizzle-orm";
 import { runEbaySync } from "../lib/ebay-sync";
 import { getDb } from "../db";
 import { ebayOauthClaims } from "../db/schema";
-import { deleteExpiredCardSubmissions } from "../lib/card-submission-cleanup";
+import { cleanupOrphanedUploads, deleteExpiredCardSubmissions } from "../lib/card-submission-cleanup";
 import { releaseExpiredReservations } from "../lib/paypal/settle-order";
 import { processEbayOutbox } from "../lib/ebay-outbox";
 import { expireLapsedOffers } from "../lib/price-offers";
@@ -33,6 +33,29 @@ interface ScheduledController {
   cron: string;
 }
 
+const DEFAULT_JSON_BODY_BYTES = 64 * 1024;
+const WEBHOOK_JSON_BODY_BYTES = 256 * 1024;
+
+function jsonBodyLimit(pathname: string) {
+  return pathname === "/api/ebay/notifications" || pathname === "/api/paypal/webhook"
+    ? WEBHOOK_JSON_BODY_BYTES
+    : DEFAULT_JSON_BODY_BYTES;
+}
+
+function rejectUnboundedJsonRequest(request: Request, pathname: string) {
+  if (!["POST", "PUT", "PATCH", "DELETE"].includes(request.method)) return null;
+  if (!(request.headers.get("content-type") ?? "").toLowerCase().startsWith("application/json")) return null;
+  // The two webhook routes stream their bodies and enforce their own byte
+  // limits. Other JSON routes use request.json(), so a missing length would
+  // let a chunked request be buffered before validation.
+  if (pathname === "/api/ebay/notifications" || pathname === "/api/paypal/webhook") return null;
+  const rawLength = request.headers.get("content-length");
+  if (rawLength === null) return new Response(JSON.stringify({ error: "Die Anfrage muss ihre Größe angeben." }), { status: 411, headers: { "content-type": "application/json" } });
+  if (!/^\d+$/u.test(rawLength.trim()) || !Number.isSafeInteger(Number(rawLength))) return new Response(JSON.stringify({ error: "Die angegebene Anfragegröße ist ungültig." }), { status: 400, headers: { "content-type": "application/json" } });
+  if (Number(rawLength) > jsonBodyLimit(pathname)) return new Response(JSON.stringify({ error: "Die Anfrage ist zu groß." }), { status: 413, headers: { "content-type": "application/json" } });
+  return null;
+}
+
 // Image security config. SVG sources with .svg extension auto-skip the
 // optimization endpoint on the client side (served directly, no proxy).
 // To route SVGs through the optimizer (with security headers), set
@@ -50,7 +73,8 @@ const worker = {
     //
     // Seit dem 2026-08-08 entsteht hier zusätzlich der Zufallswert für die
     // Inline-Skripte. Er muss **je Antwort** neu sein und **dieselbe** Antwort
-    // an zwei Stellen erreichen: die Kopfzeile und jedes `<script>` im Markup.
+    // an zwei Stellen erreichen: die Kopfzeile sowie jedes `<script>` und
+    // `<style>`-Element im Markup.
     // Deshalb steht beides in einer Funktion — auseinandergezogen wäre es der
     // Fehler, der die ganze Seite leer lässt.
     const harden = (response: Response) => {
@@ -58,13 +82,17 @@ const worker = {
       const hardened = withSecurityHeaders(response, process.env.NEXT_PUBLIC_SUPABASE_URL, nonce);
       if (!nonce) return hardened;
       // `HTMLRewriter` schreibt im Strom mit, hält also die Auslieferung nicht
-      // an. Er trifft **jedes** `<script>`, nicht nur die ohne `src`: Ein Tag
-      // ohne Zufallswert wäre unter dieser Regel stillgelegt, und der Ausfall
-      // wäre still.
-      return new HTMLRewriter().on("script", {
-        element(element) { element.setAttribute("nonce", nonce); },
-      }).transform(hardened);
+      // an. Er trifft jedes `<script>` und `<style>`, nicht nur Skripte ohne
+      // `src`: Ein Block ohne Zufallswert wäre unter dieser Regel stillgelegt,
+      // und der Ausfall wäre still.
+      return new HTMLRewriter()
+        .on("script", { element(element) { element.setAttribute("nonce", nonce); } })
+        .on("style", { element(element) { element.setAttribute("nonce", nonce); } })
+        .transform(hardened);
     };
+
+    const bodyProblem = rejectUnboundedJsonRequest(request, url.pathname);
+    if (bodyProblem) return harden(bodyProblem);
 
     if (url.pathname === "/_vinext/image") {
       const allowedWidths = [...DEFAULT_DEVICE_SIZES, ...DEFAULT_IMAGE_SIZES];
@@ -110,6 +138,7 @@ const worker = {
       // geplanten Lauf, nicht in eine Admin-Schaltfläche: eine Löschfrist,
       // die jemand von Hand auslösen muss, ist keine.
       ["Aufbewahrungsfrist für Kartenangebote", deleteExpiredCardSubmissions()],
+      ["Verwaiste Uploads", cleanupOrphanedUploads()],
       // Abgelaufene eBay-OAuth-Ansprüche (SEC-12). Die Abholroute räumt zwar
       // selbst auf, aber nur wenn sie gerufen wird — ein abgebrochener
       // Anschlussversuch ruft sie nie, und die Zeile trüge weiter einen

@@ -10,6 +10,9 @@ import { PAYPAL_WEBHOOK_RECEIVED_RETRY_AFTER_MS, receivedWebhookRetryDue } from 
 import { releaseOrderReservations, settlePaidOrder } from "../../../../lib/paypal/settle-order";
 import { centsToPayPalValue } from "../../../../lib/paypal/money";
 import { notifyOperationalAlert } from "../../../../lib/ops-alerts";
+import { readTextBody, RequestBodyError } from "../../../../lib/request-body";
+
+const PAYPAL_WEBHOOK_MAX_BODY_BYTES = 256 * 1024;
 
 type PayPalWebhookEvent = {
   id?: unknown;
@@ -51,7 +54,12 @@ async function findPayment(db: ReturnType<typeof getDb>, event: PayPalWebhookEve
 }
 
 export async function POST(request: Request) {
-  const rawBody = await request.text();
+  let rawBody: string;
+  try {
+    rawBody = await readTextBody(request, PAYPAL_WEBHOOK_MAX_BODY_BYTES);
+  } catch (error) {
+    return NextResponse.json({ error: error instanceof RequestBodyError ? error.message : "Webhook konnte nicht gelesen werden." }, { status: error instanceof RequestBodyError ? error.status : 400 });
+  }
   let db: ReturnType<typeof getDb> | undefined;
   let eventId = "";
   let previousFailure = false;

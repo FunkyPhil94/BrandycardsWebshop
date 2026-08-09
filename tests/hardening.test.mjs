@@ -137,10 +137,10 @@ test("kein 'strict-dynamic' — es würde 'self' unwirksam machen", () => {
   assert.ok(!contentSecurityPolicy("https://project.supabase.co", "abc123").includes("strict-dynamic"));
 });
 
-test("style-src behält 'unsafe-inline', und das ist bekannt", () => {
-  // Kein Versehen: React und vinext setzen Inline-Stile. Eigene Aufgabe. Der
-  // Test hält fest, dass es eine Entscheidung war.
-  assert.match(contentSecurityPolicy(undefined), /style-src [^;]*'unsafe-inline'/);
+test("style-src erlaubt nur den Antwort-Nonce", () => {
+  assert.match(contentSecurityPolicy(undefined), /style-src 'self'(;|$)/);
+  assert.match(contentSecurityPolicy(undefined, "abc123"), /style-src 'self' 'nonce-abc123'/);
+  assert.ok(!contentSecurityPolicy(undefined).includes("'unsafe-inline'"));
 });
 
 // --- PayPal läuft live, und das darf nicht still zurückfallen --------------
@@ -258,6 +258,7 @@ test("the worker actually applies them to every response", async () => {
   assert.match(worker, /withSecurityHeaders/, "the headers must be wired up, not just written");
   assert.match(worker, /harden\(await handler\.fetch/, "server-rendered pages need them too");
   assert.match(worker, /harden\(await handleImageOptimization/, "so does the image endpoint");
+  assert.match(worker, /\.on\("style"/, "inline style blocks need the response nonce too");
 });
 
 // --- SEC-05, catalogue caching ---------------------------------------------

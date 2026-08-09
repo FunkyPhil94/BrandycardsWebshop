@@ -109,3 +109,11 @@ test("der geplante Lauf löst die Löschung wirklich aus", () => {
   assert.match(worker, /deleteExpiredCardSubmissions\(\)/,
     "eine Löschfrist, die jemand von Hand auslösen muss, ist keine Frist");
 });
+
+test("der geplante Lauf räumt R2-Waisen aus beiden Upload-Präfixen begrenzt auf", () => {
+  assert.match(cleanup, /export async function cleanupOrphanedUploads/u);
+  assert.match(cleanup, /cleanupOrphanedPrefix\(bucket, "card-submissions\//u);
+  assert.match(cleanup, /cleanupOrphanedPrefix\(bucket, "products\//u);
+  assert.match(cleanup, /MAX_ORPHAN_DELETES_PER_RUN = 100/u);
+  assert.match(worker, /cleanupOrphanedUploads\(\)/u);
+});

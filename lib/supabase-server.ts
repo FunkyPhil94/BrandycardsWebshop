@@ -42,12 +42,17 @@ export async function getSupabaseUser(request: Request): Promise<User | null> {
   const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
   if (!token || !url || !key) return null;
 
-  const response = await fetch(`${url}/auth/v1/user`, {
-    headers: {
-      apikey: key,
-      Authorization: `Bearer ${token}`,
-    },
-  });
-  if (!response.ok) return null;
-  return (await response.json()) as User;
+  try {
+    const response = await fetch(`${url}/auth/v1/user`, {
+      headers: {
+        apikey: key,
+        Authorization: `Bearer ${token}`,
+      },
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!response.ok) return null;
+    return (await response.json()) as User;
+  } catch {
+    return null;
+  }
 }

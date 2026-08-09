@@ -38,7 +38,7 @@ export function BotGuardFields() {
   }, []);
   return <>
     <input ref={stamp} type="hidden" name={RENDERED_AT_FIELD} defaultValue="0" />
-    <div aria-hidden="true" style={{ position: "absolute", left: "-9999px", width: 1, height: 1, overflow: "hidden" }}>
+    <div aria-hidden="true" className="bot-guard">
       <label>
         {t("Bitte dieses Feld leer lassen")}
         <input type="text" name={HONEYPOT_FIELD} tabIndex={-1} autoComplete="off" defaultValue="" />

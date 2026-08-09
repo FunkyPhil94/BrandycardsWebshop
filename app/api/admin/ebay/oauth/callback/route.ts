@@ -49,11 +49,17 @@ export async function GET(request: Request) {
   const clientSecret = process.env.EBAY_CLIENT_SECRET;
   const runame = process.env.EBAY_RUNAME;
   if (!clientId || !clientSecret || !runame) return page("eBay OAuth fehlgeschlagen", "<p>eBay OAuth ist serverseitig nicht vollständig konfiguriert.</p>");
-  const response = await fetch("https://api.ebay.com/identity/v1/oauth2/token", {
-    method: "POST",
-    headers: { Authorization: `Basic ${btoa(`${clientId}:${clientSecret}`)}`, "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({ grant_type: "authorization_code", code, redirect_uri: runame }),
-  });
+  let response: Response;
+  try {
+    response = await fetch("https://api.ebay.com/identity/v1/oauth2/token", {
+      method: "POST",
+      headers: { Authorization: `Basic ${btoa(`${clientId}:${clientSecret}`)}`, "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ grant_type: "authorization_code", code, redirect_uri: runame }),
+      signal: AbortSignal.timeout(10_000),
+    });
+  } catch {
+    return page("eBay OAuth fehlgeschlagen", "<p>eBay ist momentan nicht erreichbar. Bitte versuche es später erneut.</p>");
+  }
   const result = await response.json() as { refresh_token?: string; error_description?: string };
   if (!response.ok || !result.refresh_token) return page("eBay OAuth fehlgeschlagen", `<p>${escapeHtml(result.error_description || `HTTP ${response.status}`)}</p>`);
 

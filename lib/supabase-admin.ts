@@ -28,6 +28,7 @@ export async function deleteSupabaseUser(authSubject: string): Promise<SupabaseD
     const response = await fetch(`${url}/auth/v1/admin/users/${encodeURIComponent(authSubject)}`, {
       method: "DELETE",
       headers: { apikey: key, Authorization: `Bearer ${key}` },
+      signal: AbortSignal.timeout(10_000),
     });
     // 404 heißt: Das Konto ist bei Supabase schon weg. Für den Aufrufer ist das
     // dasselbe Ergebnis wie ein erfolgreicher Löschlauf — sonst bliebe ein

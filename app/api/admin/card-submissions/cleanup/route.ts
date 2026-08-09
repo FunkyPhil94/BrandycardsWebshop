@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "../../../../../lib/admin-access";
-import { cleanupOrphanedCardSubmissionAssets, deleteExpiredCardSubmissions } from "../../../../../lib/card-submission-cleanup";
+import { cleanupOrphanedUploads, deleteExpiredCardSubmissions } from "../../../../../lib/card-submission-cleanup";
 
 /** Beide Aufräumläufe von Hand auslösbar. Der geplante Lauf macht dasselbe —
  *  das hier ist für den Fall, dass man nicht bis zur nächsten Stunde warten
@@ -10,7 +10,7 @@ export async function POST(request: Request) {
   if (access.response) return access.response;
   try {
     const retention = await deleteExpiredCardSubmissions();
-    const orphans = await cleanupOrphanedCardSubmissionAssets();
+    const orphans = await cleanupOrphanedUploads();
     return NextResponse.json({ ok: true, ...orphans, retention });
   } catch (error) {
     console.error("Card submission cleanup failed", error);

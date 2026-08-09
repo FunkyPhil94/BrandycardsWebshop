@@ -11,8 +11,8 @@
  * - `img-src`  eBay's CDN serves every card photo; `data:` covers the
  *              sanitiser's allowance for inline images in descriptions
  * - `connect-src` Supabase Auth is called straight from the browser
- * - `style-src` React and vinext emit inline styles, so `'unsafe-inline'`
- *              stays until that changes
+ * - `style-src` allows only the per-response nonce on inline style blocks;
+ *              style attributes are not used by the shop
  * - `frame-ancestors 'none'` no page of this shop belongs in someone else's
  *              frame; it is the modern form of X-Frame-Options
  */
@@ -25,8 +25,7 @@ export function contentSecurityPolicy(supabaseUrl: string | undefined, nonce?: s
     "frame-ancestors 'none'",
     "form-action 'self'",
     "img-src 'self' data: https://i.ebayimg.com https://*.ebayimg.com https://funkyphil94.github.io",
-    // Bleibt vorerst: React und vinext setzen Inline-Stile. Eigene Aufgabe.
-    "style-src 'self' 'unsafe-inline'",
+    nonce ? `style-src 'self' 'nonce-${nonce}'` : "style-src 'self'",
     "font-src 'self' data:",
     `connect-src 'self'${supabase ? ` ${supabase}` : ""}`,
     // Ohne Zufallswert — also überall dort, wo keine Seite ausgeliefert wird —
@@ -90,8 +89,9 @@ export function isHtmlResponse(response: Response) {
  * heraus. Zusammen mit `frame-ancestors`, `object-src` und `base-uri` ist das
  * Tiefenverteidigung.
  *
- * Offen bleibt `style-src 'unsafe-inline'` — React und vinext setzen
- * Inline-Stile. Eigene Aufgabe, kein Nebenbei.
+ * Inline-Style-Blöcke erhalten denselben Nonce wie Skripte. Das letzte
+ * Style-Attribut im React-Code wurde in eine CSS-Klasse verschoben, damit
+ * `style-src` ohne `'unsafe-inline'` auskommt.
  */
 export const CSP_HEADER_NAME = "content-security-policy";
 
