@@ -62,11 +62,14 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 - Die eBay-Seller-Notification-Integration und der echte Verkauf auf einem
   laufenden Angebot bleiben offen, weil dafür eine eBay-Developer-Konfiguration
   mit verifizierter Signatur und eine Betreiberaktion erforderlich sind.
-- Verifikation abgeschlossen: 323 Tests, `npx tsc --noEmit`, `npm run lint`,
-  Build und `git diff --check` waren erfolgreich. Commit `d4df219` ist nach
-  GitHub gepusht. Der produktive Cloudflare-Worker wurde auf
-  `https://shop.brandycards.de/` deployt; die Startseite antwortete danach mit
-  HTTP 200. Es wurden keine Produktionsdaten geschrieben.
+- Verifikation abgeschlossen: 330 Tests, `npx tsc --noEmit`, `npm run lint`,
+  Build und `git diff --check` waren erfolgreich. Commit `bc5b2b5` ist nach
+  GitHub gepusht. Der produktive Cloudflare-Worker wurde als Version
+  `eca4d281-85ee-429c-8f00-04bda3c1bca8` auf
+  `https://shop.brandycards.de/` deployt; Startseite antwortet mit HTTP 200,
+  der signaturlose POST mit HTTP 412. Die Challenge antwortet bis zum Setzen
+  des noch fehlenden Verification-Secrets erwartungsgemäß mit HTTP 503. Es
+  wurden keine Produktionsdaten geschrieben.
 
 - `/api/admin/orders` paginiert jetzt mit 25 Einträgen, liefert Gesamtseiten
   und sortiert bei gleichen Zeitstempeln stabil. Ein geschütztes `PATCH` setzt
