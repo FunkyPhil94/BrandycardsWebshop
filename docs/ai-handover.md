@@ -37,58 +37,28 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-### 2026-08-08 — Der große Block: Migration, manuelle Karten, Handmarkierungen, SEC-12
+*(leer — bereit für den nächsten Auftrag.)*
 
-- **Stand:** LÄUFT
-- **Warum zusammen:** ai-todo Punkt 12.1, Punkt 11 und SEC-12 aus Punkt 8
-  brauchen **dieselbe Migration**. Einzeln erledigt hieße dreimal am Schema
-  arbeiten und dreimal `drizzle/meta/_journal.json` nachziehen, das bei `0002`
-  endet, während `0003`–`0006` handgeschrieben sind.
-- **Drei Entscheidungen des Betreibers vom 2026-08-08:**
-  1. Manuelle Karten sind **verhandelbar** wie eBay-Karten.
-  2. Stellt der Betreiber dieselbe Karte später bei eBay ein, führt der Sync
-     **automatisch zusammen**. *Einwand ist ausgesprochen und überstimmt:*
-     Titel sind Freitext, ein Treffer bleibt eine Vermutung. Deshalb so eng wie
-     möglich — zeichengenau nach Normalisierung, **nie löschen, nur
-     stilllegen**, jeder Fall als `syncEvent` sichtbar, und Karten mit
-     angenommenem Preisvorschlag oder aktiver Reservierung werden übersprungen.
-  3. Manuelle Karten bekommen einen **eigenen Bereich in der Navigation**.
-- **Reihenfolge:** Migration `0006` → Katalog/Detailseite (`leftJoin` statt
-  `innerJoin`, Preis aus dem Produkt) → Sync respektiert Handmarkierungen und
-  führt zusammen → Adminkonsole zum Anlegen und Bearbeiten → Navigationsbereich
-  → SEC-12 (Anspruchs-Kennung statt Token in der Umleitung).
-- **Fallen, die schon dastehen** (ai-todo Punkt 11): Der Waisen-Sweep setzt jedes
-  `EBAY_SYNCED`-Produkt ohne Listing auf `INACTIVE` — manuelle Karten brauchen
-  deshalb eine eigene `kind`. Die Detailseite verknüpft `ebay_listings` per
-  `innerJoin` und liefert sonst 404. Preis und Menge stehen heute im Listing,
-  nicht am Produkt.
-- **Abbruchfall:** Bleibt hier etwas liegen, ist der gefährliche Zustand eine
-  **angewandte Migration ohne den zugehörigen Code**. `products.kind` bekäme
-  dann einen Wert, den niemand schreibt — harmlos. Umgekehrt (Code ohne
-  Migration) brechen Katalog und Adminkonsole. Also: **Migration zuerst
-  anwenden, Code danach deployen.**
+### **Übergabe an die nächste KI: der große Block ist zur Hälfte gebaut**
 
-#### Stand 2026-08-08, erster Abschnitt fertig — **NICHT DEPLOYEN**
+Der Betreiber hat die Arbeit am 2026-08-08 hier bewusst angehalten und die
+Fortsetzung an eine andere KI übergeben. **Der Auftrag ist vollständig als
+Punkt A in [ai-todo.md](ai-todo.md) beschrieben** — dort stehen Dateien,
+Entscheidungen, Fallen und Abnahmekriterien. Diese Notiz ersetzt ihn nicht,
+sie sagt nur, in welchem Zustand die Übergabe geschieht.
 
-- **Fertig und committet (`cabdcb2`):** Migration `0006`, Schema (`origin`,
-  `price_amount_cents`, `price_currency`, `manual_overrides`,
-  `ebay_oauth_claims`), Katalog und Detailseite kennen manuelle Karten,
-  `tests/manual-cards.test.mjs` (8 Tests). Prüfkette grün: `tsc` sauber, Lint
-  0 Fehler, `npm test` 270/270.
-- **Blockiert:** Die Migration ist **noch nicht auf Produktion angewandt** —
-  der Berechtigungsklassifizierer verweigert schreibende D1-Befehle. Der
-  Betreiber muss ausführen:
-  `npx wrangler d1 execute brandycards-production --remote --file=drizzle/0006_manual_cards_and_oauth_claims.sql`
-- **Bis dahin gilt: nicht deployen.** Der neue Code liest `products.origin`;
-  ohne die Spalte antworten Katalog und Detailseite mit 503. Der aktuell
-  ausgelieferte Stand (`76e2ac63` plus die Textkorrekturen) läuft weiter.
-- **Kein neuer `kind`-Wert**, entgegen dem Arbeitsvorrat. Begründung samt zweier
-  am lokalen D1 verworfener Versuche steht in der Migration und im Agentenlog.
-  **Manuelle Karte = `kind='PRELISTED'` UND `origin='MANUAL'`.**
-- **Noch offen in diesem Block:** Sync respektiert `manual_overrides` und führt
-  gleichnamige Karten zusammen · Adminkonsole zum Anlegen und Bearbeiten ·
-  eigener Navigationsbereich · SEC-12 (Anspruchs-Kennung; die Tabelle steht
-  schon, die Routen fehlen).
+- **Nichts liegt halbfertig.** Alles ist committet, gepusht, CI grün, deployed
+  als Version `dc0c6e46`. Katalog nachgeprüft: 294 aktive Karten,
+  Detailseite 200. `git status` und der Vergleich mit `origin/main` sind leer.
+- **Die Migration `0006` ist angewandt** (vom Betreiber ausgeführt, 8
+  Anweisungen, 1096 Zeilen). **Nicht erneut ausführen.**
+- **Die wichtigste Regel für den Weiterbau:** Es gibt **kein**
+  `kind = 'MANUAL'`. Eine manuelle Karte ist `kind = 'PRELISTED'` **und**
+  `origin = 'MANUAL'`. Wer das für einen Fehler hält und „aufräumt", zerstört
+  den Katalog — die Begründung steht im Kopf der Migration, im Agentenlog und
+  in Punkt A.
+- **Offen:** Adminoberfläche zum Anlegen und Bearbeiten · Vorverkaufsbereich in
+  der Navigation · SEC-12 (Tabelle `ebay_oauth_claims` steht, Routen fehlen).
 
 **Eine Abnahme steht noch aus, die nur der Betreiber machen kann:** Die neue
 Bestellansicht in `/admin` ist deployed, aber **hinter der Anmeldung** — von
@@ -427,6 +397,43 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
 ---
 
 ## Historie
+
+### 2026-08-08 — Großer Block, erste Hälfte: manuelle Karten, Handmarkierungen
+
+- **Stand:** ABGESCHLOSSEN für diese Sitzung; Fortsetzung als **Punkt A** im
+  Arbeitsvorrat, an eine andere KI übergeben.
+- **Ziel:** ai-todo Punkt 11, Punkt 12.1 und SEC-12 in einem Zug, weil alle drei
+  dieselbe Migration brauchten.
+- **Drei Entscheidungen des Betreibers:** manuelle Karten sind verhandelbar ·
+  gleichnamige Karten werden beim Import **automatisch zusammengeführt** ·
+  eigener Navigationsbereich.
+- **Zur Zusammenführung hat der Betreiber am selben Tag präzisiert:** Die Karte
+  soll **hinüberwandern**, nicht abgeschaltet werden — dieselbe Zeile wird zur
+  synchronisierten Karte (`origin → EBAY`, `kind → EBAY_SYNCED`, Produktpreis
+  fällt weg). Das erhält Kennung, Bilder, Verknüpfungen und laufende
+  Preisvorschläge. Mein Einwand gegen das Zusammenführen (Titel sind Freitext,
+  ein Treffer bleibt eine Vermutung) wurde ausgesprochen und überstimmt; die
+  Umsetzung ist deshalb so eng wie möglich: zeichengenau nach Normalisierung,
+  verkaufte Karten und Karten mit angenommenem Preisvorschlag bleiben draußen,
+  jede Übernahme steht als `syncEvent` und in der Adminmeldung.
+- **Ergebnis:** Migration `0006` (vom Betreiber angewandt), Schema um `origin`,
+  `price_amount_cents`, `price_currency`, `manual_overrides` und
+  `ebay_oauth_claims` erweitert, Katalog und Detailseite verstehen manuelle
+  Karten, `lib/manual-overrides.ts` samt Verdrahtung im Sync,
+  `tests/manual-cards.test.mjs` (15 Tests). Commits `cabdcb2`, `bfcfb2e`;
+  deployed als `dc0c6e46`. `tsc` sauber, Lint 0 Fehler, `npm test` 277/277.
+- **Die Abweichung vom Auftrag, und warum sie unvermeidbar war:** Der
+  Arbeitsvorrat verlangte eine dritte `kind`-Art. Auf D1 nicht machbar — der
+  Tabellenneubau hätte über `ON DELETE CASCADE` die Kindtabellen geleert (im
+  lokalen Probelauf waren `ebay_listings` und `inventory` danach **leer**,
+  in Produktion wären es 543 Angebote gewesen), `PRAGMA foreign_keys = OFF`
+  greift auf D1 nicht, und ein `RENAME` scheitert an der qualifizierten
+  CHECK-Bedingung. Stattdessen die Spalte `origin` ohne CHECK. Ausführlich im
+  Agentenlog.
+- **Zwei Handgriffe lagen beim Betreiber**, weil der Berechtigungsklassifizierer
+  schreibende D1-Befehle verweigert: das Anwenden der Migration und zuvor das
+  Hinterlegen von `SUPABASE_SERVICE_ROLE_KEY`. Für künftige Sitzungen gilt:
+  **fertigen Befehl geben, nicht selbst versuchen.**
 
 ### 2026-08-08 — Löschlauf an echten Daten abgenommen, ein Fehler dabei gefunden
 

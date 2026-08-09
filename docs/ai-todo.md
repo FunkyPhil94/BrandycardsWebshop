@@ -25,12 +25,17 @@ nächste Verkauf ohnehin beweist. **Punkt 7 (Verhandeln bewerben) ist am
 Reste der Sicherheitsprüfung, von denen der Selbstbedienungsweg für Auskunft
 und Kontolöschung vor dem Verkaufsstart stehen sollte.
 
+**Punkt 8 ist seit dem 2026-08-08 vollständig erledigt** (Auskunft und
+Kontolöschung, an echten Daten abgenommen). **Der große Block aus 11, 12.1 und
+SEC-12 ist zur Hälfte gebaut** — Migration, Schema, Katalog und Sync stehen und
+sind deployed, die Oberflächen fehlen. Was daran noch offen ist, steht als
+**Punkt A ganz oben** und ist der nächste Arbeitsschritt.
+
 **Am 2026-08-08 kamen drei Punkte vom Betreiber dazu (10 bis 12).** Sie stehen
 am Ende, aber **11 und 12 gehören zusammen und ziehen 8 mit sich**: Karten von
-Hand einzustellen braucht eine neue Produktart, die neue Produktart braucht eine
-Migration, und auf genau diese Migration wartet SEC-12 aus Punkt 8. Wer das
-angeht, sollte die drei in einem Zug erledigen — **Adminkonsole zuerst**, sonst
-gibt es keine Oberfläche, um die manuellen Karten anzulegen.
+Hand einzustellen braucht eine eigene Produktart, die braucht eine Migration,
+und auf genau diese Migration wartete SEC-12 aus Punkt 8. Die Migration ist
+inzwischen angewandt (`0006`), siehe Punkt A.
 
 **Seit 2026-08-07 läuft das Projekt auf Workers Paid (5 $/Monat).** Damit sind
 die harten Tagesdeckel weg (D1 wird nach Verbrauch abgerechnet), `Email
@@ -62,6 +67,126 @@ Drei Überlegungen bestimmen die Reihenfolge:
 
 Kurz: **erst die Grenze entschärfen, dann den Kaufweg zu Ende bauen, dann den
 eBay-Schreibpfad, dann bewerben.**
+
+---
+
+## A. ZUERST — Oberflächen für manuelle Karten, Vorverkauf, SEC-12
+
+**Aufwand:** groß · **Hängt an:** nichts mehr · **Migration ist angewandt**
+
+Dies ist die zweite Hälfte des Blocks aus Punkt 11, Punkt 12.1 und SEC-12. Die
+erste Hälfte wurde am 2026-08-08 gebaut und deployed (Version `dc0c6e46`).
+**Ohne diesen Punkt kann der Betreiber keine einzige Karte von Hand
+einstellen** — der Unterbau steht, es fehlt jede Oberfläche dazu.
+
+### Was schon steht — nicht noch einmal bauen
+
+- **Migration `0006` ist auf Produktion angewandt.** Neue Spalten an `products`:
+  `origin`, `price_amount_cents`, `price_currency`, `manual_overrides`. Neue
+  Tabelle `ebay_oauth_claims`. Nicht erneut ausführen.
+- **Katalog und Detailseite** (`app/api/products/route.ts`,
+  `app/api/products/[id]/route.ts`) kennen manuelle Karten: Preis kommt vom
+  Produkt, `ebay_listings` hängt per `leftJoin`, `category` ist
+  `"Direkt bei uns"`, das Feld `origin` steht in beiden Antworten.
+- **Der Sync** (`lib/ebay-sync.ts`) achtet Handmarkierungen und übernimmt
+  gleichnamige manuelle Karten. Logik in `lib/manual-overrides.ts`, geprüft in
+  `tests/manual-cards.test.mjs` (15 Tests).
+
+### Die eine Regel, an der alles hängt
+
+**Eine manuelle Karte ist `kind = 'PRELISTED'` UND `origin = 'MANUAL'`.**
+
+Es gibt **kein** `kind = 'MANUAL'`, obwohl frühere Fassungen dieser Liste das
+verlangten. Die CHECK-Bedingung auf `products.kind` ist auf D1 unveränderlich:
+`DROP TABLE` löst die `ON DELETE CASCADE`-Aktionen der Kindtabellen aus (im
+Probelauf waren `ebay_listings` und `inventory` danach **leer**),
+`PRAGMA foreign_keys = OFF` greift auf D1 nachweislich nicht, und ein `RENAME`
+scheitert an der qualifiziert geschriebenen CHECK-Bedingung. Die vollständige
+Begründung steht im Kopf von `drizzle/0006_manual_cards_and_oauth_claims.sql`
+und in `docs/ai-agent-log.md`.
+
+**Wer das für einen Fehler hält und „aufräumt", zerstört den Katalog.**
+`PRELISTED` bedeutet an anderer Stelle „Ankündigung, immer sichtbar" — deshalb
+fragt `lib/catalog-availability.ts` `origin` **vor** `kind`. Dreht das jemand
+um, bleibt jede verkaufte Handkarte mit Kaufknopf im Schaufenster stehen.
+
+### 1. Adminkonsole: Karten anlegen und bearbeiten
+
+**Dateien:** neu `app/api/admin/products/route.ts`, neue Oberfläche im
+Adminbereich (Muster: `app/admin/offers-panel.tsx` und `orders-panel.tsx` —
+Sitzungstoken über `getSupabaseBrowserClient`, `Authorization: Bearer`).
+`requireAdmin` aus `lib/admin-access.ts` benutzen, dann greift der Test „keine
+Route unter `/api/admin` ohne Rollenprüfung" automatisch.
+
+**Anlegen** einer manuellen Karte braucht in einem Rutsch:
+1. `products`-Zeile mit `kind: "PRELISTED"`, `origin: "MANUAL"`, `title`,
+   `description`, `priceAmountCents`, `priceCurrency: "EUR"`, `status: "ACTIVE"`.
+2. **Eine `inventory`-Zeile.** Ohne sie lehnt `app/api/orders/route.ts` den Kauf
+   ab, und `verfuegbareMenge(..., "MANUAL")` liefert 0 — die Karte erschiene
+   gar nicht erst im Katalog. Das ist die Falle Nummer 4 aus Punkt 11.
+3. Optional Bilder als `product_assets` (Upload nach R2 wie bei den
+   Kartenangeboten, siehe `app/api/admin/card-submissions/assets`).
+
+**Bearbeiten** gilt für beide Sorten. Bei eBay-Karten muss jedes geänderte Feld
+in `products.manual_overrides` eingetragen werden (JSON-Liste), sonst
+überschreibt der nächste Import es binnen drei Minuten. Erlaubt sind genau die
+Felder aus `HANDFELDER` in `lib/manual-overrides.ts`: `title`, `description`,
+`status`. **In der Oberfläche muss sichtbar sein, welche Felder markiert sind**
+— sonst wundert sich der Betreiber, warum eBay-Korrekturen an einem Feld nicht
+mehr ankommen.
+
+**Fertig, wenn:** Der Betreiber legt eine Karte an, sie erscheint im Katalog,
+überlebt mehrere Sync-Läufe, lässt sich kaufen, und die Bestellung läuft bis
+zur Versandmail durch.
+
+### 2. Eigener Navigationsbereich „Vorverkauf"
+
+Entscheidung des Betreibers vom 2026-08-08: **eigener Menüpunkt**, nicht im
+normalen Bestand mitlaufend. Neue Seite (etwa `app/vorverkauf/page.tsx`), die
+nur Karten mit `origin === "MANUAL"` zeigt; `SiteHeader`/`SiteFooter` aus
+`app/site-chrome.tsx`, Muster wie `app/karten/page.tsx`. Das Feld `origin`
+liefert `/api/products` bereits mit.
+
+**Ehrlich dazu:** Der Bereich steht am Anfang leer. Ein Menüpunkt, der ins
+Nichts führt, ist schlechter als keiner — die Seite braucht deshalb einen
+tragfähigen Leertext, und der Menüpunkt sollte erst mit der ersten Karte
+erscheinen.
+
+### 3. SEC-12 zu Ende bringen
+
+**Die Tabelle `ebay_oauth_claims` steht bereits** (`id`, `refresh_token`,
+`expires_at`, `created_at`), das Drizzle-Schema kennt sie als `ebayOauthClaims`.
+Es fehlen die Routen.
+
+Heute schreibt `app/api/admin/ebay/oauth/callback/route.ts` den Refresh-Token in
+die Antwort auf die Umleitung — und diese Route ist die **einzige** unter
+`/api/admin/**` ohne Rollenprüfung, weil eBay den *Browser* dorthin schickt und
+eine Navigation keinen `Authorization`-Header trägt. Eine Prüfung dort wäre
+falsch, das ist bereits als Kommentar an der Route und als Ausnahme in
+`tests/hardening.test.mjs` festgehalten.
+
+*Neuer Ablauf:* Die Rückseite legt den Token in `ebay_oauth_claims` ab
+(Frist ~10 Minuten) und leitet in den Adminbereich um, mit der Kennung in der
+URL. Der angemeldete Adminbereich holt ihn über eine **neue, adminpflichtige**
+Route ab; die Zeile wird beim Abholen **gelöscht**, nicht nur markiert.
+Abgelaufene Zeilen räumt der geplante Lauf ab (Muster:
+`lib/card-submission-cleanup.ts`, verdrahtet in `worker/index.ts`).
+
+**Fertig, wenn:** Ein Aufruf der Rückseite zeigt keinen Token mehr, der
+Adminbereich zeigt ihn genau einmal, und `tests/hardening.test.mjs` bleibt grün.
+
+### Dauerregeln für diesen Punkt
+
+- **Nicht raten, ob eine Migration nötig ist** — sie ist es nicht mehr. Sollte
+  doch eine dazukommen: `drizzle/meta/_journal.json` endet bei `0002`, während
+  `0003`–`0006` handgeschrieben sind. `npm run db:generate` würde gegen den
+  alten Schnappschuss diffen und die Migrationen erneut erzeugen.
+- **Schreibende D1-Befehle kann die KI nicht ausführen** — der
+  Berechtigungsklassifizierer verweigert sie. Fertigen Befehl dem Betreiber
+  geben, so lief auch `0006`.
+- Vor jedem Commit: `npx tsc --noEmit`, `npm run lint`, `npm test` (CI prüft
+  keine Typen). Neue Testdateien in das `test`-Skript in `package.json`
+  eintragen, sonst laufen sie nie.
 
 ---
 
@@ -826,8 +951,17 @@ als Auftrag.
 
 ## 11. Karten von Hand einstellen („Vorverkauf" / „Lagerverkauf")
 
+> **ZUR HÄLFTE ERLEDIGT am 2026-08-08 — weiterarbeiten steht in Punkt A.**
+> Migration, Schema, Katalog, Detailseite und Sync stehen und sind deployed
+> (`dc0c6e46`). Es fehlt allein die Oberfläche zum Anlegen und der
+> Vorverkaufsbereich. **Die vier Fallen unten sind alle bereits entschärft** —
+> sie stehen hier nur noch als Beleg, wie die Lösung zustande kam. Und Achtung:
+> Die unten geforderte dritte `kind`-Art gibt es **nicht**; sie ließ sich auf D1
+> nicht anlegen. Gültig ist `kind = 'PRELISTED'` **und** `origin = 'MANUAL'`,
+> Begründung in Punkt A.
+
 **Aufwand:** mittel bis groß · **Hängt an:** Punkt 12 (die Oberfläche dafür) ·
-**Braucht:** eine Migration
+**Braucht:** eine Migration *(erledigt: `0006`)*
 
 **Warum:** Heute kann der Shop **nur** verkaufen, was bei eBay steht — der
 Bestand kommt ausschließlich aus dem Import. Karten, die noch nicht eingestellt
@@ -875,6 +1009,13 @@ Versandmail durch.
 
 ## 12. Eine richtige Adminkonsole
 
+> **Teilschritt 2 (Bestellungen) und 3 (Preisvorschläge) sind erledigt.**
+> Teilschritt 1 (Angebote bearbeiten) hat seit dem 2026-08-08 seinen Unterbau:
+> Die Entwurfsfrage ist vom Betreiber entschieden — **pro Feld eine
+> Handmarkierung**, die der Sync respektiert (`products.manual_overrides`,
+> Logik in `lib/manual-overrides.ts`). Es fehlt nur noch die Oberfläche,
+> beschrieben in **Punkt A**.
+
 **Aufwand:** groß · **Hängt an:** nichts · **Blockiert:** Punkt 11
 
 **Warum:** `/admin` ist heute vier Kacheln mit Zahlen und vier Knöpfe. Es gibt
@@ -885,11 +1026,14 @@ Tag mehrfach `wrangler d1 execute` gegen die Produktion nötig war.
 
 **Was fehlt, grob nach Nutzen sortiert:**
 
-1. **Angebote durchsehen und einzeln bearbeiten** — Preis, Beschreibung,
-   Sichtbarkeit. Achtung: Bei eBay-synchronisierten Karten überschreibt der
-   nächste Import geänderte Felder wieder. Entweder nur bei manuellen Karten
-   erlauben, oder pro Feld eine „von Hand gesetzt"-Markierung, die der Sync
-   respektiert. **Das ist die eigentliche Entwurfsfrage dieses Punktes.**
+1. **Angebote durchsehen und einzeln bearbeiten** — **Entwurfsfrage am
+   2026-08-08 vom Betreiber entschieden: pro Feld eine „von Hand
+   gesetzt"-Markierung**, die der Sync respektiert, damit auch Punkt 11 möglich
+   wird. Der Unterbau steht (`products.manual_overrides`,
+   `lib/manual-overrides.ts`, `tests/manual-cards.test.mjs`); der Sync lässt
+   markierte Felder in Ruhe. **Was fehlt, ist die Oberfläche — siehe Punkt A.**
+   Erlaubte Felder sind bewusst nur `title`, `description`, `status`: Jedes
+   weitere ist eines, das der Import nie wieder korrigieren kann.
 2. ~~**Bestellungen sehen**~~ — **ERLEDIGT am 2026-08-08.**
    `/api/admin/orders` (nur lesend, `requireAdmin`) und `OrdersPanel` zeigen die
    25 jüngsten Bestellungen; aufgeklappt stehen Positionen, Zwischensumme,
