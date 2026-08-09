@@ -37,14 +37,20 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-**Galerie-CTA stabilisieren** — Stand: LÄUFT (2026-08-09)
+**Galerie-CTA stabilisieren** — Stand: ABGESCHLOSSEN (2026-08-09)
 
-- Der Galerie-Preis und der CTA sollen unabhängig von Preisbreite, Kartentitel
-  und DE/EN an derselben Stelle stehen.
-- Preis erhält eine feste Spalte; der CTA bekommt eine feste Breite und bleibt
-  bei allen Galerie-Karten sowie in beiden Sprachen stabil.
-- Danach lokale/live Prüfung, Tests, Commit, Push und Deployment; keine
-  Produktionsdaten schreiben.
+- Galerie-Preis und CTA stehen jetzt in einer festen zweispaltigen Aktionsleiste:
+  150px reservierte Preisspalte, 22px Abstand und 220px CTA-Spalte. Auch Karten
+  ohne Festpreis reservieren die Spalte; mobil wird die Leiste einspaltig.
+- Lokale DE/EN-Prüfung bestätigte dieselbe Buttonposition (`x = 852,6`) und
+  220px Breite. Live wurden alle fünf Galerie-Karten in DE und EN geprüft:
+  überall `x = 674,5` und 220px Breite.
+- `npm run lint` (nur bestehende Warnung in `app/account/page.tsx`), `npm test`
+  (315 Tests) und Build erfolgreich. Commit `fa958c7` nach GitHub gepusht.
+- Sites-Version 4 gespeichert und deployed: `appgver_f85947ef73b4819186c48fecae4e48d5`,
+  Deployment `appgdep_6a789bde29848191ba56839c8ef3095d`. Cloudflare-Worker
+  deployed als `7522d72a-7bf4-41f4-a528-a75710a2c627` auf `shop.brandycards.de`.
+  Keine Produktionsdaten geschrieben.
 
 **Sprachlayout und vollständige Unterseitenprüfung** — Stand: ABGESCHLOSSEN (2026-08-09)
 
