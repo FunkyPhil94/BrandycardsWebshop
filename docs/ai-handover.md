@@ -37,15 +37,25 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-**Punkte 3 bis 5 umsetzen** — Stand: LÄUFT (2026-08-09)
+**Punkte 3 bis 5 umsetzen** — Stand: ABGESCHLOSSEN (2026-08-09)
 
-- Die Adminkonsole erhält eine paginierte Bestellansicht und eine kontrollierte
-  Statusänderung auf „versendet“.
-- Die veraltete Aufgabenliste wird auf den tatsächlichen Stand nach den bereits
-  erledigten Sprach-, Vorverkaufs-, Sicherheits- und Galeriearbeiten gebracht.
-- Die bestehende ESLint-Warnung in `app/account/page.tsx` wird behoben.
-- Danach Typprüfung, Lint, Tests, Build, Commit, Push und Deployment; keine
-  Produktionsdaten schreiben.
+- `/api/admin/orders` paginiert jetzt mit 25 Einträgen, liefert Gesamtseiten
+  und sortiert bei gleichen Zeitstempeln stabil. Ein geschütztes `PATCH` setzt
+  nur `PAID`/`PROCESSING` auf `SHIPPED`; die Adminoberfläche bietet Blättern,
+  deutsche Statuslabels und „Als versendet markieren“.
+- `docs/ai-todo.md` ist auf den tatsächlichen Stand gebracht: Punkte 8, 9, 11,
+  12 und A sind als erledigt dokumentiert; historische Planungen stehen in
+  aufklappbaren Abschnitten. Die Apex-Weiterleitung wurde als Betreiberaktion
+  vermerkt.
+- Die ESLint-Warnung in `app/account/page.tsx` ist durch einen stabilen
+  `useCallback`-Tokenzugriff behoben. Neun doppelte Englisch-Schlüssel wurden
+  entfernt, damit `npx tsc --noEmit` wieder sauber läuft.
+- `npx tsc --noEmit`, `npm run lint`, Build und `npm test` mit 317 Tests waren
+  erfolgreich. Code-Commit `86afd8e` ist nach GitHub gepusht. Sites-Version 5
+  (`appgver_3a8865f204a08191bc344ef751e9681d`) und Deployment
+  (`appgdep_6a78a1ac03548191b6d196ed7433b341`) sind live; der Cloudflare-Worker
+  läuft als `a431a800-8760-4d73-a6ac-0fe2694f8025`. `/admin` wurde live geladen
+  und eine bezahlte Bestellung geöffnet, ohne den Status zu ändern.
 
 **Galerie-CTA stabilisieren** — Stand: ABGESCHLOSSEN (2026-08-09)
 
