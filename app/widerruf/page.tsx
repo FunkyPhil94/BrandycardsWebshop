@@ -14,7 +14,7 @@ export default function WiderrufPage() {
       <p>{t("Sie haben das Recht, binnen vierzehn Tagen ohne Angabe von Gründen diesen Vertrag zu widerrufen.")}</p>
       <p>{t("Die Widerrufsfrist beträgt vierzehn Tage ab dem Tag, an dem Sie oder ein von Ihnen benannter Dritter, der nicht der Beförderer ist, die Ware erhalten haben.")}</p>
       <p>{t("Um Ihr Widerrufsrecht auszuüben, müssen Sie uns mittels einer eindeutigen Erklärung per E-Mail oder Brief über Ihren Entschluss informieren:")}</p>
-      <p>BrandyCards GbR<br />Legienstraße 6<br />51373 Leverkusen<br />E-Mail: <a href="mailto:brandycards@gmx.de">brandycards@gmx.de</a></p>
+      <p>BrandyCards GbR<br />Legienstraße 6<br />51373 Leverkusen<br />{t("E-Mail:")} <a href="mailto:brandycards@gmx.de">brandycards@gmx.de</a></p>
       <p>{t("Zur Wahrung der Widerrufsfrist reicht es aus, dass Sie die Mitteilung vor Ablauf der Widerrufsfrist absenden.")}</p>
       <h2>{t("Folgen des Widerrufs")}</h2>
       <p>{t("Wenn Sie diesen Vertrag widerrufen, erstatten wir alle erhaltenen Zahlungen einschließlich der Kosten der günstigsten Standardlieferung unverzüglich und spätestens binnen vierzehn Tagen ab Eingang Ihres Widerrufs.")}</p>

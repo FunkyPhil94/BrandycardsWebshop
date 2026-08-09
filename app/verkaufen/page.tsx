@@ -50,8 +50,13 @@ export default function VerkaufenPage() {
           <Field label={t("E-Mail-Adresse")} name="email" type="email" />
           <label className="form-field">
             <span>{t("Bilder auswählen")}</span>
-            <input name="images" type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={handleImages} />
-            <small>{imageCount ? t("{{count}} Bild(er) ausgewählt.", { count: imageCount }) : t("Noch keine Bilder ausgewählt.")}</small>
+            <span className="file-picker">
+              <input className="file-input" aria-label={t("Bilder auswählen")} name="images" type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={handleImages} />
+              <span className="file-picker-button">{t("Dateien auswählen")}</span>
+              <span className="file-picker-status" aria-live="polite">
+                {imageCount ? t("{{count}} Bild(er) ausgewählt.", { count: imageCount }) : t("Keine ausgewählt")}
+              </span>
+            </span>
           </label>
           <PrivacyNotice />
           <button className="button button-primary" type="submit" disabled={submission.pending}>

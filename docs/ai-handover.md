@@ -37,7 +37,7 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-**Sprachlayout und vollständige Unterseitenprüfung** — Stand: LÄUFT (2026-08-09)
+**Sprachlayout und vollständige Unterseitenprüfung** — Stand: ABGESCHLOSSEN (2026-08-09)
 
 - Buttons und andere Bedienelemente sollen in Deutsch und Englisch dieselben
   Abmessungen behalten; Hero- und Footer-Positionen dürfen nicht durch
@@ -51,6 +51,11 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 - Danach werden die öffentlichen Unterseiten in Deutsch und Englisch geprüft,
   Tests ausgeführt, committen, pushen und deployen. Keine Produktionsdaten
   schreiben.
+- Ergebnis: Übersetzungen für die geprüften Seiten ergänzt, Datei-Upload im
+  Ankauf übersetzt gestaltet, CTA-/Footer-Maße stabilisiert. Lokale Prüfung
+  aller öffentlichen Seiten in DE/EN sowie `npm test` erfolgreich; keine
+  Produktionsdaten geschrieben. Commit, Push und Deployment folgen in diesem
+  Durchlauf.
 
 **Sites-Freigabe und Apex-Domain-Prüfung** — Stand: ABGESCHLOSSEN (2026-08-09)
 
