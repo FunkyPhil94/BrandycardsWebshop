@@ -63,7 +63,8 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
   (315/315) und der zusätzliche Sprachtest grün. Nach einem Laufzeitfix für
   die clientseitigen Rechtstexte ist `cc7cc18` auf `main` und
   `agent/initial-brandycards` gepusht und als Cloudflare-Version
-  `994b91c1-a40d-4f83-a680-7b46bde3a17d` auf `shop.brandycards.de` deployed.
+  `994b91c1-a40d-4f83-a680-7b46bde3a17d` und zuletzt
+  `46e28b24-6603-4332-929d-fba28e0e96cf` auf `shop.brandycards.de` deployed.
   Die öffentlichen Shop-Routen und `/api/products` antworten live mit HTTP
   200. Es wurden keine Produktionsdaten geschrieben. Das zusätzliche Sites-
   Projekt ist angelegt und eine Version gespeichert; die öffentliche Sites-
