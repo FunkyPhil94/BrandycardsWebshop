@@ -1,8 +1,49 @@
-import { count, desc, eq } from "drizzle-orm";
+import { and, count, desc, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { getDb } from "../../../../db";
-import { cardSubmissionAssets, cardSubmissions, inquiries, orders, products } from "../../../../db/schema";
+import { cardSubmissionAssets, cardSubmissions, ebayListings, inquiries, inventory, orders, products } from "../../../../db/schema";
 import { getAuthenticatedAppUser } from "../../../../lib/app-user";
+import { istKaufbar } from "../../../../lib/catalog-availability";
+
+/** Wie viele Karten gerade jemand kaufen könnte.
+ *
+ * **Nicht `COUNT(*) WHERE status = 'ACTIVE'`, und das ist der ganze Punkt.**
+ * Bis zum 2026-08-09 zählte die Kachel genau das und behauptete dabei, die
+ * aktiven eBay-Angebote zu spiegeln. Eine im Shop verkaufte **manuelle** Karte
+ * bleibt aber auf `ACTIVE` stehen — bei eBay-Karten räumt der Sync das auf,
+ * für manuelle gibt es diesen Weg nicht. Die Zahl driftete damit mit jedem
+ * Vorverkauf um eins weiter, dauerhaft und wachsend.
+ *
+ * **Gezählt wird deshalb mit derselben Entscheidung, die auch den Katalog
+ * füllt** (`istKaufbar` → `istImKatalogSichtbar` → `verfuegbareMenge`). Eine
+ * zweite Fassung in SQL wäre die fünfte Stelle, an der dieselbe Frage
+ * beantwortet wird — und die vier bisherigen sind alle auseinandergelaufen.
+ *
+ * Der Preis sind ~550 gelesene Zeilen statt eines Zählers. Auf einer Seite, die
+ * nur der Betreiber öffnet, ist das nichts; der öffentliche Katalog liest
+ * dieselbe Menge bei jedem Rand-Abruf.
+ */
+async function kaufbareKarten(db: ReturnType<typeof getDb>) {
+  const rows = await db.select({
+    kind: products.kind,
+    origin: products.origin,
+    listingType: ebayListings.listingType,
+    listingQuantity: ebayListings.quantity,
+    bestandStatus: inventory.status,
+    bestandMenge: inventory.availableQuantity,
+  }).from(products)
+    .leftJoin(ebayListings, and(eq(ebayListings.productId, products.id), eq(ebayListings.status, "ACTIVE")))
+    .leftJoin(inventory, eq(inventory.productId, products.id))
+    .where(eq(products.status, "ACTIVE"));
+
+  return rows.filter((row) => istKaufbar(
+    row.kind,
+    row.listingType,
+    row.listingQuantity,
+    row.bestandStatus === null ? null : { availableQuantity: row.bestandMenge ?? 0, status: row.bestandStatus },
+    row.origin,
+  )).length;
+}
 
 export async function GET(request: Request) {
   try {
@@ -11,10 +52,9 @@ export async function GET(request: Request) {
     if (appUser.role !== "ADMIN") return NextResponse.json({ error: "Keine Berechtigung." }, { status: 403 });
 
     const db = getDb();
-    const [[productCount], [inquiryCount], [submissionCount], [orderCount]] = await Promise.all([
-      // Deactivated products stay in the table as history. The tile is meant to
-      // mirror the live eBay listing count, so it counts active products only.
-      db.select({ count: count() }).from(products).where(eq(products.status, "ACTIVE")),
+    const [productCount, [inquiryCount], [submissionCount], [orderCount]] = await Promise.all([
+      // Verkaufbare Karten, nicht „aktive Produktzeilen" — siehe kaufbareKarten.
+      kaufbareKarten(db),
       db.select({ count: count() }).from(inquiries),
       db.select({ count: count() }).from(cardSubmissions),
       db.select({ count: count() }).from(orders),
@@ -31,7 +71,7 @@ export async function GET(request: Request) {
       ok: true,
       user: { email: appUser.email, role: appUser.role },
       counts: {
-        products: productCount?.count ?? 0,
+        products: productCount,
         inquiries: inquiryCount?.count ?? 0,
         cardSubmissions: submissionCount?.count ?? 0,
         orders: orderCount?.count ?? 0,

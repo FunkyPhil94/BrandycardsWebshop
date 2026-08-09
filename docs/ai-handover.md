@@ -37,7 +37,32 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-*(leer — bereit für den nächsten Auftrag.)*
+**Drei Dinge: Testartikel löschen, F-10, S-01** — Stand: LÄUFT (2026-08-09)
+
+- **🔴 Schreibender Eingriff in Produktionsdaten, vom Betreiber ausdrücklich
+  angeordnet** („Bitte lösche den Artikel aus der DB"). Betroffen ist die
+  manuelle Testkarte `b44ee5d7a3a94f6b91d2e895a9ffd0b0`.
+  **Vorher in D1 nachgesehen, wie es die Regel verlangt:** 1 `inventory`-Zeile,
+  1 `reservations`-Zeile (`CONVERTED`, blockiert per **RESTRICT** das Löschen
+  des Produkts), 1 `order_items`-Zeile (fällt per `SET NULL` auf null), 0
+  Angebote, 0 Bilder, 0 Sync-Ereignisse.
+  **Gelöscht wird der Artikel, nicht der Verkauf:** Reservierung, Bestand und
+  Produkt fallen; die bezahlte Bestellung `BC-20260809-E998831E` bleibt mit
+  Titel-Momentaufnahme, Betrag und Capture-Id stehen. Dieselbe Linie wie bei
+  der Kontolöschung — ein Rechnungsbeleg überlebt.
+  **Reihenfolge zwingend:** erst die Reservierung, dann das Produkt. Andersherum
+  bricht `RESTRICT` ab.
+- **F-10** — die Adminkachel soll nur noch **verkaufbare** Karten zählen
+  (Entscheidung des Betreibers). Heute zählt sie `products.status = 'ACTIVE'`
+  und driftet mit jeder verkauften manuellen Karte um eins.
+- **S-01** — `Promise.all` im geplanten Lauf durch `allSettled` ersetzen, damit
+  ein eBay-Fehler nicht die eBay-Rücknahme, die Freigabe abgelaufener
+  Reservierungen und die Löschfrist mitreißt.
+- **Falls diese Zeile noch auf LÄUFT steht:** Zuerst prüfen, ob die Löschung
+  ganz oder halb durchlief — `SELECT COUNT(*) FROM products WHERE
+  id='b44ee5d7a3a94f6b91d2e895a9ffd0b0'` und dieselbe Abfrage auf
+  `reservations`. Ein halber Stand hieße: Reservierung weg, Produkt noch da.
+  Das ist unschädlich (die Karte ist ohnehin verkauft), aber nachzuziehen.
 
 > **Der Vorverkauf ist durchgespielt und trägt.** Die erste von Hand
 > eingestellte Karte ist angelegt, verkauft, bezahlt und aus dem Schaufenster

@@ -376,3 +376,31 @@ test("keine Route unter /api/admin ohne Rollenprüfung", async () => {
   assert.deepEqual(ohnePruefung, ["ebay/oauth/callback/route.ts"],
     "eine Adminroute ohne Rollenprüfung ist eine offene Tür; die einzige zulässige Ausnahme ist die OAuth-Rückseite");
 });
+
+// --- S-01, der geplante Lauf darf nicht am ersten Fehler abbrechen ----------
+
+test("der geplante Lauf benutzt allSettled, nicht all", async () => {
+  // `Promise.all` lehnt bei der ersten Ablehnung ab. Die Zusage an waitUntil
+  // waere damit erledigt, waehrend die uebrigen Aufgaben noch laufen - und die
+  // Laufzeitumgebung darf den Vorgang dann abraeumen. `runEbaySync` lehnt
+  // regelmaessig ab (24 solcher Laeufe stehen in sync_runs), und mitgerissen
+  // wuerde ausgerechnet processEbayOutbox: die Ruecknahme verkaufter Karten
+  // bei eBay. Siehe docs/pruefbericht-2026-08-09.md, S-01.
+  const worker = await read("worker/index.ts");
+  const scheduled = worker.slice(worker.indexOf("scheduled("));
+  assert.match(scheduled, /Promise\.allSettled\(/u);
+  assert.ok(!/Promise\.all\(/u.test(scheduled),
+    "ein einziger eBay-Fehler wuerde die eBay-Ruecknahme mitreissen");
+});
+
+test("jede Aufgabe des geplanten Laufs wird einzeln benannt", async () => {
+  // Die alte Zeile meldete jeden Fehler als "eBay-Synchronisierung
+  // fehlgeschlagen" - auch dann, wenn in Wahrheit die Loeschfrist gerissen war.
+  // Ein Protokoll, das die falsche Ursache nennt, ist schlechter als keins.
+  const worker = await read("worker/index.ts");
+  const scheduled = worker.slice(worker.indexOf("scheduled("));
+  for (const name of ["eBay-Synchronisierung", "eBay-Rücknahmen", "Freigabe abgelaufener Reservierungen"]) {
+    assert.ok(scheduled.includes(name), `die Aufgabe "${name}" wird im Fehlerfall nicht beim Namen genannt`);
+  }
+  assert.match(scheduled, /ergebnis\.status !== "rejected"/u, "jeder Fehlschlag muss einzeln protokolliert werden");
+});

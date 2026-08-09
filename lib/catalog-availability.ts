@@ -78,6 +78,37 @@ export function verfuegbareMenge(listingQuantity: number | null | undefined, bes
   return Math.min(ausListing, verfuegbar);
 }
 
+/** Ob diese Karte jemand kaufen kann — **nicht** dasselbe wie „sichtbar".
+ *
+ * Der Unterschied ist die Vormerkliste: Sie steht im Katalog, ist aber eine
+ * Ankündigung mit `quantity` 0 und der Aktion „Vormerken". `istImKatalogSichtbar`
+ * lässt sie deshalb durch, und das soll so bleiben.
+ *
+ * **Gebraucht wird die Unterscheidung seit dem 2026-08-09 in der Adminkachel.**
+ * Sie zählte `products.status = 'ACTIVE'` und behauptete damit, die aktiven
+ * eBay-Angebote zu spiegeln. Mit von Hand eingestellten Karten stimmte das
+ * nicht mehr: Eine verkaufte manuelle Karte bleibt auf `ACTIVE` stehen (es gibt
+ * keinen Sync, der sie abräumt) und wurde weitergezählt, obwohl sie niemand
+ * mehr kaufen kann. Der Betreiber hat entschieden: **die Kachel zählt
+ * Verkaufbares.** Siehe docs/pruefbericht-2026-08-09.md, F-10.
+ *
+ * Bewusst **zusammengesetzt** statt neu geschrieben — die Sichtbarkeitsregel
+ * ist die schwierige, und sie existiert schon.
+ */
+export function istKaufbar(
+  kind: string,
+  listingType: string | null | undefined,
+  listingQuantity: number | null | undefined,
+  bestand: BestandsZeile,
+  origin: string = "EBAY",
+): boolean {
+  // Die Vormerkliste — und nur sie: `kind === 'PRELISTED'` **mit**
+  // `origin === 'EBAY'`. Eine manuelle Karte trägt dasselbe `kind` und ist sehr
+  // wohl kaufbar; wer das verwechselt, blendet den ganzen Vorverkauf aus.
+  if (origin !== "MANUAL" && kind === "PRELISTED") return false;
+  return istImKatalogSichtbar(kind, listingType, listingQuantity, bestand, origin);
+}
+
 /** Ob die Karte überhaupt im Katalog erscheint.
  *
  * **`PRELISTED` ist die Ausnahme, die man leicht zerstört.** Karten der

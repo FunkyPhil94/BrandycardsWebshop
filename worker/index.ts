@@ -82,24 +82,49 @@ const worker = {
 
   scheduled(_controller: ScheduledController, _env: Env, ctx: ExecutionContext): void {
     const now = new Date().toISOString();
+    // **`allSettled`, nicht `all` — und das ist kein Stilfrage.**
+    //
+    // `Promise.all` lehnt ab, sobald die **erste** Zusage ablehnt. Die Zusage,
+    // die hier an `waitUntil` geht, wäre damit erledigt, während die übrigen
+    // fünf noch laufen — und die Laufzeitumgebung darf den Vorgang dann
+    // abräumen. `runEbaySync` lehnt regelmäßig ab (eBay antwortet nicht, Token
+    // abgelaufen, Zeitgrenze; in `sync_runs` stehen 24 solcher Läufe), und die
+    // Aufgabe, die dabei mitgerissen würde, ist ausgerechnet
+    // `processEbayOutbox`: die Rücknahme verkaufter Karten bei eBay. Ein
+    // abgebrochener Auftrag heißt, dass eine im Shop verkaufte Karte dort
+    // weiter im Angebot steht — der Doppelverkauf, gegen den die halbe
+    // Maschinerie gebaut ist.
+    //
+    // Mit `allSettled` läuft jede Aufgabe zu Ende, und **jeder** Fehlschlag
+    // wird einzeln protokolliert statt vom ersten verdeckt. Die alte Zeile
+    // meldete zudem jeden Fehler als „eBay-Synchronisierung fehlgeschlagen",
+    // auch wenn in Wahrheit die Löschfrist gerissen war.
+    //
+    // Siehe docs/pruefbericht-2026-08-09.md, S-01.
+    const aufgaben = [
+      ["eBay-Synchronisierung", runEbaySync()],
+      ["Freigabe abgelaufener Reservierungen", releaseExpiredReservations(getDb(), now)],
+      ["eBay-Rücknahmen", processEbayOutbox(getDb())],
+      ["Ablauf angenommener Preisvorschläge", expireLapsedOffers(getDb(), now)],
+      // Aufbewahrungsfrist für abgeschlossene Kartenangebote. Gehört in den
+      // geplanten Lauf, nicht in eine Admin-Schaltfläche: eine Löschfrist,
+      // die jemand von Hand auslösen muss, ist keine.
+      ["Aufbewahrungsfrist für Kartenangebote", deleteExpiredCardSubmissions()],
+      // Abgelaufene eBay-OAuth-Ansprüche (SEC-12). Die Abholroute räumt zwar
+      // selbst auf, aber nur wenn sie gerufen wird — ein abgebrochener
+      // Anschlussversuch ruft sie nie, und die Zeile trüge weiter einen
+      // gültigen Refresh-Token.
+      ["Abgelaufene eBay-OAuth-Ansprüche", getDb().delete(ebayOauthClaims).where(lte(ebayOauthClaims.expiresAt, now))],
+    ] as const satisfies ReadonlyArray<readonly [string, PromiseLike<unknown>]>;
+
     ctx.waitUntil(
-      Promise.all([
-        runEbaySync(),
-        releaseExpiredReservations(getDb(), now),
-        processEbayOutbox(getDb()),
-        expireLapsedOffers(getDb(), now),
-        // Aufbewahrungsfrist für abgeschlossene Kartenangebote. Gehört in den
-        // geplanten Lauf, nicht in eine Admin-Schaltfläche: eine Löschfrist,
-        // die jemand von Hand auslösen muss, ist keine.
-        deleteExpiredCardSubmissions(),
-        // Abgelaufene eBay-OAuth-Ansprüche (SEC-12). Die Abholroute räumt zwar
-        // selbst auf, aber nur wenn sie gerufen wird — ein abgebrochener
-        // Anschlussversuch ruft sie nie, und die Zeile trüge weiter einen
-        // gültigen Refresh-Token.
-        getDb().delete(ebayOauthClaims).where(lte(ebayOauthClaims.expiresAt, now)),
-      ]).catch((error: unknown) => {
-        const message = error instanceof Error ? error.message : "Unbekannter Fehler";
-        console.error("[scheduled-ebay-sync] eBay-Synchronisierung fehlgeschlagen:", message);
+      Promise.allSettled(aufgaben.map(([, zusage]) => zusage)).then((ergebnisse) => {
+        ergebnisse.forEach((ergebnis, index) => {
+          if (ergebnis.status !== "rejected") return;
+          const grund = ergebnis.reason;
+          const message = grund instanceof Error ? grund.message : String(grund);
+          console.error(`[scheduled] ${aufgaben[index][0]} fehlgeschlagen:`, message);
+        });
       }),
     );
   },

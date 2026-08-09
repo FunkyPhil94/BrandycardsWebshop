@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { readFile } from "node:fs/promises";
 
-const { verfuegbareMenge, istImKatalogSichtbar, istKaufbareKategorie, KAUFBARE_KATEGORIEN } = await import("../lib/catalog-availability.ts");
+const { verfuegbareMenge, istImKatalogSichtbar, istKaufbar, istKaufbareKategorie, KAUFBARE_KATEGORIEN } = await import("../lib/catalog-availability.ts");
 
 // Am 2026-08-08, direkt nach dem ersten echten Verkauf: Die verkaufte Karte
 // stand weiter mit „1 VERFÜGBAR" im Katalog. Grund war, dass Katalog und
@@ -152,4 +152,44 @@ test("jede kaufbare Kategorie kommt auch wirklich aus der Katalogroute", async (
   for (const kategorie of KAUFBARE_KATEGORIEN) {
     assert.ok(quelle.includes(`"${kategorie}"`), `die Katalogroute kennt "${kategorie}" nicht`);
   }
+});
+
+// --- F-10: die Adminkachel zaehlt Verkaufbares, nicht "aktive Zeilen" -------
+//
+// Nach dem Verkauf bleibt eine manuelle Karte auf products.status = 'ACTIVE'
+// stehen: Bei eBay-Karten raeumt der Sync das auf, fuer manuelle gibt es den
+// Weg nicht. Die Kachel zaehlte die Zeile weiter und driftete mit jedem
+// Vorverkauf um eins von den aktiven eBay-Angeboten weg.
+
+test("eine verkaufte manuelle Karte zaehlt nicht mehr mit", () => {
+  assert.equal(istKaufbar("PRELISTED", null, null, { availableQuantity: 0, status: "SOLD" }, "MANUAL"), false,
+    "genau dieser Fall liess die Zahl davonlaufen");
+});
+
+test("eine manuelle Karte mit Bestand zaehlt mit", () => {
+  assert.equal(istKaufbar("PRELISTED", null, null, { availableQuantity: 1, status: "AVAILABLE" }, "MANUAL"), true);
+});
+
+test("die Vormerkliste ist sichtbar, aber nicht kaufbar", () => {
+  // Der eigentliche Unterschied zwischen den beiden Funktionen. Sie steht im
+  // Katalog als Ankuendigung, mit der Aktion "Vormerken" - kaufen kann man sie
+  // nicht, also gehoert sie nicht in eine Zahl ueber Verkaufbares.
+  assert.equal(istImKatalogSichtbar("PRELISTED", null, null, null), true);
+  assert.equal(istKaufbar("PRELISTED", null, null, null), false);
+});
+
+test("eine eBay-Karte mit Bestand zaehlt, eine ausverkaufte nicht", () => {
+  assert.equal(istKaufbar("EBAY_SYNCED", "FIXED_PRICE", 1, { availableQuantity: 1, status: "AVAILABLE" }), true);
+  assert.equal(istKaufbar("EBAY_SYNCED", "FIXED_PRICE", 1, { availableQuantity: 0, status: "SOLD" }), false);
+  assert.equal(istKaufbar("EBAY_SYNCED", "AUCTION", 1, { availableQuantity: 1, status: "AVAILABLE" }), false,
+    "Auktionen gehoeren nicht in den Shop und damit auch nicht in die Zahl");
+});
+
+test("die Adminkachel benutzt die geteilte Entscheidung, nicht eigenes SQL", async () => {
+  // Eine zweite Fassung in SQL waere die fuenfte Stelle, an der dieselbe Frage
+  // beantwortet wird - und die vier bisherigen sind alle auseinandergelaufen.
+  const route = await readFile(new URL("../app/api/admin/dashboard/route.ts", import.meta.url), "utf8");
+  assert.match(route, /istKaufbar\(/u, "die Kachel muss dieselbe Regel benutzen wie der Katalog");
+  assert.ok(!/count\(\)\s*\}\)\.from\(products\)/u.test(route),
+    "ein reiner Zaehler auf products zaehlt auch, was niemand kaufen kann");
 });
