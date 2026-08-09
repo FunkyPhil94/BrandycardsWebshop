@@ -405,8 +405,9 @@ footer { background:var(--ink); color:#fff; padding:52px max(48px,calc((100vw - 
 /* Ebenfalls feste Höhe (3 Zeilen à 12px × 1.7). Der Absatz wird auch ohne
    Text gerendert, damit Karten mit und ohne Beschreibung gleich hoch bauen. */
 .gallery-description { -webkit-box-orient:vertical; -webkit-line-clamp:3; color:var(--muted); display:-webkit-box; font-size:12px; height:62px; line-height:1.7; margin:0 0 20px; max-width:460px; overflow:hidden; }
-.gallery-actions { align-items:center; display:flex; flex-wrap:wrap; gap:22px; }
-.gallery-actions strong { font-size:24px; }
+.gallery-actions { align-items:center; display:grid; gap:22px; grid-template-columns:150px 220px; }
+.gallery-price { font-size:24px; min-width:0; white-space:nowrap; }
+.gallery-actions .button { width:220px; }
 .gallery-controls { align-items:center; display:flex; gap:18px; grid-area:controls; margin-top:34px; }
 .gallery-controls > button { background:transparent; border:1px solid var(--line); color:var(--ink); font-size:15px; height:38px; width:38px; }
 .gallery-controls > button:hover { background:var(--ink); border-color:var(--ink); color:#fff; }
@@ -477,6 +478,9 @@ footer { background:var(--ink); color:#fff; padding:52px max(48px,calc((100vw - 
      Beschreibung bleiben trotzdem auf ihrer festen Zeilenzahl. */
   .gallery-stage { grid-template-areas:"card" "detail" "controls" "live"; grid-template-columns:1fr; gap:26px 0; min-height:0; padding:26px 22px 34px; }
   .gallery-card { height:330px; }
+  .gallery-actions { grid-template-columns:1fr; }
+  .gallery-price:empty { display:none; }
+  .gallery-actions .button { width:100%; }
   .ticker { font-size:9px; gap:8px 20px; }
   .destinations { grid-template-columns:1fr; }
   .destination-card { padding:42px 22px; }

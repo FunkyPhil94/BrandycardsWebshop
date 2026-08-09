@@ -180,7 +180,7 @@ export function Gallery() {
               lässt das Layout bei jedem Wechsel springen. */}
           <p className="gallery-description">{current.description}</p>
           <div className="gallery-actions">
-            {formatPrice(current.priceAmountCents, current.priceCurrency, locale) && <strong>{formatPrice(current.priceAmountCents, current.priceCurrency, locale)}</strong>}
+            <strong className="gallery-price">{formatPrice(current.priceAmountCents, current.priceCurrency, locale) ?? ""}</strong>
             {current.category === "Auktion"
               ? <a className="button button-primary" href={current.listingUrl || EBAY_SHOP_URL} target="_blank" rel="noreferrer">{t("Auf eBay ansehen")} <span>↗</span></a>
               : (() => {
