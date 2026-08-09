@@ -29,10 +29,21 @@ einzige Stelle, die veralten kann.
 
 | Stand | Befunde |
 |---|---|
-| **erledigt** | F-06, F-07, F-08 (Dokumentation) · **F-09** (Warenkorb, `b1f2ad62`) · **F-02**, **S-03**, **S-06** (`7614139c`) |
-| **offen** | S-01, S-02, S-04, F-01 · neu: **F-10** (siehe unten) |
-| **wartet auf eine Entscheidung** | S-05 (DSGVO), F-05 (Erstattung), F-01 Teil b (manuelle Karten in der Galerie), F-10 |
+| **erledigt** | F-06, F-07, F-08 (Dokumentation) · **F-09** (Warenkorb, `b1f2ad62`) · **F-02**, **S-03**, **S-06** (`7614139c`) · **S-01**, **F-10** (`c8966e32`) |
+| **offen** | S-02, S-04, F-01 |
+| **wartet auf eine Entscheidung** | S-05 (DSGVO), F-05 (Erstattung), F-01 Teil b (manuelle Karten in der Galerie) |
 | **erledigt sich von selbst** | F-03 (nächster echter Verkauf), S-07 (nächster Next-Minor), F-04 (nächster Schemaschritt) |
+
+**F-10 ist entschieden und umgesetzt:** Die Kachel zählt seit `c8966e32`
+**Verkaufbares** — mit `istKaufbar` aus `lib/catalog-availability.ts`, also mit
+derselben Entscheidung, die auch den Katalog füllt. Der Unterschied zu
+`istImKatalogSichtbar` ist die Vormerkliste: sichtbar, aber nicht kaufbar.
+
+**Der Testartikel ist am 2026-08-09 auf Anweisung des Betreibers aus der
+Produktionsdatenbank gelöscht worden** — Produkt, Bestandszeile und die
+`CONVERTED`-Reservierung. Die bezahlte Bestellung `BC-20260809-E998831E` bleibt
+als Rechnungsbeleg stehen, `order_items.product_id` fiel dabei per `SET NULL`
+auf null. Einzelheiten in [ai-handover.md](ai-handover.md), Historie.
 
 **F-02 ist abgeschlossen** und hat genau das geleistet, wofür es so weit vorne
 stand: Es hat **F-09** zutage gefördert — einen Fehler, der die gesamte
