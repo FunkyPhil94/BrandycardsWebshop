@@ -37,7 +37,24 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-*(leer — bereit für den nächsten Auftrag.)*
+**F-01 — Startseiten-Galerie an dieselbe Bestands- und Sichtbarkeitsregel wie
+der Katalog anschließen** — Stand: LÄUFT (2026-08-09)
+
+- Die Route `app/api/products/highlights/route.ts` verwendet bislang die
+  eBay-Listing-Menge, ignoriert `inventory` und lässt Auktionen als Galerie-
+  Karten durch. Sie wird mit `inventory` per `leftJoin` ergänzt und verwendet
+  `istImKatalogSichtbar` sowie `verfuegbareMenge` aus
+  `lib/catalog-availability.ts`; die Auswahl bleibt auf eBay-Listings
+  beschränkt.
+- Manuelle Karten werden in der Galerie nicht automatisch ergänzt. Dieser
+  Teil von F-01 ist im Prüfbericht als Entscheidung des Betreibers markiert
+  und bleibt unangetastet.
+- Abnahmekriterien: verkaufte/ausverkaufte Karten und Auktionen erscheinen
+  nicht in `newest` oder `priciest`; verfügbare Karten verwenden die kleinere
+  Menge aus Listing und Bestand. Regressionstests schützen die Verdrahtung.
+  Danach `npx tsc --noEmit`, `npm run lint`, `npm test`, committen, pushen,
+  deployen und `/admin` sowie `/account` live prüfen. Keine Produktionsdaten
+  schreiben.
 
 ### **Der Betreiber muss zwei Dinge selbst prüfen**
 
