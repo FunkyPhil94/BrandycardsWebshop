@@ -37,6 +37,16 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
+**Punkte 3 bis 5 umsetzen** — Stand: LÄUFT (2026-08-09)
+
+- Die Adminkonsole erhält eine paginierte Bestellansicht und eine kontrollierte
+  Statusänderung auf „versendet“.
+- Die veraltete Aufgabenliste wird auf den tatsächlichen Stand nach den bereits
+  erledigten Sprach-, Vorverkaufs-, Sicherheits- und Galeriearbeiten gebracht.
+- Die bestehende ESLint-Warnung in `app/account/page.tsx` wird behoben.
+- Danach Typprüfung, Lint, Tests, Build, Commit, Push und Deployment; keine
+  Produktionsdaten schreiben.
+
 **Galerie-CTA stabilisieren** — Stand: ABGESCHLOSSEN (2026-08-09)
 
 - Galerie-Preis und CTA stehen jetzt in einer festen zweispaltigen Aktionsleiste:
