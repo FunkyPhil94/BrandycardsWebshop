@@ -37,16 +37,14 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-**Reihenfolge der priorisierten Todo neu ordnen** — Stand: ABGESCHLOSSEN (2026-08-09)
+**N1 Admin-Sicherheit und Nachvollziehbarkeit umsetzen** — Stand: LÄUFT (2026-08-09)
 
-- Die acht bestehenden Aufgabenpakete sind nach fachlichen Abhängigkeiten,
-  Risiko und Aufwand neu als N1 bis N8 geordnet.
-- Die Reihenfolge und ihre Begründung stehen in `docs/ai-todo.md` bzw.
-  `docs/ai-agent-log.md`.
-- `git diff --check` ist sauber. Es wurden nur Dokumentationsdateien geändert;
-  keine Produktivdaten und kein Anwendungscode wurden angefasst.
-- Der vorbereitende Commit `65841d0` wurde erstellt. Commit, Push und
-  Deployment werden nach dem Abschluss dieses Durchlaufs durchgeführt.
+- Der bestehende Admin-/Authpfad, die Supabase-Konfiguration und die vorhandene
+  `audit_events`-Struktur werden geprüft.
+- MFA/2FA, Re-Authentifizierung für kritische Aktionen und Auditierung werden
+  umgesetzt, soweit der bestehende Authanbieter dies sicher unterstützt.
+- Tests, Typprüfung, Build, Commit, Push und Deployment folgen; es werden keine
+  Produktionsdaten geschrieben.
 
 - `/api/admin/orders` paginiert jetzt mit 25 Einträgen, liefert Gesamtseiten
   und sortiert bei gleichen Zeitstempeln stabil. Ein geschütztes `PATCH` setzt
