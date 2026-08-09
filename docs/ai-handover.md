@@ -37,24 +37,7 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-**F-01 — Startseiten-Galerie an dieselbe Bestands- und Sichtbarkeitsregel wie
-der Katalog anschließen** — Stand: LÄUFT (2026-08-09)
-
-- Die Route `app/api/products/highlights/route.ts` verwendet bislang die
-  eBay-Listing-Menge, ignoriert `inventory` und lässt Auktionen als Galerie-
-  Karten durch. Sie wird mit `inventory` per `leftJoin` ergänzt und verwendet
-  `istImKatalogSichtbar` sowie `verfuegbareMenge` aus
-  `lib/catalog-availability.ts`; die Auswahl bleibt auf eBay-Listings
-  beschränkt.
-- Manuelle Karten werden in der Galerie nicht automatisch ergänzt. Dieser
-  Teil von F-01 ist im Prüfbericht als Entscheidung des Betreibers markiert
-  und bleibt unangetastet.
-- Abnahmekriterien: verkaufte/ausverkaufte Karten und Auktionen erscheinen
-  nicht in `newest` oder `priciest`; verfügbare Karten verwenden die kleinere
-  Menge aus Listing und Bestand. Regressionstests schützen die Verdrahtung.
-  Danach `npx tsc --noEmit`, `npm run lint`, `npm test`, committen, pushen,
-  deployen und `/admin` sowie `/account` live prüfen. Keine Produktionsdaten
-  schreiben.
+*(leer — bereit für den nächsten Auftrag.)*
 
 ### **Der Betreiber muss zwei Dinge selbst prüfen**
 
@@ -424,6 +407,26 @@ Sicherheits- und Funktionsbefunde im
 ---
 
 ## Historie
+
+### 2026-08-09 — F-01 technisch umgesetzt und deployed
+
+- **Stand:** abgeschlossen für den belegten technischen Teil. Die Galerie
+  verwendet `inventory` per `leftJoin`, `istImKatalogSichtbar` und
+  `verfuegbareMenge`; die Sichtbarkeit wird vor der Begrenzung auf fünf Karten
+  ausgewertet. Ausverkaufte Karten und Auktionen erscheinen dadurch nicht mehr.
+- **Bewusste Grenze:** Die Route bleibt auf eBay-Listings beschränkt. Ob
+  manuelle Karten in die Startseiten-Galerie aufgenommen werden, bleibt als
+  F-01 Teil b eine Betreiberentscheidung.
+- **Verifikation:** F-01-Zieltests 30/30, `npx tsc --noEmit`, `npm run lint`
+  und `npm test` ohne Fehler; der vollständige Lauf meldete 311/311 Tests.
+  `/`, `/admin` und `/account` antworteten live mit HTTP 200. Die Galerie-API
+  lieferte fünf `newest`, fünf `priciest` und null Auktionen.
+- **Veröffentlichung:** Commit `f13e72c`, nach `main` und
+  `agent/initial-brandycards` gepusht. Cloudflare-Version
+  `73e59f8a-40e3-4ec0-a81b-1691e63f8a4b` ist aktiv. Es wurden keine
+  Produktionsdaten geschrieben.
+- Die dauerhafte Vorgabe des Betreibers bleibt: Änderungen immer committen,
+  pushen und deployen.
 
 ### 2026-08-09 — S-04 in Produktion deployed
 

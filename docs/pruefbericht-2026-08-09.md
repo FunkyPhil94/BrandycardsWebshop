@@ -4,13 +4,13 @@
 lokale Prüfkette, lesende Live-Stichproben gegen D1 und HTTP-Abrufe gegen die
 Produktion.
 
-**Geprüfter Stand:** Branch `main` @ `87de6ef` (dateigleich mit
+**Geprüfter Stand:** Branch `main` @ `f13e72c` (dateigleich mit
 `agent/initial-brandycards`).
-**Produktion:** Version `c8400b82-058c-41a5-af30-0c9d09d0a906`, deployed
+**Produktion:** Version `73e59f8a-40e3-4ec0-a81b-1691e63f8a4b`, deployed
 2026-08-09.
 
 **Produktion läuft auf dem aktuellen Code.** Der aktuelle Codecommit ist
-`87de6ef`; der zuvor geprüfte Auditstand war `9b45c67` („Raeum den toten
+`f13e72c`; der zuvor geprüfte Auditstand war `9b45c67` („Raeum den toten
 Auktionscode ab").
 
 **Für die ursprüngliche Prüfung wurde nichts verändert.** Kein schreibender
@@ -30,8 +30,8 @@ einzige Stelle, die veralten kann.
 
 | Stand | Befunde |
 |---|---|
-| **erledigt** | F-06, F-07, F-08 (Dokumentation) · **F-09** (Warenkorb, `b1f2ad62`) · **F-02**, **S-03**, **S-06** (`7614139c`) · **S-01**, **F-10** (`c8966e32`) · **S-02** (`c07a9f1`) · **S-04** (`87de6ef`) |
-| **offen** | F-01 |
+| **erledigt** | F-06, F-07, F-08 (Dokumentation) · **F-09** (Warenkorb, `b1f2ad62`) · **F-02**, **S-03**, **S-06** (`7614139c`) · **S-01**, **F-10** (`c8966e32`) · **S-02** (`c07a9f1`) · **S-04** (`87de6ef`) · **F-01 Teil a** (`f13e72c`) |
+| **offen** | — |
 | **wartet auf eine Entscheidung** | S-05 (DSGVO), F-05 (Erstattung), F-01 Teil b (manuelle Karten in der Galerie) |
 | **erledigt sich von selbst** | F-03 (nächster echter Verkauf), S-07 (nächster Next-Minor), F-04 (nächster Schemaschritt) |
 
@@ -45,6 +45,12 @@ verwenden den gemeinsamen Standard-Limiter `RATE_LIMITER` mit route-eigenen
 Scopes. Überschreitungen werden als HTTP 429 mit `retry-after` gemeldet, statt
 als allgemeiner 503-Fehler. Die vollständige lokale Prüfkette meldete 311/311
 Tests; `/admin` und `/account` antworteten live mit HTTP 200.
+
+**F-01 Teil a ist umgesetzt und deployed:** Die Startseiten-Galerie liest den
+Shop-Bestand, verwendet dieselbe Sichtbarkeitsentscheidung wie der Katalog und
+filtert vor dem Fünf-Karten-Limit. Der Live-Abruf lieferte fünf Karten in
+`newest`, fünf in `priciest` und keine Auktion. F-01 Teil b — manuelle Karten
+in der Galerie — wartet weiterhin auf die Betreiberentscheidung.
 
 **Der Testartikel ist am 2026-08-09 auf Anweisung des Betreibers aus der
 Produktionsdatenbank gelöscht worden** — Produkt, Bestandszeile und die
@@ -223,11 +229,15 @@ Route unverändert.
    **nicht** gefiltert, während Katalog und Detailseite sie ablehnen. Heute
    latent: D1 zählt 0 Auktionen.
 
-**Status:** **BELEGT** (Code). Die Sichtbarkeitsdauer ist nicht gemessen.
+**Status:** **TEILWEISE ERLEDIGT** (technischer Teil, `f13e72c`). Die Route
+liest jetzt `inventory`, verwendet die gemeinsame Katalogregel und filtert vor
+dem Limit; F-01 Teil b (manuelle Karten in der Galerie) bleibt eine
+Betreiberentscheidung.
 
-**Empfehlung:** Dieselbe Entscheidung wie im Katalog verwenden
-(`istImKatalogSichtbar` / `verfuegbareMenge`) und `inventory` per `leftJoin`
-mitnehmen.
+**Ergebnis:** Dieselbe Entscheidung wie im Katalog wird verwendet
+(`istImKatalogSichtbar` / `verfuegbareMenge`), und `inventory` wird per
+`leftJoin` mitgenommen. Die Galerie bleibt auf eBay-Listings beschränkt, bis
+der Betreiber über manuelle Karten in dieser Fläche entscheidet.
 
 ---
 
