@@ -619,3 +619,41 @@ sonst den Katalog leert). Bei manuellen Karten gibt es kein Listing, auf das
 man zurückfallen könnte — ohne Bestandszeile also **nichts anbieten**. Dieselbe
 Funktion, zwei entgegengesetzte Vorzeichen; deshalb steht die Begründung an
 beiden Stellen im Code.
+
+## 2026-08-09 – Was der Durchstich fand, und die Tests nicht
+
+Die Bausteine für manuelle Karten waren gebaut und mit 23 Tests belegt:
+Sichtbarkeit im Katalog, Handmarkierungen, Übernahme durch den Sync, das
+Anlegen mit Bestandszeile. Alles grün. Dann wurde **eine echte Testkarte in der
+lokalen Datenbank angelegt und durchgeklickt** — und dabei fielen drei Stellen
+auf, die kein Test berührt hatte:
+
+1. **Der Checkout** (`app/api/orders/route.ts`) verknüpfte `ebay_listings` per
+   `innerJoin`. Eine manuelle Karte hat kein Listing; die Bestellung scheiterte
+   mit „Ein Artikel ist nicht mehr verfügbar" — während die Karte im
+   Schaufenster stand und ein Kaufknopf daneben.
+2. **Die Preisvorschlag-Route** (`app/api/price-offers/route.ts`) ebenso. Der
+   Kasten erschien, das Absenden lief in ein 404.
+3. **Die Detailseite** zeigte den Vorschlag-Kasten nur bei
+   `category === "Festpreis"`. Manuelle Karten tragen „Direkt bei uns" — der
+   Kasten fehlte also genau bei den Karten, die der Betreiber ausdrücklich
+   verhandelbar haben wollte.
+
+**Warum die Tests das nicht fanden.** Sie prüften, was gebaut wurde, nicht was
+davon abhängt. Eine neue Produktart ist keine neue Funktion an einer Stelle,
+sondern eine Annahme, die an vielen Stellen steckt: „jedes Produkt hat ein
+eBay-Listing". Diese Annahme stand in vier Dateien, aufgeschrieben als
+`innerJoin` — und `innerJoin` schweigt, wenn er etwas herausfiltert. Er wirft
+keinen Fehler, er liefert eine leere Zeile, und der Aufrufer sagt „nicht
+verfügbar".
+
+**Die Lehre für den nächsten Umbau dieser Art:** Nicht nach dem neuen Fall
+suchen, sondern nach der alten Annahme. `grep -rn "innerJoin(ebayListings"`
+über das Projekt hätte alle drei in einem Zug gezeigt — und das war am Ende
+auch der Weg, der sie fand.
+
+**Warum `highlights` trotzdem beim `innerJoin` bleibt.** Dort ist die Annahme
+kein Versehen: Die Höhepunkte auf der Startseite sind eine Auswahl aus dem
+eBay-Bestand. Manuelle Karten dort mitlaufen zu lassen, wäre eine inhaltliche
+Entscheidung des Betreibers, keine Fehlerbehebung — sie steht als offener Punkt
+im Protokoll statt als stille Änderung im Code.

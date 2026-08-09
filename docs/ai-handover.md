@@ -37,47 +37,17 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-### 2026-08-09 — Punkt A: die drei Oberflächen des großen Blocks
+*(leer — bereit für den nächsten Auftrag.)*
 
-- **Stand:** LÄUFT
-- **Ziel:** Die zweite Hälfte des Blocks, wie in ai-todo Punkt A beschrieben:
-  (1) Adminoberfläche zum Anlegen und Bearbeiten von Karten samt
-  Handmarkierungen, (2) Vorverkaufsbereich in der Navigation, (3) SEC-12 —
-  Anspruchs-Kennung statt Token in der OAuth-Umleitung.
-- **Der Betreiber hat die Übergabe an eine andere KI zurückgezogen** und diese
-  Sitzung weiterarbeiten lassen. Punkt A bleibt trotzdem die maßgebliche
-  Beschreibung.
-- **Migration ist angewandt**, es kommt keine weitere dazu. Neue Tabelle
-  `ebay_oauth_claims` steht bereits leer bereit.
-- **Reihenfolge:** Adminroute + Oberfläche → Vorverkaufsseite → SEC-12. Nach
-  jedem Stück Prüfkette und Commit, damit ein Abbruch nichts Halbes hinterlässt.
-- **Gefährlichste Stelle:** Eine manuelle Karte braucht **zwingend** eine
-  `inventory`-Zeile, sonst erscheint sie nicht im Katalog und lässt sich nicht
-  kaufen. Produkt und Bestand gehören deshalb in **einen** Batch.
-- **Zweitgefährlichste:** Beim Bearbeiten einer eBay-Karte muss jedes geänderte
-  Feld in `manual_overrides` landen, sonst überschreibt der Import es binnen
-  drei Minuten — die Änderung sähe erfolgreich aus und wäre trotzdem weg.
+### **Der Betreiber muss zwei Dinge selbst prüfen**
 
-### **Übergabe an die nächste KI: der große Block ist zur Hälfte gebaut**
-
-Der Betreiber hat die Arbeit am 2026-08-08 hier bewusst angehalten und die
-Fortsetzung an eine andere KI übergeben. **Der Auftrag ist vollständig als
-Punkt A in [ai-todo.md](ai-todo.md) beschrieben** — dort stehen Dateien,
-Entscheidungen, Fallen und Abnahmekriterien. Diese Notiz ersetzt ihn nicht,
-sie sagt nur, in welchem Zustand die Übergabe geschieht.
-
-- **Nichts liegt halbfertig.** Alles ist committet, gepusht, CI grün, deployed
-  als Version `dc0c6e46`. Katalog nachgeprüft: 294 aktive Karten,
-  Detailseite 200. `git status` und der Vergleich mit `origin/main` sind leer.
-- **Die Migration `0006` ist angewandt** (vom Betreiber ausgeführt, 8
-  Anweisungen, 1096 Zeilen). **Nicht erneut ausführen.**
-- **Die wichtigste Regel für den Weiterbau:** Es gibt **kein**
-  `kind = 'MANUAL'`. Eine manuelle Karte ist `kind = 'PRELISTED'` **und**
-  `origin = 'MANUAL'`. Wer das für einen Fehler hält und „aufräumt", zerstört
-  den Katalog — die Begründung steht im Kopf der Migration, im Agentenlog und
-  in Punkt A.
-- **Offen:** Adminoberfläche zum Anlegen und Bearbeiten · Vorverkaufsbereich in
-  der Navigation · SEC-12 (Tabelle `ebay_oauth_claims` steht, Routen fehlen).
+1. **Eine erste Karte von Hand einstellen** — `/admin` → „Karte von Hand
+   einstellen". Sie erscheint danach unter `/vorverkauf` und in `/karten`.
+2. **Den eBay-Anschluss einmal neu verbinden**, sobald ohnehin ein neuer
+   Refresh-Token fällig ist: Der Token steht jetzt **nicht mehr** auf der
+   Rückkehrseite, sondern erscheint genau einmal im Adminbereich. Wer die Seite
+   neu lädt, bekommt ihn nicht wieder — dann „eBay OAuth verbinden" erneut
+   starten.
 
 **Eine Abnahme steht noch aus, die nur der Betreiber machen kann:** Die neue
 Bestellansicht in `/admin` ist deployed, aber **hinter der Anmeldung** — von
@@ -416,6 +386,43 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
 ---
 
 ## Historie
+
+### 2026-08-09 — Punkt A abgeschlossen: Adminkonsole, Vorverkauf, SEC-12
+
+- **Stand:** ABGESCHLOSSEN. Damit sind ai-todo Punkt 11, Punkt 12.1 und SEC-12
+  vollständig erledigt; Punkt 8 hat keine offenen Reste mehr.
+- **Ergebnis:** `app/api/admin/products/route.ts` (GET/POST/PATCH/DELETE) und
+  `app/admin/products-panel.tsx` — Karten anlegen, beide Sorten bearbeiten,
+  Handmarkierungen sichtbar und einzeln wieder freigebbar.
+  `app/vorverkauf/page.tsx` samt Navigationspunkt.
+  `app/api/admin/ebay/oauth/claim/route.ts` schließt SEC-12: Die Rückseite
+  parkt den Token unter einer Kennung und leitet um (303), abholen kann ihn nur
+  der angemeldete Adminbereich, die Zeile fällt dabei; abgelaufene räumt der
+  geplante Lauf ab. Commits `b40f4cd`, `cd9a716`; deployed als `5a68a2d7`.
+  `tsc` sauber, Lint 0 Fehler, `npm test` 286/286.
+- **Drei Fehler, die erst der lokale Durchstich zeigte** — alle drei hätten
+  manuelle Karten **stillschweigend** ausgesperrt, während sie im Schaufenster
+  standen:
+  1. `app/api/orders/route.ts` verknüpfte `ebay_listings` per `innerJoin` — der
+     Kauf scheiterte mit „nicht mehr verfügbar".
+  2. `app/api/price-offers/route.ts` ebenso — der Vorschlag lief in ein 404,
+     obwohl der Kasten dastand.
+  3. `app/karten/[id]/page.tsx` zeigte den Vorschlag-Kasten nur bei
+     `category === "Festpreis"`. Manuelle Karten tragen „Direkt bei uns" — der
+     Kasten fehlte, obwohl der Betreiber sie ausdrücklich verhandelbar wollte.
+
+  **Gefunden durch eine Testkarte in der lokalen Datenbank, nicht durch Tests.**
+  Die Tests prüften die Bausteine; dass drei andere Stellen weiter am Listing
+  hingen, sah man erst beim Durchklicken. `tests/manual-cards.test.mjs` nagelt
+  jetzt alle drei fest.
+- **Eine Abweichung von Punkt A:** Der Vorverkauf steht **fest** in der
+  Navigation statt „erst mit der ersten Karte". Dafür müsste die Kopfzeile auf
+  jeder Seite den Katalog laden, nur um über einen Menüpunkt zu entscheiden.
+  Begründung als Kommentar an `NAV` in `app/site-chrome.tsx`.
+- **Was bewusst offen blieb:** `app/api/products/highlights/route.ts` verknüpft
+  weiterhin per `innerJoin` — manuelle Karten erscheinen also **nicht** auf der
+  Startseite unter den Höhepunkten. Kein Fehler, aber eine Entscheidung, die
+  jemand treffen sollte, sobald es mehr als eine Handvoll gibt.
 
 ### 2026-08-08 — Großer Block, erste Hälfte: manuelle Karten, Handmarkierungen
 

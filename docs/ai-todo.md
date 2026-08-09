@@ -70,123 +70,34 @@ eBay-Schreibpfad, dann bewerben.**
 
 ---
 
-## A. ZUERST — Oberflächen für manuelle Karten, Vorverkauf, SEC-12
+## A. ~~Oberflächen für manuelle Karten, Vorverkauf, SEC-12~~ — ERLEDIGT am 2026-08-09
 
-**Aufwand:** groß · **Hängt an:** nichts mehr · **Migration ist angewandt**
+Deployed als `5a68a2d7`, Commits `b40f4cd` und `cd9a716`. Damit sind **Punkt 11,
+Punkt 12.1 und SEC-12** vollständig abgeschlossen.
 
-Dies ist die zweite Hälfte des Blocks aus Punkt 11, Punkt 12.1 und SEC-12. Die
-erste Hälfte wurde am 2026-08-08 gebaut und deployed (Version `dc0c6e46`).
-**Ohne diesen Punkt kann der Betreiber keine einzige Karte von Hand
-einstellen** — der Unterbau steht, es fehlt jede Oberfläche dazu.
+- **Adminkonsole:** `/admin` legt Karten von Hand an (Produkt und Bestandszeile
+  in einem Batch) und bearbeitet beide Sorten. Jede Änderung an einer eBay-Karte
+  wird als Handmarkierung vermerkt, ist im Formular sichtbar und lässt sich
+  einzeln wieder freigeben. Preis und Menge einer eBay-Karte sind gesperrt — sie
+  kommen von eBay und würden zurückgeschrieben.
+- **Vorverkauf:** `/vorverkauf` mit festem Navigationspunkt. *(Abweichung vom
+  ursprünglichen Plan „erst ab der ersten Karte" — Begründung als Kommentar an
+  `NAV` in `app/site-chrome.tsx`.)*
+- **SEC-12 geschlossen:** Die OAuth-Rückseite zeigt keinen Token mehr, sondern
+  parkt ihn in `ebay_oauth_claims` und leitet in den Adminbereich um. Dort wird
+  er genau einmal angezeigt, die Zeile fällt beim Abholen, abgelaufene räumt der
+  geplante Lauf ab.
 
-### Was schon steht — nicht noch einmal bauen
+> **Drei Fehler fand erst der Durchstich mit einer echten Testkarte, nicht die
+> Tests:** Checkout, Preisvorschlag-Route und Detailseite hingen weiter am
+> eBay-Listing und hätten manuelle Karten ausgesperrt, während sie im
+> Schaufenster standen. Wer hier weiterbaut: **eine Karte anlegen und
+> durchklicken**, nicht nur die Bausteine prüfen.
 
-- **Migration `0006` ist auf Produktion angewandt.** Neue Spalten an `products`:
-  `origin`, `price_amount_cents`, `price_currency`, `manual_overrides`. Neue
-  Tabelle `ebay_oauth_claims`. Nicht erneut ausführen.
-- **Katalog und Detailseite** (`app/api/products/route.ts`,
-  `app/api/products/[id]/route.ts`) kennen manuelle Karten: Preis kommt vom
-  Produkt, `ebay_listings` hängt per `leftJoin`, `category` ist
-  `"Direkt bei uns"`, das Feld `origin` steht in beiden Antworten.
-- **Der Sync** (`lib/ebay-sync.ts`) achtet Handmarkierungen und übernimmt
-  gleichnamige manuelle Karten. Logik in `lib/manual-overrides.ts`, geprüft in
-  `tests/manual-cards.test.mjs` (15 Tests).
-
-### Die eine Regel, an der alles hängt
-
-**Eine manuelle Karte ist `kind = 'PRELISTED'` UND `origin = 'MANUAL'`.**
-
-Es gibt **kein** `kind = 'MANUAL'`, obwohl frühere Fassungen dieser Liste das
-verlangten. Die CHECK-Bedingung auf `products.kind` ist auf D1 unveränderlich:
-`DROP TABLE` löst die `ON DELETE CASCADE`-Aktionen der Kindtabellen aus (im
-Probelauf waren `ebay_listings` und `inventory` danach **leer**),
-`PRAGMA foreign_keys = OFF` greift auf D1 nachweislich nicht, und ein `RENAME`
-scheitert an der qualifiziert geschriebenen CHECK-Bedingung. Die vollständige
-Begründung steht im Kopf von `drizzle/0006_manual_cards_and_oauth_claims.sql`
-und in `docs/ai-agent-log.md`.
-
-**Wer das für einen Fehler hält und „aufräumt", zerstört den Katalog.**
-`PRELISTED` bedeutet an anderer Stelle „Ankündigung, immer sichtbar" — deshalb
-fragt `lib/catalog-availability.ts` `origin` **vor** `kind`. Dreht das jemand
-um, bleibt jede verkaufte Handkarte mit Kaufknopf im Schaufenster stehen.
-
-### 1. Adminkonsole: Karten anlegen und bearbeiten
-
-**Dateien:** neu `app/api/admin/products/route.ts`, neue Oberfläche im
-Adminbereich (Muster: `app/admin/offers-panel.tsx` und `orders-panel.tsx` —
-Sitzungstoken über `getSupabaseBrowserClient`, `Authorization: Bearer`).
-`requireAdmin` aus `lib/admin-access.ts` benutzen, dann greift der Test „keine
-Route unter `/api/admin` ohne Rollenprüfung" automatisch.
-
-**Anlegen** einer manuellen Karte braucht in einem Rutsch:
-1. `products`-Zeile mit `kind: "PRELISTED"`, `origin: "MANUAL"`, `title`,
-   `description`, `priceAmountCents`, `priceCurrency: "EUR"`, `status: "ACTIVE"`.
-2. **Eine `inventory`-Zeile.** Ohne sie lehnt `app/api/orders/route.ts` den Kauf
-   ab, und `verfuegbareMenge(..., "MANUAL")` liefert 0 — die Karte erschiene
-   gar nicht erst im Katalog. Das ist die Falle Nummer 4 aus Punkt 11.
-3. Optional Bilder als `product_assets` (Upload nach R2 wie bei den
-   Kartenangeboten, siehe `app/api/admin/card-submissions/assets`).
-
-**Bearbeiten** gilt für beide Sorten. Bei eBay-Karten muss jedes geänderte Feld
-in `products.manual_overrides` eingetragen werden (JSON-Liste), sonst
-überschreibt der nächste Import es binnen drei Minuten. Erlaubt sind genau die
-Felder aus `HANDFELDER` in `lib/manual-overrides.ts`: `title`, `description`,
-`status`. **In der Oberfläche muss sichtbar sein, welche Felder markiert sind**
-— sonst wundert sich der Betreiber, warum eBay-Korrekturen an einem Feld nicht
-mehr ankommen.
-
-**Fertig, wenn:** Der Betreiber legt eine Karte an, sie erscheint im Katalog,
-überlebt mehrere Sync-Läufe, lässt sich kaufen, und die Bestellung läuft bis
-zur Versandmail durch.
-
-### 2. Eigener Navigationsbereich „Vorverkauf"
-
-Entscheidung des Betreibers vom 2026-08-08: **eigener Menüpunkt**, nicht im
-normalen Bestand mitlaufend. Neue Seite (etwa `app/vorverkauf/page.tsx`), die
-nur Karten mit `origin === "MANUAL"` zeigt; `SiteHeader`/`SiteFooter` aus
-`app/site-chrome.tsx`, Muster wie `app/karten/page.tsx`. Das Feld `origin`
-liefert `/api/products` bereits mit.
-
-**Ehrlich dazu:** Der Bereich steht am Anfang leer. Ein Menüpunkt, der ins
-Nichts führt, ist schlechter als keiner — die Seite braucht deshalb einen
-tragfähigen Leertext, und der Menüpunkt sollte erst mit der ersten Karte
-erscheinen.
-
-### 3. SEC-12 zu Ende bringen
-
-**Die Tabelle `ebay_oauth_claims` steht bereits** (`id`, `refresh_token`,
-`expires_at`, `created_at`), das Drizzle-Schema kennt sie als `ebayOauthClaims`.
-Es fehlen die Routen.
-
-Heute schreibt `app/api/admin/ebay/oauth/callback/route.ts` den Refresh-Token in
-die Antwort auf die Umleitung — und diese Route ist die **einzige** unter
-`/api/admin/**` ohne Rollenprüfung, weil eBay den *Browser* dorthin schickt und
-eine Navigation keinen `Authorization`-Header trägt. Eine Prüfung dort wäre
-falsch, das ist bereits als Kommentar an der Route und als Ausnahme in
-`tests/hardening.test.mjs` festgehalten.
-
-*Neuer Ablauf:* Die Rückseite legt den Token in `ebay_oauth_claims` ab
-(Frist ~10 Minuten) und leitet in den Adminbereich um, mit der Kennung in der
-URL. Der angemeldete Adminbereich holt ihn über eine **neue, adminpflichtige**
-Route ab; die Zeile wird beim Abholen **gelöscht**, nicht nur markiert.
-Abgelaufene Zeilen räumt der geplante Lauf ab (Muster:
-`lib/card-submission-cleanup.ts`, verdrahtet in `worker/index.ts`).
-
-**Fertig, wenn:** Ein Aufruf der Rückseite zeigt keinen Token mehr, der
-Adminbereich zeigt ihn genau einmal, und `tests/hardening.test.mjs` bleibt grün.
-
-### Dauerregeln für diesen Punkt
-
-- **Nicht raten, ob eine Migration nötig ist** — sie ist es nicht mehr. Sollte
-  doch eine dazukommen: `drizzle/meta/_journal.json` endet bei `0002`, während
-  `0003`–`0006` handgeschrieben sind. `npm run db:generate` würde gegen den
-  alten Schnappschuss diffen und die Migrationen erneut erzeugen.
-- **Schreibende D1-Befehle kann die KI nicht ausführen** — der
-  Berechtigungsklassifizierer verweigert sie. Fertigen Befehl dem Betreiber
-  geben, so lief auch `0006`.
-- Vor jedem Commit: `npx tsc --noEmit`, `npm run lint`, `npm test` (CI prüft
-  keine Typen). Neue Testdateien in das `test`-Skript in `package.json`
-  eintragen, sonst laufen sie nie.
+**Offen geblieben, bewusst:** `app/api/products/highlights/route.ts` verknüpft
+`ebay_listings` weiterhin per `innerJoin` — manuelle Karten erscheinen deshalb
+nicht unter den Höhepunkten auf der Startseite. Sollte entschieden werden,
+sobald es mehr als eine Handvoll davon gibt.
 
 ---
 
