@@ -29,12 +29,15 @@ einzige Stelle, die veralten kann.
 
 | Stand | Befunde |
 |---|---|
-| **erledigt** | F-06, F-07, F-08 (Dokumentation richtiggestellt) · **F-09** (siehe unten), deployed als `b1f2ad62` |
-| **beim Betreiber, zur Hälfte durch** | F-02 — die Karte existiert und liegt richtig im Warenkorb; Bestellung, PayPal und Bestätigung stehen aus |
-| **wartet auf F-02** | S-03, S-06 |
-| **offen** | S-01, S-02, S-04, F-01 |
-| **wartet auf eine Entscheidung** | S-05 (DSGVO), F-05 (Erstattung), F-01 Teil b (manuelle Karten in der Galerie) |
+| **erledigt** | F-06, F-07, F-08 (Dokumentation) · **F-09** (Warenkorb, `b1f2ad62`) · **F-02**, **S-03**, **S-06** (`7614139c`) |
+| **offen** | S-01, S-02, S-04, F-01 · neu: **F-10** (siehe unten) |
+| **wartet auf eine Entscheidung** | S-05 (DSGVO), F-05 (Erstattung), F-01 Teil b (manuelle Karten in der Galerie), F-10 |
 | **erledigt sich von selbst** | F-03 (nächster echter Verkauf), S-07 (nächster Next-Minor), F-04 (nächster Schemaschritt) |
+
+**F-02 ist abgeschlossen** und hat genau das geleistet, wofür es so weit vorne
+stand: Es hat **F-09** zutage gefördert — einen Fehler, der die gesamte
+Testsuite bestanden hatte — und anschließend die drei Wege belegt, die vorher
+nur Papier waren (Kauf, Bestandsbuchung, kein Outbox-Auftrag ohne eBay-Angebot).
 
 ### F-09 · mittel · Der Checkout warf manuelle Karten aus dem Warenkorb — behoben am 2026-08-09
 
@@ -54,6 +57,33 @@ zwei davon prüfen die *Verwendung* im Checkout, nicht die Funktion.
 **Was das über die Testabdeckung sagt:** Alle vier Fehler haben die Testsuite
 bestanden. Gefunden hat sie jedes Mal ein Mensch, der eine echte Karte angelegt
 und durchgeklickt hat.
+
+### F-10 · niedrig · Eine verkaufte manuelle Karte bleibt in der Adminzahl stehen
+
+**Ebenfalls aus F-02, offen — weil die Antwort eine Entscheidung ist.**
+
+Nach dem Verkauf steht `inventory` auf `SOLD`, die Karte ist aus Katalog,
+Detailseite und `/vorverkauf` verschwunden — **`products.status` bleibt aber
+`ACTIVE`**. Bei eBay-Karten heilt sich das von selbst: Die Outbox nimmt das
+Angebot zurück, der nächste Sync findet es nicht mehr in der Aktivliste und
+setzt das Produkt auf `INACTIVE`. Für manuelle Karten gibt es diesen Weg nicht.
+
+**Beleg:** D1 nach dem Verkauf — `products.status = 'ACTIVE'`,
+`inventory.status = 'SOLD'`; `/api/products` liefert 294, die Adminkachel zählt
+`products WHERE status = 'ACTIVE'` und steht damit auf 295.
+[app/api/admin/dashboard/route.ts:17](../app/api/admin/dashboard/route.ts)
+sagt über diese Kachel ausdrücklich: „The tile is meant to mirror the live eBay
+listing count" — mit manuellen Karten kann sie das nicht mehr.
+
+**Auswirkung:** Die Zahl driftet mit **jeder** verkauften manuellen Karte um
+eins weiter von den aktiven eBay-Angeboten weg, dauerhaft und wachsend. Kein
+Kunde merkt etwas; der Betreiber verliert seinen Abgleich.
+
+**Status:** BELEGT.
+
+**Empfehlung — und hier ist zuerst zu entscheiden, was die Kachel bedeuten
+soll:** entweder „kaufbare Karten" zählen (dann über `inventory`), oder
+eBay-Karten und Vorverkauf getrennt ausweisen. Erst danach lohnt Code.
 
 Die Begründung dieser Reihenfolge steht am Ende unter „Abschluss".
 

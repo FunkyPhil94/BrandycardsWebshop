@@ -37,28 +37,21 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-**S-03 und S-06: die beiden Befunde, die auf F-02 gewartet haben** — Stand:
-LÄUFT (2026-08-09)
+*(leer — bereit für den nächsten Auftrag.)*
 
-- **F-02 ist abgeschlossen und in D1 nachgeprüft** (Bestellung
-  `BC-20260809-E998831E` auf `PAID`, Bestand `SOLD`, Reservierung `CONVERTED`,
-  Webhook `PROCESSED`, **kein** Outbox-Auftrag — richtig, eine manuelle Karte
-  hat kein eBay-Angebot). Damit sind die beiden Befunde dran, die bewusst darauf
-  gewartet haben.
-- **S-03:** `PATCH /api/admin/products` schreibt `availableQuantity` absolut und
-  übergeht `reservedQuantity`. Während ein Kunde die Karte im Checkout hält,
-  entsteht dadurch Bestand, den es nicht gibt. Zweitens setzt die Route bei
-  Menge 0 den Status auf `SOLD`, obwohl nichts verkauft wurde — `UNAVAILABLE`
-  ist der ehrliche Wert.
-- **S-06:** `existingProduct(…, prelistedOnly)` prüft `kind !== 'PRELISTED'`,
-  aber manuelle Karten tragen genau dieses `kind`. **Die Korrektur läuft über
-  `origin`, niemals über `kind`** — die CHECK-Bedingung darauf ist auf D1
-  unveränderlich, Begründung im Kopf von `drizzle/0006_…`.
-- **Was angefasst wird:** `app/api/admin/products.ts` (PATCH), `lib/public-form.ts`,
-  dazu Tests. Kein Schemaschritt, keine Migration.
-- **Deploy nach grüner Kette aus dem Hauptverzeichnis**, wie zuletzt.
-- **Falls diese Zeile noch auf LÄUFT steht:** Produktion ist unversehrt —
-  beide Korrekturen sind Verschärfungen, ein halber Stand würde nicht deployed.
+> **Der Vorverkauf ist durchgespielt und trägt.** Die erste von Hand
+> eingestellte Karte ist angelegt, verkauft, bezahlt und aus dem Schaufenster
+> verschwunden — Bestellung `BC-20260809-E998831E`, Bestand `SOLD`,
+> Reservierung `CONVERTED`, Webhook `PROCESSED`, **kein** Outbox-Auftrag
+> (richtig: eine manuelle Karte hat kein eBay-Angebot, das zurückzunehmen wäre).
+>
+> **Zwei Kleinigkeiten, die dabei aufgefallen sind und noch offen sind:**
+> Die verkaufte Karte bleibt als Produktzeile auf `ACTIVE` stehen — unsichtbar
+> im Shop, aber die Kachel „Karten" in `/admin` zählt sie mit und driftet damit
+> um eins von den aktiven eBay-Angeboten weg (**F-10** im
+> [Prüfbericht](pruefbericht-2026-08-09.md)). Und der **Testartikel selbst**
+> steht noch in den Produktionsdaten; ob er dort bleiben soll, entscheidet der
+> Betreiber — Löschen wäre ein schreibender Eingriff.
 
 > **Schritt 2 der Befundabarbeitung (F-02) läuft beim Betreiber und ist zur
 > Hälfte durch.** Die erste von Hand eingestellte Karte existiert:
@@ -438,6 +431,52 @@ Sicherheits- und Funktionsbefunde im
 ---
 
 ## Historie
+
+### 2026-08-09 — F-02 abgeschlossen, S-03 und S-06 behoben
+
+- **Stand:** ABGESCHLOSSEN, deployed als `7614139c`, Commit `caecfa6`.
+- **F-02 ist durch.** Der Betreiber hat die erste von Hand eingestellte Karte
+  angelegt und durchgekauft. In D1 nachgeprüft statt geglaubt: Bestellung
+  `BC-20260809-E998831E` auf `PAID` über 3,46 €, Zahlung `CAPTURED`
+  (`8F255921NK972311K`), Bestand `SOLD` mit `available 0 / reserved 0 / sold 1`,
+  Reservierung `CONVERTED`, Webhook `PROCESSED`, 0 offene Reservierungen.
+  Danach: `/api/products` liefert wieder 294 Karten, die Detailseite der
+  verkauften Karte antwortet mit **404**, `/vorverkauf` ist leer.
+- **Der wichtigste einzelne Beleg ist eine Null:** `ebay_outbox` hat **keinen**
+  neuen Auftrag bekommen. Genau richtig — eine manuelle Karte hat kein
+  eBay-Angebot, das zurückzunehmen wäre. Der Weg, der bei eBay-Karten den
+  Doppelverkauf verhindert, wird hier korrekt gar nicht erst betreten.
+- **S-03, `PATCH /api/admin/products`.** Die Route schrieb `availableQuantity`
+  absolut und übersah `reservedQuantity`. Sie bricht jetzt mit 409 ab, solange
+  eine aktive Reservierung auf der Karte liegt. **Bewusst abbrechen statt
+  umrechnen:** Ob die reservierte Karte in der eingegebenen Menge mitgemeint
+  ist, weiß nur der Betreiber, und die falsche Auslegung erzeugt Bestand, den es
+  nicht gibt. Die Meldung nennt die Zahl und sagt, dass es höchstens 15 Minuten
+  dauert.
+- **Dazu eine Wahrheitskorrektur:** Menge 0 von Hand setzt jetzt `UNAVAILABLE`
+  statt `SOLD`. `soldQuantity` bleibt dabei 0; ein `SOLD` daneben war schlicht
+  falsch. `SOLD` setzt allein `settlePaidOrder`, nach echter Zahlung. **An der
+  Sichtbarkeit ändert sich nichts**, und ein Test hält genau das fest — sonst
+  wäre aus einer Wahrheitskorrektur unbemerkt eine Verhaltensänderung geworden.
+- **S-06, `existingProduct(…, prelistedOnly)`.** Die Prüfung `kind !==
+  'PRELISTED'` meinte die Vormerkliste, traf seit `0006` aber auch jede von Hand
+  eingestellte Karte. Erkannt wird sie jetzt an `origin` **und** `kind`.
+  **`kind` bleibt unangetastet**, und ein Test hält die CHECK-Bedingung fest —
+  der naheliegende „Aufräumer" wäre ein dritter `kind`-Wert, und der Versuch
+  kostete beim ersten Mal beinahe den Katalog.
+- **Fünf Tests, drei davon ohne die Korrekturen rot.** Die anderen beiden sind
+  Invarianten und sollen in beide Richtungen halten; das gehört so gesagt,
+  statt „alle rot" zu behaupten.
+- **Nachgeprüft:** `tsc` sauber, Lint 0 Fehler, `npm test` **299/299**,
+  Bundle-Probe bestanden, aus dem Hauptverzeichnis deployed. In Produktion:
+  `/account` und `/admin` laden, `PATCH /api/admin/products` ohne Token → 401,
+  `/api/prelisted-interest` antwortet hinter dem Bot-Wächter mit
+  `PRODUCT_NOT_FOUND`, Katalog unverändert 294.
+- **Ehrlich zur Grenze dieser Nachprüfung:** S-06 ist **nicht** live gegen die
+  verkaufte manuelle Karte geprüft worden. Hätte die Korrektur nicht gegriffen,
+  wäre dabei eine Zeile in `inquiries` entstanden — ein schreibender Eingriff in
+  Produktionsdaten, den ich nicht rückgängig machen dürfte. Der Beleg ist
+  deshalb der Test plus der ausgelieferte Code, nicht der Live-Schuss.
 
 ### 2026-08-09 — Der Checkout warf manuelle Karten aus dem Warenkorb
 
