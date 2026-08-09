@@ -37,6 +37,21 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
+**Sprachlayout und vollständige Unterseitenprüfung** — Stand: LÄUFT (2026-08-09)
+
+- Buttons und andere Bedienelemente sollen in Deutsch und Englisch dieselben
+  Abmessungen behalten; Hero- und Footer-Positionen dürfen nicht durch
+  unterschiedliche Textlängen springen.
+- Fehlende Übersetzungen und gemischte Sprachreste auf Startseite, Galerie,
+  Kartenbestand, Anfrage-, Ankauf-, Vorverkaufs-, Konto-, Checkout- und
+  Rechtstextseiten werden ergänzt. Produktdaten aus dem Katalog bleiben
+  unverändert.
+- Native Datei-Inputs erhalten eine sprachabhängige eigene Bedienoberfläche,
+  damit im Englischen keine deutschen Browsertexte sichtbar bleiben.
+- Danach werden die öffentlichen Unterseiten in Deutsch und Englisch geprüft,
+  Tests ausgeführt, committen, pushen und deployen. Keine Produktionsdaten
+  schreiben.
+
 **Sites-Freigabe und Apex-Domain-Prüfung** — Stand: ABGESCHLOSSEN (2026-08-09)
 
 - Die öffentliche Sites-Version 2 wurde mit dem aktuellen Repository-Stand
