@@ -37,16 +37,15 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-**Neue priorisierte Todo aus Sicherheits- und Funktionsanalyse aufnehmen** — Stand: ABGESCHLOSSEN (2026-08-09)
+**Reihenfolge der priorisierten Todo neu ordnen** — Stand: LÄUFT (2026-08-09)
 
-- Die vom Betreiber gewünschten offenen Punkte stehen als acht gebündelte
-  Aufgabenpakete nach Nutzen und Kosten in `docs/ai-todo.md`.
-- Die Befunde und die bewusste Reihenfolge stehen zusätzlich in
-  `docs/ai-agent-log.md`.
-- `git diff --check` ist sauber. Es wurden keine Produktivdaten verändert und
-  kein Anwendungscode geändert. Der vorbereitende Commit `b46b8d9` wurde lokal
-  erstellt; der Push zu GitHub scheitert weiterhin an der DNS-Auflösung von
-  `github.com` und muss nach der Netzwerkstörung wiederholt werden.
+- Die acht gebündelten Aufgabenpakete werden nach fachlichen Abhängigkeiten,
+  Risiko und Aufwand neu sortiert.
+- Die neue Reihenfolge wird in `docs/ai-todo.md` und die Begründung in
+  `docs/ai-agent-log.md` festgehalten.
+- Es werden nur Dokumentationsdateien geändert; keine Produktivdaten und kein
+  Anwendungscode werden angefasst. Danach wird der Stand committet, gepusht
+  und deployed.
 
 - `/api/admin/orders` paginiert jetzt mit 25 Einträgen, liefert Gesamtseiten
   und sortiert bei gleichen Zeitstempeln stabil. Ein geschütztes `PATCH` setzt
