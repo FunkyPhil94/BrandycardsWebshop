@@ -704,3 +704,31 @@ Die sechs Scopes und die 429-Behandlung sind mit einem Hardening-Test abgedeckt.
 Verifikation vor dem Deploy: S-04-Test 6/6, `npm test` 311/311,
 `npx tsc --noEmit` und `npm run lint` ohne Fehler. Es wurden keine
 Produktionsdaten geschrieben.
+
+## 2026-08-09 — Startseiten-Galerie an den Bestand anschließen (F-01)
+
+Die Galerie war die letzte öffentliche Produktfläche, die noch eine eigene,
+falsche Verfügbarkeitsentscheidung traf: Sie las `ebay_listings.quantity`,
+obwohl ein Shop-Verkauf ausschließlich `inventory` bucht. Dadurch konnte eine
+bereits verkaufte Karte im Schaufenster bleiben. Zusätzlich ließ die Route
+Auktionen durch, obwohl deren Bestand bei eBay nicht zurückgenommen werden
+kann und der übrige Katalog sie deshalb ausblendet.
+
+Die Route verbindet `inventory` jetzt per `leftJoin` mit dem bestehenden
+eBay-Listing. Das `leftJoin` ist wichtig, weil ein teilweise importiertes
+Listing noch ohne Bestandszeile nicht aus der Auswahl fallen soll; in diesem
+Fall greift die bestehende Fallback-Regel auf die Listing-Menge. Die endgültige
+Sichtbarkeit läuft über `istImKatalogSichtbar`, und die ausgegebene Menge über
+`verfuegbareMenge`. Erst danach wird auf fünf Karten gekürzt. So füllen
+ausverkaufte Karten oder Auktionen die fünf Plätze nicht mehr vor verfügbaren
+Festpreisangeboten.
+
+Manuelle Karten bleiben bewusst außerhalb dieser Galerie. Die Produktquelle
+der Route bleibt an eBay-Listings gebunden; die Entscheidung, manuelle Karten
+in die Startseiten-Auswahl aufzunehmen, ist im Prüfbericht als Betreiber-
+entscheidung markiert und wurde nicht stillschweigend vorweggenommen.
+
+Ein Quelltext-Wächter schützt die drei entscheidenden Verdrahtungen — Bestand,
+gemeinsame Sichtbarkeit und Filter-vor-Limit. Verifikation vor dem Deploy:
+F-01-Zieltests 30/30, `npm test` 311/311, `npx tsc --noEmit` und `npm run lint`
+ohne Fehler. Es wurden keine Produktionsdaten geschrieben.

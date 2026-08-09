@@ -1,7 +1,8 @@
 import { and, desc, eq, isNotNull, sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { getDb } from "../../../../db";
-import { ebayListings, productAssets, products } from "../../../../db/schema";
+import { ebayListings, inventory, productAssets, products } from "../../../../db/schema";
+import { istImKatalogSichtbar, verfuegbareMenge } from "../../../../lib/catalog-availability";
 import { CATALOGUE_CACHE_CONTROL } from "../route";
 
 export const GALLERY_SIZE = 5;
@@ -29,19 +30,34 @@ const firstImage = sql<string | null>`(
 function select() {
   return getDb().select({
     id: products.id,
+    kind: products.kind,
+    origin: products.origin,
     title: products.title,
     description: products.description,
     listingType: ebayListings.listingType,
     priceAmountCents: ebayListings.priceAmountCents,
     priceCurrency: ebayListings.priceCurrency,
     quantity: ebayListings.quantity,
+    stock: inventory,
     listingUrl: ebayListings.listingUrl,
     startAt: ebayListings.startAt,
     imageUrl: firstImage,
-  }).from(products).innerJoin(ebayListings, eq(ebayListings.productId, products.id));
+  }).from(products)
+    .innerJoin(ebayListings, eq(ebayListings.productId, products.id))
+    .leftJoin(inventory, eq(inventory.productId, products.id));
 }
 
 type Row = Awaited<ReturnType<ReturnType<typeof select>["execute"]>>[number];
+
+function isGalleryVisible(row: Row): boolean {
+  return istImKatalogSichtbar(row.kind, row.listingType, row.quantity, row.stock, row.origin);
+}
+
+function visibleHighlights(rows: Row[]): Row[] {
+  // Filter before slicing: five sold cards at the top must not leave the
+  // gallery with fewer cards while an available one sits just below them.
+  return rows.filter(isGalleryVisible).slice(0, GALLERY_SIZE);
+}
 
 function toHighlight(row: Row): Highlight {
   return {
@@ -51,7 +67,7 @@ function toHighlight(row: Row): Highlight {
     category: row.listingType === "AUCTION" ? "Auktion" : "Festpreis",
     priceAmountCents: row.priceAmountCents,
     priceCurrency: row.priceCurrency,
-    quantity: row.quantity,
+    quantity: verfuegbareMenge(row.quantity, row.stock, row.origin),
     listingUrl: row.listingUrl,
     imageUrl: row.imageUrl,
     startAt: row.startAt,
@@ -67,18 +83,20 @@ export async function GET() {
     // start_at is still empty rather than showing an arbitrary five.
     const [newest, priciest] = await Promise.all([
       select().where(and(live, isNotNull(ebayListings.startAt)))
-        .orderBy(desc(ebayListings.startAt)).limit(GALLERY_SIZE),
+        .orderBy(desc(ebayListings.startAt)),
       select().where(live)
-        .orderBy(desc(ebayListings.priceAmountCents)).limit(GALLERY_SIZE),
+        .orderBy(desc(ebayListings.priceAmountCents)),
     ]);
-    const newestRows = newest.length
-      ? newest
-      : await select().where(live).orderBy(desc(products.createdAt)).limit(GALLERY_SIZE);
+    const newestRows = visibleHighlights(newest);
+    const priciestRows = visibleHighlights(priciest);
+    const fallbackRows = newestRows.length
+      ? newestRows
+      : visibleHighlights(await select().where(live).orderBy(desc(products.createdAt)));
 
     return NextResponse.json({
-      newest: newestRows.map(toHighlight),
-      priciest: priciest.map(toHighlight),
-      startAtAvailable: newest.length > 0,
+      newest: fallbackRows.map(toHighlight),
+      priciest: priciestRows.map(toHighlight),
+      startAtAvailable: newestRows.length > 0,
     }, { headers: { "cache-control": CATALOGUE_CACHE_CONTROL } });
   } catch (error) {
     console.error("product highlights query failed", error);

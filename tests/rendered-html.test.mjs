@@ -55,7 +55,14 @@ test("the gallery shows exactly five cards and offers both views", async () => {
   assert.match(gallery, /GALLERY_SIZE = 5/, "gallery size must be five");
   assert.match(gallery, /slice\(0, GALLERY_SIZE\)/, "gallery must cap the list at five");
   assert.match(highlights, /GALLERY_SIZE = 5/);
-  assert.match(highlights, /limit\(GALLERY_SIZE\)/);
+  assert.match(highlights, /leftJoin\(inventory/,
+    "the gallery must see shop inventory, not only the eBay listing");
+  assert.match(highlights, /istImKatalogSichtbar\(/,
+    "the gallery must use the catalogue visibility decision");
+  assert.match(highlights, /verfuegbareMenge\(/,
+    "the gallery quantity must use the shared stock decision");
+  assert.match(highlights, /filter\(isGalleryVisible\)\.slice\(0, GALLERY_SIZE\)/,
+    "visibility must be applied before the five-card limit");
 
   // Rotation: every two seconds, pausable, and off for reduced motion.
   assert.match(gallery, /ROTATE_MS = 2000/);
