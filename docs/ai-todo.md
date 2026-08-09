@@ -25,11 +25,15 @@ nächste Verkauf ohnehin beweist. **Punkt 7 (Verhandeln bewerben) ist am
 Reste der Sicherheitsprüfung, von denen der Selbstbedienungsweg für Auskunft
 und Kontolöschung vor dem Verkaufsstart stehen sollte.
 
-**Punkt 8 ist seit dem 2026-08-08 vollständig erledigt** (Auskunft und
-Kontolöschung, an echten Daten abgenommen). **Der große Block aus 11, 12.1 und
-SEC-12 ist zur Hälfte gebaut** — Migration, Schema, Katalog und Sync stehen und
-sind deployed, die Oberflächen fehlen. Was daran noch offen ist, steht als
-**Punkt A ganz oben** und ist der nächste Arbeitsschritt.
+**Stand 2026-08-09: Die Punkte 0 bis 8 sowie 11, 12 und A sind erledigt.**
+Offen sind nur noch **Punkt 9** (englische Sprachversion, sehr groß, vier Fragen
+an den Betreiber) und **Punkt 10** (laufende Sammelstelle für Textwünsche,
+derzeit ohne bestätigte Einträge). Punkt 6 hat einen Rest, der sich mit dem
+nächsten echten Verkauf von selbst erledigt.
+
+**Zwei Abnahmen liegen beim Betreiber**, beide ohne Programmierarbeit: eine
+erste von Hand eingestellte Karte durchkaufen (Kriterium von Punkt 11) und die
+Bestellansicht in `/admin` einmal ansehen.
 
 **Am 2026-08-08 kamen drei Punkte vom Betreiber dazu (10 bis 12).** Sie stehen
 am Ende, aber **11 und 12 gehören zusammen und ziehen 8 mit sich**: Karten von
@@ -918,7 +922,7 @@ Versandmail durch.
 
 ---
 
-## 12. Eine richtige Adminkonsole
+## 12. ~~Eine richtige Adminkonsole~~ — ERLEDIGT am 2026-08-09
 
 > **Teilschritt 2 (Bestellungen) und 3 (Preisvorschläge) sind erledigt.**
 > Teilschritt 1 (Angebote bearbeiten) hat seit dem 2026-08-08 seinen Unterbau:
@@ -964,9 +968,16 @@ Tag mehrfach `wrangler d1 execute` gegen die Produktion nötig war.
    48-Stunden-Frist über `offerExpiry`, ist gegen Doppelklick abgesichert
    (bedingtes `UPDATE`, sonst 409) und verschickt die Kundennachricht über
    `notifyOfferDecision`.
-4. **Anfragen und Kartenangebote bearbeiten** statt nur zählen.
-5. **eBay-Outbox einsehen** — hängende Rücknahmen sind heute unsichtbar, außer
-   man fragt die Datenbank.
+4. ~~**Anfragen und Kartenangebote bearbeiten**~~ — **ERLEDIGT am 2026-08-09.**
+   `/api/admin/inquiries` (GET/PATCH) und ein PATCH an
+   `/api/admin/card-submissions`, Oberfläche `app/admin/requests-panel.tsx`.
+   **Achtung beim Weiterbau:** `REJECTED` und `CLOSED` an einem Kartenangebot
+   starten die 90-Tage-Löschfrist aus `lib/retention.ts` — das steht in der
+   Oberfläche daneben und muss dort bleiben.
+5. ~~**eBay-Outbox einsehen**~~ — **ERLEDIGT am 2026-08-09.**
+   `/api/admin/ebay/outbox` und `app/admin/outbox-panel.tsx`, mit Fehlergrund
+   und nächstem Versuchszeitpunkt. Ist `EBAY_WRITE_ENABLED` aus, sagt die
+   Ansicht das ausdrücklich.
 
 **Zwei Dinge, die es schon gibt und die man weiterverwenden sollte:**
 `requireAdmin` aus `lib/admin-access.ts`, und der Test „keine Route unter

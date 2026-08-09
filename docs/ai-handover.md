@@ -37,21 +37,7 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-### 2026-08-09 — Adminkonsole, Teilschritte 12.4 und 12.5
-
-- **Stand:** LÄUFT
-- **Ziel:** Anfragen und Kartenangebote **bearbeiten** statt nur zählen (12.4),
-  und die **eBay-Outbox einsehen** (12.5). Danach ist Punkt 12 abgeschlossen und
-  sein eigentliches Kriterium erfüllt: eine Woche arbeiten ohne
-  `wrangler d1 execute`.
-- **Geplant:** neue Leseroute für Anfragen samt Statuswechsel, Statuswechsel für
-  Kartenangebote (die Route existiert bereits mit `DELETE` und Bildzugriff),
-  Leseroute für `ebay_outbox`. Dazu je ein Panel im Adminbereich, Muster
-  `products-panel.tsx`.
-- **Keine Migration**, keine Schemaänderung.
-- **Falle:** Hängende eBay-Rücknahmen sind der eigentliche Grund für 12.5 — die
-  Ansicht muss den **Fehlertext** und den nächsten Versuchszeitpunkt zeigen,
-  nicht nur einen Status. Ein „FAILED" ohne Grund beantwortet keine Frage.
+*(leer — bereit für den nächsten Auftrag.)*
 
 ### **Der Betreiber muss zwei Dinge selbst prüfen**
 
@@ -400,6 +386,36 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
 ---
 
 ## Historie
+
+### 2026-08-09 — Adminkonsole fertig: 12.4 und 12.5
+
+- **Stand:** ABGESCHLOSSEN. **Punkt 12 ist damit vollständig** — sein Kriterium
+  („eine Woche arbeiten ohne `wrangler d1 execute`") ist erfüllt.
+- **12.4:** `app/api/admin/inquiries/route.ts` (GET/PATCH) und der PATCH an
+  `app/api/admin/card-submissions/route.ts`; Oberfläche
+  `app/admin/requests-panel.tsx`. Anfragen und Kartenangebote haben jetzt einen
+  Bearbeitungsstand statt nur einer Zahl, dazu einen Antwort-Link per Mail.
+- **Der Statuswechsel bei Kartenangeboten hat eine Nebenwirkung**, die
+  dazugeschrieben ist: `REJECTED` und `CLOSED` starten die 90-Tage-Löschfrist
+  aus `lib/retention.ts`. Ohne den Hinweis löscht der geplante Lauf später
+  etwas, womit niemand gerechnet hat.
+- **12.5:** `app/api/admin/ebay/outbox/route.ts` und
+  `app/admin/outbox-panel.tsx`. Die Ansicht zeigt **Fehlergrund und nächsten
+  Versuchszeitpunkt**, nicht nur einen Status — bei einem hängenden Auftrag ist
+  genau das die Frage: warten oder eingreifen? Steht `EBAY_WRITE_ENABLED` auf
+  aus, sagt die Ansicht das deutlich; sonst läse sich eine Liste voller
+  „Wartet" wie ein Stau, während gar nichts ausgeführt wird.
+- **Aufgeräumt:** Der alte Kartenangebots-Block in `app/admin/page.tsx` ist samt
+  `deleteSubmission` entfallen — er lebt jetzt im Panel. Lint ist dadurch
+  erstmals **ganz** ohne Warnung.
+- **Belegt:** `tsc` sauber, Lint 0 Warnungen, `npm test` 288/288. Deployed als
+  `a99ce258`, Commit `30b0ee2`. Die Farben der neuen Ansichten wurden über die
+  gebaute CSS gemessen (Fehlerrahmen `#c9362d`, Wiederholung `#c99d58`,
+  Flächen `#ebe8e1`) — die Panels liegen hinter der Anmeldung, ein Screenshot
+  war nicht möglich.
+- **Nicht geprüft:** Ein echter Statuswechsel und eine echte hängende
+  Warteschlange. Beides braucht Daten, die es gerade nicht gibt — die Outbox ist
+  leer, und Anfragen liegen keine offenen vor.
 
 ### 2026-08-09 — Punkt A abgeschlossen: Adminkonsole, Vorverkauf, SEC-12
 
