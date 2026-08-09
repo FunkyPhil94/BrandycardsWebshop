@@ -2,6 +2,29 @@
 
 Dieses Protokoll hält fest, welche spezialisierten Agents im Projekt eingesetzt wurden, welche Prüfaufträge sie erhielten und wie ihre Ergebnisse in die Umsetzung eingeflossen sind.
 
+## 2026-08-09 – N1 Admin-Sicherheit umgesetzt
+
+- **Umsetzung:** Supabase-AAL2 ist jetzt die zentrale Servervoraussetzung für
+  alle Adminrouten. Die einzige AAL1-Ausnahme ist der geschützte
+  `/api/admin/mfa/status`-Endpunkt, damit ein bereits zugelassenes Adminkonto
+  TOTP einmalig einrichten kann. Die Adminseite zeigt dafür QR-Code/Secret und
+  bestätigt den ersten 6-stelligen Code über Supabase MFA.
+- **Frische Bestätigung:** Schreib-, Lösch-, eBay- und OAuth-Aktionen verlangen
+  zusätzlich eine MFA-Bestätigung aus den letzten zehn Minuten. Der Browser
+  fordert den Code unmittelbar vor der Aktion an; der Server prüft die
+  AAL-/AMR-Claims des zuvor von Supabase validierten Tokens.
+- **Auditierung:** Mutationen an Produkten, Bestellungen, Preisvorschlägen,
+  Anfragen, Kartenangeboten, eBay-Sync, Outbox und OAuth werden in der bereits
+  vorhandenen `audit_events`-Tabelle mit Admin, Aktion, Objekt und Zeit erfasst.
+  Eine IP wird nur bei gesetztem `AUDIT_IP_HASH_SALT` als gesalzener Hash
+  gespeichert, nie im Klartext.
+- **Verifikation:** `npx tsc --noEmit`, `npm run lint`, `npm test` und der
+  Build sind erfolgreich; alle 319 Tests sind grün. Keine Produktionsdaten
+  wurden geschrieben.
+- **Offen:** Die praktische MFA-Einrichtung des Adminkontos, Secret-Rotation
+  und der erste echte eBay-Verkaufsnachweis müssen noch durch den Betreiber
+  abgenommen werden.
+
 ## 2026-08-09 – Reihenfolge der priorisierten Todo neu geordnet
 
 - **Auslöser:** Die bisherige Liste war nach Nutzen und Kosten sortiert, aber

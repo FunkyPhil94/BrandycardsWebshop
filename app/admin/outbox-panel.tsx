@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getSupabaseBrowserClient } from "../../lib/supabase-browser";
+import { authHeaders } from "./admin-auth";
 
 type Job = {
   id: string;
@@ -19,12 +19,6 @@ const LABEL: Record<string, string> = {
   PENDING: "Wartet", PROCESSING: "Läuft", RETRY_WAIT: "Wartet auf Wiederholung",
   SUCCEEDED: "Erledigt", FAILED: "Fehlgeschlagen", CANCELLED: "Abgebrochen",
 };
-
-async function authHeaders(): Promise<HeadersInit> {
-  const { data } = await getSupabaseBrowserClient().auth.getSession();
-  const token = data.session?.access_token;
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
 
 function datum(wert: string | null) {
   if (!wert) return "—";

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getDb } from "../../../../../../db";
+import { recordAdminAudit } from "../../../../../../lib/admin-audit";
 import { requireAdmin } from "../../../../../../lib/admin-access";
 import { processEbayOutbox } from "../../../../../../lib/ebay-outbox";
 
@@ -21,12 +22,13 @@ import { processEbayOutbox } from "../../../../../../lib/ebay-outbox";
  * aus wie „nichts zu tun", während in Wahrheit der Schalter aus ist.
  */
 export async function POST(request: Request) {
-  const access = await requireAdmin(request);
+  const access = await requireAdmin(request, { recentAuthSeconds: 600 });
   if (access.response) return access.response;
 
   const writeEnabled = process.env.EBAY_WRITE_ENABLED === "true";
   try {
     const processed = await processEbayOutbox(getDb());
+    await recordAdminAudit({ request, actorUserId: access.user.id, action: "ebay.outbox_run", entityType: "ebay_outbox", metadata: { processed, writeEnabled } });
     return NextResponse.json({ ok: true, processed, writeEnabled });
   } catch (error) {
     console.error("[ebay-outbox] Lauf von Hand fehlgeschlagen", error);

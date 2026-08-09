@@ -2,6 +2,7 @@ import { desc, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { getDb } from "../../../../db";
 import { inquiries, inquiryStatusValues, products } from "../../../../db/schema";
+import { recordAdminAudit } from "../../../../lib/admin-audit";
 import { requireAdmin } from "../../../../lib/admin-access";
 
 const PAGE_SIZE = 30;
@@ -65,7 +66,7 @@ export async function GET(request: Request) {
  * beantwortet die Liste die eigentliche Frage nicht — „seit wann liegt das
  * hier?" — und genau die stellt sich, wenn mehrere Anfragen offen sind. */
 export async function PATCH(request: Request) {
-  const guard = await requireAdmin(request);
+  const guard = await requireAdmin(request, { recentAuthSeconds: 600 });
   if (guard.response) return guard.response;
 
   try {
@@ -80,6 +81,7 @@ export async function PATCH(request: Request) {
       .set({ status, updatedAt: now, ...(status === "RESPONDED" ? { respondedAt: now } : {}) })
       .where(eq(inquiries.id, id));
     if (result.meta.changes !== 1) return NextResponse.json({ error: "Unbekannte Anfrage." }, { status: 404 });
+    await recordAdminAudit({ request, actorUserId: guard.user.id, action: "inquiry.status_change", entityType: "inquiry", entityId: id, metadata: { status } });
     return NextResponse.json({ ok: true, status });
   } catch (error) {
     console.error("admin inquiry update failed", error);

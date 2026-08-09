@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { OffersPanel } from "./offers-panel";
 import { OrdersPanel } from "./orders-panel";
 import { OutboxPanel } from "./outbox-panel";
 import { ProductsPanel } from "./products-panel";
 import { RequestsPanel } from "./requests-panel";
 import Link from "next/link";
-import { getSupabaseBrowserClient } from "../../lib/supabase-browser";
+import { authHeaders } from "./admin-auth";
+import { MfaPanel } from "./mfa-panel";
 import { SiteFooter, SiteHeader } from "../site-chrome";
 
 type Dashboard = {
@@ -26,31 +27,36 @@ export default function AdminPage() {
   const [outboxBusy, setOutboxBusy] = useState(false);
   const [ebayToken, setEbayToken] = useState<string | null>(null);
   const [assetUrls, setAssetUrls] = useState<Record<string, string>>({});
+  const [mfaBlocked, setMfaBlocked] = useState(false);
+
+  const loadDashboard = useCallback(async () => {
+    const headers = await authHeaders();
+    const response = await fetch("/api/admin/dashboard", { headers });
+    const body = await response.json() as { error?: string } & Partial<Dashboard>;
+    if (!response.ok) throw new Error(body.error ?? "Zugriff verweigert.");
+    const nextDashboard = body as Dashboard;
+    setDashboard(nextDashboard);
+    const entries = await Promise.all(nextDashboard.recentSubmissions.flatMap((submission) => submission.assets.map(async (asset) => {
+      const imageResponse = await fetch(`/api/admin/card-submissions/assets?assetId=${encodeURIComponent(asset.id)}`, { headers });
+      if (!imageResponse.ok) return null;
+      return [asset.id, URL.createObjectURL(await imageResponse.blob())] as const;
+    })));
+    setAssetUrls(Object.fromEntries(entries.filter((entry): entry is readonly [string, string] => entry !== null)));
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
     void (async () => {
       try {
-        const supabase = getSupabaseBrowserClient();
-        const { data } = await supabase.auth.getSession();
-        const token = data.session?.access_token;
-        if (!token) {
-          if (!cancelled) setMessage("Bitte melde dich zuerst an.");
+        const headers = await authHeaders();
+        const response = await fetch("/api/admin/mfa/status", { headers });
+        const status = await response.json() as { error?: string; currentLevel?: string };
+        if (!response.ok) throw new Error(status.error ?? "Zugriff verweigert.");
+        if (status.currentLevel !== "aal2") {
+          if (!cancelled) setMfaBlocked(true);
           return;
         }
-        const response = await fetch("/api/admin/dashboard", { headers: { Authorization: `Bearer ${token}` } });
-        const body = await response.json() as { error?: string } & Partial<Dashboard>;
-        if (!response.ok) throw new Error(body.error ?? "Zugriff verweigert.");
-        if (!cancelled) {
-          const nextDashboard = body as Dashboard;
-          setDashboard(nextDashboard);
-          const entries = await Promise.all(nextDashboard.recentSubmissions.flatMap((submission) => submission.assets.map(async (asset) => {
-            const imageResponse = await fetch(`/api/admin/card-submissions/assets?assetId=${encodeURIComponent(asset.id)}`, { headers: { Authorization: `Bearer ${token}` } });
-            if (!imageResponse.ok) return null;
-            return [asset.id, URL.createObjectURL(await imageResponse.blob())] as const;
-          })));
-          if (!cancelled) setAssetUrls(Object.fromEntries(entries.filter((entry): entry is readonly [string, string] => entry !== null)));
-        }
+        await loadDashboard();
       } catch (error) {
         if (!cancelled) setMessage(error instanceof Error ? error.message : "Zugriff verweigert.");
       }
@@ -59,7 +65,7 @@ export default function AdminPage() {
       cancelled = true;
       setAssetUrls((current) => { Object.values(current).forEach((url) => URL.revokeObjectURL(url)); return {}; });
     };
-  }, []);
+  }, [loadDashboard]);
 
   /** Holt den bei der eBay-Rückkehr geparkten Refresh-Token ab (SEC-12).
    *
@@ -76,13 +82,10 @@ export default function AdminPage() {
     let cancelled = false;
     void (async () => {
       try {
-        const supabase = getSupabaseBrowserClient();
-        const { data } = await supabase.auth.getSession();
-        const token = data.session?.access_token;
-        if (!token) throw new Error("Bitte melde dich zuerst an und starte „eBay OAuth verbinden“ erneut.");
+        const headers = await authHeaders(false, true);
         const response = await fetch("/api/admin/ebay/oauth/claim", {
           method: "POST",
-          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+          headers: { ...headers, "Content-Type": "application/json" },
           body: JSON.stringify({ claimId }),
         });
         const body = await response.json() as { refreshToken?: string; error?: string };
@@ -99,11 +102,7 @@ export default function AdminPage() {
     setSyncBusy(true);
     setSyncMessage("");
     try {
-      const supabase = getSupabaseBrowserClient();
-      const { data } = await supabase.auth.getSession();
-      const token = data.session?.access_token;
-      if (!token) throw new Error("Bitte melde dich zuerst an.");
-      const response = await fetch("/api/admin/ebay-sync", { method: "POST", headers: { Authorization: `Bearer ${token}` } });
+      const response = await fetch("/api/admin/ebay-sync", { method: "POST", headers: await authHeaders(false, true) });
       const body = await response.json() as { error?: string; detail?: string; importedCount?: number; updatedCount?: number; skippedCount?: number; unchangedCount?: number; mergedCount?: number };
       if (!response.ok) throw new Error(body.detail ? `${body.error ?? "eBay-Synchronisierung fehlgeschlagen."} (${body.detail})` : body.error ?? "eBay-Synchronisierung fehlgeschlagen.");
       // „unverändert" gehört sichtbar dazu: Seit der Sync nur noch echte
@@ -134,11 +133,7 @@ export default function AdminPage() {
     setWriteCheckBusy(true);
     setSyncMessage("");
     try {
-      const supabase = getSupabaseBrowserClient();
-      const { data } = await supabase.auth.getSession();
-      const token = data.session?.access_token;
-      if (!token) throw new Error("Bitte melde dich zuerst an.");
-      const response = await fetch("/api/admin/ebay/write-check", { headers: { Authorization: `Bearer ${token}` } });
+      const response = await fetch("/api/admin/ebay/write-check", { headers: await authHeaders(false, true) });
       const body = await response.json() as { ok?: boolean; detail?: string; writeEnabled?: boolean; error?: string };
       if (body.error) throw new Error(body.error);
       if (body.ok) {
@@ -163,11 +158,7 @@ export default function AdminPage() {
     setOutboxBusy(true);
     setSyncMessage("");
     try {
-      const supabase = getSupabaseBrowserClient();
-      const { data } = await supabase.auth.getSession();
-      const token = data.session?.access_token;
-      if (!token) throw new Error("Bitte melde dich zuerst an.");
-      const response = await fetch("/api/admin/ebay/outbox/run", { method: "POST", headers: { Authorization: `Bearer ${token}` } });
+      const response = await fetch("/api/admin/ebay/outbox/run", { method: "POST", headers: await authHeaders(false, true) });
       const body = await response.json() as { processed?: number; writeEnabled?: boolean; error?: string; detail?: string };
       if (!response.ok) throw new Error(body.detail ? `${body.error ?? "Fehlgeschlagen."} (${body.detail})` : body.error ?? "Fehlgeschlagen.");
       // Ohne den Schalterhinweis läse sich „0 abgearbeitet" wie „nichts zu tun",
@@ -186,11 +177,7 @@ export default function AdminPage() {
     setOauthBusy(true);
     setSyncMessage("");
     try {
-      const supabase = getSupabaseBrowserClient();
-      const { data } = await supabase.auth.getSession();
-      const token = data.session?.access_token;
-      if (!token) throw new Error("Bitte melde dich zuerst an.");
-      const response = await fetch("/api/admin/ebay/oauth/start", { headers: { Authorization: `Bearer ${token}` } });
+      const response = await fetch("/api/admin/ebay/oauth/start", { headers: await authHeaders(false, true) });
       const body = await response.json() as { url?: string; error?: string };
       if (!response.ok || !body.url) throw new Error(body.error ?? "eBay OAuth konnte nicht gestartet werden.");
       window.location.assign(body.url);
@@ -205,7 +192,7 @@ export default function AdminPage() {
       <SiteHeader />
       <section className="account-page">
       <Link className="back-link" href="/">← Zurück zum Shop</Link>
-      <section className="account-card admin-card" aria-labelledby="admin-title">
+      {mfaBlocked ? <MfaPanel onVerified={() => { setMfaBlocked(false); void loadDashboard(); }} /> : <section className="account-card admin-card" aria-labelledby="admin-title">
         <p className="eyebrow">BRANDYCARDS ADMIN</p>
         <h1 id="admin-title">Übersicht.</h1>
         {dashboard ? <>
@@ -245,7 +232,7 @@ export default function AdminPage() {
           />
           <OutboxPanel />
         </> : <p className="form-feedback error" role="status">{message}</p>}
-      </section>
+      </section>}
       </section>
       <SiteFooter />
     </main>

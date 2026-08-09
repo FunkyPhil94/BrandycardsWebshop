@@ -2,6 +2,7 @@ import { and, desc, eq, like, sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { getAssetBucket, getDb } from "../../../../db";
 import { ebayListings, inventory, productAssets, products, reservations } from "../../../../db/schema";
+import { recordAdminAudit } from "../../../../lib/admin-audit";
 import { requireAdmin } from "../../../../lib/admin-access";
 import { HANDFELDER, handfelder, type Handfeld } from "../../../../lib/manual-overrides";
 
@@ -94,12 +95,14 @@ export async function GET(request: Request) {
  * Punkt 11.
  */
 export async function POST(request: Request) {
-  const guard = await requireAdmin(request);
+  const guard = await requireAdmin(request, { recentAuthSeconds: 600 });
   if (guard.response) return guard.response;
 
   try {
     if (request.headers.get("content-type")?.startsWith("multipart/form-data")) {
-      return await createManualProductWithImages(request, guard.user?.id ?? null);
+      const response = await createManualProductWithImages(request, guard.user.id);
+      if (response.ok) await recordAdminAudit({ request, actorUserId: guard.user.id, action: "product.create", entityType: "product", entityId: response.headers.get("x-product-id") });
+      return response;
     }
     const body = await request.json() as { title?: unknown; description?: unknown; quantity?: unknown };
     const title = text(body.title, MAX_TITLE);
@@ -124,6 +127,7 @@ export async function POST(request: Request) {
       db.insert(inventory).values({ productId: id, availableQuantity: menge, status: "AVAILABLE", updatedAt: now }),
     ]);
 
+    await recordAdminAudit({ request, actorUserId: guard.user.id, action: "product.create", entityType: "product", entityId: id });
     return NextResponse.json({ ok: true, id }, { status: 201 });
   } catch (error) {
     if (error instanceof AdminProductInputError) {
@@ -213,7 +217,7 @@ async function createManualProductWithImages(request: Request, createdByUserId: 
     throw error;
   }
 
-  return NextResponse.json({ ok: true, id, images: assets.length }, { status: 201 });
+  return NextResponse.json({ ok: true, id, images: assets.length }, { status: 201, headers: { "x-product-id": id } });
 }
 
 async function readManualImage(file: File): Promise<UploadedManualImage> {
@@ -244,7 +248,7 @@ async function readManualImage(file: File): Promise<UploadedManualImage> {
  * auch nicht und hält die Regel einheitlich.
  */
 export async function PATCH(request: Request) {
-  const guard = await requireAdmin(request);
+  const guard = await requireAdmin(request, { recentAuthSeconds: 600 });
   if (guard.response) return guard.response;
 
   try {
@@ -339,6 +343,7 @@ export async function PATCH(request: Request) {
 
     if (!anweisungen.length) return NextResponse.json({ ok: true, unchanged: true });
     await db.batch(anweisungen as [(typeof anweisungen)[number], ...typeof anweisungen]);
+    await recordAdminAudit({ request, actorUserId: guard.user.id, action: "product.update", entityType: "product", entityId: id, metadata: { fields: Object.keys(werte).join(",") || (body.quantity !== undefined ? "quantity" : "unchanged") } });
     return NextResponse.json({ ok: true, manualOverrides: manuell ? [] : [...neueMarkierungen] });
   } catch (error) {
     console.error("admin product update failed", error);
@@ -350,7 +355,7 @@ export async function PATCH(request: Request) {
  *  dieses Feld wieder. Ohne diesen Weg wäre jede einmal gesetzte Markierung
  *  endgültig — und der Katalog driftete still von eBay weg. */
 export async function DELETE(request: Request) {
-  const guard = await requireAdmin(request);
+  const guard = await requireAdmin(request, { recentAuthSeconds: 600 });
   if (guard.response) return guard.response;
 
   try {
@@ -365,6 +370,7 @@ export async function DELETE(request: Request) {
     if (!vorher) return NextResponse.json({ error: "Unbekannte Karte." }, { status: 404 });
     const uebrig = [...handfelder(vorher.manualOverrides)].filter((eintrag) => eintrag !== feld);
     await db.update(products).set({ manualOverrides: uebrig, updatedAt: new Date().toISOString() }).where(eq(products.id, id));
+    await recordAdminAudit({ request, actorUserId: guard.user.id, action: "product.override_reset", entityType: "product", entityId: id, metadata: { field: feld } });
     return NextResponse.json({ ok: true, manualOverrides: uebrig });
   } catch (error) {
     console.error("admin product override reset failed", error);

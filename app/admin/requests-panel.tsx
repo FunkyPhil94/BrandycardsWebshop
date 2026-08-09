@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getSupabaseBrowserClient } from "../../lib/supabase-browser";
+import { authHeaders } from "./admin-auth";
 
 type Inquiry = {
   id: string;
@@ -28,12 +28,6 @@ const ANGEBOT_LABEL: Record<string, string> = {
   NEW: "Neu", IN_REVIEW: "In Prüfung", NEEDS_INFO: "Rückfrage", ACCEPTED: "Angekauft", REJECTED: "Abgelehnt", CLOSED: "Geschlossen",
 };
 const LOESCHFRIST_STARTET = new Set(["REJECTED", "CLOSED"]);
-
-async function authHeaders(json = false): Promise<HeadersInit> {
-  const { data } = await getSupabaseBrowserClient().auth.getSession();
-  const token = data.session?.access_token;
-  return { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(json ? { "Content-Type": "application/json" } : {}) };
-}
 
 function datum(wert: string | null) {
   if (!wert) return null;
@@ -75,7 +69,7 @@ export function RequestsPanel({ submissions, assetUrls, onSubmissionDeleted }: {
     setBusy(id);
     setNote("");
     try {
-      const response = await fetch("/api/admin/inquiries", { method: "PATCH", headers: await authHeaders(true), body: JSON.stringify({ id, status }) });
+      const response = await fetch("/api/admin/inquiries", { method: "PATCH", headers: await authHeaders(true, true), body: JSON.stringify({ id, status }) });
       const data = await response.json() as { error?: string };
       if (!response.ok) throw new Error(data.error ?? "Fehlgeschlagen.");
       setInquiries((current) => current?.map((eintrag) => eintrag.id === id ? { ...eintrag, status } : eintrag) ?? current);
@@ -91,7 +85,7 @@ export function RequestsPanel({ submissions, assetUrls, onSubmissionDeleted }: {
     setBusy(submissionId);
     setNote("");
     try {
-      const response = await fetch("/api/admin/card-submissions", { method: "PATCH", headers: await authHeaders(true), body: JSON.stringify({ submissionId, status }) });
+      const response = await fetch("/api/admin/card-submissions", { method: "PATCH", headers: await authHeaders(true, true), body: JSON.stringify({ submissionId, status }) });
       const data = await response.json() as { error?: string };
       if (!response.ok) throw new Error(data.error ?? "Fehlgeschlagen.");
       setStati((current) => ({ ...current, [submissionId]: status }));
@@ -109,7 +103,7 @@ export function RequestsPanel({ submissions, assetUrls, onSubmissionDeleted }: {
     if (!window.confirm("Dieses Kartenangebot und alle zugehörigen Bilder endgültig löschen?")) return;
     setBusy(submissionId);
     try {
-      const response = await fetch(`/api/admin/card-submissions?submissionId=${encodeURIComponent(submissionId)}`, { method: "DELETE", headers: await authHeaders() });
+      const response = await fetch(`/api/admin/card-submissions?submissionId=${encodeURIComponent(submissionId)}`, { method: "DELETE", headers: await authHeaders(false, true) });
       const data = await response.json() as { error?: string };
       if (!response.ok) throw new Error(data.error ?? "Löschen fehlgeschlagen.");
       onSubmissionDeleted(submissionId);

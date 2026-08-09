@@ -2,10 +2,11 @@ import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { getAssetBucket, getDb } from "../../../../db";
 import { cardSubmissionAssets, cardSubmissions, submissionStatusValues } from "../../../../db/schema";
+import { recordAdminAudit } from "../../../../lib/admin-audit";
 import { requireAdmin } from "../../../../lib/admin-access";
 
 export async function DELETE(request: Request) {
-  const access = await requireAdmin(request);
+  const access = await requireAdmin(request, { recentAuthSeconds: 600 });
   if (access.response) return access.response;
   const submissionId = new URL(request.url).searchParams.get("submissionId");
   if (!submissionId || !/^[a-f0-9]{32}$/iu.test(submissionId)) return NextResponse.json({ error: "Ungültige Angebotsreferenz." }, { status: 400 });
@@ -14,6 +15,7 @@ export async function DELETE(request: Request) {
     const assets = await db.select({ storageKey: cardSubmissionAssets.storageKey }).from(cardSubmissionAssets).where(eq(cardSubmissionAssets.submissionId, submissionId));
     await Promise.all(assets.map((asset) => getAssetBucket().delete(asset.storageKey)));
     await db.delete(cardSubmissions).where(eq(cardSubmissions.id, submissionId));
+    await recordAdminAudit({ request, actorUserId: access.user.id, action: "card_submission.delete", entityType: "card_submission", entityId: submissionId, metadata: { assets: assets.length } });
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error("Admin submission deletion failed", error);
@@ -34,7 +36,7 @@ export async function DELETE(request: Request) {
  * auch in der Oberfläche daneben.
  */
 export async function PATCH(request: Request) {
-  const access = await requireAdmin(request);
+  const access = await requireAdmin(request, { recentAuthSeconds: 600 });
   if (access.response) return access.response;
 
   try {
@@ -48,6 +50,7 @@ export async function PATCH(request: Request) {
       .set({ status, updatedAt: new Date().toISOString() })
       .where(eq(cardSubmissions.id, submissionId));
     if (result.meta.changes !== 1) return NextResponse.json({ error: "Unbekanntes Kartenangebot." }, { status: 404 });
+    await recordAdminAudit({ request, actorUserId: access.user.id, action: "card_submission.status_change", entityType: "card_submission", entityId: submissionId, metadata: { status } });
     return NextResponse.json({ ok: true, status });
   } catch (error) {
     console.error("Admin submission update failed", error);

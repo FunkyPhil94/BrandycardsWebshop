@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getSupabaseBrowserClient } from "../../lib/supabase-browser";
+import { authHeaders } from "./admin-auth";
 import { formatPrice } from "../site-chrome";
 
 type AdminOrder = {
@@ -31,12 +31,6 @@ const ORDER_STATUS_LABELS: Record<string, string> = {
   CANCELLED: "Storniert",
   REFUNDED: "Erstattet",
 };
-
-async function authHeaders(): Promise<HeadersInit> {
-  const { data } = await getSupabaseBrowserClient().auth.getSession();
-  const token = data.session?.access_token;
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
 
 function formatDate(value: string | null) {
   if (!value) return null;
@@ -89,7 +83,7 @@ export function OrdersPanel() {
     try {
       const response = await fetch("/api/admin/orders", {
         method: "PATCH",
-        headers: { ...await authHeaders(), "Content-Type": "application/json" },
+        headers: await authHeaders(true, true),
         body: JSON.stringify({ orderId, status: "SHIPPED" }),
       });
       const data = await response.json() as { status?: string; error?: string };

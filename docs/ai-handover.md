@@ -37,14 +37,17 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-**N1 Admin-Sicherheit und Nachvollziehbarkeit umsetzen** — Stand: LÄUFT (2026-08-09)
+**N1 Admin-Sicherheit und Nachvollziehbarkeit umsetzen** — Stand: ABGESCHLOSSEN (2026-08-09)
 
-- Der bestehende Admin-/Authpfad, die Supabase-Konfiguration und die vorhandene
-  `audit_events`-Struktur werden geprüft.
-- MFA/2FA, Re-Authentifizierung für kritische Aktionen und Auditierung werden
-  umgesetzt, soweit der bestehende Authanbieter dies sicher unterstützt.
-- Tests, Typprüfung, Build, Commit, Push und Deployment folgen; es werden keine
-  Produktionsdaten geschrieben.
+- Alle Adminrouten erzwingen serverseitig eine Supabase-AAL2-Sitzung; die
+  MFA-Statusroute bleibt als einzige AAL1-Einrichtungshilfe erreichbar.
+- Die Adminseite führt durch die TOTP-Einrichtung. Kritische Schreib-, Lösch-,
+  eBay- und OAuth-Aktionen verlangen zusätzlich einen frischen MFA-Code aus den
+  letzten zehn Minuten. Die Mutationen werden in `audit_events` protokolliert.
+- `npx tsc --noEmit`, `npm run lint`, `npm test` mit 319 Tests, Build und
+  `git diff --check` waren erfolgreich. Keine Produktionsdaten wurden
+  geschrieben. Der Betreiber muss die Authenticator-App noch einmal praktisch
+  einrichten und bestätigen.
 
 - `/api/admin/orders` paginiert jetzt mit 25 Einträgen, liefert Gesamtseiten
   und sortiert bei gleichen Zeitstempeln stabil. Ein geschütztes `PATCH` setzt

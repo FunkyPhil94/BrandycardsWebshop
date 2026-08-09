@@ -2,7 +2,7 @@ import { and, count, desc, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { getDb } from "../../../../db";
 import { cardSubmissionAssets, cardSubmissions, ebayListings, inquiries, inventory, orders, products } from "../../../../db/schema";
-import { getAuthenticatedAppUser } from "../../../../lib/app-user";
+import { requireAdmin } from "../../../../lib/admin-access";
 import { istKaufbar } from "../../../../lib/catalog-availability";
 
 /** Wie viele Karten gerade jemand kaufen könnte.
@@ -47,9 +47,9 @@ async function kaufbareKarten(db: ReturnType<typeof getDb>) {
 
 export async function GET(request: Request) {
   try {
-    const appUser = await getAuthenticatedAppUser(request);
-    if (!appUser) return NextResponse.json({ error: "Nicht authentifiziert." }, { status: 401 });
-    if (appUser.role !== "ADMIN") return NextResponse.json({ error: "Keine Berechtigung." }, { status: 403 });
+    const access = await requireAdmin(request);
+    if (access.response) return access.response;
+    const appUser = access.user;
 
     const db = getDb();
     const [productCount, [inquiryCount], [submissionCount], [orderCount]] = await Promise.all([

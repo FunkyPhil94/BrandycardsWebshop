@@ -89,6 +89,18 @@ und Bedienfehler härten:
 kritische Aktionen erneut bestätigt werden und MFA/Secret-Rotation getestet
 sind.
 
+**Umsetzung 2026-08-09:** Alle Admin-API-Routen erzwingen serverseitig eine
+Supabase-AAL2-Sitzung. `/admin` führt ein Adminkonto ohne bestätigten Faktor
+durch die TOTP-Einrichtung; kritische Schreib-, Lösch-, eBay- und
+OAuth-Aktionen verlangen zusätzlich innerhalb von zehn Minuten einen frischen
+MFA-Code. Die vorhandene `audit_events`-Tabelle protokolliert diese Änderungen
+mit Benutzer, Aktion, Objekt, Zeit und optional einem gesalzenen IP-Hash.
+
+**Betreiber-Schritt offen:** Beim nächsten Admin-Aufruf die Authenticator-App
+einmal einrichten und mit einem echten Code bestätigen. Danach noch die
+Secret-Rotation (einschließlich des optionalen `AUDIT_IP_HASH_SALT`) und den
+ersten echten eBay-Verkaufsfall abnehmen.
+
 ### N2. Betriebsstabilität und Doppelverkaufsschutz — **Nutzen: sehr hoch · Kosten: hoch**
 
 Auf der abgesicherten Admin- und Secret-Basis den größten geschäftlichen Risikopfad

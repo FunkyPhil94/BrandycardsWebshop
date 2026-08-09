@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
-import { getAuthenticatedAppUser } from "../../../../lib/app-user";
+import { recordAdminAudit } from "../../../../lib/admin-audit";
+import { requireAdmin } from "../../../../lib/admin-access";
 import { runEbaySync } from "../../../../lib/ebay-sync";
 
 export async function POST(request: Request) {
   try {
-    const appUser = await getAuthenticatedAppUser(request);
-    if (!appUser) return NextResponse.json({ error: "Nicht authentifiziert." }, { status: 401 });
-    if (appUser.role !== "ADMIN") return NextResponse.json({ error: "Keine Berechtigung." }, { status: 403 });
+    const access = await requireAdmin(request, { recentAuthSeconds: 600 });
+    if (access.response) return access.response;
     const result = await runEbaySync();
+    await recordAdminAudit({ request, actorUserId: access.user.id, action: "ebay.sync", entityType: "ebay_sync", metadata: { imported: result.importedCount ?? 0, updated: result.updatedCount ?? 0, skipped: result.skippedCount ?? 0 } });
     return NextResponse.json({ ok: true, ...result });
   } catch (error) {
     console.error("eBay sync failed", error);

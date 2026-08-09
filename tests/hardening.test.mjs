@@ -398,6 +398,45 @@ test("keine Route unter /api/admin ohne Rollenprüfung", async () => {
     "eine Adminroute ohne Rollenprüfung ist eine offene Tür; die einzige zulässige Ausnahme ist die OAuth-Rückseite");
 });
 
+test("Adminrouten verlangen MFA, und die Einrichtung ist die einzige AAL1-Ausnahme", async () => {
+  const access = await read("lib/admin-access.ts");
+  assert.match(access, /claims\.aal !== "aal2"/u, "die Serverprüfung darf nicht nur auf Browserzustand vertrauen");
+  assert.match(access, /MFA_REQUIRED/u);
+  const mfaStatus = await read("app/api/admin/mfa/status/route.ts");
+  assert.match(mfaStatus, /requireMfa: false/u, "nur der MFA-Einrichtungsstatus darf vor AAL2 erreichbar sein");
+  const routes = [
+    "app/api/admin/dashboard/route.ts",
+    "app/api/admin/products/route.ts",
+    "app/api/admin/orders/route.ts",
+    "app/api/admin/offers/route.ts",
+    "app/api/admin/ebay-sync/route.ts",
+  ];
+  for (const path of routes) assert.match(await read(path), /requireAdmin\(/u, `${path} muss die zentrale MFA-Prüfung verwenden`);
+});
+
+test("kritische Adminaktionen verlangen frische MFA und schreiben Auditspuren", async () => {
+  const access = await read("lib/admin-access.ts");
+  assert.match(access, /recentAuthSeconds/u);
+  assert.match(access, /RECENT_MFA_REQUIRED/u);
+  const audit = await read("lib/admin-audit.ts");
+  assert.match(audit, /auditEvents/u);
+  assert.match(audit, /ipHash/u, "IP-Adressen dürfen nur gehasht, nicht roh gespeichert werden");
+  for (const path of [
+    "app/api/admin/products/route.ts",
+    "app/api/admin/orders/route.ts",
+    "app/api/admin/offers/route.ts",
+    "app/api/admin/card-submissions/route.ts",
+    "app/api/admin/ebay-sync/route.ts",
+    "app/api/admin/ebay/outbox/run/route.ts",
+    "app/api/admin/ebay/oauth/start/route.ts",
+  ]) {
+    const route = await read(path);
+    assert.match(route, /recentAuthSeconds: 600/u, `${path} muss vor kritischen Aktionen eine frische MFA verlangen`);
+  }
+  assert.match(await read("app/api/admin/ebay-sync/route.ts"), /recordAdminAudit/u);
+  assert.match(await read("app/api/admin/offers/route.ts"), /recordAdminAudit/u);
+});
+
 // --- S-01, der geplante Lauf darf nicht am ersten Fehler abbrechen ----------
 
 test("der geplante Lauf benutzt allSettled, nicht all", async () => {

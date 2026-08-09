@@ -2,6 +2,7 @@ import { and, count, desc, eq, inArray } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { getDb } from "../../../../db";
 import { orderItems, orders, payments, users } from "../../../../db/schema";
+import { recordAdminAudit } from "../../../../lib/admin-audit";
 import { requireAdmin } from "../../../../lib/admin-access";
 import { D1_SAFE_ID_LIST } from "../../../../lib/d1-limits";
 
@@ -111,7 +112,7 @@ export async function GET(request: Request) {
 }
 
 export async function PATCH(request: Request) {
-  const guard = await requireAdmin(request);
+  const guard = await requireAdmin(request, { recentAuthSeconds: 600 });
   if (guard.response) return guard.response;
 
   try {
@@ -129,7 +130,10 @@ export async function PATCH(request: Request) {
       .where(and(eq(orders.id, orderId), inArray(orders.status, [...SHIPPABLE_STATUSES])))
       .run();
 
-    if (result.meta.changes === 1) return NextResponse.json({ orderId, status: "SHIPPED" });
+    if (result.meta.changes === 1) {
+      await recordAdminAudit({ request, actorUserId: guard.user.id, action: "order.status_change", entityType: "order", entityId: orderId, metadata: { status: "SHIPPED" } });
+      return NextResponse.json({ orderId, status: "SHIPPED" });
+    }
 
     const existing = await getDb().select({ status: orders.status }).from(orders).where(eq(orders.id, orderId)).limit(1);
     if (existing.length === 0) return NextResponse.json({ error: "Unbekannte Bestellung." }, { status: 404 });

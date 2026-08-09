@@ -2,22 +2,16 @@ import { and, desc, eq, inArray } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { getDb } from "../../../../db";
 import { ebayListings, priceOffers, products, users } from "../../../../db/schema";
-import { getAuthenticatedAppUser } from "../../../../lib/app-user";
+import { recordAdminAudit } from "../../../../lib/admin-audit";
+import { requireAdmin } from "../../../../lib/admin-access";
 import { notifyOfferDecision } from "../../../../lib/email/notify.ts";
 import { offerExpiry } from "../../../../lib/price-offers";
 
 const OPEN = ["NEW", "IN_REVIEW"] as const;
 
-async function requireAdmin(request: Request) {
-  const appUser = await getAuthenticatedAppUser(request);
-  if (!appUser) return { error: NextResponse.json({ error: "Nicht authentifiziert." }, { status: 401 }) };
-  if (appUser.role !== "ADMIN") return { error: NextResponse.json({ error: "Keine Berechtigung." }, { status: 403 }) };
-  return { appUser };
-}
-
 export async function GET(request: Request) {
   const guard = await requireAdmin(request);
-  if (guard.error) return guard.error;
+  if (guard.response) return guard.response;
 
   try {
     const db = getDb();
@@ -52,8 +46,8 @@ export async function GET(request: Request) {
  * price from this row. Deliberately no stock reservation: the card stays on
  * sale here and on eBay, so nothing is blocked behind a pending decision. */
 export async function POST(request: Request) {
-  const guard = await requireAdmin(request);
-  if (guard.error) return guard.error;
+  const guard = await requireAdmin(request, { recentAuthSeconds: 600 });
+  if (guard.response) return guard.response;
 
   try {
     const body = await request.json() as { offerId?: unknown; action?: unknown };
@@ -65,8 +59,6 @@ export async function POST(request: Request) {
 
     const db = getDb();
     const now = new Date().toISOString();
-    // Only an open offer may be decided, so a double click cannot revive a
-    // rejected one or move the expiry of an accepted one.
     const result = await db.update(priceOffers).set(action === "accept"
       ? { status: "ACCEPTED", expiresAt: offerExpiry(new Date(now)), updatedAt: now }
       : { status: "REJECTED", updatedAt: now })
@@ -75,9 +67,7 @@ export async function POST(request: Request) {
     if (result.meta.changes !== 1) {
       return NextResponse.json({ error: "Dieser Vorschlag wurde bereits entschieden." }, { status: 409 });
     }
-    // Erst hinter dem Riegel: Ein Doppelklick im Adminbereich löst damit auch
-    // nur eine Nachricht aus. Der Versand kann die Entscheidung nicht mehr
-    // rückgängig machen und darf sie deshalb auch nicht scheitern lassen.
+    await recordAdminAudit({ request, actorUserId: guard.user.id, action: `offer.${action}`, entityType: "price_offer", entityId: offerId });
     await notifyOfferDecision(db, offerId, action);
     return NextResponse.json({ ok: true, status: action === "accept" ? "ACCEPTED" : "REJECTED" });
   } catch (error) {

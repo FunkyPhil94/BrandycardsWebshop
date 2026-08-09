@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { recordAdminAudit } from "../../../../../../lib/admin-audit";
 import { requireAdmin } from "../../../../../../lib/admin-access";
 
 function base64Url(bytes: Uint8Array) {
@@ -15,7 +16,7 @@ async function sign(value: string) {
 }
 
 export async function GET(request: Request) {
-  const auth = await requireAdmin(request);
+  const auth = await requireAdmin(request, { recentAuthSeconds: 600 });
   if (auth.response) return auth.response;
   const clientId = process.env.EBAY_CLIENT_ID;
   const runame = process.env.EBAY_RUNAME;
@@ -29,5 +30,6 @@ export async function GET(request: Request) {
   url.searchParams.set("scope", process.env.EBAY_WRITE_OAUTH_SCOPE || "https://api.ebay.com/oauth/api_scope/sell.inventory");
   url.searchParams.set("state", state);
   url.searchParams.set("prompt", "login");
+  await recordAdminAudit({ request, actorUserId: auth.user.id, action: "ebay.oauth_start", entityType: "ebay_oauth" });
   return NextResponse.json({ url: url.toString() }, { headers: { "cache-control": "no-store" } });
 }

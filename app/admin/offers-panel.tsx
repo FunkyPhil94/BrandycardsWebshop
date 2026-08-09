@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getSupabaseBrowserClient } from "../../lib/supabase-browser";
+import { authHeaders } from "./admin-auth";
 import { formatPrice } from "../site-chrome";
 
 type AdminOffer = {
@@ -16,12 +16,6 @@ type AdminOffer = {
   createdAt: string;
   email: string | null;
 };
-
-async function authHeaders(): Promise<HeadersInit> {
-  const { data } = await getSupabaseBrowserClient().auth.getSession();
-  const token = data.session?.access_token;
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
 
 export function OffersPanel() {
   const [offers, setOffers] = useState<AdminOffer[] | null>(null);
@@ -56,7 +50,7 @@ export function OffersPanel() {
     try {
       const response = await fetch("/api/admin/offers", {
         method: "POST",
-        headers: { "Content-Type": "application/json", ...(await authHeaders()) },
+        headers: await authHeaders(true, true),
         body: JSON.stringify({ offerId, action }),
       });
       const data = await response.json().catch(() => ({}));
