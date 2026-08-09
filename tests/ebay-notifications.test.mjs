@@ -102,10 +102,10 @@ test("Route prüft Signatur vor JSON-Verarbeitung, verbucht idempotent und kennt
   assert.match(quelle, /notifyOperationalAlert/u);
 });
 
-test("Production verlangt die eBay-Fulfillment-Scope und den festen HTTPS-Endpoint", async () => {
+test("Production trennt Shop-OAuth und Notification-Subscription", async () => {
   const wrangler = await readFile(new URL("../wrangler.toml", import.meta.url), "utf8");
   assert.match(wrangler, /EBAY_NOTIFICATION_ENDPOINT = "https:\/\/shop\.brandycards\.de\/api\/ebay\/notifications"/u);
-  assert.match(wrangler, /EBAY_WRITE_OAUTH_SCOPE = .*sell\.fulfillment/u);
-  assert.match(wrangler, /EBAY_WRITE_OAUTH_SCOPE = .*sell\.fulfillment\.readonly/u);
-  assert.match(wrangler, /EBAY_WRITE_OAUTH_SCOPE = .*commerce\.notification\.subscription/u);
+  assert.match(wrangler, /EBAY_WRITE_OAUTH_SCOPE = "https:\/\/api\.ebay\.com\/oauth\/api_scope\/sell\.inventory"/u);
+  assert.doesNotMatch(wrangler, /EBAY_WRITE_OAUTH_SCOPE = .*sell\.fulfillment/u);
+  assert.doesNotMatch(wrangler, /EBAY_WRITE_OAUTH_SCOPE = .*commerce\.notification\.subscription/u);
 });

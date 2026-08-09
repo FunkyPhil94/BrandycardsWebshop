@@ -1,5 +1,24 @@
 # BrandyCards Agentenprotokoll
 
+## 2026-08-09 – eBay-OAuth-Scopefehler im geplanten Sync behoben
+
+- **Befund:** Der Produktions-Sync erhielt beim Refresh-Token-Aufruf HTTP 400
+  `invalid_scope`. In `wrangler.toml` und `.env.example` waren neben Inventory-
+  Rechten auch `sell.fulfillment*` und der Notification-Scope hinterlegt,
+  obwohl der laufende Lese-Sync diese Rechte nicht benötigt. Ein Refresh-Token
+  darf bei eBay nur die ursprünglich erteilten oder eingeschränkte Rechte
+  anfordern; der zusätzliche Scope war im vorhandenen Token nicht enthalten.
+- **Änderung:** Der reguläre Lese-Sync lässt das optionale `scope`-Feld beim
+  Refresh weg und nutzt damit die ursprüngliche Consent-Zusammenstellung.
+  Schreiboperationen verwenden ausschließlich `sell.inventory`. Die
+  Notification-Subscription bleibt als eigenständige eBay-Konfiguration
+  unangetastet.
+- **Regression:** Ein Test stellt sicher, dass der Lese-Sync keinen expliziten
+  Scope mehr an den Refresh-Endpunkt sendet; Konfigurationstests verhindern
+  die versehentliche Vermischung von Shop-OAuth und Notification-Scopes.
+- **Verifikation:** 330 Tests, TypeScript, Lint, Produktions-Build und
+  `git diff --check` waren erfolgreich.
+
 ## 2026-08-09 – eBay-ORDER_CONFIRMATION-Endpoint umgesetzt
 
 - **Umsetzung:** Der öffentliche Endpoint `/api/ebay/notifications` beantwortet

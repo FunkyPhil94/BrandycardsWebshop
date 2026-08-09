@@ -63,12 +63,17 @@ function fetchWithTimeout(input: string, init: RequestInit = {}, timeoutMs?: num
   return fetch(input, { ...init, signal: AbortSignal.timeout(grenze) });
 }
 
-async function getAccessToken(config: EbayConfig, scope = process.env.EBAY_OAUTH_SCOPE || "https://api.ebay.com/oauth/api_scope/sell.inventory.readonly", timeoutMs?: number) {
+export const EBAY_READ_SCOPE = "https://api.ebay.com/oauth/api_scope/sell.inventory.readonly";
+
+async function getAccessToken(config: EbayConfig, scope = EBAY_READ_SCOPE, timeoutMs?: number) {
   const form = new URLSearchParams({
     grant_type: "refresh_token",
     refresh_token: config.refreshToken,
   });
-  if (scope && scope !== "https://api.ebay.com/oauth/api_scope/sell.inventory.readonly") form.set("scope", scope);
+  // Leaving scope out is deliberate for the regular sync. eBay then uses the
+  // scopes from the original consent instead of rejecting a refresh token when
+  // a later configuration accidentally asks for a newly added scope.
+  if (scope && scope !== EBAY_READ_SCOPE) form.set("scope", scope);
   const response = await fetchWithTimeout(`${apiBase(config.environment)}/identity/v1/oauth2/token`, {
     method: "POST",
     headers: {

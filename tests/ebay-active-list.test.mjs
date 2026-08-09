@@ -45,9 +45,11 @@ function buildResponse({ activeItems, soldItems, totalPages, totalEntries }) {
 
 function installFetchStub(pages) {
   const calls = [];
+  calls.tokenBodies = [];
   globalThis.fetch = async (url, init) => {
     const target = String(url);
     if (target.includes("/identity/v1/oauth2/token")) {
+      calls.tokenBodies.push(String(init?.body ?? ""));
       return new Response(JSON.stringify({ access_token: "test-token" }), { status: 200 });
     }
     const body = String(init?.body ?? "");
@@ -79,6 +81,7 @@ test("only ActiveList items are imported, SoldList is ignored", async () => {
 
   assert.deepEqual(listings.map((listing) => listing.ebayItemId).sort(), ["398173913889", "398200679813"]);
   assert.equal(listings.length, 2, "sold items must not be imported");
+  assert.doesNotMatch(calls.tokenBodies[0], /(?:^|&)scope=/u, "the read sync must use the scopes from the original consent");
   assert.match(calls[0], /<SoldList><Include>false<\/Include><\/SoldList>/);
 
   // The listing start time drives the "newest cards" gallery view. Without it

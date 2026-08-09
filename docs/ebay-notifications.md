@@ -24,11 +24,14 @@ Listing erzeugt einen Betriebsalarm und wird nicht erneut von eBay angefordert.
    mit exakt dieser URL und demselben Verifikationstoken anlegen. eBay prüft die
    URL dabei über `GET ...?challenge_code=...`.
 
-3. Die eBay-OAuth-Verbindung im Adminbereich nach der Scope-Erweiterung neu
-   autorisieren und den neu ausgegebenen Refresh-Token als Cloudflare-Secret
-   `EBAY_REFRESH_TOKEN` speichern. Für `ORDER_CONFIRMATION` benötigt eBay neben
-   der allgemeinen Berechtigung `sell.fulfillment` und
-   `sell.fulfillment.readonly`.
+3. Die eBay-OAuth-Verbindung im Adminbereich für den Shop-Sync autorisieren und
+   den neu ausgegebenen Refresh-Token als Cloudflare-Secret
+   `EBAY_REFRESH_TOKEN` speichern. Der Shop verwendet dafür den Inventory-
+   Scope `sell.inventory` für Rücknahmen; der regelmäßige Lese-Sync nutzt die
+   im Consent erteilten Inventory-Rechte. Die Notification-Subscription ist
+   davon getrennt: Sie wurde für `ORDER_CONFIRMATION` über die Notification
+   API mit ihrem eigenen User-Token eingerichtet und braucht nicht in den
+   Refresh-Token des Shop-Syncs aufgenommen zu werden.
 
 4. Für die Destination eine Subscription für `ORDER_CONFIRMATION` anlegen und
    aktivieren. Danach die eBay-Testzustellung auslösen. Der Test darf keine

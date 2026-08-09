@@ -37,16 +37,7 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-**eBay-Sync: ungültigen OAuth-Scope korrigieren** — Stand: LÄUFT (2026-08-09)
-
-- Der geplante eBay-Sync löst seit 20:07 wiederholt einen Betriebsalarm aus.
-- eBay antwortet beim OAuth-Token-Abruf mit HTTP 400 `invalid_scope`.
-- Ursache im Sync-Code und in den produktiven Scope-/Secret-Namen lokalisieren;
-  nur für die tatsächlich verwendeten eBay-Endpunkte gültige Scopes anfordern.
-- Bestehende eBay-Notification-Subscription und den ORDER_CONFIRMATION-Webhook
-  nicht verändern.
-- Nach Korrektur Tests, Typprüfung, Lint und Build ausführen, danach committen,
-  pushen, deployen und einen produktiven Sync-/Alarmstatus prüfen.
+*(kein aktueller Auftrag)*
 
 **N2 eBay-Notification-Endpoint und Order-Event umsetzen** — Stand: ABGESCHLOSSEN (2026-08-09)
 
@@ -549,6 +540,24 @@ Sicherheits- und Funktionsbefunde im
 ---
 
 ## Historie
+
+### 2026-08-09 — eBay-Sync: ungültigen OAuth-Scope korrigiert
+
+- **Ursache:** Die Produktionskonfiguration verlangte beim Refresh des eBay-
+  Tokens zusätzlich `sell.fulfillment.readonly`. Dieser Scope war nicht Teil
+  des bestehenden Refresh-Tokens; eBay antwortete deshalb bei jedem
+  dreiminütigen Sync-Lauf mit HTTP 400 `invalid_scope` und löste einen
+  Betriebsalarm aus.
+- **Korrektur:** Der reguläre Lese-Sync sendet keinen nachträglich erweiterten
+  Scope mehr, sondern verwendet die Rechte der ursprünglichen Zustimmung.
+  Schreibzugriffe sind in der Produktion auf den tatsächlich benötigten
+  `sell.inventory`-Scope begrenzt. Die bestehende Notification-Subscription
+  und der `ORDER_CONFIRMATION`-Webhook wurden nicht verändert.
+- **Verifikation:** Vollständige Testsuite 330/330, `npx tsc --noEmit`,
+  `npm run lint`, `npm run build` und `git diff --check` ohne Fehler.
+- **Veröffentlichung:** Nach Commit und Push wird der korrigierte Worker in
+  Produktion deployed. Der nächste geplante Sync muss ohne `invalid_scope`
+  durchlaufen; Produktionsdaten wurden durch die Korrektur nicht verändert.
 
 ### 2026-08-09 — Vorverkauf ohne Festpreis, mit Bildern deployed
 
