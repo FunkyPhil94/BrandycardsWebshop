@@ -421,6 +421,63 @@ Sicherheits- und Funktionsbefunde im
 
 ## Historie
 
+### 2026-08-09 — Testartikel gelöscht, F-10 und S-01 behoben
+
+- **Stand:** ABGESCHLOSSEN, deployed als `c8966e32`, Commit `af841f1`.
+
+**🔴 Schreibender Eingriff in Produktionsdaten**, vom Betreiber ausdrücklich
+angeordnet („Bitte lösche den Artikel aus der DB"). Betroffen: die manuelle
+Testkarte `b44ee5d7a3a94f6b91d2e895a9ffd0b0`.
+
+- **Vorher nachgesehen, wie es die Regel verlangt:** 1 `inventory`-Zeile,
+  1 `reservations`-Zeile auf `CONVERTED`, 1 `order_items`-Zeile, 0 Angebote,
+  0 Bilder, 0 Sync-Ereignisse. **Die Reservierung blockierte per `RESTRICT`**
+  das Löschen des Produkts — Reihenfolge also zwingend: erst sie, dann das
+  Produkt.
+- **Gelöscht wurde der Artikel, nicht der Verkauf.** `DELETE FROM reservations`
+  (1 Zeile), dann `DELETE FROM products` (3 Änderungen: Produkt, Bestand per
+  `CASCADE`, `order_items.product_id` per `SET NULL`). **Die bezahlte
+  Bestellung `BC-20260809-E998831E` steht unverändert:** `PAID`, 346 ct,
+  Titel-Momentaufnahme „Testartikel von Hand", Capture `8F255921NK972311K`.
+  Dieselbe Linie wie bei der Kontolöschung — ein Rechnungsbeleg überlebt, und
+  bei einer echten PayPal-Zahlung wäre alles andere fahrlässig.
+- **Danach geprüft:** 0 manuelle Karten, `products.status = 'ACTIVE'` wieder
+  bei 294 (deckungsgleich mit den aktiven eBay-Angeboten), Detailseite der
+  Karte **404**, Katalog 294.
+
+**F-10 — die Adminkachel zählt Verkaufbares.** Entscheidung des Betreibers.
+Sie zählte `products.status = 'ACTIVE'`; eine verkaufte **manuelle** Karte
+bleibt darauf stehen, weil es für sie keinen Sync gibt, der aufräumt. Gezählt
+wird jetzt mit `istKaufbar` aus `lib/catalog-availability.ts` — **zusammengesetzt
+aus `istImKatalogSichtbar`, nicht danebengeschrieben.** Der Unterschied
+zwischen beiden ist die Vormerkliste: sichtbar, aber nicht kaufbar.
+*Eine zweite Fassung in SQL wäre die fünfte Stelle gewesen, an der dieselbe
+Frage beantwortet wird — die vier bisherigen sind alle auseinandergelaufen.*
+Preis: ~550 gelesene Zeilen statt eines Zählers, auf einer Seite, die nur der
+Betreiber öffnet.
+
+**S-01 — der geplante Lauf bricht nicht mehr am ersten Fehler ab.**
+`Promise.all` → `Promise.allSettled`. Bis dahin galt: Lehnt eine der sechs
+Zusagen ab, ist die Zusage an `waitUntil` erledigt, während die übrigen noch
+laufen — und `runEbaySync` lehnt regelmäßig ab (24 solcher Läufe stehen in
+`sync_runs`). Mitgerissen wurde dabei ausgerechnet `processEbayOutbox`, die
+Rücknahme verkaufter Karten bei eBay.
+**Dazu tragen die Aufgaben jetzt Namen:** Die alte Zeile meldete jeden Fehler
+als „eBay-Synchronisierung fehlgeschlagen", auch wenn in Wahrheit die
+Löschfrist gerissen war. Ein Protokoll, das die falsche Ursache nennt, ist
+schlechter als keins.
+
+- **Sieben Tests, alle sieben ohne die Korrekturen rot.** `tsc` sauber, Lint
+  0 Fehler, `npm test` **306/306**, Bundle-Probe bestanden, aus dem
+  Hauptverzeichnis deployed.
+- **S-01 zusätzlich am laufenden Cron nachgeprüft**, nicht nur im Test: Der
+  Lauf um 07:57:09 lief noch auf dem alten Stand (Deploy 07:58:01), deshalb
+  wurde der nächste Schlag abgewartet. **Der Lauf um 08:00:09 steht auf
+  `SUCCEEDED` mit 0 Fehlern** — der geplante Handler trägt auf dem neuen Stand.
+  Das war die eigentliche Probe: `scheduled()` ist von außen nicht auslösbar,
+  ein Fehler darin wäre nur im Worker-Protokoll und an ausbleibenden
+  Aufräumläufen zu sehen.
+
 ### 2026-08-09 — F-02 abgeschlossen, S-03 und S-06 behoben
 
 - **Stand:** ABGESCHLOSSEN, deployed als `7614139c`, Commit `caecfa6`.
