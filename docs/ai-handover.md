@@ -37,7 +37,24 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-*(leer — bereit für den nächsten Auftrag.)*
+### 2026-08-09 — Die zwei Kandidaten aus ai-todo Punkt 10
+
+- **Stand:** LÄUFT
+- **Vom Betreiber freigegeben**, beide standen bis heute als unbestätigte
+  Kandidaten in Punkt 10 („vor dem Ändern fragen").
+- **Kandidat 1 — toter Auktionscode.** Die Auktionszweige in `meta()` und
+  `badge()` (`app/karten/page.tsx`) sind seit dem 2026-08-08 unerreichbar:
+  `istImKatalogSichtbar` filtert Auktionen aus. Sie erwecken beim Lesen den
+  Eindruck, der Shop zeige Auktionen. **Vor dem Löschen prüfen, ob die API sie
+  wirklich nicht mehr ausliefert** — sonst stünde plötzlich „Sofort-Kaufen" an
+  einer Auktion.
+- **Kandidat 2 — Texte auf `/verkaufen` und `/anfragen`.** Seit dem 2026-08-06
+  unverändert, während der Shop inzwischen echtes Geld einnimmt, Verhandeln
+  bewirbt und einen Vorverkauf hat. **Nur Sachfehler und veraltete Aussagen
+  ändern, keine Neutextung auf Verdacht** — der Arbeitsvorrat warnt
+  ausdrücklich davor, Texte anzufassen, die niemand angefordert hat.
+- **Jede Textänderung wird dem Betreiber mit Vorher/Nachher vorgelegt**, damit
+  er widersprechen kann.
 
 ### **Der Betreiber muss zwei Dinge selbst prüfen**
 
