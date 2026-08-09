@@ -4,18 +4,19 @@
 lokale Prüfkette, lesende Live-Stichproben gegen D1 und HTTP-Abrufe gegen die
 Produktion.
 
-**Geprüfter Stand:** Branch `claude/brandycards-webshop-audit-f0d47b` @ `17ef207`
-(dateigleich mit `agent/initial-brandycards`).
-**Produktion:** Version `11c2dd57`, deployed 2026-08-09 06:40 UTC.
+**Geprüfter Stand:** Branch `main` @ `87de6ef` (dateigleich mit
+`agent/initial-brandycards`).
+**Produktion:** Version `c8400b82-058c-41a5-af30-0c9d09d0a906`, deployed
+2026-08-09.
 
-**Produktion läuft auf dem aktuellen Code.** Der letzte Codecommit ist `9b45c67`
-(„Raeum den toten Auktionscode ab"), genau der Stand von `11c2dd57`; `0d9c5f1`
-und `17ef207` darüber ändern ausschließlich Dokumentation.
+**Produktion läuft auf dem aktuellen Code.** Der aktuelle Codecommit ist
+`87de6ef`; der zuvor geprüfte Auditstand war `9b45c67` („Raeum den toten
+Auktionscode ab").
 
-**Nichts wurde verändert.** Kein Deploy, kein schreibender D1-Befehl, kein
-abgesendetes Formular, kein angefasstes eBay-Angebot. Die Wächter der
-öffentlichen Formulare sind ausdrücklich an Antworten nachgewiesen worden, die
-**vor** dem Datenbankschreibvorgang greifen.
+**Für die ursprüngliche Prüfung wurde nichts verändert.** Kein schreibender
+D1-Befehl, kein abgesendetes Formular, kein angefasstes eBay-Angebot. Die
+Wächter der öffentlichen Formulare sind ausdrücklich an Antworten
+nachgewiesen worden, die **vor** dem Datenbankschreibvorgang greifen.
 
 ---
 
@@ -29,8 +30,8 @@ einzige Stelle, die veralten kann.
 
 | Stand | Befunde |
 |---|---|
-| **erledigt** | F-06, F-07, F-08 (Dokumentation) · **F-09** (Warenkorb, `b1f2ad62`) · **F-02**, **S-03**, **S-06** (`7614139c`) · **S-01**, **F-10** (`c8966e32`) |
-| **offen** | S-02, S-04, F-01 |
+| **erledigt** | F-06, F-07, F-08 (Dokumentation) · **F-09** (Warenkorb, `b1f2ad62`) · **F-02**, **S-03**, **S-06** (`7614139c`) · **S-01**, **F-10** (`c8966e32`) · **S-02** (`c07a9f1`) · **S-04** (`87de6ef`) |
+| **offen** | F-01 |
 | **wartet auf eine Entscheidung** | S-05 (DSGVO), F-05 (Erstattung), F-01 Teil b (manuelle Karten in der Galerie) |
 | **erledigt sich von selbst** | F-03 (nächster echter Verkauf), S-07 (nächster Next-Minor), F-04 (nächster Schemaschritt) |
 
@@ -38,6 +39,12 @@ einzige Stelle, die veralten kann.
 **Verkaufbares** — mit `istKaufbar` aus `lib/catalog-availability.ts`, also mit
 derselben Entscheidung, die auch den Katalog füllt. Der Unterschied zu
 `istImKatalogSichtbar` ist die Vormerkliste: sichtbar, aber nicht kaufbar.
+
+**S-04 ist umgesetzt und deployed:** Die sechs authentifizierten Routen
+verwenden den gemeinsamen Standard-Limiter `RATE_LIMITER` mit route-eigenen
+Scopes. Überschreitungen werden als HTTP 429 mit `retry-after` gemeldet, statt
+als allgemeiner 503-Fehler. Die vollständige lokale Prüfkette meldete 311/311
+Tests; `/admin` und `/account` antworteten live mit HTTP 200.
 
 **Der Testartikel ist am 2026-08-09 auf Anweisung des Betreibers aus der
 Produktionsdatenbank gelöscht worden** — Produkt, Bestandszeile und die

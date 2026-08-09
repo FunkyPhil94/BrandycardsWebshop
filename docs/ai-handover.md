@@ -37,19 +37,7 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-**S-04 — Rate-Limits für sechs authentifizierte Routen ergänzen** — Stand: LÄUFT (2026-08-09)
-
-- Betroffen sind `price-offers`, `account/data`, `account/delete`,
-  `account/profile`, `paypal/orders` und `paypal/capture`. Die bestehende
-  Cloudflare-Grenze `RATE_LIMITER` erlaubt 10 Anfragen je 60 Sekunden und wird
-  mit route-eigenen Scopes verwendet.
-- Überschreitungen müssen als HTTP 429 mit `retry-after` erscheinen, nicht als
-  allgemeiner 503-Fehler. Authentifizierung und bestehende fachliche Antworten
-  bleiben unverändert.
-- Abnahmekriterien: jede Route ruft den Limiter auf und behandelt
-  `RateLimitError`; Regressionstests prüfen alle sechs Routen. Danach
-  `npx tsc --noEmit`, `npm run lint`, `npm test`, committen, pushen, deployen
-  und `/admin` sowie `/account` live prüfen. Keine Produktionsdaten schreiben.
+*(leer — bereit für den nächsten Auftrag.)*
 
 ### **Der Betreiber muss zwei Dinge selbst prüfen**
 
@@ -419,6 +407,23 @@ Sicherheits- und Funktionsbefunde im
 ---
 
 ## Historie
+
+### 2026-08-09 — S-04 in Produktion deployed
+
+- **Stand:** abgeschlossen. Die sechs authentifizierten Routen `price-offers`,
+  `account/data`, `account/delete`, `account/profile`, `paypal/orders` und
+  `paypal/capture` verwenden den gemeinsamen `RATE_LIMITER` mit jeweils eigenem
+  Scope. Überschreitungen antworten als HTTP 429 mit `retry-after`.
+- **Verifikation:** `npx tsc --noEmit`, `npm run lint` und `npm test` ohne
+  Fehler; der vollständige Lauf meldete 311/311 Tests. `/admin` und `/account`
+  antworteten live jeweils mit HTTP 200 und ohne die Supabase-
+  Konfigurationsfehlermeldung.
+- **Veröffentlichung:** Commit `87de6ef`, nach `main` und
+  `agent/initial-brandycards` gepusht. Cloudflare-Version
+  `c8400b82-058c-41a5-af30-0c9d09d0a906` ist aktiv. Es wurden keine
+  Produktionsdaten geschrieben.
+- Die dauerhafte Vorgabe des Betreibers bleibt: Änderungen immer committen,
+  pushen und deployen.
 
 ### 2026-08-09 — S-02 in Produktion deployed
 
