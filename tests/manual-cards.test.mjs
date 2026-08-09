@@ -228,3 +228,31 @@ test("manuelle Karten sind kaufbar und verhandelbar", async () => {
   assert.match(detailseite, /card\.category !== "Auktion" && card\.quantity > 0/u,
     "der Preisvorschlag-Kasten darf nicht mehr an der Kategorie Festpreis hängen");
 });
+
+// --- Adminkonsole 12.4 und 12.5 --------------------------------------------
+
+test("Anfragen und Kartenangebote lassen sich im Stand ändern", async () => {
+  // Bis zum 2026-08-09 gab es nur Zähler und „löschen" — dazwischen lag nichts,
+  // und beim nächsten Blick stand alles wieder auf NEW.
+  const anfragen = await readFile(new URL("../app/api/admin/inquiries/route.ts", import.meta.url), "utf8");
+  assert.match(anfragen, /export async function PATCH/u);
+  assert.match(anfragen, /requireAdmin\(/u);
+  // Der Zeitstempel beantwortet die eigentliche Frage: seit wann liegt das hier?
+  assert.match(anfragen, /respondedAt: now/u);
+
+  const angebote = await readFile(new URL("../app/api/admin/card-submissions/route.ts", import.meta.url), "utf8");
+  assert.match(angebote, /export async function PATCH/u);
+});
+
+test("die eBay-Warteschlange zeigt Fehlergrund und nächsten Versuch", async () => {
+  // Ein „FAILED" ohne Grund beantwortet keine Frage — und ein hängender Auftrag
+  // bedeutet, dass eine verkaufte Karte bei eBay im Verkauf bleibt.
+  const outbox = await readFile(new URL("../app/api/admin/ebay/outbox/route.ts", import.meta.url), "utf8");
+  assert.match(outbox, /lastError: ebayOutbox\.lastError/u);
+  assert.match(outbox, /availableAt: ebayOutbox\.availableAt/u);
+  // Der Schalterzustand muss mit: Eine Liste voller „Wartet" liest sich sonst
+  // wie ein Stau, während in Wahrheit nichts ausgeführt wird.
+  assert.match(outbox, /writeEnabled: process\.env\.EBAY_WRITE_ENABLED === "true"/u);
+  // Die Rohdaten des Auftrags gehören nicht in die Antwort.
+  assert.ok(!/payload: ebayOutbox\.payload/u.test(outbox));
+});

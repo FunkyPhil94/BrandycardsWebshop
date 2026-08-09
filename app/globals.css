@@ -589,6 +589,31 @@ footer { background:var(--ink); color:#fff; padding:52px max(48px,calc((100vw - 
 .ebay-token textarea { background:#fff; border:1px solid var(--line); font-family:'DM Mono',monospace; font-size:11px; min-height:110px; padding:12px; resize:vertical; width:100%; }
 .ebay-token-actions { display:flex; flex-wrap:wrap; gap:10px; }
 
+/* --- Anfragen, Kartenangebote und eBay-Warteschlange im Adminbereich --- */
+.admin-subheading { font-size:11px; font-weight:800; letter-spacing:.08em; margin:22px 0 10px; text-transform:uppercase; color:var(--muted); }
+.admin-requests { display:grid; gap:8px; }
+.admin-request { background:#ebe8e1; display:grid; gap:8px; padding:14px 18px; }
+.admin-request-head { align-items:baseline; display:flex; flex-wrap:wrap; gap:12px; justify-content:space-between; }
+.admin-request-head strong { font-size:13px; }
+.admin-request-head span { color:var(--muted); font-size:11px; white-space:nowrap; }
+.admin-request-from { color:var(--muted); font-size:11px; margin:0; overflow-wrap:anywhere; }
+.admin-request-text { font-size:12px; line-height:1.6; margin:0; white-space:pre-wrap; }
+.admin-request-actions { align-items:center; display:flex; flex-wrap:wrap; gap:12px; }
+.admin-request-actions select { background:#fff; border:1px solid var(--line); font-size:12px; padding:8px 10px; }
+.admin-request-hint { color:var(--red); font-size:10px; letter-spacing:.04em; text-transform:uppercase; }
+.admin-request-delete { background:none; border:0; border-bottom:1px solid currentColor; color:var(--red); font-size:9px; font-weight:800; letter-spacing:.07em; margin-left:auto; padding:0 0 3px; text-transform:uppercase; }
+.admin-outbox-toggle { align-items:center; color:var(--muted); display:flex; font-size:12px; gap:8px; }
+.admin-outbox-job { background:#ebe8e1; display:grid; gap:12px; padding:14px 18px; }
+/* Ein fehlgeschlagener Auftrag heißt: Eine verkaufte Karte steht bei eBay
+   womöglich weiter im Verkauf. Das darf man nicht überlesen. */
+.admin-outbox-job.ist-fehler { border-left:3px solid var(--red); }
+.admin-outbox-head { align-items:center; display:flex; flex-wrap:wrap; font-size:12px; gap:12px; }
+.admin-outbox-error { background:#fff; color:#7a2f2f; font-family:'DM Mono',monospace; font-size:10px; line-height:1.6; margin:0; overflow-wrap:anywhere; padding:10px 12px; }
+.admin-order-status.status-pending,.admin-order-status.status-retry_wait { background:var(--gold); color:var(--ink); }
+.admin-order-status.status-processing { background:#3a6ea5; color:#fff; }
+.admin-order-status.status-succeeded { background:#2f7d3b; color:#fff; }
+.admin-order-status.status-failed { background:var(--red); color:#fff; }
+
 /* --- Karten im Adminbereich --- */
 .admin-products-toolbar { align-items:center; display:flex; flex-wrap:wrap; gap:12px; margin-bottom:14px; }
 .admin-products-toolbar input { background:#fff; border:1px solid var(--line); flex:1 1 220px; font-size:13px; padding:12px 14px; }

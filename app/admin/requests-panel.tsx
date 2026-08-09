@@ -1,0 +1,174 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { getSupabaseBrowserClient } from "../../lib/supabase-browser";
+
+type Inquiry = {
+  id: string;
+  email: string;
+  name: string | null;
+  title: string;
+  text: string | null;
+  status: string;
+  createdAt: string;
+  respondedAt: string | null;
+  productTitle: string | null;
+};
+
+const ANFRAGE_LABEL: Record<string, string> = {
+  NEW: "Neu", IN_REVIEW: "In Prüfung", RESPONDED: "Beantwortet", CLOSED: "Geschlossen", SPAM: "Spam",
+};
+
+/** Die Stände, die ein Kartenangebot annehmen kann.
+ *
+ * `REJECTED` und `CLOSED` starten zugleich die 90-Tage-Löschfrist
+ * (`lib/retention.ts`) — das steht in der Oberfläche daneben, sonst löscht der
+ * geplante Lauf später etwas, womit niemand gerechnet hat. */
+const ANGEBOT_LABEL: Record<string, string> = {
+  NEW: "Neu", IN_REVIEW: "In Prüfung", NEEDS_INFO: "Rückfrage", ACCEPTED: "Angekauft", REJECTED: "Abgelehnt", CLOSED: "Geschlossen",
+};
+const LOESCHFRIST_STARTET = new Set(["REJECTED", "CLOSED"]);
+
+async function authHeaders(json = false): Promise<HeadersInit> {
+  const { data } = await getSupabaseBrowserClient().auth.getSession();
+  const token = data.session?.access_token;
+  return { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(json ? { "Content-Type": "application/json" } : {}) };
+}
+
+function datum(wert: string | null) {
+  if (!wert) return null;
+  const zeit = new Date(wert);
+  return Number.isNaN(zeit.getTime()) ? wert : zeit.toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" });
+}
+
+export type Submission = { id: string; email: string; name: string | null; title: string; status: string; createdAt: string; assets: Array<{ id: string }> };
+
+/** Anfragen und Kartenangebote bearbeiten statt nur zählen (ai-todo Punkt 12.4). */
+export function RequestsPanel({ submissions, assetUrls, onSubmissionDeleted }: {
+  submissions: Submission[];
+  assetUrls: Record<string, string>;
+  onSubmissionDeleted: (id: string) => void;
+}) {
+  const [inquiries, setInquiries] = useState<Inquiry[] | null>(null);
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState<string | null>(null);
+  const [stati, setStati] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const response = await fetch("/api/admin/inquiries", { headers: await authHeaders() });
+        const data = await response.json() as { inquiries?: Inquiry[]; error?: string };
+        if (!response.ok || !data.inquiries) throw new Error(data.error ?? "Anfragen konnten nicht geladen werden.");
+        if (!cancelled) setInquiries(data.inquiries);
+      } catch (error) {
+        if (cancelled) return;
+        setNote(error instanceof Error ? error.message : "Anfragen konnten nicht geladen werden.");
+        setInquiries([]);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  async function anfrageSetzen(id: string, status: string) {
+    setBusy(id);
+    setNote("");
+    try {
+      const response = await fetch("/api/admin/inquiries", { method: "PATCH", headers: await authHeaders(true), body: JSON.stringify({ id, status }) });
+      const data = await response.json() as { error?: string };
+      if (!response.ok) throw new Error(data.error ?? "Fehlgeschlagen.");
+      setInquiries((current) => current?.map((eintrag) => eintrag.id === id ? { ...eintrag, status } : eintrag) ?? current);
+      setNote(`Anfrage auf „${ANFRAGE_LABEL[status] ?? status}“ gesetzt.`);
+    } catch (error) {
+      setNote(error instanceof Error ? error.message : "Fehlgeschlagen.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function angebotSetzen(submissionId: string, status: string) {
+    setBusy(submissionId);
+    setNote("");
+    try {
+      const response = await fetch("/api/admin/card-submissions", { method: "PATCH", headers: await authHeaders(true), body: JSON.stringify({ submissionId, status }) });
+      const data = await response.json() as { error?: string };
+      if (!response.ok) throw new Error(data.error ?? "Fehlgeschlagen.");
+      setStati((current) => ({ ...current, [submissionId]: status }));
+      setNote(LOESCHFRIST_STARTET.has(status)
+        ? `Angebot auf „${ANGEBOT_LABEL[status] ?? status}“ gesetzt. Es wird samt Bildern in 90 Tagen automatisch gelöscht.`
+        : `Angebot auf „${ANGEBOT_LABEL[status] ?? status}“ gesetzt.`);
+    } catch (error) {
+      setNote(error instanceof Error ? error.message : "Fehlgeschlagen.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function angebotLoeschen(submissionId: string) {
+    if (!window.confirm("Dieses Kartenangebot und alle zugehörigen Bilder endgültig löschen?")) return;
+    setBusy(submissionId);
+    try {
+      const response = await fetch(`/api/admin/card-submissions?submissionId=${encodeURIComponent(submissionId)}`, { method: "DELETE", headers: await authHeaders() });
+      const data = await response.json() as { error?: string };
+      if (!response.ok) throw new Error(data.error ?? "Löschen fehlgeschlagen.");
+      onSubmissionDeleted(submissionId);
+    } catch (error) {
+      setNote(error instanceof Error ? error.message : "Löschen fehlgeschlagen.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  return <section className="admin-section">
+    <h2>Anfragen &amp; Kartenangebote</h2>
+    {note && <p className="form-feedback" role="status">{note}</p>}
+
+    <h3 className="admin-subheading">Anfragen{inquiries ? ` (${inquiries.length})` : ""}</h3>
+    {!inquiries ? <p className="form-feedback">Lade …</p>
+      : inquiries.length === 0 ? <p className="form-feedback">Noch keine Anfragen eingegangen.</p>
+      : <div className="admin-requests">
+          {inquiries.map((eintrag) => <article className="admin-request" key={eintrag.id}>
+            <div className="admin-request-head">
+              <strong>{eintrag.title}</strong>
+              <span>{datum(eintrag.createdAt)}</span>
+            </div>
+            <p className="admin-request-from">{eintrag.email}{eintrag.name ? ` · ${eintrag.name}` : ""}{eintrag.productTitle ? ` · zu: ${eintrag.productTitle}` : ""}</p>
+            {eintrag.text && <p className="admin-request-text">{eintrag.text}</p>}
+            <div className="admin-request-actions">
+              <select value={eintrag.status} disabled={busy === eintrag.id} onChange={(event) => void anfrageSetzen(eintrag.id, event.target.value)}>
+                {Object.entries(ANFRAGE_LABEL).map(([wert, label]) => <option key={wert} value={wert}>{label}</option>)}
+              </select>
+              <a className="text-link" href={`mailto:${eintrag.email}?subject=${encodeURIComponent(`Deine Anfrage: ${eintrag.title}`)}`}>Antworten <span>↗</span></a>
+            </div>
+          </article>)}
+        </div>}
+
+    <h3 className="admin-subheading">Kartenangebote ({submissions.length})</h3>
+    {submissions.length === 0 ? <p className="form-feedback">Noch keine Angebote eingegangen.</p>
+      : <div className="admin-requests">
+          {submissions.map((angebot) => {
+            const status = stati[angebot.id] ?? angebot.status;
+            return <article className="admin-request" key={angebot.id}>
+              <div className="admin-request-head">
+                <strong>{angebot.title}</strong>
+                <span>{datum(angebot.createdAt)}</span>
+              </div>
+              <p className="admin-request-from">{angebot.email}{angebot.name ? ` · ${angebot.name}` : ""} · {angebot.assets.length} Bild(er)</p>
+              <div className="admin-submission-images">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                {angebot.assets.map((asset) => assetUrls[asset.id] ? <img key={asset.id} src={assetUrls[asset.id]} alt={`Eingesendetes Bild zu ${angebot.title}`} loading="lazy" /> : null)}
+              </div>
+              <div className="admin-request-actions">
+                <select value={status} disabled={busy === angebot.id} onChange={(event) => void angebotSetzen(angebot.id, event.target.value)}>
+                  {Object.entries(ANGEBOT_LABEL).map(([wert, label]) => <option key={wert} value={wert}>{label}</option>)}
+                </select>
+                {LOESCHFRIST_STARTET.has(status) && <span className="admin-request-hint">Löschung samt Bildern in 90 Tagen</span>}
+                <a className="text-link" href={`mailto:${angebot.email}?subject=${encodeURIComponent(`Dein Kartenangebot: ${angebot.title}`)}`}>Antworten <span>↗</span></a>
+                <button type="button" className="admin-request-delete" disabled={busy === angebot.id} onClick={() => void angebotLoeschen(angebot.id)}>Löschen</button>
+              </div>
+            </article>;
+          })}
+        </div>}
+  </section>;
+}

@@ -3,7 +3,9 @@
 import { useEffect, useState } from "react";
 import { OffersPanel } from "./offers-panel";
 import { OrdersPanel } from "./orders-panel";
+import { OutboxPanel } from "./outbox-panel";
 import { ProductsPanel } from "./products-panel";
+import { RequestsPanel } from "./requests-panel";
 import Link from "next/link";
 import { getSupabaseBrowserClient } from "../../lib/supabase-browser";
 import { SiteFooter, SiteHeader } from "../site-chrome";
@@ -24,7 +26,6 @@ export default function AdminPage() {
   const [outboxBusy, setOutboxBusy] = useState(false);
   const [ebayToken, setEbayToken] = useState<string | null>(null);
   const [assetUrls, setAssetUrls] = useState<Record<string, string>>({});
-  const [deletingSubmission, setDeletingSubmission] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -93,25 +94,6 @@ export default function AdminPage() {
     })();
     return () => { cancelled = true; };
   }, []);
-
-  async function deleteSubmission(submissionId: string) {
-    if (!window.confirm("Dieses Kartenangebot und alle zugehörigen Bilder endgültig löschen?")) return;
-    setDeletingSubmission(submissionId);
-    try {
-      const supabase = getSupabaseBrowserClient();
-      const { data } = await supabase.auth.getSession();
-      const token = data.session?.access_token;
-      if (!token) throw new Error("Bitte melde dich zuerst an.");
-      const response = await fetch(`/api/admin/card-submissions?submissionId=${encodeURIComponent(submissionId)}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
-      const body = await response.json() as { error?: string };
-      if (!response.ok) throw new Error(body.error ?? "Löschen fehlgeschlagen.");
-      setDashboard((current) => current ? { ...current, recentSubmissions: current.recentSubmissions.filter((item) => item.id !== submissionId), counts: { ...current.counts, cardSubmissions: Math.max(0, current.counts.cardSubmissions - 1) } } : current);
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Löschen fehlgeschlagen.");
-    } finally {
-      setDeletingSubmission(null);
-    }
-  }
 
   async function runEbaySync() {
     setSyncBusy(true);
@@ -254,11 +236,14 @@ export default function AdminPage() {
           <OffersPanel />
           <ProductsPanel />
           <OrdersPanel />
-          <div className="admin-submissions">
-            <h2>Neue Kartenangebote</h2>
-            {dashboard.recentSubmissions.length === 0 ? <p className="form-feedback">Noch keine Angebote eingegangen.</p> : dashboard.recentSubmissions.map((submission) => <article key={submission.id} className="admin-submission"><div><strong>{submission.title}</strong><span>{submission.email}{submission.name ? ` · ${submission.name}` : ""}</span><div className="admin-submission-images">{submission.assets.map((asset) => assetUrls[asset.id] ? <img key={asset.id} src={assetUrls[asset.id]} alt={`Eingesendetes Bild zu ${submission.title}`} loading="lazy" /> : null)}</div></div><div className="admin-submission-meta"><span>{submission.assets.length} Bild(er)</span><span>{submission.status}</span><button type="button" onClick={() => void deleteSubmission(submission.id)} disabled={deletingSubmission === submission.id}>{deletingSubmission === submission.id ? "Löschen …" : "Angebot löschen"}</button></div></article>)}
-          </div>
-          <p className="form-feedback">Weitere Verwaltungsfunktionen werden als nächster Schritt ergänzt.</p>
+          <RequestsPanel
+            submissions={dashboard.recentSubmissions}
+            assetUrls={assetUrls}
+            onSubmissionDeleted={(id) => setDashboard((current) => current
+              ? { ...current, recentSubmissions: current.recentSubmissions.filter((item) => item.id !== id), counts: { ...current.counts, cardSubmissions: Math.max(0, current.counts.cardSubmissions - 1) } }
+              : current)}
+          />
+          <OutboxPanel />
         </> : <p className="form-feedback error" role="status">{message}</p>}
       </section>
       </section>
