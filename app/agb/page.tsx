@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { useI18n } from "../i18n";
 
