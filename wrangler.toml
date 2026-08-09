@@ -41,33 +41,23 @@ EBAY_WRITE_ENABLED = "true"
 EBAY_RUNAME = "BrandyCards_GbR-BrandyCa-Brandy-cqibopjv"
 EBAY_OAUTH_CALLBACK_URL = "https://shop.brandycards.de/api/admin/ebay/oauth/callback"
 
-# VORÜBERGEHEND zurück auf stündlich. Am 2026-08-07 stand hier für ein paar
-# Stunden `*/10 * * * *` — das war ein Fehler.
+# Drei Minuten, seit der Sync nur noch schreibt, was sich geändert hat
+# (2026-08-08). Gemessen je Lauf: ~6 500 D1-Zeilen gelesen, **0 geschrieben**.
 #
-# Der Grund ist nicht eBay, sondern **D1**. Gemessen mit `wrangler d1 insights`:
-# Ein Sync-Lauf schreibt rund **5 396 Zeilen**. D1 zählt Indexschreibvorgänge
-# mit (ein `update products` kostet 3 Zeilen, ein `update ebay_listings` 5),
-# und der Lauf schreibt **jedes Mal alles neu**, auch wenn sich nichts geändert
-# hat. Gegen das Free-Budget von 100 000 geschriebenen Zeilen pro Tag:
+# **Die begrenzende Größe ist eBay, nicht Cloudflare.** Die Trading-API erlaubt
+# 5 000 Aufrufe/Tag, und zwar als *gemeinsamer* Topf für Sync, Beschreibungs-
+# abfrage, Bestandsprüfung an der Kasse und die Rücknahmen. Der Sync verbraucht
+# davon 960/Tag. tests/ebay-stock-check.test.mjs rechnet das nach und gesteht
+# dem Sync bewusst nur die Hälfte zu — ein Test, der ihm alle 5 000 zubilligte,
+# ginge genau dann durch, wenn die Kasse nicht mehr prüfen kann.
 #
-#   alle  3 Min   480 Läufe/Tag ~2 590 000 Zeilen = 2590 %
-#   alle 10 Min   144 Läufe/Tag  ~777 000 Zeilen  =  777 %   <- war heute aktiv
-#   stündlich      24 Läufe/Tag  ~130 000 Zeilen  =  130 %   <- Stand davor
-#   alle  2 Std    12 Läufe/Tag   ~65 000 Zeilen  =   65 %   <- jetzt
+# **Wer den Takt erhöhen will, verbilligt zuerst den Lauf.** Andersherum ging es
+# am 2026-08-07 schon einmal schief: `*/10` lief wenige Stunden und musste
+# zurückgenommen werden, weil ein Lauf damals noch ~5 396 Zeilen schrieb.
 #
-# **Selbst stündlich war schon über dem Budget.** Deshalb steht hier vorerst
-# zweistündlich — ein Notbehelf, kein Zielzustand, damit Platz für die Schreib-
-# vorgänge echter Bestellungen bleibt.
-#
-# **Die Lösung ist nicht ein langsamerer Takt, sondern ein billigerer Lauf:**
-# Der Sync muss nur schreiben, was sich tatsächlich geändert hat. Danach kostet
-# ein Lauf im Normalfall nahe null Zeilen, und drei Minuten sind problemlos.
-# Siehe docs/ai-todo.md; tests/ebay-stock-check.test.mjs hält die Kopplung
-# fest und schlägt an, wenn jemand den Takt erhöht, ohne den Lauf zu verbilligen.
-#
-# Was die längere Wartezeit erträglich macht: Die Bestandsprüfung gegen eBay
-# vor der Zahlung (lib/ebay-stock-check.ts) sichert den entscheidenden Moment
-# ohnehin ab, unabhängig vom Import-Takt.
+# **Beim Wachsen des Sortiments nachziehen:** Zwei Seitenabrufe je Lauf gelten
+# bis 400 Angebote. Ab 401 werden es drei — der Verbrauch steigt sprunghaft,
+# nicht gleitend. Die Zahl steht als ANGEBOTE im Test.
 [triggers]
 crons = ["*/3 * * * *"]
 

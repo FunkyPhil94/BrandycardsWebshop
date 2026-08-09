@@ -63,10 +63,15 @@ npx tsc --noEmit     # Typprüfung -- NICHT Teil von npm test, separat ausführe
 - **D1 begrenzt gebundene Parameter pro Statement.** Sammel-Inserts kosten einen
   Parameter je Zeile *und* Spalte. Grenzen stehen in `lib/d1-limits.ts` und
   werden von `tests/d1-limits.test.mjs` an echtem SQL gemessen — nicht schätzen.
-- **CI prüft keine Typen.** `npm test` baut nur, `npm run lint` sieht keine
-  Typfehler. `npx tsc --noEmit` gehört vor jeden Commit.
+- **`npm test` prüft keine Typen.** Es baut nur, und `npm run lint` sieht keine
+  Typfehler. `npx tsc --noEmit` gehört deshalb vor jeden Commit — lokal, denn
+  lokal merkt man es Sekunden später statt im Pull Request.
+  *(Die CI prüft Typen inzwischen sehr wohl: `.github/workflows/ci.yml` hat seit
+  SEC-14 einen Schritt `Type check` und auditiert zusätzlich. Diese Stelle
+  behauptete bis zum 2026-08-09 das Gegenteil. Der Rat bleibt derselbe, die
+  Begründung ist eine andere.)*
 - **`drizzle/meta/_journal.json` ist veraltet** (endet bei `0002`, während
-  `0003`–`0005` handgeschrieben dazukamen). `npm run db:generate` würde gegen den
+  `0003`–`0006` handgeschrieben dazukamen). `npm run db:generate` würde gegen den
   alten Snapshot diffen und die Migrationen erneut erzeugen.
 
 ## Deployment

@@ -19,6 +19,27 @@ abgesendetes Formular, kein angefasstes eBay-Angebot. Die Wächter der
 
 ---
 
+## Stand der Abarbeitung
+
+**Die Befunde unten bleiben stehen, wie sie am 2026-08-09 erhoben wurden** — ein
+Prüfbericht ist eine Momentaufnahme, und eine nachträglich geglättete taugt
+nicht mehr als Beleg. Was seither erledigt ist, steht **nur hier**. Diese Zeile
+mitzuziehen ist billiger als jeden Befund einzeln umzuschreiben, und sie ist die
+einzige Stelle, die veralten kann.
+
+| Stand | Befunde |
+|---|---|
+| **erledigt** | F-06, F-07, F-08 (2026-08-09, Dokumentation richtiggestellt — Commit siehe [ai-handover.md](ai-handover.md), Historie) |
+| **beim Betreiber** | F-02 (eine manuelle Karte anlegen und durchkaufen) |
+| **wartet auf F-02** | S-03, S-06 |
+| **offen** | S-01, S-02, S-04, F-01 |
+| **wartet auf eine Entscheidung** | S-05 (DSGVO), F-05 (Erstattung), F-01 Teil b (manuelle Karten in der Galerie) |
+| **erledigt sich von selbst** | F-03 (nächster echter Verkauf), S-07 (nächster Next-Minor), F-04 (nächster Schemaschritt) |
+
+Die Begründung dieser Reihenfolge steht am Ende unter „Abschluss".
+
+---
+
 ## Wie dieser Bericht zu lesen ist
 
 Jeder Befund trägt eine Kennung (`S-…` Sicherheit, `F-…` Funktion, `OK-…`

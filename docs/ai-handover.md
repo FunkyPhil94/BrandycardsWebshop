@@ -39,6 +39,14 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 *(leer — bereit für den nächsten Auftrag.)*
 
+> **Beim Betreiber liegt gerade Schritt 2 der Befundabarbeitung: F-02.** Eine
+> Karte von Hand einstellen (`/admin` → „Karte von Hand einstellen") und bis zur
+> Bestellbestätigung durchkaufen. Es gibt bis heute **keine** Karte mit
+> `origin = 'MANUAL'` in Produktion; der ganze Vorverkaufszweig ist allein durch
+> Tests gedeckt. **Die Befunde S-03 und S-06 warten bewusst auf das Ergebnis** —
+> sie liegen in denselben Dateien, und der letzte Durchstich förderte drei
+> Fehler zutage, die kein Test gefunden hatte.
+
 ### **Der Betreiber muss zwei Dinge selbst prüfen**
 
 1. **Eine erste Karte von Hand einstellen** — `/admin` → „Karte von Hand
@@ -146,7 +154,19 @@ offen ist, kann der Shop kein Geld einnehmen.
 ## Offene Punkte
 
 Kein Auftrag, sondern der Zustand, den die nächste Sitzung kennen muss.
-Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
+Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md), die offenen
+Sicherheits- und Funktionsbefunde im
+[Prüfbericht vom 2026-08-09](pruefbericht-2026-08-09.md).
+
+> **Am 2026-08-09 gegen den tatsächlichen Zustand durchgesehen.** Dieser
+> Abschnitt hatte einen Tag lang in Rot behauptet, der Shop könne kein Geld
+> einnehmen, und nannte einen Cron-Takt, eine CSP und einen Deploy-Stand von
+> vorgestern — während dieselbe Datei weiter oben schon das Gegenteil sagte.
+> **Die Lehre daraus, für alle, die hier abhaken:** Ein erledigter Punkt gehört
+> in die Historie, nicht in eine korrigierte Fassung an derselben Stelle. Was
+> hier stehen bleibt, muss der Zustand von *jetzt* sein — sonst liest die
+> nächste Sitzung eine Warnung, die es nicht mehr gibt, und übersieht darüber
+> die, die es gibt.
 
 - ~~**Auf schmalen Geräten gibt es keine Hauptnavigation.**~~ **Erledigt am
   2026-08-07:** Burger-Menü gebaut, deployed als `fc35c017`. `.main-nav` bleibt
@@ -201,42 +221,36 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
   Tests abbrach — **hier Node 24, in CI Node 22**. Ein Deploy ging auf grüner
   lokaler Kette raus, obwohl CI seit Stunden rot war. `gh run list --limit 3`
   kostet nichts und hätte es gezeigt.
-- **Produktion ist aktuell; zuletzt deployed ist `fc35c017`** (Burger-Menü
-  für schmale Geräte). Davor `161c74e4` (Kontolink im mobilen Kopf). Davor `21bd0667` (CI-Korrektur und
-  schlankere Kopfleiste, 126 px statt 164 px). Davor `783402f9` (Warenkorb-
-  grenze und Oberflächenkorrekturen). Weiter davor am 2026-08-07
-  ging mehrfach hintereinander etwas raus: `1cfd52f1` (alle
-  Sicherheitskorrekturen), `650c189a` (HSTS), `81c6422d` (Profilformular),
-  `d893527a` (Konto- und Adminfläche in der Sprache des Shops), `0b25ae0f`
-  (Import alle 10 Minuten, Bestandsprüfung vor der Zahlung), `2557ca3d`
-  (Rücknahme des 10-Minuten-Takts), `a1cdd14f` (`start_at` im Mapper) und
-  `07da6e9b` (Zeitgrenzen für eBay, Sperre mit Verfallszeit).
-  **Diese Aufzählung endete früher bei `0b25ae0f` und behauptete „fünf
-  Deploys" — dabei kamen die drei wichtigsten danach.** Wer den Stand wissen
-  will, verlässt sich besser auf `npx wrangler deployments list` als auf diese
-  Liste.
-  Das Rate-Limit hat seine Bindings, der Katalog wird am Rand
-  zwischengespeichert, alle sechs Sicherheits-Kopfzeilen sind gesetzt, die CSP
-  setzt durch. Nachprüfung in
+- **Den Deploy-Stand hier nicht nachschlagen, sondern messen.**
+  `npx wrangler deployments list` ist die einzige verlässliche Quelle; jede
+  Aufzählung an dieser Stelle ist binnen Tagen falsch, und genau das ist ihr
+  zweimal passiert. Stand 2026-08-09: Version `11c2dd57`. Was seit dem
+  2026-08-07 durchgehend gilt: Das Rate-Limit hat seine Bindings, der Katalog
+  wird am Rand zwischengespeichert, alle sechs Sicherheits-Kopfzeilen sind
+  gesetzt, die CSP setzt durch. Nachprüfung in
   [security-findings.md](security-findings.md) unter „Deploy am 2026-08-07".
-- **Der Import läuft alle zwei Stunden, nicht alle 10 Minuten.** Maßgeblich ist
-  `crons = ["0 */2 * * *"]` in [wrangler.toml](../wrangler.toml) — das ist die
-  Wahrheit, wenn eine Angabe hier ihr je widerspricht. Der 10-Minuten-Takt lief
-  am 2026-08-07 nur wenige Stunden (Version `0b25ae0f`, erster Lauf 10:50:40
-  UTC, `SUCCEEDED`, 294 aktualisiert) und wurde **am selben Tag zurückgenommen**
-  (`2557ca3d`), weil er bei ~5 396 geschriebenen Zeilen je Lauf das
-  D1-Schreibbudget um ein Vielfaches gerissen hätte. Begründung in
-  [ai-todo.md](ai-todo.md) unter „Erledigt".
-  **Folgen, die man kennen muss:** Das Fenster für „auf eBay verkauft, der Shop
-  weiß es nicht" ist bis zu zwei Stunden groß — geschlossen wird es erst an der
-  Kasse durch die Bestandsprüfung, nicht durch den Import. Und
-  `releaseExpiredReservations` hängt am selben Cron, eine abgelaufene
-  Reservierung kommt daher nach 15–135 Minuten zurück, nicht nach 15–25.
-  Der Weg zurück zu einem schnellen Takt führt über Punkt 2 in
-  [ai-todo.md](ai-todo.md) (nur schreiben, was sich geändert hat), **nicht**
-  über einen anderen Cron-Ausdruck.
-  Ein Lauf dauert **rund 77 Sekunden** — nicht die 30, die früher in der
-  Aufgabenliste standen.
+- **Der Import läuft alle drei Minuten.** Maßgeblich ist
+  `crons = ["*/3 * * * *"]` in [wrangler.toml](../wrangler.toml) — das ist die
+  Wahrheit, wenn eine Angabe hier ihr je widerspricht.
+  **Der Weg dorthin war ein Umweg, und er ist lehrreich:** Am 2026-08-07 lief
+  der Takt für wenige Stunden auf 10 Minuten und wurde am selben Tag
+  zurückgenommen (`2557ca3d`), weil ein Lauf damals ~5 396 Zeilen schrieb. Erst
+  ai-todo Punkt 2 machte den Lauf billig — er schreibt jetzt nur noch, was sich
+  geändert hat —, und **danach** war der schnelle Takt tragbar (`6f33f7f1`,
+  2026-08-08). Ein schnellerer Takt ist also nie ein Cron-Ausdruck, sondern
+  immer erst ein billigerer Lauf.
+  **Gemessen je Lauf:** ~6 500 D1-Zeilen gelesen, **0 geschrieben**, ~9,8 ms
+  Rechenzeit, 2 eBay-Aufrufe. Die begrenzende Größe ist **eBay**, nicht
+  Cloudflare: 5 000 Trading-Aufrufe/Tag als gemeinsamer Topf für Sync,
+  Beschreibungsabfrage, Bestandsprüfung und Rücknahmen;
+  `tests/ebay-stock-check.test.mjs` gesteht dem Sync bewusst nur die Hälfte zu
+  und schlägt an, wenn jemand den Takt erhöht.
+  **Folge, die man kennen muss:** Das Fenster für „auf eBay verkauft, der Shop
+  weiß es nicht" ist damit klein, aber nicht null — geschlossen wird es an der
+  Kasse durch die Bestandsprüfung, nicht durch den Import.
+  `releaseExpiredReservations` hängt am selben Cron; eine abgelaufene
+  Reservierung kommt nach 15–18 Minuten zurück, und der Checkout gibt die
+  eigenen abgelaufenen Reservierungen ohnehin sofort frei.
 - **Die Kontofläche im angemeldeten Zustand hat niemand geprüft.** Weder das
   Profilformular noch die Adminübersicht mit echten Zahlen — dafür wäre eine
   Anmeldung mit dem Passwort des Betreibers nötig. Die Gestaltung stammt
@@ -256,38 +270,42 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
   **Achtung beim Bild-Import:** Er liefert ein Objekt `{src, width, height}`,
   keine Zeichenkette. `<img src={bild}>` bricht **still** zu `[object Object]`;
   richtig ist `src={bild.src}`. Begründung in `assets.d.ts`.
-- 🔴 **Der Shop kann kein echtes Geld einnehmen: PayPal läuft in der Sandbox.**
-  `PAYPAL_ENVIRONMENT` ist **nirgends gesetzt** — weder in `[vars]` der
-  `wrangler.toml` noch als Secret. `lib/paypal/config.ts` fällt damit auf
-  `sandbox` zurück, der Shop spricht mit `api-m.sandbox.paypal.com`. Ein echter
-  Kunde kann nicht bezahlen. **Ob die hinterlegten `PAYPAL_CLIENT_ID`/`SECRET`
-  Sandbox- oder Live-Daten sind, weiß nur der Betreiber** — Secrets lassen sich
-  nur dem Namen nach auflisten.
-  **Für echtes Geld nötig:** Live-App bei PayPal anlegen, Live-Webhook auf
-  `https://shop.brandycards.de/api/paypal/webhook`, die drei Secrets ersetzen
-  und `PAYPAL_ENVIRONMENT = "production"` in `[vars]` eintragen (kein
-  Geheimnis, gehört nicht zu den Secrets). Dann deployen.
-  Der Testkauf am 2026-08-08 lief bewusst in der Sandbox; der Code-Pfad ist
-  derselbe, nur der Endpunkt unterscheidet sich.
-- **Ein als Dublette abgewiesener Webhook bleibt auf `RECEIVED` stehen.**
-  `app/api/paypal/webhook/route.ts` steigt bei `payment.status === "CAPTURED"`
-  vorzeitig mit `duplicate: true` aus — **bevor** die Zeile in `webhook_events`
-  auf `PROCESSED` gesetzt wird. Am 2026-08-08 so beobachtet
-  (`PAYMENT.CAPTURE.COMPLETED`, 06:10:22).
-  **Funktional harmlos:** Ein erneuter Zustellversuch wird ebenfalls sauber
-  abgewiesen, weil die Eingangsprüfung `RECEIVED` genauso behandelt wie
-  `PROCESSED`. **Aber die Zeile behauptet etwas Falsches** — sie sieht aus wie
-  ein Ereignis, das mitten in der Verarbeitung hängen geblieben ist, und führt
-  jede spätere Suche nach hängenden Webhooks in die Irre. Zwei Zeilen Arbeit:
-  auf dem Dubletten-Pfad ebenfalls `PROCESSED` setzen.
-- **Ein Testartikel liegt in Produktion**
-  (`ec6c212e96332bdcc93612848694b907`, „TESTARTIKEL BrandyCards, bitte nicht
-  kaufen"). Nach dem Testkauf ist der Bestand `SOLD`, **die Listing-Menge steht
-  aber weiter auf 1** — und `/api/products` liest die Menge aus dem *Listing*,
-  nicht aus dem Bestand. Der Artikel wirkt im Katalog also kaufbar und
-  scheitert erst im Checkout. Der nächste Sync-Lauf räumt ihn ab (er steht
-  nicht in der eBay-Aktivliste). **Bei echten Karten tritt das nicht auf**,
-  dort hält der Import beide Werte zusammen.
+- 💶 **Der Shop nimmt echtes Geld ein, seit dem 2026-08-08.**
+  `PAYPAL_ENVIRONMENT = "production"` steht in `[vars]` der
+  [wrangler.toml](../wrangler.toml), die drei Secrets liegen bei Cloudflare.
+  Abnahme: Bestellung `BC-20260808-89309FCA` über 3,46 € auf `PAID`, Zahlung
+  `CAPTURED` (`1LC23949C0153504L`), Bestellbestätigung angekommen. Am
+  2026-08-09 nachgemessen: drei Bestellungen, alle `PAID`, alle Zahlungen
+  `CAPTURED`, alle Reservierungen `CONVERTED`.
+  **Was davon zu wissen bleibt:** Der Rückfall auf `sandbox` ist **still** —
+  fehlt der Wert oder steht dort etwas anderes als exakt `production`, sieht der
+  Shop gesund aus und nimmt nichts ein. Genau das blieb vom 2026-08-06 bis zum
+  2026-08-08 unbemerkt. Deshalb hält `tests/hardening.test.mjs` den Wert fest;
+  wer ihn ändert, ändert dort mit.
+  *(Diese Stelle behauptete bis zum 2026-08-09 in Rot das Gegenteil — ein Tag
+  lang, nachdem das Geld bereits floss. Siehe F-06 im
+  [Prüfbericht](pruefbericht-2026-08-09.md).)*
+- **Eine Zeile in `webhook_events` steht auf `RECEIVED` und ist kein hängender
+  Vorgang.** `WH-4MD290111R3948627-…` (`PAYMENT.CAPTURE.COMPLETED`,
+  2026-08-08 06:10:22) ist ein Überbleibsel des Dublettenpfads, der bis
+  `e204d3d7` vorzeitig ausstieg, bevor die Zeile auf `PROCESSED` gesetzt wurde.
+  Die zugehörige Bestellung steht auf `PAID`, die Zahlung auf `CAPTURED` —
+  **es fehlt nichts.** Wer nach hängenden Webhooks sucht, darf sich davon nicht
+  in die Irre führen lassen.
+  **Der Fehler dahinter ist behoben, eine Lücke bleibt:** Die Eingangsprüfung
+  behandelt `RECEIVED` weiterhin wie `PROCESSED`. Stirbt eine Zustellung
+  *nach* dem Einfügen der Zeile, aber vor der Verarbeitung, wird PayPals
+  Wiederholung stumm abgewiesen. Das ist **S-02** im
+  [Prüfbericht](pruefbericht-2026-08-09.md).
+- ~~**Ein Testartikel liegt in Produktion**~~ — **erledigt.**
+  `ec6c212e96332bdcc93612848694b907` („TESTARTIKEL BrandyCards, bitte nicht
+  kaufen") steht seit dem Aufräumen des Imports auf `INACTIVE`, wie
+  vorhergesagt: Er stand nicht mehr in der eBay-Aktivliste. Am 2026-08-09 in D1
+  nachgesehen. **Der Nebenbefund von damals ist ebenfalls behoben** — Katalog
+  und Detailseite lesen die Menge seit `lib/catalog-availability.ts` aus dem
+  **Bestand**, nicht mehr aus dem Listing. *(Eine Ausnahme ist geblieben: die
+  Startseiten-Galerie, siehe **F-01** im
+  [Prüfbericht](pruefbericht-2026-08-09.md).)*
 - **Die Schriften liegen im Repository und werden selbst ausgeliefert**
   (10 Dateien, 228 KB, Schnitte `latin` und `latin-ext`).
   Der frühere `@import` von Google Fonts wurde von der eigenen CSP blockiert —
@@ -295,12 +313,18 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
   Schnitt oder ein Schriftgewicht ergänzt, muss die Datei mit einchecken**;
   ein neuer `@import` würde wieder still blockiert. Die CSP bleibt dafür
   unverändert eng (`font-src 'self' data:`).
-- **Die CSP trägt `'unsafe-inline'` für Skripte.** vinext liefert acht
-  Inline-`<script>`-Blöcke je Seite; ohne Nonces bliebe die Seite sonst leer.
-  Folge: Inline-Eventhandler sind erlaubt, ein künftiges `<img onerror=…>`
-  liefe. Was greift, ist die zweite Hälfte — keine fremden Skripte, kein
-  Übertragungsziel außer dieser Herkunft und Supabase. Voller Schutz braucht
-  Nonces, Punkt 4a in [ai-todo.md](ai-todo.md).
+- **Die CSP trägt für Skripte **kein** `'unsafe-inline'` mehr**, seit dem
+  2026-08-08 (`d230f425`, ai-todo Punkt 4a). `worker/index.ts` erzeugt je
+  Antwort einen Zufallswert und hängt ihn per `HTMLRewriter` jedem `<script>`
+  an; Antworten, die kein HTML sind, bekommen `script-src 'self'`. Am
+  2026-08-09 in Produktion gemessen:
+  `script-src 'self' 'nonce-…'` auf `/`, `script-src 'self'` auf
+  `/api/products`. **Ein Eventhandler in einem Attribut kann keinen Zufallswert
+  tragen** — genau die Form von SEC-01 ist damit tot.
+  **Zwei Dinge, die dabei bewusst so entschieden wurden:** kein
+  `'strict-dynamic'` (es würde `'self'` unwirksam machen, ohne etwas zu
+  gewinnen), und `style-src` behält `'unsafe-inline'`, weil React und vinext
+  Inline-Stile setzen. Letzteres ist eine eigene, offene Aufgabe.
 - **HSTS ist gesetzt**, als `max-age=31536000` **ohne** `includeSubDomains` und
   **ohne** `preload`. Rückweg, falls je nötig: `max-age=0` setzen und deployen —
   das funktioniert nur, weil `preload` fehlt.
@@ -375,8 +399,12 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
   dann ist dieser Weg genauso endgültig wie `EndItem`. Zu prüfen über
   `GetUserPreferences` (`OutOfStockControlPreference`), bevor gebaut wird.
 - **Migrationsjournal ist veraltet.** `drizzle/meta/_journal.json` endet bei
-  `0002`, `0003`–`0005` kamen handgeschrieben dazu. `npm run db:generate` würde
-  gegen den alten Snapshot diffen. Vor dem nächsten Schemaschritt nachziehen.
+  `0002`, `0003`–`0006` kamen handgeschrieben dazu. `npm run db:generate` würde
+  gegen den alten Snapshot diffen und die Migrationen erneut erzeugen. Vor dem
+  nächsten Schemaschritt nachziehen — und bei der Gelegenheit **F-04** aus dem
+  [Prüfbericht](pruefbericht-2026-08-09.md) mitnehmen
+  (`description_fetched_at`), die einzige Aufgabe, die ohnehin auf eine
+  Migration wartet.
 - **Build braucht `.env.local`.** `NEXT_PUBLIC_SUPABASE_*` wird zur Buildzeit
   eingebacken. Ein Build ohne die Datei liefert ein Bundle aus, in dem `/admin`
   und `/account` mit „Supabase ist noch nicht konfiguriert" abbrechen, während der
@@ -386,6 +414,45 @@ Geplante Arbeit steht dagegen in [ai-todo.md](ai-todo.md).
 ---
 
 ## Historie
+
+### 2026-08-09 — Schritt 1 der Befundabarbeitung: die Dokumentation richtiggestellt
+
+- **Stand:** ABGESCHLOSSEN
+- **Ziel:** F-06, F-07 und F-08 aus dem
+  [Prüfbericht](pruefbericht-2026-08-09.md). Sie standen zuerst, weil jede
+  folgende Sitzung mit genau diesen Dateien anfängt.
+- **F-06 — „Offene Punkte" in dieser Datei.** Sechs Einträge waren überholt und
+  wurden gegen den gemessenen Zustand ersetzt: der rote Punkt „PayPal läuft in
+  der Sandbox" (der Shop nimmt seit dem 2026-08-08 echtes Geld ein), der
+  Cron-Takt (`*/3`, nicht zweistündlich), die CSP (trägt für Skripte **kein**
+  `'unsafe-inline'` mehr), der Deploy-Stand (er wird jetzt gar nicht mehr
+  aufgezählt, sondern auf `wrangler deployments list` verwiesen — die Liste war
+  zweimal falsch), der Webhook-Dublettenpfad und der Testartikel.
+- **Der Testartikel ist erledigt**, am 2026-08-09 in D1 nachgesehen:
+  `ec6c212e96332bdcc93612848694b907` steht auf `INACTIVE`, der Import hat ihn
+  wie vorhergesagt abgeräumt.
+- **F-07 — `wrangler.toml`.** Der 28-zeilige Kommentarblock über `[triggers]`
+  begründete drei Zeilen über `crons = ["*/3 * * * *"]` einen zweistündlichen
+  Takt und rechnete mit dem Free-Budget. Ersetzt durch das, was heute trägt: die
+  eBay-Grenze als begrenzende Größe, die Reihenfolge „erst den Lauf verbilligen,
+  dann den Takt erhöhen", und die Sprungstelle bei 401 Angeboten.
+- **F-08 — `CLAUDE.md`.** „CI prüft keine Typen" stimmt nicht mehr; der Workflow
+  hat seit SEC-14 einen Schritt `Type check`. Der Rat („`tsc` vor jedem Commit")
+  bleibt, die Begründung lautet jetzt „`npm test` prüft keine Typen". Und die
+  Migrationsspanne heißt `0003`–`0006`, nicht `0003`–`0005`.
+- **Kein Deploy, und das ist Absicht:** Geändert wurden ausschließlich Prosa und
+  ein TOML-**Kommentar**. Nichts davon erreicht den Worker; die laufende Version
+  `11c2dd57` bleibt richtig.
+- **Nachgeprüft:** `npx tsc --noEmit` sauber, `npm run lint` 0 Fehler,
+  `npm test` **288/288**. `npx wrangler deploy --dry-run` löst weiterhin alle
+  Bindungen auf — D1, R2, Images, Assets, `RATE_LIMITER (10 requests/60s)`,
+  `RATE_LIMITER_STRICT (3 requests/60s)` und `PAYPAL_ENVIRONMENT ("production")`.
+  Der Kommentar liegt zwar innerhalb des Bereichs, den
+  `tests/hardening.test.mjs` aus der Datei schneidet, aber die Prüfungen dort
+  suchen Zeilen, keine Prosa.
+- **Als Nächstes:** Schritt 2 (F-02) liegt beim Betreiber. Danach S-03 und S-06
+  zusammen mit dem, was der Durchstich zutage fördert; die Reihenfolge steht im
+  Prüfbericht.
 
 ### 2026-08-09 — Vollständige Prüfung von Sicherheit und Funktion
 
