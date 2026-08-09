@@ -37,14 +37,7 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-**S02 aus `main` deployen** — Stand: LÄUFT (2026-08-09)
-
-- GitHub und lokaler Checkout stehen auf `a1ee600`; die Prüfkette für S-02 ist
-  grün.
-- Den Produktionsdeploy aus dem Hauptverzeichnis ausführen und die resultierende
-  Cloudflare-Version sowie eine passende öffentliche Prüfung nachtragen.
-- Danach diesen Auftrag unter „Historie" abschließen. Die Betreiberregel gilt
-  ab jetzt dauerhaft: grüne Änderungen werden committed, gepusht und deployed.
+*(leer — bereit für den nächsten Auftrag.)*
 
 ### **Der Betreiber muss zwei Dinge selbst prüfen**
 
@@ -414,6 +407,18 @@ Sicherheits- und Funktionsbefunde im
 ---
 
 ## Historie
+
+### 2026-08-09 — S-02 in Produktion deployed
+
+- **Stand:** ABGESCHLOSSEN. Der geprüfte S02-Stand ist als Cloudflare-Version
+  `d9b6dd25-4481-4f4b-a2ab-4141fcb44a5c` live; GitHub `main` und
+  `agent/initial-brandycards` stehen nach dem Abschlusscommit `47fbe5d` auf
+  demselben Stand.
+- **Nachprüfung:** `https://shop.brandycards.de/admin` und `/account` liefern
+  HTTP 200; beide Seiten enthalten keinen Fehler „Supabase ist noch nicht
+  konfiguriert". Der Cron läuft weiter mit `*/3 * * * *`.
+- **Dauerregel bestätigt:** Nach grüner Prüfkette wird ab jetzt committed,
+  gepusht und deployed. Der Deploy erfolgte aus dem Hauptverzeichnis.
 
 ### 2026-08-09 — `main` aktualisiert und S-02 behoben
 
