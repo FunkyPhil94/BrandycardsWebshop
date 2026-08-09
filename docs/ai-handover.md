@@ -37,6 +37,17 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
+**eBay-Sync: ungültigen OAuth-Scope korrigieren** — Stand: LÄUFT (2026-08-09)
+
+- Der geplante eBay-Sync löst seit 20:07 wiederholt einen Betriebsalarm aus.
+- eBay antwortet beim OAuth-Token-Abruf mit HTTP 400 `invalid_scope`.
+- Ursache im Sync-Code und in den produktiven Scope-/Secret-Namen lokalisieren;
+  nur für die tatsächlich verwendeten eBay-Endpunkte gültige Scopes anfordern.
+- Bestehende eBay-Notification-Subscription und den ORDER_CONFIRMATION-Webhook
+  nicht verändern.
+- Nach Korrektur Tests, Typprüfung, Lint und Build ausführen, danach committen,
+  pushen, deployen und einen produktiven Sync-/Alarmstatus prüfen.
+
 **N2 eBay-Notification-Endpoint und Order-Event umsetzen** — Stand: ABGESCHLOSSEN (2026-08-09)
 
 - Einen öffentlichen `GET`/`POST`-Endpoint unter
