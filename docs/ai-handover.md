@@ -37,7 +37,18 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-**N2 Betriebsstabilität und Doppelverkaufsschutz umsetzen** — Stand: TEILWEISE ABGESCHLOSSEN (2026-08-09)
+**N2 eBay-Notification-Endpoint und Order-Event umsetzen** — Stand: LÄUFT (2026-08-09)
+
+- Einen öffentlichen `GET`/`POST`-Endpoint unter
+  `/api/ebay/notifications` ergänzen. GET muss die eBay-Endpointprüfung
+  beantworten; POST muss `X-EBAY-SIGNATURE` mit dem eBay-Public-Key prüfen.
+- `ORDER_CONFIRMATION` idempotent verarbeiten: Listing-ID und Menge auf die
+  lokale eBay-Karte abbilden, Bestand/Listing atomar deaktivieren und
+  Wiederholungen über `notificationId` sicher abfangen.
+- Die benötigten OAuth-Scopes `sell.fulfillment` und
+  `sell.fulfillment.readonly` in den eBay-Consent aufnehmen. Keine unsignierten
+  Benachrichtigungen und keine Produktionsdaten im Testlauf simulieren.
+- Nach Codeprüfung committen, pushen, deployen und den Endpoint lesend prüfen.
 
 - Alarmierung für fehlgeschlagene eBay-Syncs, endgültig fehlgeschlagene
   eBay-Outbox-Aufträge, PayPal-Webhook-Fehler und wichtige Mailfehler ergänzen.
