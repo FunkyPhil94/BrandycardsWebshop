@@ -37,26 +37,13 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-**Main auf den aktuellen Arbeitsstand bringen und S-02 beheben** — Stand: LÄUFT (2026-08-09)
-
-- **Phase 1 — Git-Stand:** Der lokale Checkout steht auf `agent/initial-brandycards`
-  bei `af841f1`; GitHub führt denselben Branch bei `7760ce1`. `main` steht bei
-  `17ef207` und ist ohne Divergenz acht Commits zurück. Nach der Protokollierung
-  wird `main` per Fast-Forward auf den Arbeitsstand gebracht und der Abgleich
-  auf GitHub geprüft.
-- **Phase 2 — S-02:** PayPal-Webhooks mit `RECEIVED` dürfen nicht als erledigte
-  Duplikate gelten. Nur `PROCESSED` ist ein Duplikat; ein liegengebliebener
-  `RECEIVED`-Eintrag muss nach kurzer Frist erneut verarbeitet werden. Die
-  bestehende Idempotenz für echte `PROCESSED`-Duplikate bleibt erhalten.
-- **Abnahmekriterien:** Regressionstest für `RECEIVED` und `PROCESSED`,
-  `npx tsc --noEmit`, `npm run lint` und `npm test` grün. Keine schreibenden
-  Eingriffe in Produktionsdaten. Ergebnis, Commit und GitHub-Abgleich werden
-  anschließend hier unter „Historie" nachgetragen.
+*(leer — bereit für den nächsten Auftrag.)*
 
 ### **Der Betreiber muss zwei Dinge selbst prüfen**
 
 1. ~~**Eine erste Karte von Hand einstellen**~~ — **erledigt am 2026-08-09.**
-   Der Rest des Durchstichs steht noch aus, siehe oben.
+   Der Kauf-, Zahlungs- und Bestandsdurchstich ist abgeschlossen; die manuelle
+   Karte wurde verkauft, bezahlt und als `SOLD` verbucht.
 2. **Den eBay-Anschluss einmal neu verbinden**, sobald ohnehin ein neuer
    Refresh-Token fällig ist: Der Token steht jetzt **nicht mehr** auf der
    Rückkehrseite, sondern erscheint genau einmal im Adminbereich. Wer die Seite
@@ -420,6 +407,25 @@ Sicherheits- und Funktionsbefunde im
 ---
 
 ## Historie
+
+### 2026-08-09 — `main` aktualisiert und S-02 behoben
+
+- **Stand:** ABGESCHLOSSEN, GitHub `main` und `agent/initial-brandycards` stehen
+  auf `c07a9f1`.
+- **Phase 1:** Der vorherige Arbeitsstand wurde einschließlich der Dokumentation
+  per Fast-Forward nach `main` übernommen. Beide Branches sind auf GitHub
+  synchronisiert; es gibt keinen offenen lokalen oder entfernten Rückstand.
+- **S-02:** Nur `PROCESSED` wird als Dublette mit Erfolg beantwortet. Eine frische
+  `RECEIVED`-Zeile antwortet mit HTTP 503 und `retry-after: 300`; eine mindestens
+  fünf Minuten alte `RECEIVED`-Zeile wird erneut verarbeitet und vorher
+  bedingt beansprucht, damit zwei verspätete Zustellungen nicht parallel
+  einziehen.
+- **Verifikation:** S02-Test 10/10, `npm test` 310/310, `npx tsc --noEmit`,
+  `npm run lint` und Build grün. Keine Produktionsdaten wurden geschrieben.
+- **Nicht ausgeführt:** Der Produktionsdeploy wurde nicht gestartet, weil die
+  Ausführungsfreigabe für die servicewirksame Cloudflare-Änderung fehlte. Der
+  geprüfte Code ist auf GitHub bereit; der nächste sichere Schritt ist ein
+  ausdrücklich freigegebener Deploy aus dem Hauptverzeichnis.
 
 ### 2026-08-09 — Testartikel gelöscht, F-10 und S-01 behoben
 
