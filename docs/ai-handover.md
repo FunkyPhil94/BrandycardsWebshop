@@ -37,7 +37,24 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-Keine offene KI-Aufgabe.
+**Englische Sprachversion** — Stand: LÄUFT (2026-08-09)
+
+- Der Betreiber hat entschieden, den gesamten Kundenbereich zu übersetzen:
+  Oberfläche, Formulierungen und Rechtstexte. Die Rechtstexte werden als
+  fachlich geprüfte englische Fassung umgesetzt, nicht nur wortwörtlich in der
+  Oberfläche ersetzt.
+- Kartentitel und eBay-Beschreibungen bleiben deutsch, weil sie aus eBay
+  kommen. Preise und Versandkosten bleiben in Euro.
+- Die Sprache wird oben in der Kopfzeile über einen sichtbaren Schalter mit
+  Flaggen zwischen Deutsch und English gewechselt. Die Wahl gilt gerätebezogen
+  und bleibt beim Seitenwechsel erhalten.
+- Abnahmekriterien: alle öffentlichen Seiten, Formulare, Statusmeldungen,
+  Preisvorschläge, Checkout-Texte, Kontobereich und Rechtstexte haben beide
+  Sprachfassungen; Produktdaten aus eBay bleiben unverändert deutsch; der
+  Sprachschalter ist per Tastatur bedienbar und auf kleinen Bildschirmen
+  erreichbar. Danach `npx tsc --noEmit`, `npm run lint`, `npm test`, committen,
+  pushen, deployen und die Sprachumschaltung live prüfen. Keine
+  Produktionsdaten schreiben.
 
 ### **Der Betreiber muss zwei Dinge selbst prüfen**
 
