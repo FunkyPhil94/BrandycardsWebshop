@@ -37,7 +37,14 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-*(leer — bereit für den nächsten Auftrag.)*
+**S02 aus `main` deployen** — Stand: LÄUFT (2026-08-09)
+
+- GitHub und lokaler Checkout stehen auf `a1ee600`; die Prüfkette für S-02 ist
+  grün.
+- Den Produktionsdeploy aus dem Hauptverzeichnis ausführen und die resultierende
+  Cloudflare-Version sowie eine passende öffentliche Prüfung nachtragen.
+- Danach diesen Auftrag unter „Historie" abschließen. Die Betreiberregel gilt
+  ab jetzt dauerhaft: grüne Änderungen werden committed, gepusht und deployed.
 
 ### **Der Betreiber muss zwei Dinge selbst prüfen**
 
