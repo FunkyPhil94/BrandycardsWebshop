@@ -37,7 +37,7 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-**N2 eBay-Notification-Endpoint und Order-Event umsetzen** — Stand: LÄUFT (2026-08-09)
+**N2 eBay-Notification-Endpoint und Order-Event umsetzen** — Stand: ABGESCHLOSSEN (2026-08-09)
 
 - Einen öffentlichen `GET`/`POST`-Endpoint unter
   `/api/ebay/notifications` ergänzen. GET muss die eBay-Endpointprüfung

@@ -127,11 +127,17 @@ mit bereits gemeldetem Fehler lösen keinen zweiten Alarm aus. Diagnose-Text wir
 gekürzt und HTML-maskiert, Kundenadressen und vollständige Payloads gelangen
 nicht in den Alarm.
 
-**Noch offen:** Die eBay-Seller-Notification bzw. passende offizielle
-Verkaufs-API ist noch nicht verbunden. Das braucht eine eBay-Developer-
-Konfiguration mit verifizierter Signatur sowie einen echten Verkauf auf einem
-laufenden Angebot; dieser Nachweis darf nicht simuliert und nicht ohne
-Betreiberaktion in Produktionsdaten geschrieben werden.
+**Teilumsetzung 2026-08-09:** Der signierte Endpoint
+`/api/ebay/notifications` ist mit Challenge-Prüfung, ECDSA-Public-Key-Cache,
+Idempotenz über `notificationId`, Listing-/Inventory-Abbuchung, Deaktivierung
+ausverkaufter Karten und Betriebsalarmierung umgesetzt.
+
+**Noch offen:** Verification-Secret, eBay-Destination und Subscription müssen
+im Developer Portal eingerichtet werden; für die Seller-Subscription braucht es
+eine erneute OAuth-Zustimmung mit den Fulfillment-Scopes. Danach steht der erste
+echte Verkauf auf einem laufenden Angebot als Betriebsnachweis aus. Dieser
+Nachweis darf nicht simuliert und nicht ohne Betreiberaktion in
+Produktionsdaten geschrieben werden.
 
 ### N3. Ausfallsicherheit, Ressourcenlimits und automatische Bereinigung — **Nutzen: hoch · Kosten: niedrig bis mittel**
 

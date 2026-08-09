@@ -1,5 +1,26 @@
 # BrandyCards Agentenprotokoll
 
+## 2026-08-09 – eBay-ORDER_CONFIRMATION-Endpoint umgesetzt
+
+- **Umsetzung:** Der öffentliche Endpoint `/api/ebay/notifications` beantwortet
+  die eBay-Challenge und prüft eingehende `X-EBAY-SIGNATURE`-Header mit dem von
+  eBay gelieferten ECDSA-Public-Key. Public Keys und Application-Tokens werden
+  nur kurzzeitig im Worker-Cache gehalten; die Verifikations- und
+  Nutzlastgrenze liegt vor der Datenbankarbeit.
+- **Verbuchung:** `ORDER_CONFIRMATION` wird anhand der `notificationId`
+  idempotent in `webhook_events` geführt. Listing- und Inventory-Menge werden
+  in einem D1-Batch reduziert; ausverkaufte Listings und Produkte werden
+  deaktiviert. `ebay_item_id` und `ebay_listing_id` werden beide akzeptiert.
+- **Betrieb:** Nicht zuordenbare Listings oder lokale Bestandsabweichungen
+  werden als Betriebsalarm gemeldet. Keine unsignierten Nutzlasten und keine
+  simulierten Produktionsdaten wurden verwendet.
+- **Offen:** Destination, Subscription, Verification-Secret, erneute OAuth-
+  Zustimmung und der erste echte Verkauf müssen noch vom Betreiber in eBay bzw.
+  Cloudflare eingerichtet und abgenommen werden.
+- **Verifikation:** Der offizielle eBay-Signaturaufbau (inklusive SHA-1-
+  Testfixture), Challenge-Hash, Payload-Parser und Route-Härtung sind durch
+  sieben neue Tests abgedeckt.
+
 Dieses Protokoll hält fest, welche spezialisierten Agents im Projekt eingesetzt wurden, welche Prüfaufträge sie erhielten und wie ihre Ergebnisse in die Umsetzung eingeflossen sind.
 
 ## 2026-08-09 – N2 Betriebsalarme ergänzt
