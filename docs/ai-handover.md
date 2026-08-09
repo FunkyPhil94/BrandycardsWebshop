@@ -37,20 +37,7 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-**N4: Datenschutz, Aufbewahrung und Wiederherstellung** — Stand: LÄUFT (2026-08-09)
-
-- Aufbewahrungs- und Minimierungsregeln für `payments.raw_data` und
-  `webhook_events.payload` anhand ihrer tatsächlichen Nutzung festlegen.
-- Eine automatische, datensparsame Bereinigung für abgelaufene Zahlungs- und
-  Webhook-Nutzlasten in den Scheduled Worker aufnehmen; Bestell- und
-  Rechnungsdaten dürfen dabei nicht unzulässig entfernt werden.
-- D1- und R2-Backup-/Wiederherstellungsablauf als reproduzierbare, dokumentierte
-  Betreiberprozedur einrichten und lokal testbar machen, ohne Produktionsdaten
-  eigenmächtig zu verändern.
-- Datenschutztext und Auskunfts-/Löschlogik mit den Entscheidungen abgleichen.
-- Nach Umsetzung Tests, Typprüfung, Lint und Build ausführen, committen,
-  pushen, deployen und eine Wiederherstellung in einer isolierten Umgebung
-  nachweisen.
+*(kein aktueller Auftrag)*
 
 **N2 eBay-Notification-Endpoint und Order-Event umsetzen** — Stand: ABGESCHLOSSEN (2026-08-09)
 
@@ -553,6 +540,31 @@ Sicherheits- und Funktionsbefunde im
 ---
 
 ## Historie
+
+### 2026-08-09 — N4: Datenschutz, Aufbewahrung und Wiederherstellung
+
+- **Stand:** TEILWEISE ABGESCHLOSSEN. Die 30-Tage-Bereinigung für
+  `payments.raw_data` und abgeschlossene `webhook_events.payload` läuft im
+  Scheduled Worker. Zahlungs- und Ereignismetadaten sowie gesetzlich relevante
+  Bestell-/Rechnungsdaten bleiben erhalten; die PayPal-Capture-Antwort gibt
+  keine Rohantwort mehr aus.
+- **Backup/Restore:** `scripts/backup-production.mjs` und
+  `scripts/restore-backup.mjs` sind dokumentiert. Der Produktions-Backup-Test
+  enthielt 543 Produkte, 4 Bestellungen, 4 Zahlungen und 7 Webhook-Ereignisse,
+  0 fehlende R2-Objekte und 302 externe eBay-Bildquellen. Der lokale Restore
+  stellte die D1-Zählwerte isoliert erfolgreich wieder her.
+- **Verifikation:** 339 Tests, TypeScript, Lint, Build und `git diff --check`
+  waren erfolgreich. Temporäre Backup-/Restore-Dateien mit Produktionsdaten
+  wurden nach dem Test gelöscht.
+- **Veröffentlichung:** Commit `2bc145c726e5308fd4c3e08e157d7eda803f4c49` ist
+  nach `main`, `agent/initial-brandycards` und das Sites-Quellrepository
+  gepusht. Cloudflare-Version `91fcec61-0c4c-49c3-876f-29084dfb4893` und
+  Sites-Version 12 sind erfolgreich deployed. `/`, `/admin`, `/account`,
+  `/api/products` und `/datenschutz` antworten produktiv mit HTTP 200.
+- **Offen:** Für den vollständigen N4-Abschluss fehlen noch die Betreiber-
+  entscheidung zu Zielsystem, Verschlüsselung, Token, Aufbewahrung und
+  Alarmierung eines regelmäßig eingeplanten Offsite-Backups. Die technische
+  Backup-Prozedur und der Restore-Nachweis sind vorhanden.
 
 ### 2026-08-09 — N3: Ausfallsicherheit, Ressourcenlimits und automatische Bereinigung
 
