@@ -287,6 +287,27 @@ test("the eBay description lookup is rate limited, the card is not", async () =>
   assert.match(guard, /return false/, "the limit must not turn into a 500");
 });
 
+// --- S-04, authenticated routes -------------------------------------------
+
+test("authenticated routes rate-limit expensive reads, writes and payments", async () => {
+  const routes = [
+    ["app/api/price-offers/route.ts", "price-offers"],
+    ["app/api/account/data/route.ts", "account-data"],
+    ["app/api/account/delete/route.ts", "account-delete"],
+    ["app/api/account/profile/route.ts", "account-profile"],
+    ["app/api/paypal/orders/route.ts", "paypal-orders"],
+    ["app/api/paypal/capture/route.ts", "paypal-capture"],
+  ];
+  for (const [path, scope] of routes) {
+    const route = await read(path);
+    assert.match(route, /enforcePublicRateLimit\(request, /, `${path} must call the shared limiter`);
+    assert.match(route, new RegExp(`enforcePublicRateLimit\\(request, "${scope}"\\)`), `${path} must use its own limiter scope`);
+    assert.match(route, /RateLimitError/, `${path} must distinguish 429 from a service failure`);
+    assert.match(route, /status: error\.status/, `${path} must preserve the limiter status`);
+    assert.match(route, /retry-after/, `${path} must tell the client when to try again`);
+  }
+});
+
 // --- SEC-07, no password on our own server ---------------------------------
 
 test("the registration check neither expects nor accepts a password", async () => {

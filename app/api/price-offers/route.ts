@@ -5,6 +5,7 @@ import { ebayListings, priceOffers, products } from "../../../db/schema";
 import { getAuthenticatedAppUser } from "../../../lib/app-user";
 import { MAX_OFFERS_PER_PRODUCT, MIN_DISCOUNT_CENTS, offerAttempts } from "../../../lib/price-offers";
 import { jsonError, optionalPrice, optionalString, PublicFormError, readJsonBody, requiredString } from "../../../lib/public-form";
+import { enforcePublicRateLimit, RateLimitError } from "../../../lib/rate-limit";
 
 /** Price negotiation, the shop's own take on eBay's Best Offer.
  *
@@ -13,6 +14,7 @@ import { jsonError, optionalPrice, optionalString, PublicFormError, readJsonBody
  */
 export async function POST(request: Request) {
   try {
+    await enforcePublicRateLimit(request, "price-offers");
     const appUser = await getAuthenticatedAppUser(request);
     if (!appUser) {
       return NextResponse.json({ ok: false, error: { code: "AUTH_REQUIRED", message: "Bitte melde dich an, um einen Preis vorzuschlagen." } }, { status: 401 });
@@ -102,6 +104,7 @@ export async function POST(request: Request) {
 /** The customer's own offers for one card, so the detail page can show state. */
 export async function GET(request: Request) {
   try {
+    await enforcePublicRateLimit(request, "price-offers");
     const appUser = await getAuthenticatedAppUser(request);
     if (!appUser) return NextResponse.json({ signedIn: false, offers: [], attemptsLeft: MAX_OFFERS_PER_PRODUCT });
 
@@ -129,6 +132,9 @@ export async function GET(request: Request) {
       attemptsLeft: Math.max(0, MAX_OFFERS_PER_PRODUCT - active.length),
     });
   } catch (error) {
+    if (error instanceof RateLimitError) {
+      return NextResponse.json({ error: error.message }, { status: error.status, headers: { "retry-after": String(error.retryAfterSeconds) } });
+    }
     console.error("price offer lookup failed", error);
     return NextResponse.json({ error: "Preisvorschläge konnten nicht geladen werden." }, { status: 503 });
   }

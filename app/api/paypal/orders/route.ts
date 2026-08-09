@@ -7,9 +7,11 @@ import { ebaySoldOutMessage } from "../../../../lib/ebay-stock-guard";
 import { createPayPalOrder } from "../../../../lib/paypal/client";
 import { assertValidMoney } from "../../../../lib/paypal/money";
 import { releaseOrderReservations } from "../../../../lib/paypal/settle-order";
+import { enforcePublicRateLimit, RateLimitError } from "../../../../lib/rate-limit";
 
 export async function POST(request: Request) {
   try {
+    await enforcePublicRateLimit(request, "paypal-orders");
     const appUser = await getAuthenticatedAppUser(request);
     if (!appUser) return NextResponse.json({ error: "Nicht authentifiziert." }, { status: 401 });
     const body = await request.json() as { orderId?: unknown };
@@ -65,6 +67,9 @@ export async function POST(request: Request) {
     }
     return NextResponse.json({ id: paypalOrder.id, status: paypalOrder.status, links: paypalOrder.links ?? [] });
   } catch (error) {
+    if (error instanceof RateLimitError) {
+      return NextResponse.json({ error: error.message }, { status: error.status, headers: { "retry-after": String(error.retryAfterSeconds) } });
+    }
     console.error("PayPal order creation failed", error);
     return NextResponse.json({ error: "PayPal ist derzeit nicht verfügbar." }, { status: 503 });
   }

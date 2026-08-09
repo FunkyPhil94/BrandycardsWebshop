@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getDb } from "../../../../db";
 import { collectAccountData } from "../../../../lib/account-data";
 import { getAuthenticatedAppUser } from "../../../../lib/app-user";
+import { enforcePublicRateLimit, RateLimitError } from "../../../../lib/rate-limit";
 
 /** Auskunft nach Art. 15 DSGVO, zur Selbstbedienung.
  *
@@ -9,14 +10,16 @@ import { getAuthenticatedAppUser } from "../../../../lib/app-user";
  * bleibt zulässig, aber er skaliert nicht über den ersten Kunden hinaus, und er
  * setzt voraus, dass jemand mitliest. Siehe docs/security-findings.md, SEC-15.
  *
- * Bewusst ohne Ratenbegrenzung: Die Route braucht eine gültige Sitzung, und wer
- * seine eigenen Daten zehnmal herunterlädt, schadet niemandem.
+ * Die Route bleibt auf das eigene Konto beschränkt und antwortet nicht aus dem
+ * Cache. Zusätzlich bremst das Standardlimit wiederholte teure Auskünfte über
+ * Supabase und D1.
  */
 export async function GET(request: Request) {
-  const appUser = await getAuthenticatedAppUser(request).catch(() => null);
-  if (!appUser) return NextResponse.json({ error: "Nicht authentifiziert." }, { status: 401 });
-
   try {
+    await enforcePublicRateLimit(request, "account-data");
+    const appUser = await getAuthenticatedAppUser(request).catch(() => null);
+    if (!appUser) return NextResponse.json({ error: "Nicht authentifiziert." }, { status: 401 });
+
     const data = await collectAccountData(getDb(), appUser.id);
     if (!data) return NextResponse.json({ error: "Zu diesem Konto liegen keine Daten vor." }, { status: 404 });
     return NextResponse.json(data, {
@@ -27,6 +30,9 @@ export async function GET(request: Request) {
       },
     });
   } catch (error) {
+    if (error instanceof RateLimitError) {
+      return NextResponse.json({ error: error.message }, { status: error.status, headers: { "retry-after": String(error.retryAfterSeconds) } });
+    }
     console.error("Account data export failed", error);
     return NextResponse.json({ error: "Die Auskunft konnte nicht erstellt werden." }, { status: 503 });
   }

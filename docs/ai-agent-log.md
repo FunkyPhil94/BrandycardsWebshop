@@ -678,3 +678,29 @@ Das Verhalten ist mit drei reinen Funktionstests und Quelltext-Wächtern belegt.
 Die bestehende Bedingung für `CAPTURED`-Duplikate und der gemeinsame
 `PROCESSED`-Ausgang bleiben unangetastet. Verifikation: S02-Test 10/10,
 `npm test` 310/310, `npx tsc --noEmit` und `npm run lint` ohne Fehler.
+
+## 2026-08-09 — Authentifizierte Routen mit Rate-Limits versehen (S-04)
+
+Der Prüfbericht hatte sechs authentifizierte Routen ohne gemeinsame Begrenzung
+markiert: Preisvorschläge, DSGVO-Auskunft, Kontolöschung, Profilsynchronisation
+und die beiden PayPal-Schritte. Authentifizierung allein schützt diese Endpunkte
+nicht vor wiederholten teuren Supabase-/D1-Lesevorgängen oder gegen das erneute
+Anstoßen von Zahlungslogik.
+
+Alle sechs Routen verwenden jetzt den vorhandenen Standard-Limiter
+`RATE_LIMITER` mit 10 Anfragen je 60 Sekunden, aber jeweils mit einem eigenen
+Scope. Dadurch teilen sich Preisvorschläge, Kontoverwaltung und PayPal nicht
+unbeabsichtigt ihr Kontingent. Die Begrenzung greift vor der fachlichen Arbeit;
+die bisherige Authentifizierung und die Antworten für gültige bzw. nicht
+authentifizierte Anfragen bleiben erhalten.
+
+Wichtig für Clients: Eine Überschreitung bleibt ein eigener Fehler und wird als
+HTTP 429 mit `retry-after` beantwortet. Sie fällt nicht in den allgemeinen
+503-Zweig, der echte Dienstfehler signalisiert. Die Kontodatenroute bleibt
+weiterhin `no-store`; die zusätzliche Begrenzung ist nur eine Bremse für
+wiederholte Exporte.
+
+Die sechs Scopes und die 429-Behandlung sind mit einem Hardening-Test abgedeckt.
+Verifikation vor dem Deploy: S-04-Test 6/6, `npm test` 311/311,
+`npx tsc --noEmit` und `npm run lint` ohne Fehler. Es wurden keine
+Produktionsdaten geschrieben.

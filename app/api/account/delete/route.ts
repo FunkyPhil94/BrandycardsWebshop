@@ -5,6 +5,7 @@ import { orders } from "../../../../db/schema";
 import { blockingOrders, deleteAccountData } from "../../../../lib/account-data";
 import { getAuthenticatedAppUser } from "../../../../lib/app-user";
 import { notifyAccountDeleted } from "../../../../lib/email/notify.ts";
+import { enforcePublicRateLimit, RateLimitError } from "../../../../lib/rate-limit";
 import { deleteSupabaseUser, hasSupabaseAdminAccess } from "../../../../lib/supabase-admin";
 
 /** Kontolöschung nach Art. 17 DSGVO, zur Selbstbedienung.
@@ -26,24 +27,34 @@ import { deleteSupabaseUser, hasSupabaseAdminAccess } from "../../../../lib/supa
  * von selbst — es braucht kein zweites Deployment.
  */
 export async function GET(request: Request) {
-  const appUser = await getAuthenticatedAppUser(request).catch(() => null);
-  if (!appUser) return NextResponse.json({ error: "Nicht authentifiziert." }, { status: 401 });
-  return NextResponse.json({ available: hasSupabaseAdminAccess() }, { headers: { "cache-control": "no-store" } });
+  try {
+    await enforcePublicRateLimit(request, "account-delete");
+    const appUser = await getAuthenticatedAppUser(request).catch(() => null);
+    if (!appUser) return NextResponse.json({ error: "Nicht authentifiziert." }, { status: 401 });
+    return NextResponse.json({ available: hasSupabaseAdminAccess() }, { headers: { "cache-control": "no-store" } });
+  } catch (error) {
+    if (error instanceof RateLimitError) {
+      return NextResponse.json({ error: error.message }, { status: error.status, headers: { "retry-after": String(error.retryAfterSeconds) } });
+    }
+    console.error("Account deletion availability failed", error);
+    return NextResponse.json({ error: "Die Kontolöschung konnte gerade nicht geprüft werden." }, { status: 503 });
+  }
 }
 
 export async function POST(request: Request) {
-  const appUser = await getAuthenticatedAppUser(request).catch(() => null);
-  if (!appUser) return NextResponse.json({ error: "Nicht authentifiziert." }, { status: 401 });
-
-  // Ohne Service-Role-Key ließe sich nur die Hälfte löschen: Die Shopdaten wären
-  // weg, die Anmeldung bliebe. Das ist ein schlechterer Zustand als der heutige,
-  // deshalb wird hier abgebrochen, bevor irgendetwas geschrieben wurde.
-  if (!hasSupabaseAdminAccess()) {
-    console.error("[account] Löschung abgelehnt: SUPABASE_SERVICE_ROLE_KEY fehlt.");
-    return NextResponse.json({ error: "Die Selbstbedienungslöschung ist noch nicht eingerichtet. Bitte schreib uns kurz an brandycards@gmx.de, dann löschen wir dein Konto von Hand." }, { status: 503 });
-  }
-
   try {
+    await enforcePublicRateLimit(request, "account-delete");
+    const appUser = await getAuthenticatedAppUser(request).catch(() => null);
+    if (!appUser) return NextResponse.json({ error: "Nicht authentifiziert." }, { status: 401 });
+
+    // Ohne Service-Role-Key ließe sich nur die Hälfte löschen: Die Shopdaten wären
+    // weg, die Anmeldung bliebe. Das ist ein schlechterer Zustand als der heutige,
+    // deshalb wird hier abgebrochen, bevor irgendetwas geschrieben wurde.
+    if (!hasSupabaseAdminAccess()) {
+      console.error("[account] Löschung abgelehnt: SUPABASE_SERVICE_ROLE_KEY fehlt.");
+      return NextResponse.json({ error: "Die Selbstbedienungslöschung ist noch nicht eingerichtet. Bitte schreib uns kurz an brandycards@gmx.de, dann löschen wir dein Konto von Hand." }, { status: 503 });
+    }
+
     const db = getDb();
     const blocking = await blockingOrders(db, appUser.id, appUser.email);
     if (blocking.length) {
@@ -77,6 +88,9 @@ export async function POST(request: Request) {
     console.warn("[account] Konto auf eigenen Wunsch gelöscht.", { ...geloescht, verbleibendeBestellungen: bestellungen.length });
     return NextResponse.json({ ok: true, geloescht, verbleibendeBestellungen: bestellungen.length });
   } catch (error) {
+    if (error instanceof RateLimitError) {
+      return NextResponse.json({ error: error.message }, { status: error.status, headers: { "retry-after": String(error.retryAfterSeconds) } });
+    }
     console.error("Account deletion failed", error);
     return NextResponse.json({ error: "Das Konto konnte nicht gelöscht werden. Bitte versuch es später noch einmal." }, { status: 503 });
   }

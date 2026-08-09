@@ -8,6 +8,7 @@ import { ebayBestandspruefung } from "../../../../lib/ebay-stock-guard";
 import { capturePayPalOrder } from "../../../../lib/paypal/client";
 import { assertValidMoney, centsToPayPalValue } from "../../../../lib/paypal/money";
 import { releaseOrderReservations, settlePaidOrder } from "../../../../lib/paypal/settle-order";
+import { enforcePublicRateLimit, RateLimitError } from "../../../../lib/rate-limit";
 
 type CaptureRequest = { orderId?: unknown; paypalOrderId?: unknown };
 
@@ -24,6 +25,7 @@ function captureDetails(payment: { providerCaptureId: string | null; rawData: un
 
 export async function POST(request: Request) {
   try {
+    await enforcePublicRateLimit(request, "paypal-capture");
     const appUser = await getAuthenticatedAppUser(request);
     if (!appUser) return NextResponse.json({ error: "Nicht authentifiziert." }, { status: 401 });
 
@@ -97,6 +99,9 @@ export async function POST(request: Request) {
     if (captureClaim[0].meta.changes === 1) await notifyOrderPaid(db, order.id, bestandspruefung.status);
     return NextResponse.json({ ok: true, idempotent: false, orderId: order.id, captureId: capture.id, status: "CAPTURED" });
   } catch (error) {
+    if (error instanceof RateLimitError) {
+      return NextResponse.json({ error: error.message }, { status: error.status, headers: { "retry-after": String(error.retryAfterSeconds) } });
+    }
     console.error("PayPal capture failed", error);
     return NextResponse.json({ error: "PayPal-Zahlung konnte nicht abgeschlossen werden." }, { status: 503 });
   }
