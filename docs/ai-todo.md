@@ -60,6 +60,140 @@ eBay-Schreibpfad, dann bewerben.**
 
 ---
 
+## Neue priorisierte Todo — Sicherheits- und Ausbauplan
+
+Die folgenden Punkte stammen aus der Funktions- und Sicherheitsbetrachtung vom
+2026-08-09. Die Reihenfolge bewertet **Nutzen zuerst**, danach den Aufwand.
+Passende Einzelbeobachtungen sind zu umsetzbaren Arbeitspaketen gebündelt; die
+Liste ist ein Backlog und bedeutet noch keine automatische Freigabe für jede
+Erweiterung.
+
+### N1. Betriebsstabilität und Doppelverkaufsschutz — **Nutzen: sehr hoch · Kosten: hoch**
+
+eBay-Verkäufe müssen schneller und nachvollziehbarer in den Shop gelangen. Dazu
+gehören der noch ausstehende Betriebsnachweis und die nächste technische Stufe:
+
+- den ersten echten Verkauf auf einem **laufenden** eBay-Angebot prüfen: eBay-
+  Menge auf 0, `ebay_outbox` auf `SUCCEEDED`, kein `FAILED`, Verkäufernachricht
+  mit Lieferadresse angekommen;
+- eBay-Seller-Notifications bzw. die passende offizielle Verkaufs-API anbinden,
+  mit Signaturprüfung, Idempotenz und Wiederholungen;
+- Alarmierung für fehlgeschlagene eBay-Syncs, hängende oder endgültig
+  fehlgeschlagene Outbox-Aufträge, PayPal-Webhooks und nicht zugestellte
+  Verkäufer-/Kundenmails einrichten.
+
+**Fertig, wenn:** ein echter Verkauf in beide Richtungen nachweisbar sauber
+verarbeitet wird und ein Fehler nicht mehr still unbemerkt bleiben kann.
+
+### N2. Admin-Sicherheit und Nachvollziehbarkeit — **Nutzen: sehr hoch · Kosten: mittel**
+
+Den privilegierten Bereich gegen Kontoübernahme und Bedienfehler härten:
+
+- MFA/2FA für das Adminkonto verpflichtend machen;
+- kurze Sitzungsdauer bzw. erneute Authentifizierung vor Löschung,
+  Erstattung, eBay-OAuth und anderen besonders kritischen Aktionen;
+- die vorhandene `audit_events`-Tabelle tatsächlich verwenden: Wer hat wann
+  Produkte, Angebote, Bestellungen, Status, Löschungen oder eBay-Aktionen
+  geändert;
+- eine regelmäßige Rotation der Supabase-, PayPal-, Resend- und eBay-Secrets
+  dokumentieren und durchspielen.
+
+**Fertig, wenn:** ein Adminvorfall zeitlich und personell nachvollziehbar ist,
+kritische Aktionen erneut bestätigt werden und MFA/Secret-Rotation getestet
+sind.
+
+### N3. Ausfallsicherheit, Ressourcenlimits und automatische Bereinigung — **Nutzen: hoch · Kosten: niedrig bis mittel**
+
+Die vorhandenen Schutzmechanismen an den tatsächlichen Ausführungspfad bringen:
+
+- die R2-Bereinigung verwaister Uploads in den geplanten Worker-Lauf aufnehmen;
+- harte Größenlimits auch für JSON-Anfragen **vor** dem vollständigen Puffern
+  erzwingen;
+- Zeitlimits für Supabase-Auth, Supabase-Admin und OAuth-Aufrufe ergänzen;
+- die verbleibende CSP-Freigabe `style-src 'unsafe-inline'` langfristig
+  entfernen, sobald die verwendete UI-Ausgabe das zulässt.
+
+**Fertig, wenn:** ein chunked/übergroßer Request nicht den Worker speicher-
+belastet, verwaiste R2-Objekte automatisch verschwinden und Fremdservices
+keinen Request unbegrenzt festhalten können.
+
+### N4. Datenschutz, Aufbewahrung und Wiederherstellung — **Nutzen: hoch · Kosten: mittel**
+
+Personenbezogene Zahlungs- und Betriebsdaten sowie die Wiederherstellung im
+Notfall sauber regeln:
+
+- für `payments.raw_data` und `webhook_events.payload` entscheiden, was in
+  Auskunft/Löschung gehört, wie lange es aufbewahrt wird und wann es
+  pseudonymisiert oder gelöscht wird;
+- D1- und R2-Backups einrichten und eine echte Wiederherstellung regelmäßig
+  testen;
+- die Aufbewahrungs- und Löschentscheidungen in Datenschutztext und
+  Betriebsdokumentation konsistent festhalten.
+
+**Fertig, wenn:** ein Datenexport vollständig begründet ist, Fristen technisch
+greifen und eine Wiederherstellung aus einem Backup nachweislich funktioniert.
+
+### N5. Kundenkonto und Versandabwicklung — **Nutzen: sehr hoch · Kosten: mittel bis hoch**
+
+Aus einem erfolgreichen Zahlungsvorgang einen vollständigen Kunden- und
+Versandprozess machen:
+
+- Bestellhistorie im Kundenkonto;
+- `shippedAt`, Trackingnummer und optional Versanddienstleister im Auftrag;
+- automatische Versandbestätigung mit Trackinglink;
+- Admin-Workflow für Storno, Erstattung und Rücksendung, inklusive klarer
+  Entscheidung, wann Bestand und eBay-Angebot wieder aktiviert werden dürfen;
+- den Status `COMPLETED` fachlich verwenden oder aus dem Schema entfernen,
+  statt ihn ungenutzt stehen zu lassen.
+
+**Fertig, wenn:** ein Kunde Bestellung, Zahlung, Versand und Abschluss selbst
+nachvollziehen kann und eine Erstattung keinen manuellen Datenbankeingriff
+mehr voraussetzt.
+
+### N6. Katalog und Vorverkauf ausbauen — **Nutzen: mittel bis hoch · Kosten: mittel**
+
+Die bereits vorhandenen manuellen Vorverkaufskarten vollständig sichtbar und
+bei wachsendem Bestand benutzbar machen:
+
+- manuelle Karten in die Startseiten-Galerie/Höhepunkte aufnehmen;
+- serverseitige Suche und Filter nach Spieler, Set, Verein, Kartennummer,
+  Kategorie und Preis ergänzen;
+- die komplette Katalogliste serverseitig paginieren, statt alle Karten zu
+  laden und nur im Browser zu teilen.
+
+**Fertig, wenn:** manuelle Karten dort erscheinen, wo Kunden sie erwarten, und
+ein größerer Bestand ohne übergroße API-Antworten schnell durchsuchbar bleibt.
+
+### N7. Sprache und Transaktionskommunikation — **Nutzen: mittel · Kosten: mittel**
+
+Die Sprachwahl über die Oberfläche hinaus konsistent machen:
+
+- die Sprache optional am Kundenkonto speichern und geräteübergreifend
+  wiederherstellen;
+- Kunden- und Verkäufermails in Deutsch und Englisch erzeugen;
+- prüfen, ob Adminbereich und Fehlermeldungen bewusst deutsch bleiben oder
+  ebenfalls lokalisiert werden sollen.
+
+**Fertig, wenn:** ein englischer Kunde nach Sprachwahl keine deutschen
+Transaktionsmails oder gemischte Konto-/Checkout-Texte mehr erhält.
+
+### N8. Auffindbarkeit und Wartbarkeit — **Nutzen: mittel · Kosten: niedrig bis mittel**
+
+Technische Grundlage für Reichweite und spätere Pflege vervollständigen:
+
+- `sitemap.xml`, `robots.txt`, Canonical-URLs, dynamische Produkt-Metadaten,
+  Open-Graph-Daten und strukturierte Produktdaten ergänzen;
+- README und Deploymentanleitung an den aktuellen Drei-Minuten-Cron,
+  Migrationen und die tatsächlichen Worker-/Sites-Bindings anpassen;
+- verbleibende Dependency-Audit-Meldungen beim nächsten sinnvollen
+  Next-Minor prüfen und die Entscheidung dokumentieren.
+
+**Fertig, wenn:** Suchmaschinen Produktseiten korrekt erfassen und ein neuer
+Betreiber den Shop aus der Dokumentation reproduzierbar deployen und warten
+kann.
+
+---
+
 ## A. ~~Oberflächen für manuelle Karten, Vorverkauf, SEC-12~~ — ERLEDIGT am 2026-08-09
 
 Deployed als `5a68a2d7`, Commits `b40f4cd` und `cd9a716`. Damit sind **Punkt 11,

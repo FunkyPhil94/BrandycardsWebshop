@@ -2,6 +2,27 @@
 
 Dieses Protokoll hält fest, welche spezialisierten Agents im Projekt eingesetzt wurden, welche Prüfaufträge sie erhielten und wie ihre Ergebnisse in die Umsetzung eingeflossen sind.
 
+## 2026-08-09 – Neue priorisierte Todo aus Sicherheits- und Funktionsanalyse
+
+- **Auslöser:** Nach Abschluss der bisherigen Sicherheits-, Sprach- und
+  Adminarbeiten wurde gefragt, welche Funktions- und Sicherheitslücken noch
+  sinnvoll wären.
+- **Befunde:** Der aktive eBay-Schreibpfad ist am laufenden Angebot noch nicht
+  praktisch belegt; Seller-Notifications fehlen. Die R2-Orphan-Bereinigung ist
+  vorhanden, wird aber nur über eine manuelle Adminroute aufgerufen. Die
+  vorhandene `audit_events`-Tabelle wird nicht beschrieben. Kunden sehen keine
+  Bestellhistorie oder Versandverfolgung; `SHIPPED` speichert weder Zeitpunkt
+  noch Trackingdaten. PayPal-/Webhook-Rohdaten brauchen eine ausdrückliche
+  Aufbewahrungsentscheidung. Manuelle Karten fehlen in den Startseiten-
+  Höhepunkten, die Katalogpagination läuft clientseitig, und die
+  Sprachpräferenz sowie E-Mail-Vorlagen sind nicht vollständig
+  sprachübergreifend.
+- **Entscheidung:** Gleichartige Punkte wurden zu acht Arbeitspaketen
+  gebündelt und nach Nutzen vor Kosten geordnet: Betriebsstabilität, Admin-
+  Sicherheit, Ausfallsicherheit, Datenschutz/Recovery, Kunden- und Versandfluss,
+  Katalog, Sprache sowie SEO/Wartbarkeit. Es wurde kein Anwendungscode und
+  keine Produktionsdaten geändert.
+
 ## 2026-08-09 – Vorverkauf ohne Festpreis, mit Bildern
 
 - Auslöser: Vorverkaufskarten sollten bis zu zwei eigene Bilder aufnehmen können; zugleich sollte ein manuell angelegter Artikel keinen Festpreis mehr vortäuschen.
