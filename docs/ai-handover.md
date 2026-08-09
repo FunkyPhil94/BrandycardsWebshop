@@ -37,15 +37,17 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-**MFA-Status im echten Cloudflare-Produktivdeploy veröffentlichen** — Stand: LÄUFT (2026-08-09)
+**MFA-Status im echten Cloudflare-Produktivdeploy veröffentlichen** — Stand: ABGESCHLOSSEN (2026-08-09)
 
 - Der Admin zeigt bei einer AAL2-Sitzung jetzt sichtbar „MFA aktiv“ und
   „Authenticator-App bestätigt · AAL2“ an. Die Sites-Adresse wurde aktualisiert,
   aber `shop.brandycards.de` ist ein separater Cloudflare-Worker und nicht an
   dieses Sites-Projekt gebunden.
-- `npx wrangler deploy` ausführen, den echten Adminbereich live prüfen, danach
-  Ergebnis eintragen und das temporäre Sites-Archiv löschen. Keine
-  Produktionsdaten verändern.
+- `npx wrangler deploy` war erfolgreich; `shop.brandycards.de` läuft auf
+  Worker-Version `b378a49d-3e37-4833-b7db-2bd172d9f402`. Nach einem frischen
+  Admin-Aufruf erscheint jetzt live der Zwei-Faktor-Schutz mit der Einrichtung
+  der Authenticator-App. Keine Produktionsdaten wurden verändert.
+- Das temporäre Sites-Archiv wurde nach dem Deploy entfernt.
 - `npx tsc --noEmit`, `npm run lint`, `npm test` mit 320 Tests und Build waren
   erfolgreich. Die aktive Sitzung wurde live geprüft.
 
