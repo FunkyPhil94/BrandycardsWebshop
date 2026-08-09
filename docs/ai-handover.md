@@ -54,8 +54,9 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 - Ergebnis: Übersetzungen für die geprüften Seiten ergänzt, Datei-Upload im
   Ankauf übersetzt gestaltet, CTA-/Footer-Maße stabilisiert. Lokale Prüfung
   aller öffentlichen Seiten in DE/EN sowie `npm test` erfolgreich; keine
-  Produktionsdaten geschrieben. Commit, Push und Deployment folgen in diesem
-  Durchlauf.
+  Produktionsdaten geschrieben. Commit `957a1bf` ist auf GitHub `main` und im
+  Sites-Quellrepository. Sites-Version 3 und Cloudflare-Worker-Version
+  `43e0ed57-8a00-46dc-85d6-1955bfb2034e` sind erfolgreich deployed.
 
 **Sites-Freigabe und Apex-Domain-Prüfung** — Stand: ABGESCHLOSSEN (2026-08-09)
 
