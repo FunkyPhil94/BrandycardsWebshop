@@ -97,6 +97,13 @@ export function useCart() {
 
 const NAV = [
   { href: "/karten", label: "Karten" },
+  // Der Vorverkauf steht fest in der Navigation, nicht erst ab der ersten
+  // Karte. **Abweichung von ai-todo Punkt A**, wo „erst mit der ersten Karte
+  // erscheinen" stand: Dafür müsste die Kopfzeile auf jeder Seite den Katalog
+  // laden, nur um über einen Menüpunkt zu entscheiden — und ein Punkt, der
+  // auftaucht und wieder verschwindet, verwirrt wiederkehrende Kunden mehr als
+  // ein Bereich, der gerade leer ist. Den leeren Fall erklärt die Seite selbst.
+  { href: "/vorverkauf", label: "Vorverkauf" },
   { href: "/anfragen", label: "Anfragen" },
   { href: "/verkaufen", label: "Verkaufen" },
   { href: "/ueber-uns", label: "Über uns" },

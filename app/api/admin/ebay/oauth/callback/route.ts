@@ -5,17 +5,18 @@
  *
  * What guards it instead: `state` is HMAC-signed with EBAY_CLIENT_SECRET,
  * valid for ten minutes, and only ever handed out by the admin-protected
- * `/start` route; eBay's `code` is single-use. The residual risk is an
- * attacker who reads `code` and `state` out of a proxy log or browser history
- * and replays them before the admin's own browser arrives — seconds, in
- * practice.
+ * `/start` route; eBay's `code` is single-use.
  *
- * Closing it properly means not printing the token in the response to the
- * redirect at all: park the exchange behind a short-lived claim id and let the
- * signed-in admin area fetch the token with its Bearer token. That needs a
- * place to park it, i.e. a migration, so it is left as an open finding rather
- * than half-built.
+ * **SEC-12 ist seit dem 2026-08-09 geschlossen.** Der Refresh-Token steht nicht
+ * mehr in der Antwort auf die Umleitung. Er wird unter einer kurzlebigen
+ * Anspruchs-Kennung in `ebay_oauth_claims` geparkt; abholen kann ihn nur der
+ * angemeldete Adminbereich über `/api/admin/ebay/oauth/claim`, und die Zeile
+ * wird dabei gelöscht. Wer die Kennung aus einem Protokoll fischt, hält damit
+ * nichts in der Hand — ohne Adminsitzung gibt sie nichts heraus.
  */
+import { getDb } from "../../../../../../db";
+import { ebayOauthClaims } from "../../../../../../db/schema";
+
 function escapeHtml(value: string) {
   return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
 }
@@ -55,5 +56,31 @@ export async function GET(request: Request) {
   });
   const result = await response.json() as { refresh_token?: string; error_description?: string };
   if (!response.ok || !result.refresh_token) return page("eBay OAuth fehlgeschlagen", `<p>${escapeHtml(result.error_description || `HTTP ${response.status}`)}</p>`);
-  return page("Refresh-Token erstellt", `<p>Der Refresh-Token wurde für dein Production-Keyset erstellt. Kopiere ihn in Cloudflare als Secret <strong>EBAY_REFRESH_TOKEN</strong>. Diese Seite nicht weitergeben.</p><textarea id="token" readonly>${escapeHtml(result.refresh_token)}</textarea><p><button onclick="navigator.clipboard.writeText(document.getElementById('token').value)">Token kopieren</button></p><p>Danach kannst du dieses Fenster schließen und im Adminbereich synchronisieren.</p>`);
+
+  // Der Token wandert in die Ablage statt auf diese Seite. Zehn Minuten Frist:
+  // lang genug, um in den Adminbereich zu wechseln, kurz genug, dass eine
+  // vergessene Zeile nicht tagelang einen gültigen Token trägt.
+  try {
+    const db = getDb();
+    const claimId = crypto.randomUUID().replaceAll("-", "");
+    await db.insert(ebayOauthClaims).values({
+      id: claimId,
+      refreshToken: result.refresh_token,
+      expiresAt: new Date(Date.now() + 10 * 60_000).toISOString(),
+    });
+    // Weiterleitung in den Adminbereich: Dort liegt die Supabase-Sitzung, mit
+    // der sich der Token abholen lässt. Die Kennung darf in der Adresszeile
+    // stehen — allein ist sie wertlos.
+    return new Response(null, {
+      status: 303,
+      headers: { location: `/admin?ebayClaim=${claimId}`, "cache-control": "no-store" },
+    });
+  } catch (error) {
+    console.error("eBay OAuth claim konnte nicht gespeichert werden", error);
+    // **Bewusst ohne Rückfall auf die alte Anzeige.** Den Token hier doch noch
+    // auszugeben, hieße die Lücke im Fehlerfall wieder aufzureißen — und der
+    // Fehlerfall ist genau der, in dem niemand hinsieht. Lieber der Weg zurück
+    // über „eBay OAuth verbinden": Der kostet zwei Klicks.
+    return page("Token konnte nicht übergeben werden", "<p>Die Anmeldung bei eBay hat geklappt, das Ablegen des Tokens nicht. Bitte im Adminbereich „eBay OAuth verbinden“ noch einmal starten.</p>");
+  }
 }

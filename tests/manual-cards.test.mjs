@@ -136,3 +136,77 @@ test("der Sync übernimmt statt zu duplizieren", async () => {
   // Ein zweites Angebot darf dieselbe Karte nicht noch einmal greifen.
   assert.match(sync, /uebernahmeKandidaten\.delete\(/u);
 });
+
+// --- Adminoberfläche, Vorverkauf, SEC-12 (ai-todo Punkt A) ------------------
+
+test("das Anlegen schreibt Produkt und Bestand in einem Batch", async () => {
+  // **Falle Nummer 4 aus Punkt 11.** Ohne Bestandszeile liefert
+  // `verfuegbareMenge(..., "MANUAL")` 0 — die Karte erscheint nicht im Katalog
+  // und lässt sich nicht kaufen, und zwar ohne jede Fehlermeldung. Zwei
+  // getrennte Schreibvorgänge könnten zwischen Produkt und Bestand abbrechen.
+  const quelle = await readFile(new URL("../app/api/admin/products/route.ts", import.meta.url), "utf8");
+  const batch = quelle.slice(quelle.indexOf("await db.batch(["), quelle.indexOf("return NextResponse.json({ ok: true, id }"));
+  assert.match(batch, /db\.insert\(products\)/u);
+  assert.match(batch, /db\.insert\(inventory\)/u);
+});
+
+test("eine neue Karte trägt PRELISTED und MANUAL", async () => {
+  const quelle = await readFile(new URL("../app/api/admin/products/route.ts", import.meta.url), "utf8");
+  assert.match(quelle, /kind: "PRELISTED", origin: "MANUAL"/u,
+    "beides zusammen ist die Definition einer manuellen Karte");
+});
+
+test("Änderungen an eBay-Karten werden als Handmarkierung vermerkt", async () => {
+  // Ohne den Vermerk schreibt der Import die Änderung binnen drei Minuten
+  // zurück — sie sah erfolgreich aus und war trotzdem weg.
+  const quelle = await readFile(new URL("../app/api/admin/products/route.ts", import.meta.url), "utf8");
+  for (const feld of ["title", "description", "status"]) {
+    assert.ok(quelle.includes(`neueMarkierungen.add("${feld}")`), `${feld} muss als Handmarkierung vermerkt werden`);
+  }
+  // Bei manuellen Karten gibt es nichts, was überschreiben könnte — eine
+  // Markierung wäre dort eine Behauptung ohne Wirkung.
+  assert.match(quelle, /\.\.\.\(manuell \? \{\} : \{ manualOverrides/u);
+});
+
+test("Preis und Menge einer eBay-Karte lassen sich nicht von Hand setzen", async () => {
+  // Sie stehen im Listing, nicht am Produkt. Eine Änderung hier hielte bis zum
+  // nächsten Import und wäre dann weg — also gar nicht erst anbieten.
+  const quelle = await readFile(new URL("../app/api/admin/products/route.ts", import.meta.url), "utf8");
+  assert.match(quelle, /Der Preis einer eBay-Karte kommt von eBay/u);
+  assert.match(quelle, /Die Menge einer eBay-Karte kommt von eBay/u);
+});
+
+test("die Vorverkaufsseite filtert über origin, nicht über kind", async () => {
+  // `kind` ist bei manuellen Karten `PRELISTED` und sagt nichts über die
+  // Herkunft. Ein Filter darauf zöge die echte Vormerkliste mit herein.
+  const seite = await readFile(new URL("../app/vorverkauf/page.tsx", import.meta.url), "utf8");
+  assert.match(seite, /origin === "MANUAL"/u);
+  assert.ok(!/kind ===/u.test(seite), "kind darf hier nicht als Filter dienen");
+});
+
+test("SEC-12: die OAuth-Rückseite gibt keinen Token mehr aus", async () => {
+  const callback = await readFile(new URL("../app/api/admin/ebay/oauth/callback/route.ts", import.meta.url), "utf8");
+  // Der Token darf weder in eine HTML-Antwort noch sonstwie in die Antwort auf
+  // die Umleitung geraten — die Umleitung kann keine Anmeldung prüfen.
+  assert.ok(!/escapeHtml\(result\.refresh_token\)/u.test(callback), "der Token darf nicht mehr angezeigt werden");
+  assert.match(callback, /db\.insert\(ebayOauthClaims\)/u);
+  assert.match(callback, /status: 303/u);
+  // Auch im Fehlerfall nicht: Genau dort sieht niemand hin.
+  const fehlerzweig = callback.slice(callback.indexOf("} catch (error) {"));
+  assert.ok(!/refresh_token/u.test(fehlerzweig), "der Fehlerzweig darf nicht auf die alte Anzeige zurückfallen");
+});
+
+test("SEC-12: abgeholt wird nur mit Adminsitzung, und die Zeile fällt dabei", async () => {
+  const claim = await readFile(new URL("../app/api/admin/ebay/oauth/claim/route.ts", import.meta.url), "utf8");
+  assert.match(claim, /requireAdmin\(/u);
+  // `POST`, damit die Kennung nicht in Verlauf und Protokollen landet.
+  assert.ok(!/export async function GET/u.test(claim), "kein GET: die Kennung gehört nicht in den Verlauf");
+  assert.match(claim, /db\.delete\(ebayOauthClaims\)\.where\(eq\(/u, "die Zeile muss gelöscht, nicht markiert werden");
+});
+
+test("SEC-12: abgelaufene Ansprüche räumt der geplante Lauf ab", async () => {
+  // Ein abgebrochener Anschlussversuch ruft die Abholroute nie — ohne diesen
+  // Lauf bliebe ein gültiger Refresh-Token in der Datenbank liegen.
+  const worker = await readFile(new URL("../worker/index.ts", import.meta.url), "utf8");
+  assert.match(worker, /delete\(ebayOauthClaims\)\.where\(lte\(/u);
+});

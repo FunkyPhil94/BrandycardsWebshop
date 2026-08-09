@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { OffersPanel } from "./offers-panel";
 import { OrdersPanel } from "./orders-panel";
+import { ProductsPanel } from "./products-panel";
 import Link from "next/link";
 import { getSupabaseBrowserClient } from "../../lib/supabase-browser";
 import { SiteFooter, SiteHeader } from "../site-chrome";
@@ -21,6 +22,7 @@ export default function AdminPage() {
   const [oauthBusy, setOauthBusy] = useState(false);
   const [writeCheckBusy, setWriteCheckBusy] = useState(false);
   const [outboxBusy, setOutboxBusy] = useState(false);
+  const [ebayToken, setEbayToken] = useState<string | null>(null);
   const [assetUrls, setAssetUrls] = useState<Record<string, string>>({});
   const [deletingSubmission, setDeletingSubmission] = useState<string | null>(null);
 
@@ -56,6 +58,40 @@ export default function AdminPage() {
       cancelled = true;
       setAssetUrls((current) => { Object.values(current).forEach((url) => URL.revokeObjectURL(url)); return {}; });
     };
+  }, []);
+
+  /** Holt den bei der eBay-Rückkehr geparkten Refresh-Token ab (SEC-12).
+   *
+   * Die Kennung steht in der Adresszeile, der Token nicht — er kommt nur gegen
+   * eine gültige Adminsitzung heraus und ist danach aus der Datenbank
+   * verschwunden. Die Kennung wird sofort aus der Adresszeile entfernt, damit
+   * sie nicht im Verlauf stehen bleibt und ein Neuladen keine irreführende
+   * Fehlermeldung erzeugt.
+   */
+  useEffect(() => {
+    const claimId = new URLSearchParams(window.location.search).get("ebayClaim");
+    if (!claimId) return;
+    window.history.replaceState(null, "", window.location.pathname);
+    let cancelled = false;
+    void (async () => {
+      try {
+        const supabase = getSupabaseBrowserClient();
+        const { data } = await supabase.auth.getSession();
+        const token = data.session?.access_token;
+        if (!token) throw new Error("Bitte melde dich zuerst an und starte „eBay OAuth verbinden“ erneut.");
+        const response = await fetch("/api/admin/ebay/oauth/claim", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ claimId }),
+        });
+        const body = await response.json() as { refreshToken?: string; error?: string };
+        if (!response.ok || !body.refreshToken) throw new Error(body.error ?? "Der Token konnte nicht abgeholt werden.");
+        if (!cancelled) setEbayToken(body.refreshToken);
+      } catch (error) {
+        if (!cancelled) setSyncMessage(error instanceof Error ? error.message : "Der Token konnte nicht abgeholt werden.");
+      }
+    })();
+    return () => { cancelled = true; };
   }, []);
 
   async function deleteSubmission(submissionId: string) {
@@ -203,7 +239,20 @@ export default function AdminPage() {
           <button className="button button-outline admin-sync-button" type="button" onClick={checkEbayWrite} disabled={writeCheckBusy}>{writeCheckBusy ? "eBay-Schreibzugriff wird geprüft …" : "eBay-Schreibzugriff prüfen"}</button>
           <button className="button button-outline admin-sync-button" type="button" onClick={runEbayOutbox} disabled={outboxBusy}>{outboxBusy ? "eBay-Rücknahmen laufen …" : "eBay-Rücknahmen jetzt ausführen"}</button>
           {syncMessage && <p className="form-feedback" role="status">{syncMessage}</p>}
+          {/* Genau einmal sichtbar: Die Zeile in der Datenbank ist beim Abholen
+              gelöscht worden. Wer die Seite neu lädt, sieht das hier nicht
+              wieder — deshalb steht der nächste Schritt gleich dabei. */}
+          {ebayToken && <div className="ebay-token" role="status">
+            <h2>Refresh-Token erstellt</h2>
+            <p>Hinterlege ihn in Cloudflare als Secret <strong>EBAY_REFRESH_TOKEN</strong>. Er wird <strong>nur dieses eine Mal</strong> angezeigt.</p>
+            <textarea readOnly value={ebayToken} onFocus={(event) => event.currentTarget.select()} />
+            <div className="ebay-token-actions">
+              <button type="button" className="button button-outline" onClick={() => void navigator.clipboard.writeText(ebayToken)}>Token kopieren</button>
+              <button type="button" className="button button-outline" onClick={() => setEbayToken(null)}>Ausblenden</button>
+            </div>
+          </div>}
           <OffersPanel />
+          <ProductsPanel />
           <OrdersPanel />
           <div className="admin-submissions">
             <h2>Neue Kartenangebote</h2>

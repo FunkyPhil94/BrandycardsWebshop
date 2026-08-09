@@ -1,8 +1,10 @@
 /** Cloudflare Worker entry point for the vinext-starter template. */
 import { handleImageOptimization, DEFAULT_DEVICE_SIZES, DEFAULT_IMAGE_SIZES } from "vinext/server/image-optimization";
 import handler from "vinext/server/app-router-entry";
+import { lte } from "drizzle-orm";
 import { runEbaySync } from "../lib/ebay-sync";
 import { getDb } from "../db";
+import { ebayOauthClaims } from "../db/schema";
 import { deleteExpiredCardSubmissions } from "../lib/card-submission-cleanup";
 import { releaseExpiredReservations } from "../lib/paypal/settle-order";
 import { processEbayOutbox } from "../lib/ebay-outbox";
@@ -90,6 +92,11 @@ const worker = {
         // geplanten Lauf, nicht in eine Admin-Schaltfläche: eine Löschfrist,
         // die jemand von Hand auslösen muss, ist keine.
         deleteExpiredCardSubmissions(),
+        // Abgelaufene eBay-OAuth-Ansprüche (SEC-12). Die Abholroute räumt zwar
+        // selbst auf, aber nur wenn sie gerufen wird — ein abgebrochener
+        // Anschlussversuch ruft sie nie, und die Zeile trüge weiter einen
+        // gültigen Refresh-Token.
+        getDb().delete(ebayOauthClaims).where(lte(ebayOauthClaims.expiresAt, now)),
       ]).catch((error: unknown) => {
         const message = error instanceof Error ? error.message : "Unbekannter Fehler";
         console.error("[scheduled-ebay-sync] eBay-Synchronisierung fehlgeschlagen:", message);
