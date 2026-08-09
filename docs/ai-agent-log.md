@@ -657,3 +657,24 @@ kein Versehen: Die Höhepunkte auf der Startseite sind eine Auswahl aus dem
 eBay-Bestand. Manuelle Karten dort mitlaufen zu lassen, wäre eine inhaltliche
 Entscheidung des Betreibers, keine Fehlerbehebung — sie steht als offener Punkt
 im Protokoll statt als stille Änderung im Code.
+
+## 2026-08-09 — PayPal-Webhooks mit `RECEIVED` wiederholbar machen (S-02)
+
+Der Befund war kein fehlender PayPal-Aufruf, sondern ein falscher Zustandspunkt:
+Eine bereits angelegte `webhook_events`-Zeile mit `RECEIVED` wurde genauso wie
+`PROCESSED` als Dublette mit HTTP 200 beantwortet. Nach einem Abbruch zwischen
+dem Insert und der Verarbeitung konnte PayPal deshalb aufhören zu wiederholen,
+obwohl die Zahlung noch nicht verarbeitet war.
+
+Die Korrektur behandelt ausschließlich `PROCESSED` als fertige Dublette. Eine
+frische `RECEIVED`-Zeile erhält eine retrybare 503-Antwort mit
+`retry-after: 300`; eine mindestens fünf Minuten alte Zeile darf erneut
+verarbeitet werden. Der alte Zeitstempel wird dabei bedingt gegen den neuen
+Zeitstempel ausgetauscht, sodass zwei verspätete Zustellungen nicht parallel in
+den Zahlungsweg einsteigen. Die Zeitentscheidung lebt in
+`lib/paypal/webhook-retry.ts` und versteht sowohl SQLite- als auch ISO-Zeitstempel.
+
+Das Verhalten ist mit drei reinen Funktionstests und Quelltext-Wächtern belegt.
+Die bestehende Bedingung für `CAPTURED`-Duplikate und der gemeinsame
+`PROCESSED`-Ausgang bleiben unangetastet. Verifikation: S02-Test 10/10,
+`npm test` 310/310, `npx tsc --noEmit` und `npm run lint` ohne Fehler.

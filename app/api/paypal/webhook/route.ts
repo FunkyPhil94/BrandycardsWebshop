@@ -6,6 +6,7 @@ import { notifyOrderPaid } from "../../../../lib/email/notify.ts";
 import { getPayPalConfig } from "../../../../lib/paypal/config";
 import { verifyPayPalWebhookSignature } from "../../../../lib/paypal/client";
 import { webhookCaptureAction } from "../../../../lib/paypal/webhook-decision";
+import { PAYPAL_WEBHOOK_RECEIVED_RETRY_AFTER_MS, receivedWebhookRetryDue } from "../../../../lib/paypal/webhook-retry";
 import { releaseOrderReservations, settlePaidOrder } from "../../../../lib/paypal/settle-order";
 import { centsToPayPalValue } from "../../../../lib/paypal/money";
 
@@ -66,16 +67,32 @@ export async function POST(request: Request) {
 
     db = getDb();
     const existing = await db.query.webhookEvents.findFirst({ where: and(eq(webhookEvents.provider, "PAYPAL"), eq(webhookEvents.externalEventId, eventId)) });
-    if (existing?.status === "PROCESSED" || existing?.status === "RECEIVED") return NextResponse.json({ ok: true, duplicate: true });
+    if (existing?.status === "PROCESSED") return NextResponse.json({ ok: true, duplicate: true });
+    if (existing?.status === "RECEIVED" && !receivedWebhookRetryDue(existing.receivedAt)) {
+      return NextResponse.json({ ok: false, retryable: true }, { status: 503, headers: { "retry-after": String(PAYPAL_WEBHOOK_RECEIVED_RETRY_AFTER_MS / 1000) } });
+    }
+    const receivedAt = new Date().toISOString();
     if (existing?.status === "FAILED") {
-      await db.update(webhookEvents).set({ status: "RECEIVED", eventType, payload: event, receivedAt: new Date().toISOString(), processedAt: null, errorMessage: null }).where(eq(webhookEvents.id, existing.id));
+      await db.update(webhookEvents).set({ status: "RECEIVED", eventType, payload: event, receivedAt, processedAt: null, errorMessage: null }).where(eq(webhookEvents.id, existing.id));
+    } else if (existing?.status === "RECEIVED") {
+      // Claim an old row conditionally. A second request that observed the
+      // same old timestamp must wait for PayPal to retry instead of entering
+      // the payment path in parallel.
+      const claim = await db.batch([db.update(webhookEvents).set({ eventType, payload: event, receivedAt, processedAt: null, errorMessage: null }).where(and(
+        eq(webhookEvents.id, existing.id),
+        eq(webhookEvents.status, "RECEIVED"),
+        eq(webhookEvents.receivedAt, existing.receivedAt),
+      ))]);
+      if (claim[0].meta.changes !== 1) {
+        return NextResponse.json({ ok: false, retryable: true }, { status: 503, headers: { "retry-after": String(PAYPAL_WEBHOOK_RECEIVED_RETRY_AFTER_MS / 1000) } });
+      }
     } else {
-      await db.insert(webhookEvents).values({ provider: "PAYPAL", externalEventId: eventId, eventType, status: "RECEIVED", payload: event, receivedAt: new Date().toISOString() });
+      await db.insert(webhookEvents).values({ provider: "PAYPAL", externalEventId: eventId, eventType, status: "RECEIVED", payload: event, receivedAt });
     }
 
     const strictPaymentEvent = eventType.startsWith("PAYMENT.CAPTURE.");
     const payment = await findPayment(db, event, strictPaymentEvent);
-    const now = new Date().toISOString();
+    const now = receivedAt;
     // Ein bereits eingezogenes Ereignis ist eine Dublette — aber **kein Grund,
     // vorzeitig auszusteigen.** Genau das tat diese Route bis zum 2026-08-08:
     // Sie kehrte mit `duplicate: true` zurück, bevor die Zeile in

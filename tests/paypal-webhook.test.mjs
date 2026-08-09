@@ -3,6 +3,7 @@ import test from "node:test";
 import { readFile } from "node:fs/promises";
 
 const { webhookCaptureAction } = await import("../lib/paypal/webhook-decision.ts");
+const { PAYPAL_WEBHOOK_RECEIVED_RETRY_AFTER_MS, receivedWebhookRetryDue } = await import("../lib/paypal/webhook-retry.ts");
 
 // Der Webhook ist der zweite von zwei Wegen, auf denen eine Zahlung eingezogen
 // wird (der erste ist die Rückkehr des Kunden aus PayPal). Beide feuern bei
@@ -23,6 +24,22 @@ test("eine offene Zahlung wird eingezogen", () => {
   for (const status of ["CREATED", "APPROVED"]) {
     assert.equal(webhookCaptureAction(status), "einziehen", `Status ${status}`);
   }
+});
+
+test("eine frische RECEIVED-Zeile wartet, statt als Dublette zu gelten", () => {
+  const now = new Date("2026-08-09T10:00:00.000Z");
+  const receivedAt = new Date(now.getTime() - PAYPAL_WEBHOOK_RECEIVED_RETRY_AFTER_MS + 1).toISOString();
+  assert.equal(receivedWebhookRetryDue(receivedAt, now), false);
+});
+
+test("eine alte RECEIVED-Zeile darf erneut verarbeitet werden", () => {
+  const now = new Date("2026-08-09T10:00:00.000Z");
+  const receivedAt = new Date(now.getTime() - PAYPAL_WEBHOOK_RECEIVED_RETRY_AFTER_MS).toISOString();
+  assert.equal(receivedWebhookRetryDue(receivedAt, now), true);
+});
+
+test("ein unlesbarer Eingangsstempel wird nicht blind erneut verarbeitet", () => {
+  assert.equal(receivedWebhookRetryDue("kein Zeitstempel", new Date("2026-08-09T10:00:00.000Z")), false);
 });
 
 // --- Die eigentliche Korrektur: kein Ausgang an der Buchführung vorbei -------
@@ -54,6 +71,15 @@ test("die Dublette wird als solche beantwortet, nicht als frisch verarbeitet", a
   // Der Aufrufer soll weiterhin unterscheiden können: PayPal wiederholt sonst
   // die Zustellung, wenn die Antwort nicht nach Erfolg aussieht.
   assert.match(quelle, /return NextResponse\.json\(duplicate \? \{ ok: true, duplicate: true \} : \{ ok: true, processed: true \}\)/);
+  assert.match(quelle, /existing\?\.status === "PROCESSED"\)/);
+  assert.doesNotMatch(quelle, /existing\?\.status === "PROCESSED" \|\| existing\?\.status === "RECEIVED"/);
+});
+
+test("ein frischer RECEIVED-WebHook fordert eine Wiederholung an", async () => {
+  const quelle = await readFile(new URL("../app/api/paypal/webhook/route.ts", import.meta.url), "utf8");
+  assert.match(quelle, /receivedWebhookRetryDue\(existing\.receivedAt\)/);
+  assert.match(quelle, /status: 503/);
+  assert.match(quelle, /["']retry-after["']/);
 });
 
 test("PROCESSED wird geschrieben, bevor geantwortet wird", async () => {
