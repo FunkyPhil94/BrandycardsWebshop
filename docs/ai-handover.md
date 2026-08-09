@@ -37,7 +37,21 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-*(leer — bereit für den nächsten Auftrag.)*
+### 2026-08-09 — Adminkonsole, Teilschritte 12.4 und 12.5
+
+- **Stand:** LÄUFT
+- **Ziel:** Anfragen und Kartenangebote **bearbeiten** statt nur zählen (12.4),
+  und die **eBay-Outbox einsehen** (12.5). Danach ist Punkt 12 abgeschlossen und
+  sein eigentliches Kriterium erfüllt: eine Woche arbeiten ohne
+  `wrangler d1 execute`.
+- **Geplant:** neue Leseroute für Anfragen samt Statuswechsel, Statuswechsel für
+  Kartenangebote (die Route existiert bereits mit `DELETE` und Bildzugriff),
+  Leseroute für `ebay_outbox`. Dazu je ein Panel im Adminbereich, Muster
+  `products-panel.tsx`.
+- **Keine Migration**, keine Schemaänderung.
+- **Falle:** Hängende eBay-Rücknahmen sind der eigentliche Grund für 12.5 — die
+  Ansicht muss den **Fehlertext** und den nächsten Versuchszeitpunkt zeigen,
+  nicht nur einen Status. Ein „FAILED" ohne Grund beantwortet keine Frage.
 
 ### **Der Betreiber muss zwei Dinge selbst prüfen**
 
