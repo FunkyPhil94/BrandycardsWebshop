@@ -37,18 +37,7 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-**N3: Ausfallsicherheit, Ressourcenlimits und automatische Bereinigung** — Stand: LÄUFT (2026-08-09)
-
-- Die vom Betreiber bestätigte MFA-Einrichtung ist erledigt; die Secret-Rotation
-  läuft parallel beim Betreiber und wird nicht automatisch verändert.
-- Die geplante R2-Bereinigung verwaister Uploads in den Scheduled Worker
-  aufnehmen, inklusive sicherer Altersgrenze und begrenzter Löschmenge.
-- JSON- und Webhook-Nutzlasten vor dem vollständigen Puffern begrenzen sowie
-  Zeitlimits für Supabase- und OAuth-Aufrufe ergänzen.
-- `style-src 'unsafe-inline'` nur entfernen, wenn die aktuelle vinext-Ausgabe
-  ohne Inline-Stile funktioniert; andernfalls den Befund dokumentieren.
-- Nach Umsetzung Tests, Typprüfung, Lint und Build ausführen, committen,
-  pushen, deployen und öffentliche Produktionsrouten prüfen.
+*(kein aktueller Auftrag)*
 
 **N2 eBay-Notification-Endpoint und Order-Event umsetzen** — Stand: ABGESCHLOSSEN (2026-08-09)
 
@@ -551,6 +540,29 @@ Sicherheits- und Funktionsbefunde im
 ---
 
 ## Historie
+
+### 2026-08-09 — N3: Ausfallsicherheit, Ressourcenlimits und automatische Bereinigung
+
+- **Umsetzung:** Der Scheduled Worker bereinigt verwaiste R2-Objekte aus den
+  Präfixen `card-submissions/` und `products/` mit 24 Stunden Sicherheitsabstand
+  und höchstens 100 Löschungen je Lauf. JSON-Anfragen werden vor dem Puffern
+  auf 64 KiB begrenzt; eBay- und PayPal-Webhooks streamen bis 256 KiB. Supabase-
+  Auth, Supabase-Admin und eBay-OAuth haben ein 10-Sekunden-Timeout.
+- **CSP:** Inline-Style-Blöcke erhalten denselben Antwort-Nonce wie Skripte;
+  `style-src 'unsafe-inline'` ist entfernt. Das verbliebene React-Style-Attribut
+  wurde in eine CSS-Klasse verschoben.
+- **Verifikation:** Vollständige Testsuite 335/335, `npx tsc --noEmit`,
+  `npm run lint`, `npm run build` und `git diff --check` ohne Fehler.
+- **Veröffentlichung:** Commit `b8fa35b9da8fd78cbdfa85e125f5af1a0163672f`
+  ist nach `main`, `agent/initial-brandycards` und das Sites-Quellrepository
+  gepusht. Cloudflare-Version `d7927df3-c86f-4a94-82ae-c4adf145bcaa` und
+  Sites-Version 11 sind erfolgreich deployed.
+- **Produktivprüfung:** `/`, `/admin`, `/account` und `/api/products` unter
+  `shop.brandycards.de` sowie die Sites-URL antworten mit HTTP 200. Die CSP
+  enthält Script- und Style-Nonce ohne `unsafe-inline`; `/api/products` liefert
+  `cache-control: public, max-age=30, stale-while-revalidate=60`.
+- **Betreiberstatus:** MFA ist laut Betreiber eingerichtet. Die Secret-Rotation
+  läuft separat beim Betreiber und wurde nicht durch diesen Auftrag verändert.
 
 ### 2026-08-09 — eBay-Sync: ungültigen OAuth-Scope korrigiert
 

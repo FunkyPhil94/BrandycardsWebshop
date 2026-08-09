@@ -1,6 +1,29 @@
 # BrandyCards Agentenprotokoll
 
-## 2026-08-09 – eBay-OAuth-Scopefehler im geplanten Sync behoben
+## 2026-08-09 — N3: Ausfallsicherheit, Ressourcenlimits und automatische Bereinigung
+
+- **Umsetzung:** Der geplante Worker-Lauf räumt verwaiste Uploads in den R2-
+  Präfixen `card-submissions/` und `products/` auf. Eine 24-Stunden-Gnadenfrist
+  schützt gerade angelegte Dateien; pro Lauf werden höchstens 100 Objekte
+  gelöscht. Die manuelle Admin-Bereinigung nutzt dieselbe Funktion.
+- **Ressourcenlimits:** JSON-Anfragen werden im Worker bei 64 KiB abgewiesen,
+  bevor Routen sie puffern. eBay- und PayPal-Webhooks lesen den Stream direkt
+  bis 256 KiB. Fehlende oder ungültige Größenangaben bei normalen JSON-Routen
+  werden ebenfalls abgewiesen.
+- **Timeouts und CSP:** Supabase-Auth, Supabase-Admin und eBay-OAuth brechen
+  nach zehn Sekunden ab. Der Worker versieht `<script>`- und `<style>`-Blöcke
+  mit dem Antwort-Nonce; `style-src 'unsafe-inline'` und das letzte React-
+  Style-Attribut sind entfernt.
+- **Verifikation:** 335 Tests, TypeScript, Lint, Produktions-Build und
+  `git diff --check` waren erfolgreich. Die Produktionsrouten `/`, `/admin`,
+  `/account` und `/api/products` antworteten mit HTTP 200; die CSP wurde ohne
+  `unsafe-inline` und mit Script-/Style-Nonce geprüft.
+- **Release:** Commit `b8fa35b9da8fd78cbdfa85e125f5af1a0163672f`, Cloudflare-
+  Version `d7927df3-c86f-4a94-82ae-c4adf145bcaa` und Sites-Version 11 sind
+  veröffentlicht. MFA ist Betreiber-seitig bestätigt; die Secret-Rotation
+  bleibt der separate Betreiber-Schritt.
+
+## 2026-08-09 — eBay-OAuth-Scopefehler im geplanten Sync behoben
 
 - **Befund:** Der Produktions-Sync erhielt beim Refresh-Token-Aufruf HTTP 400
   `invalid_scope`. In `wrangler.toml` und `.env.example` waren neben Inventory-

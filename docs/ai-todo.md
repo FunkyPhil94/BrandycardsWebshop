@@ -96,10 +96,10 @@ OAuth-Aktionen verlangen zusätzlich innerhalb von zehn Minuten einen frischen
 MFA-Code. Die vorhandene `audit_events`-Tabelle protokolliert diese Änderungen
 mit Benutzer, Aktion, Objekt, Zeit und optional einem gesalzenen IP-Hash.
 
-**Betreiber-Schritt offen:** Beim nächsten Admin-Aufruf die Authenticator-App
-einmal einrichten und mit einem echten Code bestätigen. Danach noch die
-Secret-Rotation (einschließlich des optionalen `AUDIT_IP_HASH_SALT`) und den
-ersten echten eBay-Verkaufsfall abnehmen.
+**Betreiberstatus:** MFA ist eingerichtet und mit einem echten Code bestätigt.
+Offen bleibt die Secret-Rotation (einschließlich des optionalen
+`AUDIT_IP_HASH_SALT`) sowie der erste echte eBay-Verkaufsfall als
+Betriebsnachweis.
 
 ### N2. Betriebsstabilität und Doppelverkaufsschutz — **Nutzen: sehr hoch · Kosten: hoch**
 
@@ -132,12 +132,12 @@ nicht in den Alarm.
 Idempotenz über `notificationId`, Listing-/Inventory-Abbuchung, Deaktivierung
 ausverkaufter Karten und Betriebsalarmierung umgesetzt.
 
-**Noch offen:** Verification-Secret, eBay-Destination und Subscription müssen
-im Developer Portal eingerichtet werden; für die Seller-Subscription braucht es
-eine erneute OAuth-Zustimmung mit den Fulfillment-Scopes. Danach steht der erste
-echte Verkauf auf einem laufenden Angebot als Betriebsnachweis aus. Dieser
-Nachweis darf nicht simuliert und nicht ohne Betreiberaktion in
-Produktionsdaten geschrieben werden.
+**Betreiberstatus:** Verification-Secret, eBay-Destination und Subscription
+sind im Developer Portal eingerichtet und erfolgreich bestätigt. Offen bleibt
+die erneute OAuth-Zustimmung mit den Fulfillment-Scopes, falls sie für den
+ersten echten Verkauf noch erforderlich ist, sowie dieser echte Verkauf als
+Betriebsnachweis. Dieser Nachweis darf nicht simuliert und nicht ohne
+Betreiberaktion in Produktionsdaten geschrieben werden.
 
 ### ~~N3. Ausfallsicherheit, Ressourcenlimits und automatische Bereinigung~~ — **ERLEDIGT am 2026-08-09**
 
