@@ -555,9 +555,14 @@ Sicherheits- und Funktionsbefunde im
   und der `ORDER_CONFIRMATION`-Webhook wurden nicht verändert.
 - **Verifikation:** Vollständige Testsuite 330/330, `npx tsc --noEmit`,
   `npm run lint`, `npm run build` und `git diff --check` ohne Fehler.
-- **Veröffentlichung:** Nach Commit und Push wird der korrigierte Worker in
-  Produktion deployed. Der nächste geplante Sync muss ohne `invalid_scope`
-  durchlaufen; Produktionsdaten wurden durch die Korrektur nicht verändert.
+- **Veröffentlichung:** Commit `fa90ded` ist nach `main` gepusht. Sites-Version
+  10 und Cloudflare-Version `3c3f6575-032a-4d58-9ea1-4fa1f42a6e5e` sind aktiv;
+  die öffentlichen Produktionsrouten `/` und `/api/products` antworten mit
+  HTTP 200.
+- **Produktivprüfung:** Der erste Lauf nach dem Deploy um 19:10 Uhr ist
+  `SUCCEEDED` und enthält keinen Fehler. Die vorherigen Läufe bis 19:07 Uhr
+  waren die letzten alten `invalid_scope`-Fehler. Es wurden keine manuellen
+  Produktionsdaten geändert.
 
 ### 2026-08-09 — Vorverkauf ohne Festpreis, mit Bildern deployed
 

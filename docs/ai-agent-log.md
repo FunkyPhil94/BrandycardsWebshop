@@ -18,6 +18,11 @@
   die versehentliche Vermischung von Shop-OAuth und Notification-Scopes.
 - **Verifikation:** 330 Tests, TypeScript, Lint, Produktions-Build und
   `git diff --check` waren erfolgreich.
+- **Live-Prüfung:** Der Cloudflare-Worker wurde als Version
+  `3c3f6575-032a-4d58-9ea1-4fa1f42a6e5e` deployed. `/` und `/api/products`
+  antworten mit HTTP 200; der erste eBay-Lauf danach (19:10 Uhr) steht in D1
+  auf `SUCCEEDED`, während 19:07 Uhr der letzte alte `invalid_scope`-Fehler
+  war.
 
 ## 2026-08-09 – eBay-ORDER_CONFIRMATION-Endpoint umgesetzt
 
