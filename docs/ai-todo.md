@@ -63,31 +63,18 @@ eBay-Schreibpfad, dann bewerben.**
 ## Neue priorisierte Todo — Sicherheits- und Ausbauplan
 
 Die folgenden Punkte stammen aus der Funktions- und Sicherheitsbetrachtung vom
-2026-08-09. Die Reihenfolge bewertet **Nutzen zuerst**, danach den Aufwand.
-Passende Einzelbeobachtungen sind zu umsetzbaren Arbeitspaketen gebündelt; die
-Liste ist ein Backlog und bedeutet noch keine automatische Freigabe für jede
-Erweiterung.
+2026-08-09. Die Reihenfolge folgt jetzt nicht nur dem Nutzen, sondern auch den
+fachlichen Abhängigkeiten: erst privilegierte Zugriffe absichern, dann den
+Verkaufsweg gegen Doppelverkäufe härten, danach Daten- und Ausfallsicherheit
+vervollständigen. Erst dann folgen Versand, Kommunikation und
+Wachstumsfunktionen. Passende Einzelbeobachtungen sind zu umsetzbaren
+Arbeitspaketen gebündelt; die Liste ist ein Backlog und bedeutet noch keine
+automatische Freigabe für jede Erweiterung.
 
-### N1. Betriebsstabilität und Doppelverkaufsschutz — **Nutzen: sehr hoch · Kosten: hoch**
+### N1. Admin-Sicherheit und Nachvollziehbarkeit — **Nutzen: sehr hoch · Kosten: mittel**
 
-eBay-Verkäufe müssen schneller und nachvollziehbarer in den Shop gelangen. Dazu
-gehören der noch ausstehende Betriebsnachweis und die nächste technische Stufe:
-
-- den ersten echten Verkauf auf einem **laufenden** eBay-Angebot prüfen: eBay-
-  Menge auf 0, `ebay_outbox` auf `SUCCEEDED`, kein `FAILED`, Verkäufernachricht
-  mit Lieferadresse angekommen;
-- eBay-Seller-Notifications bzw. die passende offizielle Verkaufs-API anbinden,
-  mit Signaturprüfung, Idempotenz und Wiederholungen;
-- Alarmierung für fehlgeschlagene eBay-Syncs, hängende oder endgültig
-  fehlgeschlagene Outbox-Aufträge, PayPal-Webhooks und nicht zugestellte
-  Verkäufer-/Kundenmails einrichten.
-
-**Fertig, wenn:** ein echter Verkauf in beide Richtungen nachweisbar sauber
-verarbeitet wird und ein Fehler nicht mehr still unbemerkt bleiben kann.
-
-### N2. Admin-Sicherheit und Nachvollziehbarkeit — **Nutzen: sehr hoch · Kosten: mittel**
-
-Den privilegierten Bereich gegen Kontoübernahme und Bedienfehler härten:
+Den privilegierten Bereich vor weiteren Automatisierungen gegen Kontoübernahme
+und Bedienfehler härten:
 
 - MFA/2FA für das Adminkonto verpflichtend machen;
 - kurze Sitzungsdauer bzw. erneute Authentifizierung vor Löschung,
@@ -102,9 +89,26 @@ Den privilegierten Bereich gegen Kontoübernahme und Bedienfehler härten:
 kritische Aktionen erneut bestätigt werden und MFA/Secret-Rotation getestet
 sind.
 
+### N2. Betriebsstabilität und Doppelverkaufsschutz — **Nutzen: sehr hoch · Kosten: hoch**
+
+Auf der abgesicherten Admin- und Secret-Basis den größten geschäftlichen Risikopfad
+schließen:
+
+- den ersten echten Verkauf auf einem **laufenden** eBay-Angebot prüfen: eBay-
+  Menge auf 0, `ebay_outbox` auf `SUCCEEDED`, kein `FAILED`, Verkäufernachricht
+  mit Lieferadresse angekommen;
+- eBay-Seller-Notifications bzw. die passende offizielle Verkaufs-API anbinden,
+  mit Signaturprüfung, Idempotenz und Wiederholungen;
+- Alarmierung für fehlgeschlagene eBay-Syncs, hängende oder endgültig
+  fehlgeschlagene Outbox-Aufträge, PayPal-Webhooks und nicht zugestellte
+  Verkäufer-/Kundenmails einrichten.
+
+**Fertig, wenn:** ein echter Verkauf in beide Richtungen nachweisbar sauber
+verarbeitet wird und ein Fehler nicht mehr still unbemerkt bleiben kann.
+
 ### N3. Ausfallsicherheit, Ressourcenlimits und automatische Bereinigung — **Nutzen: hoch · Kosten: niedrig bis mittel**
 
-Die vorhandenen Schutzmechanismen an den tatsächlichen Ausführungspfad bringen:
+Die Basis für stabile Synchronisation, Uploads und Webhooks vervollständigen:
 
 - die R2-Bereinigung verwaister Uploads in den geplanten Worker-Lauf aufnehmen;
 - harte Größenlimits auch für JSON-Anfragen **vor** dem vollständigen Puffern
@@ -119,8 +123,8 @@ keinen Request unbegrenzt festhalten können.
 
 ### N4. Datenschutz, Aufbewahrung und Wiederherstellung — **Nutzen: hoch · Kosten: mittel**
 
-Personenbezogene Zahlungs- und Betriebsdaten sowie die Wiederherstellung im
-Notfall sauber regeln:
+Bevor Bestellhistorien und weitere Kundenprozesse hinzukommen, die Daten- und
+Notfallregeln sauber festlegen:
 
 - für `payments.raw_data` und `webhook_events.payload` entscheiden, was in
   Auskunft/Löschung gehört, wie lange es aufbewahrt wird und wann es
@@ -135,8 +139,8 @@ greifen und eine Wiederherstellung aus einem Backup nachweislich funktioniert.
 
 ### N5. Kundenkonto und Versandabwicklung — **Nutzen: sehr hoch · Kosten: mittel bis hoch**
 
-Aus einem erfolgreichen Zahlungsvorgang einen vollständigen Kunden- und
-Versandprozess machen:
+Auf dem stabilen und datenschutzrechtlich geklärten Zahlungsvorgang einen
+vollständigen Kunden- und Versandprozess aufbauen:
 
 - Bestellhistorie im Kundenkonto;
 - `shippedAt`, Trackingnummer und optional Versanddienstleister im Auftrag;
@@ -150,23 +154,9 @@ Versandprozess machen:
 nachvollziehen kann und eine Erstattung keinen manuellen Datenbankeingriff
 mehr voraussetzt.
 
-### N6. Katalog und Vorverkauf ausbauen — **Nutzen: mittel bis hoch · Kosten: mittel**
+### N6. Sprache und Transaktionskommunikation — **Nutzen: mittel · Kosten: mittel**
 
-Die bereits vorhandenen manuellen Vorverkaufskarten vollständig sichtbar und
-bei wachsendem Bestand benutzbar machen:
-
-- manuelle Karten in die Startseiten-Galerie/Höhepunkte aufnehmen;
-- serverseitige Suche und Filter nach Spieler, Set, Verein, Kartennummer,
-  Kategorie und Preis ergänzen;
-- die komplette Katalogliste serverseitig paginieren, statt alle Karten zu
-  laden und nur im Browser zu teilen.
-
-**Fertig, wenn:** manuelle Karten dort erscheinen, wo Kunden sie erwarten, und
-ein größerer Bestand ohne übergroße API-Antworten schnell durchsuchbar bleibt.
-
-### N7. Sprache und Transaktionskommunikation — **Nutzen: mittel · Kosten: mittel**
-
-Die Sprachwahl über die Oberfläche hinaus konsistent machen:
+Den Kunden- und Versandprozess sprachlich vollständig machen:
 
 - die Sprache optional am Kundenkonto speichern und geräteübergreifend
   wiederherstellen;
@@ -177,9 +167,24 @@ Die Sprachwahl über die Oberfläche hinaus konsistent machen:
 **Fertig, wenn:** ein englischer Kunde nach Sprachwahl keine deutschen
 Transaktionsmails oder gemischte Konto-/Checkout-Texte mehr erhält.
 
+### N7. Katalog und Vorverkauf ausbauen — **Nutzen: mittel bis hoch · Kosten: mittel**
+
+Erst auf der stabilen Transaktions- und Kommunikationsbasis die
+Kundenreichweite und Katalognutzung ausbauen:
+
+- manuelle Karten in die Startseiten-Galerie/Höhepunkte aufnehmen;
+- serverseitige Suche und Filter nach Spieler, Set, Verein, Kartennummer,
+  Kategorie und Preis ergänzen;
+- die komplette Katalogliste serverseitig paginieren, statt alle Karten zu
+  laden und nur im Browser zu teilen.
+
+**Fertig, wenn:** manuelle Karten dort erscheinen, wo Kunden sie erwarten, und
+ein größerer Bestand ohne übergroße API-Antworten schnell durchsuchbar bleibt.
+
 ### N8. Auffindbarkeit und Wartbarkeit — **Nutzen: mittel · Kosten: niedrig bis mittel**
 
-Technische Grundlage für Reichweite und spätere Pflege vervollständigen:
+Zum Schluss die Reichweite und die langfristige Pflege an den stabilen
+Funktionsstand anpassen:
 
 - `sitemap.xml`, `robots.txt`, Canonical-URLs, dynamische Produkt-Metadaten,
   Open-Graph-Daten und strukturierte Produktdaten ergänzen;

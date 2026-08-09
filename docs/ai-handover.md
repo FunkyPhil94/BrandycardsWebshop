@@ -37,15 +37,16 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-**Reihenfolge der priorisierten Todo neu ordnen** — Stand: LÄUFT (2026-08-09)
+**Reihenfolge der priorisierten Todo neu ordnen** — Stand: ABGESCHLOSSEN (2026-08-09)
 
-- Die acht gebündelten Aufgabenpakete werden nach fachlichen Abhängigkeiten,
-  Risiko und Aufwand neu sortiert.
-- Die neue Reihenfolge wird in `docs/ai-todo.md` und die Begründung in
-  `docs/ai-agent-log.md` festgehalten.
-- Es werden nur Dokumentationsdateien geändert; keine Produktivdaten und kein
-  Anwendungscode werden angefasst. Danach wird der Stand committet, gepusht
-  und deployed.
+- Die acht bestehenden Aufgabenpakete sind nach fachlichen Abhängigkeiten,
+  Risiko und Aufwand neu als N1 bis N8 geordnet.
+- Die Reihenfolge und ihre Begründung stehen in `docs/ai-todo.md` bzw.
+  `docs/ai-agent-log.md`.
+- `git diff --check` ist sauber. Es wurden nur Dokumentationsdateien geändert;
+  keine Produktivdaten und kein Anwendungscode wurden angefasst.
+- Der vorbereitende Commit `65841d0` wurde erstellt. Commit, Push und
+  Deployment werden nach dem Abschluss dieses Durchlaufs durchgeführt.
 
 - `/api/admin/orders` paginiert jetzt mit 25 Einträgen, liefert Gesamtseiten
   und sortiert bei gleichen Zeitstempeln stabil. Ein geschütztes `PATCH` setzt

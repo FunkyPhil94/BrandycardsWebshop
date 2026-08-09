@@ -2,6 +2,22 @@
 
 Dieses Protokoll hält fest, welche spezialisierten Agents im Projekt eingesetzt wurden, welche Prüfaufträge sie erhielten und wie ihre Ergebnisse in die Umsetzung eingeflossen sind.
 
+## 2026-08-09 – Reihenfolge der priorisierten Todo neu geordnet
+
+- **Auslöser:** Die bisherige Liste war nach Nutzen und Kosten sortiert, aber
+  nicht vollständig nach fachlichen Abhängigkeiten.
+- **Entscheidung:** Admin-Sicherheit steht jetzt vor der eBay-Automatisierung,
+  weil MFA, Re-Authentifizierung, Auditierung und Secret-Rotation die
+  privilegierten Schreibpfade absichern. Danach folgen Doppelverkaufsschutz,
+  Ausfallsicherheit sowie Datenschutz und Wiederherstellung. Kundenkonto und
+  Versand bauen auf dieser Grundlage auf; Sprache und Transaktionsmails
+  vervollständigen diesen Prozess. Katalog-/Vorverkaufsfunktionen und SEO
+  folgen erst danach, weil sie Reichweite erhöhen und stabile Transaktionswege
+  voraussetzen.
+- **Ergebnis:** Die acht bestehenden Arbeitspakete wurden in `docs/ai-todo.md`
+  als N1 bis N8 entsprechend dieser Reihenfolge neu nummeriert. Inhalt und
+  Umfang der offenen Punkte blieben unverändert.
+
 ## 2026-08-09 – Neue priorisierte Todo aus Sicherheits- und Funktionsanalyse
 
 - **Auslöser:** Nach Abschluss der bisherigen Sicherheits-, Sprach- und
