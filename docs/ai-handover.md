@@ -37,7 +37,19 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-*(leer — bereit für den nächsten Auftrag.)*
+**S-04 — Rate-Limits für sechs authentifizierte Routen ergänzen** — Stand: LÄUFT (2026-08-09)
+
+- Betroffen sind `price-offers`, `account/data`, `account/delete`,
+  `account/profile`, `paypal/orders` und `paypal/capture`. Die bestehende
+  Cloudflare-Grenze `RATE_LIMITER` erlaubt 10 Anfragen je 60 Sekunden und wird
+  mit route-eigenen Scopes verwendet.
+- Überschreitungen müssen als HTTP 429 mit `retry-after` erscheinen, nicht als
+  allgemeiner 503-Fehler. Authentifizierung und bestehende fachliche Antworten
+  bleiben unverändert.
+- Abnahmekriterien: jede Route ruft den Limiter auf und behandelt
+  `RateLimitError`; Regressionstests prüfen alle sechs Routen. Danach
+  `npx tsc --noEmit`, `npm run lint`, `npm test`, committen, pushen, deployen
+  und `/admin` sowie `/account` live prüfen. Keine Produktionsdaten schreiben.
 
 ### **Der Betreiber muss zwei Dinge selbst prüfen**
 
