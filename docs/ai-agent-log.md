@@ -757,3 +757,12 @@ werden im Client ebenfalls über denselben Katalog aufgelöst.
 Verifikation vor dem Abschluss: TypeScript ohne Fehler, Lint ohne Fehler
 (eine bestehende Hook-Warnung im Konto bleibt), Produktions-Build erfolgreich,
 315 Tests grün inklusive Sprachtest. Es wurden keine Produktionsdaten geändert.
+
+Der erste Live-Aufruf zeigte, dass die Rechtstextseiten als Serverkomponenten
+den clientseitigen Sprach-Hook direkt aufriefen und deshalb in Cloudflare 500
+liefen. Die fünf betroffenen Seiten wurden als Clientkomponenten markiert,
+erneut getestet und als `cc7cc18` deployed. Nach der Edge-Propagierung antworten
+alle öffentlichen Shop-Routen und `/api/products` live mit HTTP 200. Das
+zusätzliche Sites-Projekt wurde wegen `.openai/hosting.json` angelegt; die
+Version ist gespeichert, aber eine neue öffentliche Sites-Zieladresse bleibt
+bis zu einer separaten Freigabe unpubliziert.

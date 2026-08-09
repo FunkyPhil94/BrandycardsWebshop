@@ -60,8 +60,15 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
   Rechtstexte verwenden die englische Fassung. Kartentitel und eBay-
   Beschreibungen bleiben deutsch, Preise und Versandkosten bleiben in Euro.
 - Verifikation: npx tsc --noEmit, npm run lint (0 Fehler), npm test
-  (315/315) und der zusätzliche Sprachtest grün. Commit, Push und Deployment
-  stehen noch als Abschlussaktion dieses Durchlaufs aus.
+  (315/315) und der zusätzliche Sprachtest grün. Nach einem Laufzeitfix für
+  die clientseitigen Rechtstexte ist `cc7cc18` auf `main` und
+  `agent/initial-brandycards` gepusht und als Cloudflare-Version
+  `994b91c1-a40d-4f83-a680-7b46bde3a17d` auf `shop.brandycards.de` deployed.
+  Die öffentlichen Shop-Routen und `/api/products` antworten live mit HTTP
+  200. Es wurden keine Produktionsdaten geschrieben. Das zusätzliche Sites-
+  Projekt ist angelegt und eine Version gespeichert; die öffentliche Sites-
+  Veröffentlichung wartet auf eine separate Freigabe für diese neue
+  öffentliche Zieladresse.
 
 ### **Der Betreiber muss zwei Dinge selbst prüfen**
 
