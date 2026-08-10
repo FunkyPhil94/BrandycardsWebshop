@@ -37,8 +37,16 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-*(Kein Auftrag aktiv. N7 ist abgeschlossen; N4 bleibt wegen des fehlenden
-externen Backup-Ziels teilweise offen.)*
+**N8: Auffindbarkeit und Wartbarkeit vervollständigen** — Stand: LÄUFT
+(2026-08-10)
+
+- Sitemap, robots.txt, Canonical-URLs, Open-Graph-/Twitter-Metadaten,
+  dynamische Produkt-Metadaten und strukturierte Produktdaten ergänzen.
+- README und Deploymentdokumentation auf den aktuellen Worker-/Sites-Stand
+  bringen und Dependency-Audit prüfen.
+- Betreiberstatus aus N1 nachtragen: Secret-Rotation wurde laut Betreiber
+  abgeschlossen. N2 bleibt als Betriebsnachweis offen und wird im Anschluss
+  mit einer konkreten Schrittfolge beschrieben.
 
 **N2 eBay-Notification-Endpoint und Order-Event umsetzen** — Stand: ABGESCHLOSSEN (2026-08-09)
 

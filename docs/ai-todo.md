@@ -97,9 +97,8 @@ MFA-Code. Die vorhandene `audit_events`-Tabelle protokolliert diese Änderungen
 mit Benutzer, Aktion, Objekt, Zeit und optional einem gesalzenen IP-Hash.
 
 **Betreiberstatus:** MFA ist eingerichtet und mit einem echten Code bestätigt.
-Offen bleibt die Secret-Rotation (einschließlich des optionalen
-`AUDIT_IP_HASH_SALT`) sowie der erste echte eBay-Verkaufsfall als
-Betriebsnachweis.
+Die Secret-Rotation wurde laut Betreiber am 2026-08-10 abgeschlossen.
+Offen bleibt der erste echte eBay-Verkaufsfall als Betriebsnachweis.
 
 ### N2. Betriebsstabilität und Doppelverkaufsschutz — **Nutzen: sehr hoch · Kosten: hoch**
 
