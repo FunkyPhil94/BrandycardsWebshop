@@ -561,10 +561,12 @@ Sicherheits- und Funktionsbefunde im
 - Verifikation: `npx tsc --noEmit`, `npm run lint`, Build und `npm test`
   mit 343 Tests erfolgreich. Produktiv antworten `/`, `/account` und `/admin`
   mit HTTP 200; `/api/account/orders` ohne Sitzung mit HTTP 401. Sites-Version
-  13 wurde unter
-  `https://brandycards-webshop.p-brand94.chatgpt.site` erfolgreich deployed.
-- Commit `bef1f75f3bcfb3b7ad5772e934d11c34a51597aa` ist nach GitHub, den
-  Sites-Quellbranch und in Produktion gebracht.
+  13 (Code) und anschließend Version 14 (synchronisierte Dokumentation) wurden
+  unter `https://brandycards-webshop.p-brand94.chatgpt.site` erfolgreich
+  deployed.
+- Der Code-Commit `bef1f75f3bcfb3b7ad5772e934d11c34a51597aa` sowie der
+  Dokumentationsstand `ff10cb060c30782c47d1b73b72109fa2b58c1d65` sind nach
+  GitHub und in den Sites-Quellbranch gebracht; der Code ist produktiv.
 
 ### 2026-08-10 — Abgleich der drei gemeldeten eBay-Verkäufe
 
