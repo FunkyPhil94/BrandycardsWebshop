@@ -37,12 +37,21 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      try { setCart(JSON.parse(sessionStorage.getItem("brandycards-cart") ?? "{}")); } catch { setCart({}); }
+      let gespeicherterWarenkorb: Record<string, number> = {};
+      try { gespeicherterWarenkorb = JSON.parse(sessionStorage.getItem("brandycards-cart") ?? "{}"); } catch { gespeicherterWarenkorb = {}; }
+      setCart(gespeicherterWarenkorb);
+      const ids = Object.entries(gespeicherterWarenkorb)
+        .filter(([, quantity]) => Number.isInteger(quantity) && quantity > 0)
+        .map(([id]) => id);
+      if (!ids.length) {
+        setProducts([]);
+        return;
+      }
+      fetch(`/api/products?ids=${encodeURIComponent(ids.join(","))}`)
+        .then((response) => (response.ok ? response.json() : Promise.reject(new Error("failed"))))
+        .then((data) => setProducts(data.products ?? []))
+        .catch(() => setMessage(t("Produkte konnten nicht geladen werden.")));
     }, 0);
-    fetch("/api/products")
-      .then((response) => response.json())
-      .then((data) => setProducts(data.products ?? []))
-      .catch(() => setMessage(t("Produkte konnten nicht geladen werden.")));
     return () => window.clearTimeout(timer);
   }, [t]);
 

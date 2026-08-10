@@ -52,6 +52,13 @@ nur die Lifecycle-Regel zum Abbruch alter Multipart-Uploads; sie ersetzt keine
 Backup-Kopie. Die Bereinigung verwaister R2-Uploads ist davon getrennt und darf
 keine referenzierten Objekte löschen.
 
+**Stand 2026-08-10:** Für den vollständigen Offsite-Betrieb ist noch kein
+Zielanbieter entschieden oder konfiguriert. Das Projekt enthält weder einen
+externen Upload-Endpunkt noch ein Backup-Secret. Erst nach der Betreiberwahl
+von Ziel, Verschlüsselung und Aufbewahrungsfrist darf der regelmäßige Job
+aktiviert werden; bis dahin bleibt der lokale Export/Restore-Nachweis der
+maßgebliche Testlauf.
+
 Technische Grundlagen:
 
 - [Cloudflare D1 Time Travel](https://developers.cloudflare.com/d1/reference/time-travel/)

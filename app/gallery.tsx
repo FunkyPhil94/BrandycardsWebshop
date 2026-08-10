@@ -13,7 +13,7 @@ type Highlight = {
   id: string;
   title: string;
   description: string | null;
-  category: "Festpreis" | "Auktion";
+  category: "Festpreis" | "Auktion" | "Direkt bei uns";
   priceAmountCents: number | null;
   priceCurrency: string;
   quantity: number;
@@ -165,15 +165,15 @@ export function Gallery() {
                 />
               : <span className="gallery-fallback" aria-hidden="true">BC</span>}
           </span>
-          <span className="gallery-badge">{current.category === "Auktion" ? t("eBay Auktion") : t("Sofort-Kaufen")}</span>
+          <span className="gallery-badge">{current.category === "Direkt bei uns" ? t("Vorverkauf") : current.category === "Auktion" ? t("eBay Auktion") : t("Sofort-Kaufen")}</span>
         </button>
 
         <div className="gallery-detail">
-          <p className="product-meta">{current.category === "Auktion" ? t("Auktion auf eBay") : t("Sofort verfügbar")}</p>
+          <p className="product-meta">{current.category === "Direkt bei uns" ? t("Vorverkauf") : current.category === "Auktion" ? t("Auktion auf eBay") : t("Sofort verfügbar")}</p>
           <h3>
             {current.category === "Auktion"
               ? <a href={current.listingUrl || EBAY_SHOP_URL} target="_blank" rel="noreferrer">{current.title}</a>
-              : <Link href="/karten">{current.title}</Link>}
+              : <Link href={`/karten/${current.id}`}>{current.title}</Link>}
           </h3>
           {/* Immer gerendert, auch ohne Text: Die Bühne wechselt alle zwei
               Sekunden die Karte, und ein Absatz, der mal da ist und mal nicht,
@@ -181,7 +181,9 @@ export function Gallery() {
           <p className="gallery-description">{current.description}</p>
           <div className="gallery-actions">
             <strong className="gallery-price">{formatPrice(current.priceAmountCents, current.priceCurrency, locale) ?? ""}</strong>
-            {current.category === "Auktion"
+            {current.category === "Direkt bei uns"
+              ? <Link className="button button-primary" href={`/karten/${current.id}`}>{t("Preis vorschlagen")} <span>→</span></Link>
+              : current.category === "Auktion"
               ? <a className="button button-primary" href={current.listingUrl || EBAY_SHOP_URL} target="_blank" rel="noreferrer">{t("Auf eBay ansehen")} <span>↗</span></a>
               : (() => {
                   const state = cartButtonState(current.quantity, cart[current.id] ?? 0);

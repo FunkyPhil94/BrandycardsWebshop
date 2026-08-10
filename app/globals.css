@@ -723,3 +723,15 @@ footer { background:var(--ink); color:#fff; padding:52px max(48px,calc((100vw - 
 .admin-order-note { background:#fff4e8; border-left:3px solid var(--gold); color:var(--muted); font-size:11px; line-height:1.6; margin:0; padding:10px 12px; }
 .admin-orders-pagination { align-items:center; display:flex; gap:16px; justify-content:center; margin-top:18px; }
 @media (max-width:640px) { .admin-order-head { grid-template-columns:1fr; } }
+.catalog-toolbar { align-items:center; flex-wrap:wrap; gap:14px 24px; justify-content:flex-start; }
+.catalog-toolbar .search-field { flex:1 1 250px; }
+.catalog-select,.catalog-price { align-items:center; color:#88837b; display:flex; font-size:10px; font-weight:700; gap:8px; letter-spacing:.08em; text-transform:uppercase; }
+.catalog-select select,.catalog-price input { background:transparent; border:0; border-bottom:1px solid #aaa; color:var(--ink); font-family:'DM Mono',monospace; font-size:11px; min-width:82px; padding:5px 2px; }
+.catalog-price input { width:74px; }
+.catalog-select select:focus-visible,.catalog-price input:focus-visible { outline:3px solid #e0a83d; outline-offset:3px; }
+@media (max-width:700px) {
+  .catalog-toolbar { align-items:stretch; }
+  .catalog-toolbar .search-field,.catalog-select,.catalog-price { flex-basis:100%; width:100%; }
+  .catalog-select,.catalog-price { justify-content:space-between; }
+  .catalog-select select,.catalog-price input { flex:1; }
+}

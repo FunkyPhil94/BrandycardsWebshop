@@ -37,14 +37,8 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-**N7: Katalog und Vorverkauf ausbauen + N4 Offsite-Backup-Prüfung — Stand: LÄUFT (2026-08-10)**
-
-- N7 gemäß Arbeitsvorrat umsetzen, testen und produktiv veröffentlichen.
-- N4 auf ein bereits vorhandenes externes Backup-Ziel und passende Konfiguration
-  prüfen; den technischen Rest vorbereiten, soweit kein Betreiberziel oder
-  Zugang dafür vorhanden ist.
-- Ergebnis, offene Abhängigkeiten und nächste Schritte nach dem Durchlauf hier
-  und in [ai-todo.md](ai-todo.md) nachtragen.
+*(Kein Auftrag aktiv. N7 ist abgeschlossen; N4 bleibt wegen des fehlenden
+externen Backup-Ziels teilweise offen.)*
 
 **N2 eBay-Notification-Endpoint und Order-Event umsetzen** — Stand: ABGESCHLOSSEN (2026-08-09)
 
@@ -547,6 +541,22 @@ Sicherheits- und Funktionsbefunde im
 ---
 
 ## Historie
+
+### 2026-08-10 — N7: Katalog und Vorverkauf ausgebaut; N4 geprüft
+
+- Die Startseiten-Galerie verwendet jetzt einen Left-Join und nimmt manuelle
+  Vorverkaufskarten nach derselben Bestandslogik wie der Katalog auf. Für diese
+  Karten bleibt die Aktion Preis vorschlagen; es gibt keinen Festpreis und
+  keinen direkten Warenkorbknopf.
+- /api/products führt Suche im Titel/SKU/Beschreibung sowie Kategorie- und
+  Preisfilter in D1 aus und liefert nur die angeforderte Seite. Der Checkout
+  lädt konkrete Warenkorb-IDs, damit Karten außerhalb von Seite 1 nicht
+  verschwinden. Die Vorverkaufsseite fragt manuelle Karten direkt ab.
+- Build, Lint und **348 Tests** erfolgreich. N4-Prüfung: In Repository,
+  `.env.local` und Cloudflare-Konfiguration existiert kein Offsite-Ziel,
+  Upload-Endpunkt oder Backup-Secret. N4 bleibt daher bewusst teilweise
+  erledigt, bis der Betreiber Ziel, Verschlüsselung, Aufbewahrung und
+  Alarmierung festlegt.
 
 ### 2026-08-10 — N6: Sprache und Transaktionskommunikation
 

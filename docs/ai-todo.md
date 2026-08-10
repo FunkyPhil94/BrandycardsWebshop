@@ -186,6 +186,11 @@ Aufbewahrungsfrist und Alarmierung. Dafür ist eine Betreiberentscheidung zum
 Zielsystem erforderlich; der lokale Restore-Nachweis und die technische
 Backup-Prozedur sind bereits vorhanden.
 
+**Prüfung am 2026-08-10:** Im Repository, in `.env.local` und in der
+Cloudflare-Konfiguration ist kein externes Backup-Ziel, Upload-Endpunkt oder
+Backup-Secret eingerichtet. N4 bleibt deshalb bewusst teilweise erledigt; eine
+Aktivierung ohne festgelegten Zielanbieter und Zugang wäre nicht sicher.
+
 **Fertig, wenn:** ein Datenexport vollständig begründet ist, Fristen technisch
 greifen und eine Wiederherstellung aus einem Backup nachweislich funktioniert.
 
@@ -234,7 +239,7 @@ Preisvorschläge, Anfragen, Kartenangebote und Kontolöschung stehen auf Deutsch
 und Englisch bereit. Adminbereich und Betriebsalarme bleiben bewusst deutsch;
 Katalogdaten wie Kartentitel und Beschreibungen werden nicht übersetzt.
 
-### N7. Katalog und Vorverkauf ausbauen — **Nutzen: mittel bis hoch · Kosten: mittel**
+### ~~N7. Katalog und Vorverkauf ausbauen~~ — **ERLEDIGT am 2026-08-10 · Nutzen: mittel bis hoch · Kosten: mittel**
 
 Erst auf der stabilen Transaktions- und Kommunikationsbasis die
 Kundenreichweite und Katalognutzung ausbauen:
@@ -244,6 +249,15 @@ Kundenreichweite und Katalognutzung ausbauen:
   Kategorie und Preis ergänzen;
 - die komplette Katalogliste serverseitig paginieren, statt alle Karten zu
   laden und nur im Browser zu teilen.
+
+**Ergebnis:** Die Startseiten-Galerie nimmt manuelle Vorverkaufskarten über
+dieselbe Sichtbarkeits- und Bestandslogik wie den Katalog auf. `/api/products`
+filtert und paginiert jetzt in D1 nach Suchtext (Spieler, Set, Verein,
+Kartennummer im Titel/SKU/Beschreibung), Kategorie und Preis. Der Katalog fragt
+nur die aktuelle Seite ab; der Checkout lädt die konkreten Warenkorb-IDs, und
+die Vorverkaufsseite fragt ihren manuellen Bestand direkt ab. Manuelle Karten
+zeigen weiterhin keinen Festpreis und führen ausschließlich zum
+Preisvorschlag. Build, Lint und **348 Tests** sind erfolgreich.
 
 **Fertig, wenn:** manuelle Karten dort erscheinen, wo Kunden sie erwarten, und
 ein größerer Bestand ohne übergroße API-Antworten schnell durchsuchbar bleibt.

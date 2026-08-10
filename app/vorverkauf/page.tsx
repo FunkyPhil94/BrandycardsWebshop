@@ -34,10 +34,15 @@ export default function VorverkaufPage() {
 
   useEffect(() => {
     let cancelled = false;
-    fetch("/api/products")
+    // Vorverkauf is its own catalogue slice. It must not fetch the first page
+    // of all eBay cards and then discover manual cards in the browser.
+    fetch("/api/products?origin=MANUAL&pro=100")
       .then((response) => (response.ok ? response.json() : Promise.reject(new Error("failed"))))
       .then((data: { products?: Product[] }) => {
         if (cancelled) return;
+        // Keep this as a defensive allowlist even though the API already
+        // scopes the response to MANUAL. It must never render an eBay card if
+        // a future API change weakens that filter.
         setCards((data.products ?? []).filter((product) => product.origin === "MANUAL"));
         setStatus("ready");
       })
