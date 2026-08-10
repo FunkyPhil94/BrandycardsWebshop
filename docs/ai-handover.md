@@ -37,8 +37,14 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-*(Kein Auftrag aktiv. N6 ist abgeschlossen; nächster offener Eintrag ist N7
-in [ai-todo.md](ai-todo.md).)*
+**N7: Katalog und Vorverkauf ausbauen + N4 Offsite-Backup-Prüfung — Stand: LÄUFT (2026-08-10)**
+
+- N7 gemäß Arbeitsvorrat umsetzen, testen und produktiv veröffentlichen.
+- N4 auf ein bereits vorhandenes externes Backup-Ziel und passende Konfiguration
+  prüfen; den technischen Rest vorbereiten, soweit kein Betreiberziel oder
+  Zugang dafür vorhanden ist.
+- Ergebnis, offene Abhängigkeiten und nächste Schritte nach dem Durchlauf hier
+  und in [ai-todo.md](ai-todo.md) nachtragen.
 
 **N2 eBay-Notification-Endpoint und Order-Event umsetzen** — Stand: ABGESCHLOSSEN (2026-08-09)
 
