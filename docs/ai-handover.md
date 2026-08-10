@@ -37,8 +37,17 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-*(Kein Auftrag aktiv. N5 ist abgeschlossen; nächster offener Eintrag ist N6
-in [ai-todo.md](ai-todo.md).)*
+**N6: Sprache und Transaktionskommunikation — Stand: LÄUFT (2026-08-10)**
+
+- Bestehende Sprachumschaltung, Konto-/Checkout-Texte und Transaktionsmails
+  vollständig prüfen.
+- Die Sprachwahl, sofern fachlich sinnvoll, am Kundenkonto speichern und bei
+  angemeldeten Kunden geräteübergreifend wiederherstellen.
+- Kunden- und Verkäufermails in Deutsch und Englisch erzeugen; Adminbereich
+  und technische Fehlermeldungen bewusst deutsch belassen, sofern sie nicht
+  zum Kundenprozess gehören.
+- Nach Tests, Typprüfung, Lint und Build committen, pushen, deployen und die
+  deutsche sowie englische Kundenstrecke produktiv prüfen.
 
 **N2 eBay-Notification-Endpoint und Order-Event umsetzen** — Stand: ABGESCHLOSSEN (2026-08-09)
 
