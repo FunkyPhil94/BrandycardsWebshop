@@ -541,6 +541,17 @@ Sicherheits- und Funktionsbefunde im
 
 ## Historie
 
+### 2026-08-10 — Flyer A als gemeinsames Layout für alle Seiten ausgebaut
+
+- Flyer A wurde mit dem Zusatz „Für Sammler, Fans und alle, die eine Karte
+  suchen.“ leicht erweitert, ohne die Seite zu überladen.
+- Beide Flyer-Varianten nutzen jetzt dieselbe helle Farbwelt, dieselbe
+  Typografie, denselben Footer und denselben grundsätzlichen Seitenaufbau.
+- Das BrandyCards-Logo steht auf allen vier Seiten an derselben Stelle und ist
+  einheitlich etwas größer skaliert.
+- Die vier PNG-Vorschauen und beide zweiseitigen PDFs wurden neu gerendert und
+  visuell geprüft.
+
 ### 2026-08-10 — Messeflyer ruhiger überarbeitet
 
 - Die bestehenden zweiseitigen A6-Flyer A und B wurden ruhiger gestaltet und

@@ -1018,6 +1018,20 @@ stellen nur DNS-Zustellung her und erzeugen keine HTTP-Weiterleitung. Der
 Apex-Aufruf endet derzeit mit Cloudflare HTTP 525, bevor der Worker greift.
 Eine separate 301-Weiterleitung des Apex auf den Shop ist daher noch offen.
 
+## 2026-08-10 — Gemeinsames Layout für die Messeflyer
+
+Flyer A war gestalterisch die ruhigere und passendere Referenz. Deshalb wurde
+sein Grundaufbau auf alle vier Seiten übertragen: helle Papierfläche, dezente
+Linien, gedämpfter Akzentton, gleicher Footer und gleiche Logo-Position. Das
+Logo ist auf allen Seiten einheitlich größer gesetzt, damit die Marke auf dem
+kleinen Format nicht untergeht. Flyer A erhielt mit einem kurzen Satz für
+Sammler und Fans etwas mehr Inhalt. Flyer B bleibt auf den Sammlungsankauf
+ausgerichtet, wirkt aber nicht mehr wie ein eigener Gestaltungstyp.
+
+Die vier PNG-Vorschauen und die beiden zweiseitigen PDFs im bestehenden
+Ausgabeordner wurden neu gerendert. Die visuelle Prüfung bestätigte, dass Logo,
+Footer und Grundraster über alle Seiten konsistent sind.
+
 ## 2026-08-10 — Messeflyer für die Messekommunikation überarbeitet
 
 Die ruhige Gestaltung der beiden zweiseitigen Flyer bleibt bewusst bei der
