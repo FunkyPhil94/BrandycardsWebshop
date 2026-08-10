@@ -37,7 +37,12 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-*(derzeit kein Auftrag aktiv)*
+**Zwei aufmerksamkeitsstärkere Varianten aus den neuen Raster-Flyern entwickeln** — Stand: LÄUFT (2026-08-10)
+
+- Die bestehenden Rastervarianten als Basis behalten, aber Headlines, Kontraste,
+  rote Flächen und Diagonalelemente deutlich verstärken.
+- Die klare Informationshierarchie, Ausrichtung und Lesbarkeit beibehalten.
+- Neue Impact-Versionen als PNG und zweiseitige PDF rendern und visuell prüfen.
 
 ## Historie
 
