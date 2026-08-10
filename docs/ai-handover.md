@@ -5139,3 +5139,15 @@ selbst; die Schrittfolge samt Nachprüfung steht in
   ein erneuter Upload ist nicht noetig. Vorhandene Messeflyer-Ausgaben und
   Gestaltungsdokumentation wurden ebenfalls gefunden. Fuer eine neue Variante
   fehlen noch konkrete Messedaten bzw. gewuenschte Inhalte.
+## 2026-08-10 - Komplett neue Messeflyer-Ideen
+
+- Auftrag: Neue Flyer-Richtungen von Grund auf entwickeln; vorhandene Flyer
+  ausdruecklich nicht als Vorlage verwenden.
+- Leitidee aus der Brudernotiz: auffaellig und mitnahmefreundlich, klar groesser
+  als eine Visitenkarte und mit mehr Informationen.
+- Stand: ABGESCHLOSSEN.
+- Ergebnis: Drei neue Konzeptbilder erstellt und getrennt gespeichert:
+  Card Vault, Card Hunt und Card Archive. Die Brudernotiz wurde als Leitidee
+  umgesetzt: hohe Fernwirkung, groesser als eine Visitenkarte und mit klaren
+  Informationsbloecken. Vorhandene Flyer wurden nicht als Gestaltungsreferenz
+  verwendet.
