@@ -37,7 +37,14 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-*(derzeit kein Auftrag aktiv)*
+**Exaktpixelige Rahmenintegration für einen neuen BrandyCards-Flyer** — Stand: LÄUFT (2026-08-10)
+
+- Den vom Nutzer freigegebenen Referenzrahmen als unveränderte Pixelvorlage
+  verwenden, statt ihn künstlich nachzuzeichnen.
+- Einen eigenständigen BrandyCards-Flyer mit bestehendem Logo, QR-Code,
+  Instagram-Hinweis und MESSE26-Rabatt daraus aufbauen.
+- Druckfähige Vorder- und Rückseite als PDF sowie Vorschauen erzeugen und
+  visuell prüfen.
 
 ## Historie
 
