@@ -37,14 +37,17 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-**Zwei aufmerksamkeitsstärkere Varianten aus den neuen Raster-Flyern entwickeln** — Stand: LÄUFT (2026-08-10)
-
-- Die bestehenden Rastervarianten als Basis behalten, aber Headlines, Kontraste,
-  rote Flächen und Diagonalelemente deutlich verstärken.
-- Die klare Informationshierarchie, Ausrichtung und Lesbarkeit beibehalten.
-- Neue Impact-Versionen als PNG und zweiseitige PDF rendern und visuell prüfen.
+*(derzeit kein Auftrag aktiv)*
 
 ## Historie
+
+### 2026-08-10 — Aufmerksamkeitsstärkere Impact-Flyer erstellt
+
+- Die Rastervarianten A und B mit größeren Headlines, härteren Kontrasten,
+  kräftigeren roten Flächen und dynamischeren Diagonalen weiterentwickelt.
+- Informationshierarchie, Ausrichtung und Lesbarkeit beibehalten.
+- Beide Impact-Versionen als PNG und zweiseitige PDF gerendert und visuell
+  geprüft.
 
 ### 2026-08-10 — Zwei vollständig neue, rasterbasierte BrandyCards-Flyer erstellt
 
@@ -5204,3 +5207,10 @@ selbst; die Schrittfolge samt Nachprüfung steht in
   erstellt. Die Energie kommt aus einer einzigen Diagonale, einem kontrollierten
   Kartenstapel und klaren Farbkontrasten; QR- und Footerbereich sind sauber
   getrennt. PDF und beide PNG-Seiten wurden gerendert und visuell geprueft.
+## 2026-08-10 - Originalen Card-Hunt-Look auf Sportkarten umstellen
+
+- Auftrag: Die vom Nutzer favorisierte uebertriebene Originalrichtung erneut
+  verwenden und auf Sportkarten ausrichten.
+- Vorgabe: Sportkarten im Text referenzieren; in allen dargestellten Motiven
+  ausschliesslich Fussball und American Football verwenden.
+- Stand: LAEUFT.

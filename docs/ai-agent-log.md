@@ -1,5 +1,16 @@
 # BrandyCards Agentenprotokoll
 
+## 2026-08-10 — Aufmerksamkeitsstärkere Impact-Flyer erstellt
+
+Die klaren Rasterlayouts wurden bewusst nicht mit zusätzlichem Fließtext
+überladen. Für mehr Fernwirkung wurden stattdessen die Headlines vergrößert,
+die Kontraste verschärft, rote Flächen als Blickführung ergänzt und die
+Akzentfarben stärker gegeneinander gesetzt. So bleiben die Inhalte schnell
+erfassbar, wirken am Messetisch aber präsenter.
+
+Die Impact-Versionen A und B wurden als Vorder- und Rückseite gerendert. Die
+PDFs und PNG-Vorschauen wurden visuell geprüft.
+
 ## 2026-08-10 — Zwei vollständig neue, rasterbasierte BrandyCards-Flyer erstellt
 
 Die bisherigen Flyer wurden für diesen Durchlauf nicht weiterverwendet. Stattdessen
