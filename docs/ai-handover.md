@@ -37,7 +37,14 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-*(kein aktueller Auftrag)*
+**Produktionsprüfung eBay-Notifications — Stand: LÄUFT (2026-08-10)**
+
+- Die eBay-Notification-Ereignisse der vergangenen Nacht in der produktiven
+  D1-Datenbank lesend auswerten.
+- `ORDER_CONFIRMATION`-Ereignisse mit Bestellungen, eBay-Listings, Bestand,
+  Idempotenz und Betriebsalarmen abgleichen.
+- Keine Produktionsdaten verändern; Ergebnis und eventuelle Auffälligkeiten
+  nach der Prüfung dokumentieren und den Handover wieder schließen.
 
 **N2 eBay-Notification-Endpoint und Order-Event umsetzen** — Stand: ABGESCHLOSSEN (2026-08-09)
 
