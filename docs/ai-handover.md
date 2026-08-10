@@ -37,9 +37,14 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-*(Kein Auftrag aktiv. N8 ist abgeschlossen; N4 bleibt wegen des fehlenden
-externen Backup-Ziels teilweise offen. N2 bleibt als echter Betriebsnachweis
-offen.)*
+**Texte und Vorverkaufsdarstellung überarbeiten** — Stand: LÄUFT
+
+- Die Gedankenstriche aus den sichtbaren deutschen und englischen Texten sowie
+  den Transaktionsmails entfernen und die Formulierungen sprachlich glätten.
+- Den mobilen Textblock auf `/anfragen` so umbauen, dass der Vorverkaufslink
+  nicht mehr als breiter, isolierter Unterstrich mitten im Satz erscheint.
+- Anschließend öffentliche Texte, Sprachschlüssel, Mails, TypeScript, Lint,
+  Tests, Build, Commit, Push und beide Deployments prüfen.
 
 **N2 eBay-Notification-Endpoint und Order-Event umsetzen** — Stand: ABGESCHLOSSEN (2026-08-09)
 
