@@ -5179,4 +5179,9 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 - Kritikpunkt: Die Referenz kombiniert zu viele Deko-Cliches gleichzeitig;
   Pfeile, Sterne, Punkte, Karten und Text muessen auf einen klaren visuellen
   Hauptgedanken reduziert werden.
-- Stand: LAEUFT.
+- Stand: ABGESCHLOSSEN.
+- Ergebnis: Die Card-Hunt-Idee wurde als beidseitiger A5-Flyer neu gesetzt.
+  Die Gestaltung reduziert die Referenz auf eine klare Typografie, zwei
+  Kartenformen, eine begrenzte Farbpalette und eine strukturierte Rueckseite.
+  PDF und beide Seiten-PNGs wurden gerendert und visuell geprueft; der QR-Code
+  bleibt bewusst als Platzhalter markiert.
