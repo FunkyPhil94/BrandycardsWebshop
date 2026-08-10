@@ -1,5 +1,13 @@
 export type Locale = "de" | "en";
 
+export function isLocale(value: unknown): value is Locale {
+  return value === "de" || value === "en";
+}
+
+export function normalizeLocale(value: unknown): Locale | null {
+  return isLocale(value) ? value : null;
+}
+
 type Values = Record<string, string | number>;
 
 /**
@@ -372,6 +380,8 @@ export const ENGLISH: Record<string, string> = {
 
 const ENGLISH_EXTRA: Record<string, string> = {
   "Sprache": "Language",
+  "Sprache des Kontos": "Account language",
+  "Diese Auswahl gilt auch auf anderen Geräten und für deine Kundenmails.": "This choice also applies on other devices and to your customer emails.",
   "English": "English",
   "Datenschutz- und L\u00f6schinformation": "Privacy and deletion information",
   "AUS DEM BESTAND": "FROM THE COLLECTION",
@@ -694,6 +704,6 @@ export function translate(locale: Locale, key: string, values: Values = {}) {
 
 export function localeFromRequest(request: Request): Locale {
   const cookie = request.headers.get("cookie")?.match(/(?:^|;\s*)brandycards-locale=(en|de)(?:;|$)/u)?.[1];
-  if (cookie === "en" || cookie === "de") return cookie;
+  if (isLocale(cookie)) return cookie;
   return request.headers.get("accept-language")?.toLowerCase().startsWith("en") ? "en" : "de";
 }

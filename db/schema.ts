@@ -46,6 +46,7 @@ export const submissionStatusValues = ["NEW", "IN_REVIEW", "NEEDS_INFO", "ACCEPT
 export const syncRunStatusValues = ["RUNNING", "SUCCEEDED", "PARTIAL", "FAILED"] as const;
 export const syncEventStatusValues = ["IMPORTED", "UPDATED", "DEACTIVATED", "SKIPPED", "FAILED"] as const;
 export const ebayOutboxStatusValues = ["PENDING", "PROCESSING", "RETRY_WAIT", "SUCCEEDED", "FAILED", "CANCELLED"] as const;
+export const localeValues = ["de", "en"] as const;
 
 export const users = sqliteTable("users", {
   id: id(),
@@ -54,6 +55,7 @@ export const users = sqliteTable("users", {
   username: text("username"),
   emailVerifiedAt: optionalTimestamp("email_verified_at"),
   displayName: text("display_name"),
+  preferredLocale: text("preferred_locale", { enum: localeValues }).notNull().default("de"),
   authProvider: text("auth_provider"),
   authSubject: text("auth_subject"),
   createdAt: timestamp("created_at"),
@@ -64,6 +66,7 @@ export const users = sqliteTable("users", {
   uniqueIndex("users_provider_subject_unique").on(table.authProvider, table.authSubject),
   index("users_role_idx").on(table.role),
   check("users_role_check", sql`${table.role} IN ('CUSTOMER', 'ADMIN')`),
+  check("users_preferred_locale_check", sql`${table.preferredLocale} IN ('de', 'en')`),
 ]);
 
 export const products = sqliteTable("products", {

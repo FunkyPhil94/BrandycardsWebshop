@@ -17,9 +17,28 @@ test("language switch persists DE/EN and exposes both flags", async () => {
   assert.match(provider, /x1F1EC;.*x1F1E7/);
   assert.match(provider, /aria-pressed=\{locale === "de"\}/);
   assert.match(provider, /aria-pressed=\{locale === "en"\}/);
+  assert.match(provider, /syncAccountLocale/);
   assert.match(messages, /localeFromRequest/);
   assert.match(messages, /ENGLISH_EXTRA/);
   assert.match(chrome, /<LanguageSwitch \/>/);
+});
+
+test("account language is stored and restored through the profile route", async () => {
+  const [provider, account, profileRoute, schema, migration] = await Promise.all([
+    read("app/i18n.tsx"),
+    read("app/account/page.tsx"),
+    read("app/api/account/profile/route.ts"),
+    read("db/schema.ts"),
+    read("drizzle/0008_user_preferred_locale.sql"),
+  ]);
+
+  assert.match(provider, /\/api\/account\/profile/);
+  assert.match(account, /preferredLocale/);
+  assert.match(profileRoute, /preferredLocale/);
+  assert.match(schema, /preferredLocale: text\("preferred_locale"/);
+  assert.match(migration, /preferred_locale/);
+  assert.match(migration, /'de'/);
+  assert.match(migration, /'en'/);
 });
 
 test("customer-facing pages keep card data untranslated while translating the shell", async () => {

@@ -84,7 +84,7 @@ export async function POST(request: Request) {
       }, { status: 502 });
     }
 
-    await notifyAccountDeleted(empfaenger, bestellungen.length);
+    await notifyAccountDeleted(empfaenger, bestellungen.length, appUser.preferredLocale);
     console.warn("[account] Konto auf eigenen Wunsch gelöscht.", { ...geloescht, verbleibendeBestellungen: bestellungen.length });
     return NextResponse.json({ ok: true, geloescht, verbleibendeBestellungen: bestellungen.length });
   } catch (error) {

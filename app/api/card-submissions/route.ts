@@ -4,6 +4,7 @@ import { getAssetBucket, getDb } from "../../../db";
 import { eq } from "drizzle-orm";
 import { notifyCardSubmissionReceived } from "../../../lib/email/notify.ts";
 import { enforcePublicRateLimit } from "../../../lib/rate-limit";
+import { localeFromRequest } from "../../../lib/i18n";
 import { HONEYPOT_FIELD, RENDERED_AT_FIELD } from "../../../lib/form-bot-guard";
 import {
   assertHumanSubmission,
@@ -99,7 +100,7 @@ async function handleMultipartSubmission(request: Request) {
   // Erst hier, nachdem auch die Bilder sicher liegen: Der Pfad darüber räumt
   // das Angebot bei einem Uploadfehler wieder ab — eine Bestätigung für etwas,
   // das gleich wieder gelöscht wird, wäre schlimmer als keine.
-  await notifyCardSubmissionReceived(email, title);
+  await notifyCardSubmissionReceived(email, title, localeFromRequest(request));
   return NextResponse.json({ ok: true, cardSubmissionId: submission.id, uploads: uploads.length }, { status: 201 });
 }
 

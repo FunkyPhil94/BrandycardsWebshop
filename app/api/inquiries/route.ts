@@ -13,6 +13,7 @@ import {
 } from "../../../lib/public-form";
 import { notifyInquiryReceived } from "../../../lib/email/notify.ts";
 import { enforcePublicRateLimit } from "../../../lib/rate-limit";
+import { localeFromRequest } from "../../../lib/i18n";
 
 export async function POST(request: Request) {
   try {
@@ -33,7 +34,7 @@ export async function POST(request: Request) {
     }).returning({ id: inquiries.id });
     // Nach dem Speichern, nie davor: Die Anfrage ist auch dann angekommen,
     // wenn die Bestätigung nicht hinausgeht.
-    await notifyInquiryReceived(email, title);
+    await notifyInquiryReceived(email, title, localeFromRequest(request));
     return NextResponse.json({ ok: true, inquiryId: row?.id }, { status: 201 });
   } catch (error) {
     return jsonError(error);

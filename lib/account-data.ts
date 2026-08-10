@@ -100,6 +100,7 @@ export async function collectAccountData(db: Db, userId: string) {
       email: user.email,
       benutzername: user.username,
       anzeigename: user.displayName,
+      bevorzugteSprache: user.preferredLocale,
       rolle: user.role,
       emailBestaetigtAm: user.emailVerifiedAt,
       angelegtAm: user.createdAt,

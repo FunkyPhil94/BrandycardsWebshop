@@ -6,6 +6,7 @@ import { protokolliereVersand, sendEmail, versucheVersand } from "./send.ts";
 import { accountDeleted, cardSubmissionReceived, inquiryReceived, offerAccepted, offerRejected, orderConfirmation, orderRefunded, orderShipped, sellerOrderNotification } from "./templates.ts";
 import { notifyOperationalAlert } from "../ops-alerts.ts";
 import { shippingCarrierLabel, trackingUrl } from "../shipping";
+import type { Locale } from "../i18n";
 
 /** Die Brücke zwischen Datenbank und Vorlagen.
  *
@@ -47,11 +48,16 @@ async function sendeMitBetriebsalarm(
 }
 
 /** Die Adresse eines Bestellers: entweder das Konto oder die Gastadresse. */
-async function empfaengerDerBestellung(db: Db, order: { userId: string | null; guestEmail: string | null }): Promise<string | null> {
-  if (order.guestEmail) return order.guestEmail;
-  if (!order.userId) return null;
+async function empfaengerDerBestellung(db: Db, order: { userId: string | null; guestEmail: string | null }): Promise<{ email: string | null; locale: Locale }> {
+  if (order.guestEmail) return { email: order.guestEmail, locale: "de" };
+  if (!order.userId) return { email: null, locale: "de" };
   const user = await db.query.users.findFirst({ where: eq(users.id, order.userId) });
-  return user?.email ?? null;
+  return { email: user?.email ?? null, locale: user?.preferredLocale === "en" ? "en" : "de" };
+}
+
+async function sellerLocale(db: Db, email: string): Promise<Locale> {
+  const user = await db.query.users.findFirst({ where: eq(users.email, email.trim().toLowerCase()) });
+  return user?.preferredLocale === "en" ? "en" : "de";
 }
 
 /** Bestellbestätigung nach erfolgreichem Zahlungseinzug.
@@ -92,6 +98,7 @@ export async function notifyOrderPaid(
       shipping: { cents: daten.order.shippingAmountCents, currency: daten.order.currency },
       total: { cents: daten.order.totalAmountCents, currency: daten.order.currency },
       shopUrl: shopUrl(),
+      locale: daten.locale,
     });
 
     await sendeMitBetriebsalarm("Bestellbestätigung", daten.empfaenger, nachricht, `order:${orderId}:customer`, { orderId });
@@ -117,6 +124,7 @@ export async function notifyOrderPaid(
 
     const ziel = getEmailConfig()?.sellerEmail;
     if (!ziel) return;
+    const locale = await sellerLocale(db, ziel);
 
     const nachricht = sellerOrderNotification({
       orderNumber: daten.order.orderNumber,
@@ -129,6 +137,7 @@ export async function notifyOrderPaid(
       customerEmail: daten.empfaenger ?? "unbekannt",
       bestandspruefung,
       shopUrl: shopUrl(),
+      locale,
     });
 
     await sendeMitBetriebsalarm("Verkäufernachricht", ziel, nachricht, `order:${orderId}:seller`, { orderId });
@@ -155,6 +164,7 @@ export async function notifyOrderShipped(db: Db, orderId: string): Promise<void>
       trackingNumber: daten.order.trackingNumber,
       trackingUrl: trackingUrl(daten.order.shippingCarrier, daten.order.trackingNumber),
       shopUrl: shopUrl(),
+      locale: daten.locale,
     });
     await sendeMitBetriebsalarm("Versandbestätigung", daten.empfaenger, nachricht, `order:${orderId}:shipped`, { orderId });
   });
@@ -169,6 +179,7 @@ export async function notifyOrderRefunded(db: Db, orderId: string): Promise<void
       orderNumber: daten.order.orderNumber,
       amount: { cents: daten.order.totalAmountCents, currency: daten.order.currency },
       shopUrl: shopUrl(),
+      locale: daten.locale,
     });
     await sendeMitBetriebsalarm("Erstattungsbestätigung", daten.empfaenger, nachricht, `order:${orderId}:refunded`, { orderId });
   });
@@ -183,9 +194,11 @@ async function bestelldaten(db: Db, orderId: string) {
     quantity: orderItems.quantity,
     unitAmountCents: orderItems.unitAmountCents,
   }).from(orderItems).where(eq(orderItems.orderId, orderId));
+  const empfaenger = await empfaengerDerBestellung(db, order);
   return {
     order,
-    empfaenger: await empfaengerDerBestellung(db, order),
+    empfaenger: empfaenger.email,
+    locale: empfaenger.locale,
     positionen: positionen.map((p) => ({
       title: p.title,
       quantity: p.quantity,
@@ -220,8 +233,9 @@ export async function notifyOfferDecision(db: Db, offerId: string, entscheidung:
     const offer = await db.query.priceOffers.findFirst({ where: eq(priceOffers.id, offerId) });
     if (!offer) return;
 
-    const empfaenger = offer.guestEmail
-      ?? (offer.userId ? (await db.query.users.findFirst({ where: eq(users.id, offer.userId) }))?.email ?? null : null);
+    const offerUser = offer.userId ? await db.query.users.findFirst({ where: eq(users.id, offer.userId) }) : null;
+    const empfaenger = offer.guestEmail ?? offerUser?.email ?? null;
+    const locale: Locale = offerUser?.preferredLocale === "en" ? "en" : "de";
     if (!empfaenger) {
       console.error("[email] Preisvorschlag ohne Empfängeradresse.", { offerId });
       return;
@@ -241,8 +255,9 @@ export async function notifyOfferDecision(db: Db, offerId: string, entscheidung:
           expiresAt: offer.expiresAt ?? "",
           productUrl,
           shopUrl: basis,
+          locale,
         })
-      : offerRejected({ title: titel, productUrl, shopUrl: basis });
+      : offerRejected({ title: titel, productUrl, shopUrl: basis, locale });
 
     await sendeMitBetriebsalarm(
       entscheidung === "accept" ? "Preisvorschlag angenommen" : "Preisvorschlag abgelehnt",
@@ -255,16 +270,16 @@ export async function notifyOfferDecision(db: Db, offerId: string, entscheidung:
 }
 
 /** Eingangsbestätigung für eine Kartenanfrage. */
-export async function notifyInquiryReceived(empfaenger: string, gesucht: string): Promise<void> {
+export async function notifyInquiryReceived(empfaenger: string, gesucht: string, locale: Locale = "de"): Promise<void> {
   await versucheVersand("Anfragebestätigung", async () => {
-    await sendeMitBetriebsalarm("Anfragebestätigung", empfaenger, inquiryReceived({ title: gesucht, shopUrl: shopUrl() }), "inquiry");
+    await sendeMitBetriebsalarm("Anfragebestätigung", empfaenger, inquiryReceived({ title: gesucht, shopUrl: shopUrl(), locale }), "inquiry");
   });
 }
 
 /** Eingangsbestätigung für ein Ankaufsangebot. */
-export async function notifyCardSubmissionReceived(empfaenger: string, karte: string): Promise<void> {
+export async function notifyCardSubmissionReceived(empfaenger: string, karte: string, locale: Locale = "de"): Promise<void> {
   await versucheVersand("Ankaufbestätigung", async () => {
-    await sendeMitBetriebsalarm("Ankaufbestätigung", empfaenger, cardSubmissionReceived({ title: karte, shopUrl: shopUrl() }), "card-submission");
+    await sendeMitBetriebsalarm("Ankaufbestätigung", empfaenger, cardSubmissionReceived({ title: karte, shopUrl: shopUrl(), locale }), "card-submission");
   });
 }
 
@@ -273,8 +288,8 @@ export async function notifyCardSubmissionReceived(empfaenger: string, karte: st
  * `empfaenger` muss der Aufrufer **vor** dem Löschen festhalten: Danach gibt es
  * keine Kontozeile mehr, aus der sich die Adresse nachschlagen ließe.
  */
-export async function notifyAccountDeleted(empfaenger: string, bestellungen: number): Promise<void> {
+export async function notifyAccountDeleted(empfaenger: string, bestellungen: number, locale: Locale = "de"): Promise<void> {
   await versucheVersand("Löschbestätigung", async () => {
-    await sendeMitBetriebsalarm("Löschbestätigung", empfaenger, accountDeleted({ bestellungen, shopUrl: shopUrl() }), "account-deleted");
+    await sendeMitBetriebsalarm("Löschbestätigung", empfaenger, accountDeleted({ bestellungen, shopUrl: shopUrl(), locale }), "account-deleted");
   });
 }

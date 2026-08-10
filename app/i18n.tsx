@@ -1,7 +1,8 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { translate, type Locale } from "../lib/i18n";
+import { translate, isLocale, type Locale } from "../lib/i18n";
+import { getSupabaseBrowserClient } from "../lib/supabase-browser";
 
 type I18nContextValue = {
   locale: Locale;
@@ -32,9 +33,37 @@ function persistLocale(locale: Locale) {
   }
 }
 
+async function readAccountLocale() {
+  try {
+    const session = (await getSupabaseBrowserClient().auth.getSession()).data.session;
+    if (!session) return null;
+    const response = await fetch("/api/account/profile", { headers: { Authorization: `Bearer ${session.access_token}` } });
+    if (!response.ok) return null;
+    const body = await response.json() as { preferredLocale?: unknown };
+    return isLocale(body.preferredLocale) ? body.preferredLocale : null;
+  } catch {
+    return null;
+  }
+}
+
+async function syncAccountLocale(locale: Locale) {
+  try {
+    const session = (await getSupabaseBrowserClient().auth.getSession()).data.session;
+    if (!session) return;
+    await fetch("/api/account/profile", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ preferredLocale: locale }),
+    });
+  } catch {
+    // The local choice remains usable if the account request is unavailable.
+  }
+}
+
 export function I18nProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>("de");
   useEffect(() => {
+    let lookupActive = true;
     const next = readLocale();
     // Restore the persisted client preference after hydration. The provider
     // intentionally renders German on the server to keep the initial markup
@@ -42,11 +71,18 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLocaleState(next);
     persistLocale(next);
+    void readAccountLocale().then((accountLocale) => {
+      if (!lookupActive || !accountLocale) return;
+      setLocaleState(accountLocale);
+      persistLocale(accountLocale);
+    });
+    return () => { lookupActive = false; };
   }, []);
 
   const setLocale = useCallback((next: Locale) => {
     setLocaleState(next);
     persistLocale(next);
+    void syncAccountLocale(next);
   }, []);
   const value = useMemo(() => ({ locale, setLocale, t: (key: string, values?: Record<string, string | number>) => translate(locale, key, values) }), [locale, setLocale]);
 
@@ -82,4 +118,3 @@ export function GlobalLegalNav() {
     <a href="/versand-zahlung">{t("Versand & Zahlung")}</a>
   </nav>;
 }
-

@@ -4,6 +4,7 @@ import { getDb } from "../db";
 import { users } from "../db/schema";
 import { getSupabaseUser } from "./supabase-server";
 import { changed, isUniqueViolation } from "./user-profile";
+import { normalizeLocale } from "./i18n";
 
 export type AppUser = typeof users.$inferSelect;
 
@@ -30,7 +31,7 @@ function isConfiguredAdmin(authUser: SupabaseUser, email: string) {
   return configuredEmails.includes(email);
 }
 
-export async function findOrCreateAppUser(authUser: SupabaseUser, requestedUsername?: unknown, requestedDisplayName?: unknown): Promise<AppUser> {
+export async function findOrCreateAppUser(authUser: SupabaseUser, requestedUsername?: unknown, requestedDisplayName?: unknown, requestedPreferredLocale?: unknown): Promise<AppUser> {
   if (!authUser.email) throw new Error("Authenticated Supabase user has no email.");
   const db = getDb();
   const email = authUser.email.trim().toLowerCase();
@@ -39,6 +40,7 @@ export async function findOrCreateAppUser(authUser: SupabaseUser, requestedUsern
   const configuredAdmin = isConfiguredAdmin(authUser, email);
   const username = normalizeUsername(requestedUsername ?? authUser.user_metadata?.username);
   const displayName = normalizeDisplayName(requestedDisplayName ?? authUser.user_metadata?.displayName);
+  const preferredLocale = normalizeLocale(requestedPreferredLocale);
   const linked = await db.query.users.findFirst({ where: and(eq(users.authProvider, "supabase"), eq(users.authSubject, authUser.id)) });
   if (linked && emailVerified && linked.email !== email) {
     const emailOwner = await db.query.users.findFirst({ where: eq(users.email, email) });
@@ -55,6 +57,7 @@ export async function findOrCreateAppUser(authUser: SupabaseUser, requestedUsern
       email: emailVerified ? email : existing.email,
       ...(username ? { username } : {}),
       ...(displayName ? { displayName } : {}),
+      ...(preferredLocale ? { preferredLocale } : {}),
       authProvider: "supabase" as const,
       authSubject: authUser.id,
       emailVerifiedAt: emailVerified ? verifiedAt : existing.emailVerifiedAt,
@@ -86,6 +89,7 @@ export async function findOrCreateAppUser(authUser: SupabaseUser, requestedUsern
     email,
     username,
     displayName,
+    preferredLocale: preferredLocale ?? normalizeLocale(authUser.user_metadata?.preferredLocale) ?? "de",
     role: configuredAdmin ? "ADMIN" : "CUSTOMER",
     authProvider: "supabase",
     authSubject: authUser.id,

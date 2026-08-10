@@ -6,6 +6,7 @@ import type { User } from "@supabase/supabase-js";
 import { getSupabaseBrowserClient } from "../../lib/supabase-browser";
 import { SiteFooter, SiteHeader, formatPrice } from "../site-chrome";
 import { useI18n } from "../i18n";
+import { isLocale, type Locale } from "../../lib/i18n";
 
 type Mode = "login" | "signup" | "reset";
 
@@ -62,7 +63,7 @@ function safeReturnPath() {
 }
 
 export default function AccountPage() {
-  const { t, locale } = useI18n();
+  const { t, locale, setLocale } = useI18n();
   const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
@@ -76,17 +77,18 @@ export default function AccountPage() {
   const [deletionReady, setDeletionReady] = useState<boolean | null>(null);
   const [orders, setOrders] = useState<AccountOrder[] | null>(null);
 
-  async function syncProfile(sessionUser: User | null, accessToken?: string, profile?: { username?: string; displayName?: string }) {
+  async function syncProfile(sessionUser: User | null, accessToken?: string, profile?: { username?: string; displayName?: string; preferredLocale?: Locale }) {
     if (!sessionUser || !accessToken) return;
     const response = await fetch("/api/account/profile", {
       method: "POST",
       headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ username: profile?.username ?? sessionUser.user_metadata?.username, displayName: profile?.displayName ?? sessionUser.user_metadata?.displayName }),
+      body: JSON.stringify({ username: profile?.username ?? sessionUser.user_metadata?.username, displayName: profile?.displayName ?? sessionUser.user_metadata?.displayName, preferredLocale: profile?.preferredLocale }),
     });
     if (response.ok) {
-      const body = await response.json() as { username?: string | null; displayName?: string | null };
+      const body = await response.json() as { username?: string | null; displayName?: string | null; preferredLocale?: unknown };
       setUsername(body.username ?? profile?.username ?? sessionUser.user_metadata?.username ?? "");
       setDisplayName(body.displayName ?? profile?.displayName ?? sessionUser.user_metadata?.displayName ?? "");
+      if (isLocale(body.preferredLocale)) setLocale(body.preferredLocale);
     }
   }
 
@@ -215,7 +217,7 @@ export default function AccountPage() {
       const supabase = getSupabaseBrowserClient();
       const { data, error } = await supabase.auth.updateUser({ data: { username, displayName } });
       if (error) throw error;
-      await syncProfile(data.user, (await supabase.auth.getSession()).data.session?.access_token, { username, displayName });
+      await syncProfile(data.user, (await supabase.auth.getSession()).data.session?.access_token, { username, displayName, preferredLocale: locale });
       setUser(data.user);
       setMessage(t("Dein Profil wurde gespeichert."));
     } catch (error) {
@@ -297,6 +299,7 @@ export default function AccountPage() {
               <label className="form-field"><span>{t("E-Mail-Adresse")}</span><input type="email" value={user.email ?? ""} disabled /><small>{t("Die E-Mail-Adresse deines Kontos lässt sich hier nicht ändern.")}</small></label>
               <label className="form-field"><span>{t("Benutzername *")}</span><input type="text" value={username} onChange={(event) => setUsername(event.target.value)} required minLength={3} maxLength={30} pattern="[A-Za-z0-9_]{3,30}" /><small>{t("3–30 Zeichen: nur Buchstaben, Zahlen und Unterstrich (_).")}</small></label>
               <label className="form-field"><span>{t("Anzeigename")}</span><input type="text" value={displayName} onChange={(event) => setDisplayName(event.target.value)} maxLength={120} /></label>
+              <label className="form-field"><span>{t("Sprache des Kontos")}</span><select value={locale} onChange={(event) => { const next = event.target.value; if (next === "de" || next === "en") setLocale(next); }}><option value="de">{t("Deutsch")}</option><option value="en">{t("English")}</option></select><small>{t("Diese Auswahl gilt auch auf anderen Geräten und für deine Kundenmails.")}</small></label>
               <button className="button button-primary" type="submit" disabled={busy}>{busy ? t("Speichere …") : t("Profil speichern")}</button>
             </form>
           </section>
