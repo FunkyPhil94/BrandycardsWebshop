@@ -37,7 +37,17 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-*(kein aktueller Auftrag)*
+**N5: Kundenkonto und Versandabwicklung — Stand: LÄUFT (2026-08-10)**
+
+- Bestellhistorie im Kundenkonto und Versanddaten im Auftrag fachlich prüfen
+  und umsetzen.
+- Versandstatus, Trackingnummer und Versandbestätigung mit deutscher und
+  englischer Transaktionskommunikation vorbereiten.
+- Admin-Workflow für Storno, Erstattung und Rücksendung sicher abgrenzen;
+  Bestand und eBay-Angebot dürfen nicht unkontrolliert reaktiviert werden.
+- `COMPLETED` fachlich verwenden oder aus dem Schema entfernen.
+- Nach Tests, Typprüfung, Lint und Build committen, pushen, deployen und die
+  Kundenkonto-/Adminroute produktiv verifizieren.
 
 **N2 eBay-Notification-Endpoint und Order-Event umsetzen** — Stand: ABGESCHLOSSEN (2026-08-09)
 
