@@ -37,16 +37,9 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-**N8: Auffindbarkeit und Wartbarkeit vervollständigen** — Stand: LÄUFT
-(2026-08-10)
-
-- Sitemap, robots.txt, Canonical-URLs, Open-Graph-/Twitter-Metadaten,
-  dynamische Produkt-Metadaten und strukturierte Produktdaten ergänzen.
-- README und Deploymentdokumentation auf den aktuellen Worker-/Sites-Stand
-  bringen und Dependency-Audit prüfen.
-- Betreiberstatus aus N1 nachtragen: Secret-Rotation wurde laut Betreiber
-  abgeschlossen. N2 bleibt als Betriebsnachweis offen und wird im Anschluss
-  mit einer konkreten Schrittfolge beschrieben.
+*(Kein Auftrag aktiv. N8 ist abgeschlossen; N4 bleibt wegen des fehlenden
+externen Backup-Ziels teilweise offen. N2 bleibt als echter Betriebsnachweis
+offen.)*
 
 **N2 eBay-Notification-Endpoint und Order-Event umsetzen** — Stand: ABGESCHLOSSEN (2026-08-09)
 
@@ -549,6 +542,24 @@ Sicherheits- und Funktionsbefunde im
 ---
 
 ## Historie
+
+### 2026-08-10 — N8: Auffindbarkeit und Wartbarkeit
+
+- Öffentliche Routen tragen jetzt kanonische URLs; Produktdetailseiten erzeugen
+  dynamische Titel, Beschreibungen, Open-Graph-/Twitter-Metadaten und sichere
+  schema.org-`Product`-Daten. Konto, Admin und Checkout sind `noindex`.
+- `robots.txt` sperrt interne/API-Pfade. `sitemap.xml` verbindet die
+  öffentlichen Seiten mit den 291 sichtbaren Produktseiten aus D1.
+- README und Deploymentbeschreibung entsprechen dem produktiven Worker,
+  `shop.brandycards.de`, dem Drei-Minuten-Cron und dem getrennten Sites-
+  Preview. Next `16.3.0` beseitigt die Produktions-Audit-Warnungen;
+  `npm audit --omit=dev` meldet 0 Schwachstellen. 15 Warnungen verbleiben nur
+  in Entwicklungswerkzeugen mit teils Major-Upgrades.
+- Verifikation: TypeScript, Lint, Build und **350 Tests** erfolgreich.
+  Live antworten `robots.txt`, `sitemap.xml` und Produktdetailseite korrekt;
+  die Sitemap enthält 291 Produkt-URLs. Secret-Rotation ist laut Betreiber
+  abgeschlossen. N2 bleibt der echte eBay-Verkauf mit Outbox-/Verkäufermail-
+  Nachweis.
 
 ### 2026-08-10 — N7: Katalog und Vorverkauf ausgebaut; N4 geprüft
 

@@ -267,7 +267,7 @@ datenleerer Preview-/Hosting-Pfad und ist nicht der kanonische Shop.
 **Fertig, wenn:** manuelle Karten dort erscheinen, wo Kunden sie erwarten, und
 ein größerer Bestand ohne übergroße API-Antworten schnell durchsuchbar bleibt.
 
-### N8. Auffindbarkeit und Wartbarkeit — **Nutzen: mittel · Kosten: niedrig bis mittel**
+### ~~N8. Auffindbarkeit und Wartbarkeit~~ — **ERLEDIGT am 2026-08-10 · Nutzen: mittel · Kosten: niedrig bis mittel**
 
 Zum Schluss die Reichweite und die langfristige Pflege an den stabilen
 Funktionsstand anpassen:
@@ -278,6 +278,23 @@ Funktionsstand anpassen:
   Migrationen und die tatsächlichen Worker-/Sites-Bindings anpassen;
 - verbleibende Dependency-Audit-Meldungen beim nächsten sinnvollen
   Next-Minor prüfen und die Entscheidung dokumentieren.
+
+**Ergebnis:** Der Worker liefert Canonical-URLs für die öffentlichen Routen,
+produktspezifische Metadata mit Open Graph/Twitter und sichere schema.org-
+`Product`-Daten für Festpreiskarten. `robots.txt` sperrt interne/API-Pfade;
+`sitemap.xml` enthält die öffentlichen Seiten und die 291 aktuell sichtbaren
+Produktseiten direkt aus D1. Konto, Admin und Checkout sind auf `noindex`
+gesetzt. README und Deploymentbeschreibung entsprechen jetzt dem produktiven
+Worker, dem Drei-Minuten-Cron und dem getrennten Sites-Preview.
+
+Das Update auf Next `16.3.0` beseitigt alle Produktionswarnungen: `npm audit
+--omit=dev` meldet **0** Schwachstellen. Es bleiben 15 Warnungen in reinen
+Entwicklungswerkzeugen; sie erfordern teils Major-Upgrades (u. a. vinext und
+drizzle-kit) und werden nicht per Force-Upgrade in den Produktionspfad gezogen.
+Build, TypeScript, Lint und **350 Tests** sind erfolgreich. Live geprüft:
+`robots.txt` und `sitemap.xml` antworten mit 200, die Sitemap enthält 291
+Produkt-URLs und eine Produktdetailseite liefert Canonical, dynamische
+Metadaten und JSON-LD.
 
 **Fertig, wenn:** Suchmaschinen Produktseiten korrekt erfassen und ein neuer
 Betreiber den Shop aus der Dokumentation reproduzierbar deployen und warten
