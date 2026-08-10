@@ -37,7 +37,14 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-*(kein aktueller Auftrag)*
+**Abgleich der drei gemeldeten eBay-Verkäufe — Stand: LÄUFT (2026-08-10)**
+
+- Mikey Moore, Vieira und Obsidian in der Produktionsdatenbank mit eBay-
+  Listings, Inventory, Outbox und `webhook_events` abgleichen.
+- Klären, ob die zwei fehlenden Verkäufe nicht zugestellt wurden oder ob der
+  eBay-Sync sie überschrieben hat.
+- Nur lesend prüfen; keine Produktionsdaten verändern. Ergebnis und offene
+  Zustelllücke anschließend dokumentieren.
 
 **N2 eBay-Notification-Endpoint und Order-Event umsetzen** — Stand: ABGESCHLOSSEN (2026-08-09)
 
