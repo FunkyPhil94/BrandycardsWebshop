@@ -4977,7 +4977,19 @@ selbst; die Schrittfolge samt Nachprüfung steht in
   `7635ef4`, Regressionstest `tests/ebay-active-list.test.mjs`.
 ## 2026-08-10 – Projektstand vollständig erfassen
 
-- Status: läuft
+- Status: ABGESCHLOSSEN
 - Auftrag: Projekt vollständig einlesen und aktuellen Stand erfassen.
-- Beginn: 2026-08-10
-- Nächster Schritt: Repository-Anweisungen, Projektstruktur, Konfiguration, Quellcode, Tests und offene Aufgaben prüfen.
+- Ergebnis: Repository-Anweisungen, Projektstruktur, Konfiguration, Abhängigkeiten,
+  Worker-/D1-/R2-Architektur, Authentifizierung, eBay-/PayPal-Flows, Admin- und
+  Kundenoberflächen, Tests sowie Betriebs- und Sicherheitsdokumentation gelesen
+  und miteinander abgeglichen.
+- Aktueller technischer Stand: N1, N3, N5, N6, N7, N8 und A sind laut
+  Dokumentation umgesetzt; N4 bleibt wegen des fehlenden externen Offsite-
+  Backup-Ziels teilweise offen. N2 ist technisch weitgehend umgesetzt, der
+  echte bidirektionale eBay-Verkaufsnachweis und die Klärung der in der
+  Zustellhistorie fehlenden Notifications bleiben offen.
+- Weitere Betreiberpunkte: Rechtsinhalte enthalten weiterhin Arbeitsentwürfe
+  bzw. Prüfhinweise; für das Offsite-Backup fehlen Zielanbieter und Zugangsdaten.
+- Nicht durchgeführt: kein Deploy und keine Produktionsdatenänderung.
+- Git: Die vorgeschriebene Handover-Dokumentation wurde ergänzt und lokal
+  committed; der abschließende Git-Status wird nach diesem Eintrag geprüft.
