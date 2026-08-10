@@ -37,9 +37,14 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-*(Kein Auftrag aktiv. N8 ist abgeschlossen; N4 bleibt wegen des fehlenden
-externen Backup-Ziels teilweise offen. N2 bleibt als echter Betriebsnachweis
-offen.)*
+**EU-Versandländer im Checkout erweitern** — Stand: LÄUFT
+
+- Das Checkout-Dropdown zeigt derzeit nur DE, AT, BE, FR, IT, NL und ES.
+- Die Servervalidierung in `app/api/orders/route.ts` kennt bereits alle 27
+  EU-Mitgliedstaaten. Die Auswahlliste, die englischen Übersetzungen und die
+  Regressionstests werden auf denselben vollständigen Satz gebracht.
+- Nach der Änderung: TypeScript, Lint, Tests, Build, Commit, Push sowie Deploy
+  auf den kanonischen Worker und die Sites-Preview prüfen.
 
 **N2 eBay-Notification-Endpoint und Order-Event umsetzen** — Stand: ABGESCHLOSSEN (2026-08-09)
 
