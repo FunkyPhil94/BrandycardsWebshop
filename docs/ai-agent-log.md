@@ -1018,6 +1018,17 @@ stellen nur DNS-Zustellung her und erzeugen keine HTTP-Weiterleitung. Der
 Apex-Aufruf endet derzeit mit Cloudflare HTTP 525, bevor der Worker greift.
 Eine separate 301-Weiterleitung des Apex auf den Shop ist daher noch offen.
 
+## 2026-08-10 — Flyer C aus A-Vorderseite und B-Rückseite zusammengeführt
+
+Flyer C verbindet die stärkere Vorderseite von Flyer A mit der ruhigeren
+Rückseite von Flyer B. Auf der Vorderseite steht jetzt „Einzelkarten ·
+Sammlungen · An- und Verkauf“. Das QR-Feld auf der Rückseite wurde so
+formuliert, dass der Nutzen und die Frist sofort verständlich sind: „Jetzt im
+Shop sparen“, „Bis zum 20.09.2026“, „5 % Rabatt“ und „Code: MESSE26“.
+
+Die neue zweiseitige PDF, die HTML-Datei und beide PNG-Vorschauen liegen im
+Ausgabeordner und wurden nach dem Rendern visuell geprüft.
+
 ## 2026-08-10 — Gemeinsames Layout für die Messeflyer
 
 Flyer A war gestalterisch die ruhigere und passendere Referenz. Deshalb wurde

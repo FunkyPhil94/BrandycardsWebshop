@@ -541,6 +541,16 @@ Sicherheits- und Funktionsbefunde im
 
 ## Historie
 
+### 2026-08-10 — Flyer C aus Flyer-A-Vorderseite und Flyer-B-Rückseite erstellt
+
+- Flyer C kombiniert die helle Vorderseite von Flyer A mit der Rückseite von
+  Flyer B.
+- Die Vorderseite nennt jetzt „Einzelkarten · Sammlungen · An- und Verkauf“.
+- Das QR-Feld erklärt die Aktion kompakt: „Jetzt im Shop sparen“, „Bis zum
+  20.09.2026“, „5 % Rabatt“ und „Code: MESSE26“.
+- Zwei PNGs, eine HTML-Datei und eine zweiseitige PDF wurden erzeugt und
+  visuell geprüft.
+
 ### 2026-08-10 — Flyer A als gemeinsames Layout für alle Seiten ausgebaut
 
 - Flyer A wurde mit dem Zusatz „Für Sammler, Fans und alle, die eine Karte
