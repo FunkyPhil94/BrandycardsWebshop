@@ -1,8 +1,9 @@
 # BrandyCards Webshop
 
-A clean full-stack starter running on
-[vinext](https://github.com/cloudflare/vinext), with optional Cloudflare D1 and
-Drizzle support.
+Der öffentliche BrandyCards-Shop läuft mit vinext (Next.js/React) auf einem
+Cloudflare Worker. D1 speichert Katalog, Bestand und Bestellungen, R2 hält
+Uploads; Supabase, PayPal und eBay sind als serverseitige Integrationen
+angebunden. Die kanonische Produktion ist `https://shop.brandycards.de`.
 
 ## Prerequisites
 
@@ -17,8 +18,9 @@ npm run build
 ```
 
 This project is a custom BrandyCards webshop. It does not use a shop builder.
-The public storefront is built with vinext and Cloudflare bindings are declared
-in `.openai/hosting.json`.
+The production Worker bindings are declared in `wrangler.toml`; `.openai/hosting.json`
+only describes the separate Sites preview/hosting project and must not be
+treated as the production data source.
 
 ## Authentication and administration
 
@@ -42,26 +44,23 @@ the one-time authorization code for a refresh token; the API Explorer token is
 not suitable for `EBAY_REFRESH_TOKEN`. Store the displayed refresh token only as
 the Cloudflare secret `EBAY_REFRESH_TOKEN` and never commit or paste it into chat.
 
-The hourly sync reads seller inventory and offers through the Sell Inventory
-API. After a paid webshop order, the local settlement records an idempotent
-outbox job to withdraw the corresponding eBay offer. The job is processed by
-the scheduled Worker with a lease, exponential retry delay, and a permanent
-failure state for manual review. The write path is deliberately disabled by
-default; set `EBAY_WRITE_ENABLED=true` only after the eBay OAuth refresh token
-has the `sell.inventory` write scope and the withdrawal flow has been tested.
+The three-minute sync reads seller inventory and offers through the Sell
+Inventory API. After a paid webshop order, local settlement records an
+idempotent outbox job to withdraw the corresponding eBay offer. The scheduled
+Worker processes it with a lease, exponential retry delay and a permanent
+failure state for manual review. The production configuration currently has
+`EBAY_WRITE_ENABLED=true`; the OAuth token must carry the `sell.inventory`
+write scope.
 
-This is intentionally asynchronous: checkout and local inventory reservation
-do not fail merely because eBay is temporarily unavailable. The hourly read
-sync remains the safety net. eBay Notification API integration for seller-side
-order events is a separate next step and must use eBay's signed notification
-payloads before it can change local stock.
+Checkout and local inventory reservation do not fail merely because eBay is
+temporarily unavailable. The read sync remains the safety net. Seller-side
+order events are accepted through `/api/ebay/notifications` only after eBay's
+signature and topic checks; duplicate notifications are idempotent.
 
-The Worker also exposes a Cloudflare Scheduled Handler for the hourly eBay
-sync. The versioned `wrangler.toml` contains the non-secret production
-bindings for the Cloudflare account, D1 database, R2 bucket, Images binding,
-static Assets binding, and the cron expression `0 * * * *`. It intentionally
-contains no domain routes and no secrets. The custom domain can be attached
-later in Cloudflare without changing this file.
+The versioned `wrangler.toml` contains the non-secret production bindings for
+the Cloudflare account, D1 database, R2 bucket, Images, static Assets, rate
+limits, the `shop.brandycards.de` custom domain and the three-minute cron. It
+contains no secrets.
 
 Before the first production deployment:
 
@@ -119,23 +118,33 @@ Shop data gone while the login still works is a worse state than the one before,
 so the shop would rather do nothing and point the customer at the mailbox.
 
 5. Deploy with `npx wrangler deploy`.
-6. Attach the custom domain in Cloudflare under the Worker’s **Domains &
-   Routes** settings. Do not add a route until the Worker deployment exists.
-7. Confirm that the cron trigger appears under the Worker’s **Triggers** and
-   inspect the first scheduled execution in the Worker logs.
+6. Confirm that `shop.brandycards.de` answers with HTTP 200, that `/robots.txt`
+   references `/sitemap.xml`, and that the cron trigger appears under the
+   Worker’s **Triggers**.
+7. Inspect the first scheduled execution in the Worker logs. Do not paste
+   tokens or customer data into tickets, commits or chat.
 
 For another Cloudflare account, copy `wrangler.toml.example` to
 `wrangler.toml` and replace only its account/database placeholders. The
 scheduled handler queues the sync with `waitUntil`; its errors are logged
 without affecting the normal HTTP `fetch` handler.
 
+## SEO and public URLs
+
+The public Worker emits canonical metadata for the main routes, dynamic
+product metadata under `/karten/:id`, safe schema.org `Product` data for fixed
+price cards, `robots.txt`, and a D1-backed `sitemap.xml` containing only cards
+that are actually visible in the catalogue. Account, admin, checkout and API
+paths are excluded from crawling.
+
 ## Included Shape
 
 - edit site code under `app/`
-- `.openai/hosting.json` declares the Sites binding names for compatible previews
-- `wrangler.toml` is the deployable source for the Worker’s D1, R2, Assets, and
-  Images bindings
-- `db/schema.ts` starts intentionally empty
+- `.openai/hosting.json` declares the Sites project and logical bindings for a
+  compatible preview
+- `wrangler.toml` is the deployable source for the Worker’s D1, R2, Assets,
+  Images, rate limits and production route
+- `db/schema.ts` contains the production schema used by D1
 - `examples/d1/` contains an optional D1 example surface
 - `drizzle.config.ts` supports local migration generation when needed
 
@@ -156,7 +165,10 @@ Siehe [docs/security-findings.md](docs/security-findings.md), SEC-11.
 
 - `npm run dev`: start local development
 - `npm run build`: verify the vinext build output
-- `npm test`: build the starter and verify its rendered loading skeleton
+- `npm test`: build the Worker bundle and run the complete regression suite
+- `npm run lint`: run ESLint
+- `npx tsc --noEmit`: run the TypeScript check
+- `npm audit --omit=dev`: inspect production dependency advisories
 - `npm run db:generate`: generate Drizzle migrations after schema changes
 
 ## Learn More
