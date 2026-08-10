@@ -189,7 +189,7 @@ Backup-Prozedur sind bereits vorhanden.
 **Fertig, wenn:** ein Datenexport vollständig begründet ist, Fristen technisch
 greifen und eine Wiederherstellung aus einem Backup nachweislich funktioniert.
 
-### N5. Kundenkonto und Versandabwicklung — **Nutzen: sehr hoch · Kosten: mittel bis hoch**
+### ~~N5. Kundenkonto und Versandabwicklung~~ — **ERLEDIGT am 2026-08-10 · Nutzen: sehr hoch · Kosten: mittel bis hoch**
 
 Auf dem stabilen und datenschutzrechtlich geklärten Zahlungsvorgang einen
 vollständigen Kunden- und Versandprozess aufbauen:
@@ -205,6 +205,14 @@ vollständigen Kunden- und Versandprozess aufbauen:
 **Fertig, wenn:** ein Kunde Bestellung, Zahlung, Versand und Abschluss selbst
 nachvollziehen kann und eine Erstattung keinen manuellen Datenbankeingriff
 mehr voraussetzt.
+
+**Ergebnis:** Bestellhistorie, Versandzeitpunkt, Trackingnummer und
+Versanddienstleister sind im Kundenkonto sichtbar. Versandbestätigungen tragen
+einen sicheren Trackinglink. Der Admin kann Bestellungen mit frischer MFA als
+versendet oder abgeschlossen markieren, offene Bestellungen stornieren und
+vollständig über PayPal erstatten. Offene Reservierungen werden beim Storno
+freigegeben; nach einer Erstattung werden Bestand und eBay-Angebot nicht
+automatisch reaktiviert.
 
 ### N6. Sprache und Transaktionskommunikation — **Nutzen: mittel · Kosten: mittel**
 

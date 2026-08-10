@@ -71,7 +71,7 @@ npx tsc --noEmit     # Typprüfung -- NICHT Teil von npm test, separat ausführe
   behauptete bis zum 2026-08-09 das Gegenteil. Der Rat bleibt derselbe, die
   Begründung ist eine andere.)*
 - **`drizzle/meta/_journal.json` ist veraltet** (endet bei `0002`, während
-  `0003`–`0006` handgeschrieben dazukamen). `npm run db:generate` würde gegen den
+  `0003`–`0007` handgeschrieben dazukamen). `npm run db:generate` würde gegen den
   alten Snapshot diffen und die Migrationen erneut erzeugen.
 
 ## Deployment

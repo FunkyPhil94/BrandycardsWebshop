@@ -37,26 +37,8 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-**N5: Kundenkonto und Versandabwicklung — Stand: LÄUFT (2026-08-10)**
-
-- Bestellhistorie im Kundenkonto und Versanddaten im Auftrag fachlich prüfen
-  und umsetzen.
-- Versandstatus, Trackingnummer und Versandbestätigung mit deutscher und
-  englischer Transaktionskommunikation vorbereiten.
-- Admin-Workflow für Storno, Erstattung und Rücksendung sicher abgrenzen;
-  Bestand und eBay-Angebot dürfen nicht unkontrolliert reaktiviert werden.
-- `COMPLETED` fachlich verwenden oder aus dem Schema entfernen.
-- Nach Tests, Typprüfung, Lint und Build committen, pushen, deployen und die
-  Kundenkonto-/Adminroute produktiv verifizieren.
-
-**Zwischenstand (2026-08-10):** Die Code- und Testumsetzung ist lokal fertig.
-Bestellhistorie, Versandfelder, Trackinglinks, Versand-/Erstattungsmails sowie
-MFA-geschützte Adminpfade für Versand, Abschluss, Storno und vollständige
-PayPal-Erstattung sind ergänzt. `npm test` läuft mit 343 Tests durch.
-Offen ist vor dem Deployment die produktive D1-Migration
-`drizzle/0007_order_fulfillment.sql`; sie braucht die ausdrückliche Freigabe
-des Betreibers, weil sie das Produktionsschema ändert. Danach folgen Commit,
-Push, Deployment und ein Live-Check von `/account` und `/admin`.
+*(Kein Auftrag aktiv. N5 ist abgeschlossen; nächster offener Eintrag ist N6
+in [ai-todo.md](ai-todo.md).)*
 
 **N2 eBay-Notification-Endpoint und Order-Event umsetzen** — Stand: ABGESCHLOSSEN (2026-08-09)
 
@@ -559,6 +541,30 @@ Sicherheits- und Funktionsbefunde im
 ---
 
 ## Historie
+
+### 2026-08-10 — N5: Kundenkonto und Versandabwicklung
+
+- Bestellhistorie im Kundenkonto ergänzt. Die Route liest ausschließlich die
+  Bestellungen der authentifizierten eigenen `user_id`; unauthentifizierte
+  Anfragen antworten produktiv mit HTTP 401.
+- Aufträge tragen jetzt `shipped_at`, `shipping_carrier`, `tracking_number`,
+  `completed_at`, `cancelled_at` und `refunded_at`. Die Migration
+  `drizzle/0007_order_fulfillment.sql` wurde nach Freigabe auf
+  `brandycards-production` angewendet; bestehende Daten blieben unverändert.
+- Versandstatus, Abschluss, Storno vor Zahlung und vollständige PayPal-
+  Erstattung sind als MFA-geschützte Adminpfade umgesetzt. Storno gibt offene
+  Reservierungen frei; Erstattungen reaktivieren Bestand und eBay-Angebote
+  bewusst nicht automatisch, bis eine Retoure geprüft wurde.
+- Versand- und Erstattungsbestätigungen, bekannte Trackinganbieter und
+  sichere Trackingnummern sind ergänzt. `COMPLETED` wird nach `SHIPPED`
+  fachlich verwendet.
+- Verifikation: `npx tsc --noEmit`, `npm run lint`, Build und `npm test`
+  mit 343 Tests erfolgreich. Produktiv antworten `/`, `/account` und `/admin`
+  mit HTTP 200; `/api/account/orders` ohne Sitzung mit HTTP 401. Sites-Version
+  13 wurde unter
+  `https://brandycards-webshop.p-brand94.chatgpt.site` erfolgreich deployed.
+- Commit `bef1f75f3bcfb3b7ad5772e934d11c34a51597aa` ist nach GitHub, den
+  Sites-Quellbranch und in Produktion gebracht.
 
 ### 2026-08-10 — Abgleich der drei gemeldeten eBay-Verkäufe
 

@@ -77,9 +77,9 @@ Before the first production deployment:
    `grep -rl "supabase.co" dist/client/assets` must return the Supabase chunk.
 2. Log in with `npx wrangler login` using an account that can deploy Workers
    and access the configured D1/R2 resources.
-3. Apply the committed D1 migrations in order. For this repository, use
-   `npx wrangler d1 execute brandycards-production --remote --file=drizzle/0005_add_ebay_outbox.sql`
-   for the current outbox migration.
+3. Apply the committed D1 migrations in order. For a fresh or newly updated
+   production database, the latest fulfillment migration is
+   `npx wrangler d1 execute brandycards-production --remote --file=drizzle/0007_order_fulfillment.sql`.
 4. Add the server-only eBay, Supabase, admin, and PayPal values with
    `npx wrangler secret put NAME`. Never put those values in `wrangler.toml`,
    `.env.example`, GitHub, or the frontend.
