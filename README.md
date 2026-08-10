@@ -78,8 +78,8 @@ Before the first production deployment:
 2. Log in with `npx wrangler login` using an account that can deploy Workers
    and access the configured D1/R2 resources.
 3. Apply the committed D1 migrations in order. For a fresh or newly updated
-   production database, the latest fulfillment migration is
-   `npx wrangler d1 execute brandycards-production --remote --file=drizzle/0007_order_fulfillment.sql`.
+   production database, the latest schema migration is
+   `npx wrangler d1 execute brandycards-production --remote --file=drizzle/0008_user_preferred_locale.sql`.
 4. Add the server-only eBay, Supabase, admin, and PayPal values with
    `npx wrangler secret put NAME`. Never put those values in `wrangler.toml`,
    `.env.example`, GitHub, or the frontend.

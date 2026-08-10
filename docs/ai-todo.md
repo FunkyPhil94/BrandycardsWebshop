@@ -214,7 +214,7 @@ vollständig über PayPal erstatten. Offene Reservierungen werden beim Storno
 freigegeben; nach einer Erstattung werden Bestand und eBay-Angebot nicht
 automatisch reaktiviert.
 
-### N6. Sprache und Transaktionskommunikation — **Nutzen: mittel · Kosten: mittel**
+### ~~N6. Sprache und Transaktionskommunikation~~ — **ERLEDIGT am 2026-08-10 · Nutzen: mittel · Kosten: mittel**
 
 Den Kunden- und Versandprozess sprachlich vollständig machen:
 
@@ -226,6 +226,13 @@ Den Kunden- und Versandprozess sprachlich vollständig machen:
 
 **Fertig, wenn:** ein englischer Kunde nach Sprachwahl keine deutschen
 Transaktionsmails oder gemischte Konto-/Checkout-Texte mehr erhält.
+
+**Ergebnis:** Die Sprachwahl wird zusätzlich zum Browsercookie im Kundenkonto
+gespeichert und beim nächsten Gerät nach der Anmeldung wiederhergestellt.
+Kunden- und Verkäufermails für Bestellung, Versand, Erstattung,
+Preisvorschläge, Anfragen, Kartenangebote und Kontolöschung stehen auf Deutsch
+und Englisch bereit. Adminbereich und Betriebsalarme bleiben bewusst deutsch;
+Katalogdaten wie Kartentitel und Beschreibungen werden nicht übersetzt.
 
 ### N7. Katalog und Vorverkauf ausbauen — **Nutzen: mittel bis hoch · Kosten: mittel**
 

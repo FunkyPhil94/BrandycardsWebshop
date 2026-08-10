@@ -37,17 +37,8 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-**N6: Sprache und Transaktionskommunikation — Stand: LÄUFT (2026-08-10)**
-
-- Bestehende Sprachumschaltung, Konto-/Checkout-Texte und Transaktionsmails
-  vollständig prüfen.
-- Die Sprachwahl, sofern fachlich sinnvoll, am Kundenkonto speichern und bei
-  angemeldeten Kunden geräteübergreifend wiederherstellen.
-- Kunden- und Verkäufermails in Deutsch und Englisch erzeugen; Adminbereich
-  und technische Fehlermeldungen bewusst deutsch belassen, sofern sie nicht
-  zum Kundenprozess gehören.
-- Nach Tests, Typprüfung, Lint und Build committen, pushen, deployen und die
-  deutsche sowie englische Kundenstrecke produktiv prüfen.
+*(Kein Auftrag aktiv. N6 ist abgeschlossen; nächster offener Eintrag ist N7
+in [ai-todo.md](ai-todo.md).)*
 
 **N2 eBay-Notification-Endpoint und Order-Event umsetzen** — Stand: ABGESCHLOSSEN (2026-08-09)
 
@@ -550,6 +541,25 @@ Sicherheits- und Funktionsbefunde im
 ---
 
 ## Historie
+
+### 2026-08-10 — N6: Sprache und Transaktionskommunikation
+
+- `users.preferred_locale` ergänzt und mit `drizzle/0008_user_preferred_locale.sql`
+  produktiv migriert. Die Sprachwahl wird über den Profilendpunkt gespeichert,
+  auf weiteren Geräten geladen und bleibt als Browserfallback erhalten.
+- Kunden- und Verkäufermails unterstützen Deutsch und Englisch für Bestellung,
+  Versand, Erstattung, Preisvorschläge, Anfragen, Kartenangebote und
+  Kontolöschung. Öffentliche Formulare übernehmen die aktuelle Sprachwahl;
+  Admin- und Betriebsalarme bleiben bewusst deutsch.
+- Katalogdaten, insbesondere Kartentitel und eBay-Beschreibungen, bleiben
+  unverändert. Die Kontoauskunft enthält die gespeicherte Sprache.
+- Verifikation: 346 Tests, `npx tsc --noEmit`, Build und Lint erfolgreich.
+  Produktiv antworten `/`, `/account` und `/admin` mit HTTP 200;
+  `/api/account/profile` ohne Sitzung mit HTTP 401. Die neue D1-Spalte ist
+  remote vorhanden. Sites-Version 15 wurde unter
+  `https://brandycards-webshop.p-brand94.chatgpt.site` erfolgreich deployed.
+- Commit `f3d0efdd8fdba3f492caa86fa78bc31572eedfce` ist nach GitHub, den
+  Sites-Quellbranch und in Produktion gebracht.
 
 ### 2026-08-10 — N5: Kundenkonto und Versandabwicklung
 
