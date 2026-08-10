@@ -552,7 +552,10 @@ Sicherheits- und Funktionsbefunde im
   Preisfilter in D1 aus und liefert nur die angeforderte Seite. Der Checkout
   lädt konkrete Warenkorb-IDs, damit Karten außerhalb von Seite 1 nicht
   verschwinden. Die Vorverkaufsseite fragt manuelle Karten direkt ab.
-- Build, Lint und **348 Tests** erfolgreich. N4-Prüfung: In Repository,
+- Build, Lint und **348 Tests** erfolgreich. Der erste produktive Smoke-Test
+  zeigte zunächst einen leeren Katalog; die Sichtbarkeitsabfrage wurde danach
+  auf eine explizite, NULL-sichere SQL-Bedingung korrigiert. Der anschließende
+  Smoke-Test lieferte 291 sichtbare Karten. N4-Prüfung: In Repository,
   `.env.local` und Cloudflare-Konfiguration existiert kein Offsite-Ziel,
   Upload-Endpunkt oder Backup-Secret. N4 bleibt daher bewusst teilweise
   erledigt, bis der Betreiber Ziel, Verschlüsselung, Aufbewahrung und

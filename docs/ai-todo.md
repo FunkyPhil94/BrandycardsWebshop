@@ -257,7 +257,10 @@ Kartennummer im Titel/SKU/Beschreibung), Kategorie und Preis. Der Katalog fragt
 nur die aktuelle Seite ab; der Checkout lädt die konkreten Warenkorb-IDs, und
 die Vorverkaufsseite fragt ihren manuellen Bestand direkt ab. Manuelle Karten
 zeigen weiterhin keinen Festpreis und führen ausschließlich zum
-Preisvorschlag. Build, Lint und **348 Tests** sind erfolgreich.
+Preisvorschlag. Build, Lint und **348 Tests** sind erfolgreich. Der produktive
+Smoke-Test bestätigt außerdem `/api/products?pro=10` mit 291 sichtbaren Karten;
+die Sichtbarkeitsabfrage wurde dafür auf eine explizite, NULL-sichere SQL-
+Bedingung korrigiert.
 
 **Fertig, wenn:** manuelle Karten dort erscheinen, wo Kunden sie erwarten, und
 ein größerer Bestand ohne übergroße API-Antworten schnell durchsuchbar bleibt.

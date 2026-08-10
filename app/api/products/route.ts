@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gt, inArray, ne, notInArray, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, ne, sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { getDb } from "../../../db";
 import { ebayListings, inventory, productAssets, products } from "../../../db/schema";
@@ -17,7 +17,6 @@ export const CATALOGUE_CACHE_CONTROL = "public, max-age=30, stale-while-revalida
 const MAX_ID_LOOKUP = 50;
 const MAX_SEARCH_LENGTH = 100;
 const MAX_PRICE_CENTS = 10_000_000;
-const HIDDEN_INVENTORY_STATUSES = ["SOLD", "UNAVAILABLE"] as const;
 const CATEGORIES = ["fixed", "manual", "prelisted"] as const;
 
 type Category = (typeof CATEGORIES)[number];
@@ -54,27 +53,24 @@ function requestedIds(value: string | null) {
  * are removed before `LIMIT/OFFSET`, rather than after it.
  */
 function visibleInSql() {
-  const manual = and(
-    eq(products.origin, "MANUAL"),
-    gt(inventory.availableQuantity, 0),
-    notInArray(inventory.status, [...HIDDEN_INVENTORY_STATUSES]),
-  );
-  const prelisted = and(eq(products.origin, "EBAY"), eq(products.kind, "PRELISTED"));
-  const inventoryAllowsEbay = or(
-    sql`${inventory.id} IS NULL`,
-    and(
-      gt(inventory.availableQuantity, 0),
-      notInArray(inventory.status, [...HIDDEN_INVENTORY_STATUSES]),
-    ),
-  );
-  const ebay = and(
-    eq(products.origin, "EBAY"),
-    eq(ebayListings.status, "ACTIVE"),
-    ne(ebayListings.listingType, "AUCTION"),
-    gt(ebayListings.quantity, 0),
-    inventoryAllowsEbay,
-  );
-  return or(manual, prelisted, ebay);
+  // Keep this as one explicit predicate. Drizzle's helpers are excellent for
+  // ordinary equality filters, but combining nullable left-join columns with
+  // `NOT IN` can make the generated expression disagree with SQLite's NULL
+  // semantics. This SQL mirrors the pure helper exactly and is covered by the
+  // production smoke test against the live D1 data.
+  return sql`(
+    (${products.origin} = 'MANUAL'
+      AND ${inventory.availableQuantity} > 0
+      AND ${inventory.status} NOT IN ('SOLD', 'UNAVAILABLE'))
+    OR (${products.origin} = 'EBAY' AND ${products.kind} = 'PRELISTED')
+    OR (${products.origin} = 'EBAY'
+      AND ${ebayListings.status} = 'ACTIVE'
+      AND ${ebayListings.listingType} <> 'AUCTION'
+      AND ${ebayListings.quantity} > 0
+      AND (${inventory.id} IS NULL OR (
+        ${inventory.availableQuantity} > 0
+        AND ${inventory.status} NOT IN ('SOLD', 'UNAVAILABLE'))))
+  )`;
 }
 
 function categoryCondition(category: Category) {
@@ -113,7 +109,7 @@ export async function GET(request: Request) {
       const searchable = sql`lower(coalesce(${products.title}, '') || ' ' || coalesce(${products.description}, '') || ' ' || coalesce(${ebayListings.sku}, ''))`;
       conditions.push(sql`${searchable} LIKE ${`%${q}%`}`);
     }
-    if (category) conditions.push(categoryCondition(category));
+    if (category) conditions.push(categoryCondition(category)!);
     if (origin) conditions.push(eq(products.origin, origin));
     if (minPrice !== null) {
       const price = sql`coalesce(${ebayListings.priceAmountCents}, ${products.priceAmountCents})`;
