@@ -5194,4 +5194,8 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 - Ziel: Mehr Energie und Charakter durch ein kontrolliertes asymmetrisches
   Raster, eine markante Diagonale und ein starkes Kartenmotiv; keine Deko-
   Ansammlung und kein AI-Slop.
-- Stand: LAEUFT.
+- Stand: ABGESCHLOSSEN.
+- Ergebnis: Eine dynamischere Card-Hunt-Variante als beidseitiger A5-Flyer
+  erstellt. Die Energie kommt aus einer einzigen Diagonale, einem kontrollierten
+  Kartenstapel und klaren Farbkontrasten; QR- und Footerbereich sind sauber
+  getrennt. PDF und beide PNG-Seiten wurden gerendert und visuell geprueft.
