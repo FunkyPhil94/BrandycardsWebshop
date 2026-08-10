@@ -556,6 +556,11 @@ Sicherheits- und Funktionsbefunde im
 - Verifikation: `npx tsc --noEmit`, `npm run lint`, `npm test` mit 353 Tests
   und `git diff --check` erfolgreich. Eine bestehende ESLint-Warnung in
   `app/account/page.tsx` bleibt.
+- Commit `5141467` ist auf `main` und `agent/initial-brandycards` gepusht.
+  Der produktive Worker läuft auf `shop.brandycards.de` mit Version
+  `360aa5dc-d297-43ff-ba2d-0c966f19058a`. Sites-Version 20 ist unter
+  `https://brandycards-webshop.p-brand94.chatgpt.site` veröffentlicht; beide
+  Zielseiten antworten mit HTTP 200.
 
 ### 2026-08-10 — EU-Versandländer im Checkout erweitert
 
