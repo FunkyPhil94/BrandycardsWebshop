@@ -37,15 +37,17 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-**Eigenständigen Chrome-/Collector-Rahmen für einen BrandyCards-Flyer nachbauen** — Stand: LÄUFT (2026-08-10)
-
-- Silbernen Mehrfachrahmen, kantige Ecken, rote Diagonalelemente und unteres
-  Namensfeld als eigene Gestaltung rekonstruieren.
-- Bestehendes BrandyCards-Logo, QR-Code, Instagram-Hinweis und MESSE26-Rabatt
-  einbinden; keine direkte 1:1-Kopie der Referenzkarte erstellen.
-- Vorder- und Rückseite als HTML, PNG und PDF erzeugen und visuell prüfen.
+*(derzeit kein Auftrag aktiv)*
 
 ## Historie
+
+### 2026-08-10 — Eigenständigen Chrome-/Collector-Rahmen für Flyer erstellt
+
+- Silbernen Mehrfachrahmen, kantige Ecken, rote Diagonalelemente und unteres
+  Namensfeld als eigene Gestaltung umgesetzt.
+- Bestehendes BrandyCards-Logo, QR-Code, Instagram-Hinweis und MESSE26-Rabatt
+  eingebunden; die Referenz wurde nur als Stilvorlage genutzt.
+- Vorder- und Rückseite als HTML, PNG und PDF erzeugt und visuell geprüft.
 
 ### 2026-08-10 — Chrome-Rahmen pixelgenau als Flyer umgesetzt
 

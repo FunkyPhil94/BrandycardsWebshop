@@ -1,5 +1,17 @@
 # BrandyCards Agentenprotokoll
 
+## 2026-08-10 — Eigenständigen Chrome-/Collector-Rahmen für Flyer erstellt
+
+Die 1:1-Übernahme der Referenz war für den Flyer zu wörtlich. Deshalb wurde
+der Rahmen neu als eigenes Gestaltungssystem aufgebaut: silberne Mehrfachkanten,
+kantige Ecken, rote Diagonalelemente, dunkles Collector-Panel und ein eigenes
+Namensfeld. Dadurch bleibt die gewünschte Kartenanmutung erhalten, ohne die
+Referenzkarte zu duplizieren.
+
+Logo, QR-Code, Instagram-Hinweis und MESSE26-Rabatt wurden in Vorder- und
+Rückseite integriert. Die HTML-Datei wurde im Browser gerendert; beide PNGs
+und die zweiseitige PDF wurden anschließend visuell geprüft.
+
 ## 2026-08-10 — Chrome-Rahmen pixelgenau als Flyer umgesetzt
 
 Der Nutzer hat die Nutzungsrechte für das bereitgestellte Kartendesign bestätigt.
