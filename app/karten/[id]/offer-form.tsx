@@ -100,7 +100,7 @@ export function OfferForm({ productId, listPriceCents, currency }: { productId: 
   if (!state.signedIn) {
     return <div className="offer-box">
       <h3>{t("Mach uns ein Angebot")}</h3>
-      <p>{t("Du musst diese Karte nicht zum angegebenen Preis nehmen — sag uns, was sie dir wert ist. Verhandeln geht nur mit Kundenkonto, so wissen wir, für wen der Preis gilt.")}</p>
+      <p>{t("Du musst diese Karte nicht zum angegebenen Preis nehmen. Sag uns einfach, was sie dir wert ist. Für ein Angebot brauchst du ein Kundenkonto. So wissen wir, für wen der vereinbarte Preis gilt.")}</p>
       <Link className="button button-outline" href="/account">{t("Anmelden oder registrieren")} <span>→</span></Link>
     </div>;
   }
@@ -134,9 +134,9 @@ export function OfferForm({ productId, listPriceCents, currency }: { productId: 
                 graue Zeile am Feld — beides hat der Betreiber verworfen. Jetzt
                 steht er als halber Satz im Fließtext, ohne eigene Gestaltung. */}
             <p>{listPriceCents
-              ? t("Nenn uns deinen Preis — mindestens 50 Cent unter den {{price}}, die die Karte aktuell kostet.", { price: formatPrice(listPriceCents, currency, locale) ?? "" })
+              ? t("Nenn uns deinen Preis. Er muss mindestens 50 Cent unter dem aktuellen Preis von {{price}} liegen.", { price: formatPrice(listPriceCents, currency, locale) ?? "" })
               : t("Für diese Karte gibt es keinen Festpreis. Nenn uns einfach deinen Preis.")}
-              {" "}{t("Nehmen wir an, gilt dein Preis 48 Stunden und wird im Checkout automatisch verwendet.")}</p>
+              {" "}{t("Wenn wir ihn annehmen, gilt dein Preis 48 Stunden und wird im Checkout automatisch verwendet.")}</p>
             <form onSubmit={submit}>
               <label className="form-field">
                 <span>{t("Dein Preis in €")}<b aria-hidden="true"> *</b></span>

@@ -65,7 +65,8 @@ export default function VorverkaufPage() {
             klickt, soll nicht denken, der Shop sei kaputt. */}
         {status === "ready" && cards.length === 0 && <div className="empty-state">
           <p><strong>{t("Gerade ist nichts im Vorverkauf.")}</strong></p>
-          <p>{t("Hier stehen Karten, die wir direkt anbieten, bevor sie in unseren eBay-Shop wandern. Schau später wieder vorbei — oder sieh dir den")} <Link className="text-link" href="/karten">{t("gesamten Bestand")} <span>→</span></Link> {t("an.")}</p>
+          <p>{t("Hier bieten wir Karten direkt an, bevor sie in unseren eBay-Shop wechseln. Schau später wieder vorbei oder stöbere im gesamten Bestand.")}</p>
+          <p><Link className="text-link text-link-inline" href="/karten">{t("Gesamten Bestand ansehen")} <span>→</span></Link></p>
         </div>}
 
         {status === "ready" && cards.length > 0 && <div className="product-grid">

@@ -7,6 +7,7 @@ import { getAuthenticatedAppUser } from "../../../../lib/app-user";
 import { notifyAccountDeleted } from "../../../../lib/email/notify.ts";
 import { enforcePublicRateLimit, RateLimitError } from "../../../../lib/rate-limit";
 import { deleteSupabaseUser, hasSupabaseAdminAccess } from "../../../../lib/supabase-admin";
+import { localeFromRequest, translate } from "../../../../lib/i18n";
 
 /** Kontolöschung nach Art. 17 DSGVO, zur Selbstbedienung.
  *
@@ -59,7 +60,7 @@ export async function POST(request: Request) {
     const blocking = await blockingOrders(db, appUser.id, appUser.email);
     if (blocking.length) {
       return NextResponse.json({
-        error: `Zu deinem Konto läuft gerade eine Bestellung (${blocking.map((order) => order.orderNumber).join(", ")}). Warte bitte, bis sie abgeschlossen oder abgebrochen ist — danach lässt sich das Konto löschen.`,
+        error: translate(localeFromRequest(request), "Zu deinem Konto läuft gerade eine Bestellung ({{orders}}). Warte bitte, bis sie abgeschlossen oder abgebrochen ist. Danach lässt sich das Konto löschen.", { orders: blocking.map((order) => order.orderNumber).join(", ") }),
       }, { status: 409 });
     }
 

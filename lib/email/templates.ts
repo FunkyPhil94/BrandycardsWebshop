@@ -436,12 +436,12 @@ export function bestandshinweis(status: VerkaufDaten["bestandspruefung"], locale
     const reason = status === "FEHLGESCHLAGEN"
       ? "eBay did not respond to the request"
       : "the payment arrived through the PayPal webhook, which does not run this check";
-    return `WARNING: We could not check before payment whether the card was still available on eBay — ${reason}. Please check manually before shipping.`;
+    return `WARNING: We could not check whether the card was still available on eBay before payment. Reason: ${reason}. Please check manually before shipping.`;
   }
   const grund = status === "FEHLGESCHLAGEN"
     ? "eBay hat auf die Anfrage nicht geantwortet"
     : "die Zahlung kam über den PayPal-Webhook herein, der diese Prüfung nicht ausführt";
-  return `ACHTUNG: Vor dem Einzug konnte nicht geprüft werden, ob die Karte bei eBay noch verfügbar ist — ${grund}. Bitte vor dem Versand kurz selbst nachsehen.`;
+  return `ACHTUNG: Vor dem Einzug konnten wir nicht prüfen, ob die Karte bei eBay noch verfügbar ist. Grund: ${grund}. Bitte vor dem Versand kurz selbst nachsehen.`;
 }
 
 /** Die Nachricht an den Verkäufer, aus der ein Versandetikett entsteht.
@@ -511,7 +511,7 @@ export function sellerOrderNotification(daten: VerkaufDaten): Nachricht {
       : []),
   ].join(""), daten.shopUrl);
 
-  return { subject: sanitizeSubject(`Neue Bestellung ${daten.orderNumber} — ${daten.address.name}`), text, html };
+  return { subject: sanitizeSubject(`Neue Bestellung ${daten.orderNumber} von ${daten.address.name}`), text, html };
 }
 
 // --- 7. Konto gelöscht ------------------------------------------------------
@@ -578,18 +578,18 @@ function sellerOrderNotificationEnglish(daten: VerkaufDaten): Nachricht {
   const itemsText = daten.items.map((p) => `  ${p.quantity} × ${p.title}: ${formatMoney({ cents: p.unitPrice.cents * p.quantity, currency: p.unitPrice.currency }, "en")}`).join("\n");
   const itemsHtml = daten.items.map((p) => `<tr><td style="padding:6px 0">${escapeHtml(p.title)}${p.quantity > 1 ? ` <span style="color:#7c7770">× ${p.quantity}</span>` : ""}</td><td style="padding:6px 0;text-align:right;white-space:nowrap">${escapeHtml(formatMoney({ cents: p.unitPrice.cents * p.quantity, currency: p.unitPrice.currency }, "en"))}</td></tr>`).join("");
   const warning = bestandshinweis(daten.bestandspruefung, "en");
-  return englishEmail(`New order ${daten.orderNumber} — ${daten.address.name}`, [`New order: ${daten.orderNumber}`, ``, `Paid on ${formatDatum(daten.paidAt, "en")}.`, ``, `DELIVERY ADDRESS`, ...address.map((line) => `  ${line}`), ``, `CONTENTS`, itemsText, ``, `Subtotal: ${formatMoney(daten.subtotal, "en")}`, `Shipping: ${formatMoney(daten.shipping, "en")}`, `Total: ${formatMoney(daten.total, "en")}`, ``, `Customer: ${daten.customerEmail}`, ...(warning ? ["", warning] : [])], `<h1 style="font-size:22px;margin:0 0 16px">New order</h1><p style="margin:0 0 6px;color:#7c7770;font-size:13px">Order number</p><p style="margin:0 0 18px;font-weight:bold">${escapeHtml(daten.orderNumber)}</p><p style="margin:0 0 6px;color:#7c7770;font-size:13px">Delivery address</p><p style="margin:0 0 20px;font-size:16px;line-height:1.5">${address.map((line) => escapeHtml(line)).join("<br>")}</p><table style="width:100%;border-collapse:collapse;font-size:14px;border-top:1px solid #e4e0d8">${itemsHtml}</table><table style="width:100%;border-collapse:collapse;font-size:14px;margin-top:14px;border-top:1px solid #e4e0d8"><tr><td style="padding:8px 0">Subtotal</td><td style="padding:8px 0;text-align:right">${escapeHtml(formatMoney(daten.subtotal, "en"))}</td></tr><tr><td style="padding:0 0 8px">Shipping</td><td style="padding:0 0 8px;text-align:right">${escapeHtml(formatMoney(daten.shipping, "en"))}</td></tr><tr><td style="padding:8px 0;border-top:1px solid #e4e0d8;font-weight:bold">Total</td><td style="padding:8px 0;border-top:1px solid #e4e0d8;text-align:right;font-weight:bold">${escapeHtml(formatMoney(daten.total, "en"))}</td></tr></table><p style="margin:20px 0 0;color:#7c7770;font-size:13px">Paid on ${escapeHtml(formatDatum(daten.paidAt, "en"))} · Customer: ${escapeHtml(daten.customerEmail)}</p>${warning ? `<p style="margin:18px 0 0;padding:12px;background:#fdf1ec;border-left:3px solid #c0472c;font-size:14px;line-height:1.5">${escapeHtml(warning)}</p>` : ""}`, daten.shopUrl);
+  return englishEmail(`New order ${daten.orderNumber} from ${daten.address.name}`, [`New order: ${daten.orderNumber}`, ``, `Paid on ${formatDatum(daten.paidAt, "en")}.`, ``, `DELIVERY ADDRESS`, ...address.map((line) => `  ${line}`), ``, `CONTENTS`, itemsText, ``, `Subtotal: ${formatMoney(daten.subtotal, "en")}`, `Shipping: ${formatMoney(daten.shipping, "en")}`, `Total: ${formatMoney(daten.total, "en")}`, ``, `Customer: ${daten.customerEmail}`, ...(warning ? ["", warning] : [])], `<h1 style="font-size:22px;margin:0 0 16px">New order</h1><p style="margin:0 0 6px;color:#7c7770;font-size:13px">Order number</p><p style="margin:0 0 18px;font-weight:bold">${escapeHtml(daten.orderNumber)}</p><p style="margin:0 0 6px;color:#7c7770;font-size:13px">Delivery address</p><p style="margin:0 0 20px;font-size:16px;line-height:1.5">${address.map((line) => escapeHtml(line)).join("<br>")}</p><table style="width:100%;border-collapse:collapse;font-size:14px;border-top:1px solid #e4e0d8">${itemsHtml}</table><table style="width:100%;border-collapse:collapse;font-size:14px;margin-top:14px;border-top:1px solid #e4e0d8"><tr><td style="padding:8px 0">Subtotal</td><td style="padding:8px 0;text-align:right">${escapeHtml(formatMoney(daten.subtotal, "en"))}</td></tr><tr><td style="padding:0 0 8px">Shipping</td><td style="padding:0 0 8px;text-align:right">${escapeHtml(formatMoney(daten.shipping, "en"))}</td></tr><tr><td style="padding:8px 0;border-top:1px solid #e4e0d8;font-weight:bold">Total</td><td style="padding:8px 0;border-top:1px solid #e4e0d8;text-align:right;font-weight:bold">${escapeHtml(formatMoney(daten.total, "en"))}</td></tr></table><p style="margin:20px 0 0;color:#7c7770;font-size:13px">Paid on ${escapeHtml(formatDatum(daten.paidAt, "en"))} · Customer: ${escapeHtml(daten.customerEmail)}</p>${warning ? `<p style="margin:18px 0 0;padding:12px;background:#fdf1ec;border-left:3px solid #c0472c;font-size:14px;line-height:1.5">${escapeHtml(warning)}</p>` : ""}`, daten.shopUrl);
 }
 
 function accountDeletedEnglish(daten: { bestellungen: number; shopUrl: string; locale?: Locale }): Nachricht {
-  const notice = daten.bestellungen > 0 ? `Your ${daten.bestellungen === 1 ? "order remains" : `${daten.bestellungen} orders remain`} stored as an invoice record — we are legally required to keep them. They are no longer linked to your account.` : `There were no orders that we needed to retain.`;
+  const notice = daten.bestellungen > 0 ? `Your ${daten.bestellungen === 1 ? "order remains" : `${daten.bestellungen} orders remain`} stored as an invoice record. We are legally required to keep them. They are no longer linked to your account.` : `There were no orders that we needed to retain.`;
   return englishEmail("Your BrandyCards account has been deleted", [`Your account has been deleted.`, ``, `We removed your BrandyCards account and all related data: requests, card submissions with pictures and price offers. Your sign-in has also been deleted.`, ``, notice, ``, `If you would like to shop with us again later, you can create a new account at any time.`, ``, `Best wishes`, `the BrandyCards brothers`], `<h1 style="font-size:22px;margin:0 0 16px">Your account has been deleted.</h1><p style="margin:0 0 14px">We removed your BrandyCards account and all related data: requests, card submissions with pictures and price offers. Your sign-in has also been deleted.</p><p style="margin:0 0 14px;color:#7c7770;font-size:13px">${escapeHtml(notice)}</p><p style="margin:0">If you would like to shop with us again later, you can create a new account at any time.</p><p style="margin:18px 0 0">Best wishes<br>the BrandyCards brothers</p>`, daten.shopUrl);
 }
 
 export function accountDeleted(daten: { bestellungen: number; shopUrl: string; locale?: Locale }): Nachricht {
   if (daten.locale === "en") return accountDeletedEnglish(daten);
   const hinweis = daten.bestellungen > 0
-    ? `Deine ${daten.bestellungen === 1 ? "Bestellung bleibt" : `${daten.bestellungen} Bestellungen bleiben`} als Rechnungsbeleg gespeichert — dazu sind wir gesetzlich verpflichtet. Die Verknüpfung zu deinem Konto ist aufgehoben.`
+    ? `Deine ${daten.bestellungen === 1 ? "Bestellung bleibt" : `${daten.bestellungen} Bestellungen bleiben`} als Rechnungsbeleg gespeichert. Dazu sind wir gesetzlich verpflichtet. Die Verknüpfung zu deinem Konto ist aufgehoben.`
     : `Es lagen keine Bestellungen vor, die wir aufbewahren müssten.`;
 
   const text = [

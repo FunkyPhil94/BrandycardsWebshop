@@ -144,7 +144,7 @@ export default function KartenPage() {
       {/* Hier entscheidet sich der Blick: Wer im Raster steht, hat den
           Verhandlungsabschnitt der Startseite womöglich nie gesehen. */}
       <p>
-        <strong>{t("Bei jeder Karte kannst du verhandeln.")}</strong> {t("Öffne sie und schlag uns deinen Preis vor — drei Versuche je Karte, ein angenommener Preis gilt 48 Stunden.")}
+        <strong>{t("Bei jeder Karte kannst du verhandeln.")}</strong> {t("Öffne die Karte und nenne uns deinen Preis. Du hast drei Versuche pro Karte. Ein angenommener Preis gilt 48 Stunden.")}
       </p>
     </section>
 
@@ -188,7 +188,7 @@ export default function KartenPage() {
 
       {status === "ready" && <>
         <p className="result-count" role="status">
-          {t("Karte {{first}}–{{last}} von {{total}}", { first: pageInfo.first, last: pageInfo.last, total: pageInfo.total })}
+          {t("Karte {{first}} bis {{last}} von {{total}}", { first: pageInfo.first, last: pageInfo.last, total: pageInfo.total })}
         </p>
         <div className="product-grid">
           {catalog.map((product) => (

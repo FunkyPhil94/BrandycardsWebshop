@@ -91,8 +91,8 @@ export default function Home() {
       <div className="split-copy">
         <p className="eyebrow">{t("JEDER PREIS IST EIN ANFANG")}</p>
         <h2 id="verhandeln-title">{t("Mach uns ein Angebot.")}</h2>
-        <p>{t("Du kannst jede Karte zum angegebenen Preis kaufen — oder uns sagen, was sie dir wert ist. Wir sind zwei Brüder mit einer Sammelleidenschaft, keine Preisautomatik. Wenn dein Vorschlag passt, nehmen wir ihn an, und der Betrag wird im Checkout automatisch verrechnet.")}</p>
-        <p>{t("Drei Vorschläge je Karte, mindestens 50 Cent unter dem Preis, ein angenommener Preis gilt 48 Stunden. Mehr Regeln gibt es nicht — nur ein Kundenkonto, damit wir wissen, für wen der Preis gilt.")}</p>
+        <p>{t("Du kannst jede Karte zum angegebenen Preis kaufen oder uns sagen, was sie dir wert ist. Wir sind zwei Brüder mit einer Sammelleidenschaft. Preise entstehen bei uns nicht automatisch. Wenn dein Vorschlag passt, nehmen wir ihn an. Der Betrag wird dann im Checkout automatisch verrechnet.")}</p>
+        <p>{t("Du kannst pro Karte drei Vorschläge machen. Jeder Vorschlag muss mindestens 50 Cent unter dem aktuellen Preis liegen. Ein angenommener Preis gilt 48 Stunden. Du brauchst nur ein Kundenkonto, damit wir ihn dir zuordnen können.")}</p>
         <Link className="text-link" href="/karten">{t("Karten ansehen und vorschlagen")} <span>→</span></Link>
       </div>
       <div className="split-panel" aria-hidden="true">

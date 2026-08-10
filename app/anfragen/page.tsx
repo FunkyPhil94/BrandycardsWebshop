@@ -15,11 +15,8 @@ export default function AnfragenPage() {
     <section className="page-intro">
       <p className="eyebrow">{t("DU SUCHST ETWAS BESTIMMTES?")}</p>
       <h1>{t("Wir helfen")}<br /><em>{t("beim Finden.")}</em></h1>
-      {/* Der Satz „liegt schon in unserer Sammlung, aber noch nicht im Shop"
-          beschrieb bis zum 2026-08-09 einen Zustand ohne Ort. Seitdem gibt es
-          den Vorverkauf — dort stehen genau diese Karten, und wer erst dort
-          nachsieht, spart sich die Anfrage. */}
-      <p>{t("Manche Karten liegen schon in unserer Sammlung, aber noch nicht bei eBay — die findest du im")} <Link className="text-link" href="/vorverkauf">{t("Vorverkauf")}</Link>. {t("Ist deine nicht dabei, schreib uns, wonach du suchst. Ein Kundenkonto brauchst du dafür nicht, deine E-Mail-Adresse genügt.")}</p>
+      <p>{t("Manche Karten aus unserer Sammlung sind noch nicht bei eBay.")}</p>
+      <p><Link className="text-link text-link-inline" href="/vorverkauf">{t("Vorverkauf")}</Link> {t("Dort kannst du sie direkt von uns bekommen. Ist deine Karte nicht dabei? Schreib uns, wonach du suchst. Dafür brauchst du kein Kundenkonto, deine E-Mail-Adresse genügt.")}</p>
     </section>
 
     <section className="forms-section single">

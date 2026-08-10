@@ -1101,6 +1101,12 @@ unten.)*
 
 ### Erledigt, zweite Runde
 
+- ~~**Öffentliche Texte und Vorverkaufsdarstellung.**~~ Erledigt am 2026-08-10.
+  Gedankenstriche aus sichtbaren DE/EN-Texten und Transaktionsmails entfernt,
+  Formulierungen sprachlich geglättet und die Anfrage-Seite mit einem echten
+  Inline-Link zum Vorverkauf versehen. Die Angebotslogik blieb unverändert;
+  TypeScript, Lint, Build und 353 Tests sind erfolgreich.
+
 - ~~**Checkout: vollständige EU-Länderauswahl.**~~ Erledigt am 2026-08-10.
   Die zuvor auf sieben Länder begrenzte Auswahl nutzt jetzt alle 27 EU-
   Mitgliedstaaten. Die Servervalidierung und die Versandkostenlogik bleiben

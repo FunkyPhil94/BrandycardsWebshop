@@ -37,14 +37,7 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-**Texte und Vorverkaufsdarstellung überarbeiten** — Stand: LÄUFT
-
-- Die Gedankenstriche aus den sichtbaren deutschen und englischen Texten sowie
-  den Transaktionsmails entfernen und die Formulierungen sprachlich glätten.
-- Den mobilen Textblock auf `/anfragen` so umbauen, dass der Vorverkaufslink
-  nicht mehr als breiter, isolierter Unterstrich mitten im Satz erscheint.
-- Anschließend öffentliche Texte, Sprachschlüssel, Mails, TypeScript, Lint,
-  Tests, Build, Commit, Push und beide Deployments prüfen.
+*(derzeit kein Auftrag aktiv)*
 
 **N2 eBay-Notification-Endpoint und Order-Event umsetzen** — Stand: ABGESCHLOSSEN (2026-08-09)
 
@@ -547,6 +540,22 @@ Sicherheits- und Funktionsbefunde im
 ---
 
 ## Historie
+
+### 2026-08-10 — Öffentliche Texte und Vorverkaufslink überarbeitet
+
+- Die sichtbaren deutschen und englischen Texte auf Startseite, Kartenbestand,
+  Anfrage, Vorverkauf, Konto, Versand und Datenschutz wurden sprachlich geglättet.
+  Gedankenstriche sind aus diesen Texten und den Transaktionsmails entfernt;
+  deutschsprachige Formulierungen stehen nicht mehr als Satzfragmente im Raum.
+- Der Vorverkaufshinweis auf `/anfragen` ist in zwei kurze Absätze aufgeteilt.
+  Der Link nutzt eine eigene Inline-Variante und bekommt dadurch weder eine
+  überbreite Unterstreichung noch einen unschönen Zeilenumbruch auf Mobilgeräten.
+- API-Fehlermeldungen für Benutzername und laufende Bestellungen folgen jetzt
+  ebenfalls der gewählten Sprache. Die Angebotslogik und Preise bleiben
+  unverändert.
+- Verifikation: `npx tsc --noEmit`, `npm run lint`, `npm test` mit 353 Tests
+  und `git diff --check` erfolgreich. Eine bestehende ESLint-Warnung in
+  `app/account/page.tsx` bleibt.
 
 ### 2026-08-10 — EU-Versandländer im Checkout erweitert
 

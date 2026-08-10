@@ -15,7 +15,7 @@ export default function VersandZahlungPage() {
       <h2>{t("Versandkosten")}</h2>
       <p>{t("Deutschland:")} <strong>3,45 €</strong><br />{t("Übrige EU-Mitgliedstaaten:")} <strong>14,49 €</strong></p>
       <h2>{t("Lieferzeiten")}</h2>
-      <p>{t("Deutschland: 3–5 Werktage nach Zahlungseingang.")}<br />{t("Übrige EU-Mitgliedstaaten: 10–20 Werktage nach Zahlungseingang.")}</p>
+      <p>{t("Deutschland: 3 bis 5 Werktage nach Zahlungseingang.")}<br />{t("Übrige EU-Mitgliedstaaten: 10 bis 20 Werktage nach Zahlungseingang.")}</p>
       <p>{t("Die Lieferzeit kann sich bei unvorhersehbaren Verzögerungen des Versanddienstleisters verlängern. Wir informieren über wesentliche Verzögerungen.")}</p>
       <h2>{t("Zahlungsart")}</h2>
       <p>{t("Wir akzeptieren derzeit PayPal. Die Bearbeitung und der Versand beginnen nach erfolgreicher Zahlungsbestätigung.")}</p>

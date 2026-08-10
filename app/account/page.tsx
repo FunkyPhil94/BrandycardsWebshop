@@ -181,7 +181,7 @@ export default function AccountPage() {
    *  sich nicht rückgängig machen, und ein Fehlklick kostet echte Daten. */
   async function deleteAccount() {
     const deleteWord = t("LÖSCHEN");
-    const eingabe = window.prompt(t("Dein Konto und alle Daten dazu werden endgültig gelöscht — Anfragen, Kartenangebote samt Bildern, Preisvorschläge und deine Anmeldung. Bestellungen bleiben als Rechnungsbeleg gespeichert, ohne Verknüpfung zu dir.\n\nTippe {{word}}, um fortzufahren.", { word: deleteWord }));
+    const eingabe = window.prompt(t("Dein Konto und alle Daten dazu werden endgültig gelöscht. Anfragen, Kartenangebote samt Bildern, Preisvorschläge und deine Anmeldung werden entfernt. Bestellungen bleiben als Rechnungsbeleg gespeichert, ohne Verknüpfung zu dir.\n\nTippe {{word}}, um fortzufahren.", { word: deleteWord }));
     if (eingabe?.trim().toUpperCase() !== deleteWord.toUpperCase()) return;
     if (!window.confirm(t("Wirklich löschen? Das lässt sich nicht rückgängig machen."))) return;
     setBusy(true);
@@ -193,8 +193,10 @@ export default function AccountPage() {
       await getSupabaseBrowserClient().auth.signOut();
       setUser(null);
       setMessage(body.verbleibendeBestellungen
-        ? `Dein Konto ist gelöscht. ${body.verbleibendeBestellungen === 1 ? "Eine Bestellung bleibt" : `${body.verbleibendeBestellungen} Bestellungen bleiben`} als Rechnungsbeleg gespeichert — dazu sind wir gesetzlich verpflichtet. Eine Bestätigung ist unterwegs.`
-        : "Dein Konto ist gelöscht. Eine Bestätigung ist unterwegs.");
+        ? `${t("Dein Konto ist gelöscht.")} ${body.verbleibendeBestellungen === 1
+          ? t("Eine Bestellung bleibt als Rechnungsbeleg gespeichert.")
+          : t("{{count}} Bestellungen bleiben als Rechnungsbelege gespeichert.", { count: body.verbleibendeBestellungen })} ${t("Dazu sind wir gesetzlich verpflichtet. Eine Bestätigung ist unterwegs.")}`
+        : t("Dein Konto ist gelöscht. Eine Bestätigung ist unterwegs."));
     } catch (error) {
       setMessage(error instanceof Error ? t(error.message) : t("Das Konto konnte nicht gelöscht werden."));
     } finally {
@@ -294,10 +296,10 @@ export default function AccountPage() {
               {/* Die E-Mail-Adresse identifiziert das Konto bei Supabase und
                   wird hier nur angezeigt. Damit das sichtbar ist statt sich
                   erst beim Tippen zu zeigen, ist sie als `disabled` markiert
-                  und nicht bloß `readOnly` — Letzteres nimmt den Fokus an und
+                  und nicht bloß `readOnly`. Letzteres nimmt den Fokus an und
                   verweigert dann stumm die Eingabe. */}
               <label className="form-field"><span>{t("E-Mail-Adresse")}</span><input type="email" value={user.email ?? ""} disabled /><small>{t("Die E-Mail-Adresse deines Kontos lässt sich hier nicht ändern.")}</small></label>
-              <label className="form-field"><span>{t("Benutzername *")}</span><input type="text" value={username} onChange={(event) => setUsername(event.target.value)} required minLength={3} maxLength={30} pattern="[A-Za-z0-9_]{3,30}" /><small>{t("3–30 Zeichen: nur Buchstaben, Zahlen und Unterstrich (_).")}</small></label>
+              <label className="form-field"><span>{t("Benutzername *")}</span><input type="text" value={username} onChange={(event) => setUsername(event.target.value)} required minLength={3} maxLength={30} pattern="[A-Za-z0-9_]{3,30}" /><small>{t("3 bis 30 Zeichen: nur Buchstaben, Zahlen und Unterstrich (_).")}</small></label>
               <label className="form-field"><span>{t("Anzeigename")}</span><input type="text" value={displayName} onChange={(event) => setDisplayName(event.target.value)} maxLength={120} /></label>
               <label className="form-field"><span>{t("Sprache des Kontos")}</span><select value={locale} onChange={(event) => { const next = event.target.value; if (next === "de" || next === "en") setLocale(next); }}><option value="de">{t("Deutsch")}</option><option value="en">{t("English")}</option></select><small>{t("Diese Auswahl gilt auch auf anderen Geräten und für deine Kundenmails.")}</small></label>
               <button className="button button-primary" type="submit" disabled={busy}>{busy ? t("Speichere …") : t("Profil speichern")}</button>
@@ -344,8 +346,8 @@ export default function AccountPage() {
               <button className="button button-outline" type="button" onClick={downloadData} disabled={busy}>{t("Meine Daten herunterladen")}</button>
               {deletionReady && <button className="privacy-delete" type="button" onClick={deleteAccount} disabled={busy}>{t("Konto endgültig löschen")}</button>}
             </div>
-            {deletionReady === false && <p className="privacy-note">{t("Zum Löschen deines Kontos schreib uns kurz an")} <a href="mailto:brandycards@gmx.de">brandycards@gmx.de</a> — {t("wir erledigen das von Hand.")}</p>}
-            <p className="privacy-note">{t("Beim Löschen verschwinden Anfragen, Kartenangebote samt Bildern, Preisvorschläge und deine Anmeldung.")} <strong>{t("Bestellungen bleiben als Rechnungsbeleg gespeichert")}</strong> — {t("dazu sind wir gesetzlich verpflichtet; die Verknüpfung zu deinem Konto wird aufgehoben.")}</p>
+            {deletionReady === false && <p className="privacy-note">{t("Zum Löschen deines Kontos schreib uns kurz an")} <a href="mailto:brandycards@gmx.de">brandycards@gmx.de</a>. {t("Wir erledigen das von Hand.")}</p>}
+            <p className="privacy-note">{t("Beim Löschen verschwinden Anfragen, Kartenangebote samt Bildern, Preisvorschläge und deine Anmeldung.")} <strong>{t("Bestellungen bleiben als Rechnungsbeleg gespeichert.")}</strong> {t("Dazu sind wir gesetzlich verpflichtet. Die Verknüpfung zu deinem Konto wird aufgehoben.")}</p>
           </section>
         </>}
         {(!user || recovery) && <>
@@ -353,7 +355,7 @@ export default function AccountPage() {
           <p>{t(recovery ? "Wähle ein neues Passwort und bestätige es." : mode === "signup" ? "Speichere Bestellungen und verwalte deine Anfragen." : mode === "reset" ? "Wir senden dir einen sicheren Link per E-Mail." : "Melde dich an, um deine Bestellungen und Anfragen zu sehen.")}</p>
           <form onSubmit={submit}>
             {!recovery && <label className="form-field"><span>{t("E-Mail-Adresse *")}</span><input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required autoComplete="email" /></label>}
-            {!recovery && mode === "signup" && <label className="form-field"><span>{t("Benutzername *")}</span><input type="text" value={username} onChange={(event) => setUsername(event.target.value)} required minLength={3} maxLength={30} pattern="[A-Za-z0-9_]{3,30}" autoComplete="username" /><small>{t("3–30 Zeichen: nur Buchstaben, Zahlen und Unterstrich (_).")}</small></label>}
+            {!recovery && mode === "signup" && <label className="form-field"><span>{t("Benutzername *")}</span><input type="text" value={username} onChange={(event) => setUsername(event.target.value)} required minLength={3} maxLength={30} pattern="[A-Za-z0-9_]{3,30}" autoComplete="username" /><small>{t("3 bis 30 Zeichen: nur Buchstaben, Zahlen und Unterstrich (_).")}</small></label>}
             {(!recovery && mode === "reset") ? null : <label className="form-field"><span>{t(recovery ? "Neues Passwort *" : "Passwort *")}</span><input type="password" value={password} onChange={(event) => setPassword(event.target.value)} required minLength={8} autoComplete={mode === "signup" || recovery ? "new-password" : "current-password"} /></label>}
             {(recovery || mode === "signup") && <label className="form-field"><span>{t("Passwort bestätigen *")}</span><input type="password" value={passwordConfirmation} onChange={(event) => setPasswordConfirmation(event.target.value)} required minLength={8} autoComplete="new-password" /></label>}
             <button className="button button-primary" type="submit" disabled={busy}>{busy ? t("Bitte warten …") : t(recovery ? "Neues Passwort speichern" : mode === "login" ? "Anmelden" : mode === "signup" ? "Konto erstellen" : "Reset-Link senden")}</button>

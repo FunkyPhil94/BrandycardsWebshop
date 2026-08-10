@@ -1,5 +1,22 @@
 # BrandyCards Agentenprotokoll
 
+## 2026-08-10 — Textüberarbeitung und Vorverkaufslink
+
+- **Befund:** Die sichtbaren Angebotsformulierungen nutzten Gedankenstriche als
+  Satzklammern. Das wirkte auf Deutsch und Englisch uneinheitlich und gab den
+  Texten einen vorgefertigten Ton. Auf `/anfragen` wurde der globale breite
+  CTA-Stil außerdem auf einen Link mitten im Fließtext angewendet. Dadurch
+  entstanden auf Mobilgeräten eine lange Unterstreichung und abgetrennte
+  Satzzeichen.
+- **Entscheidung:** Die Sätze wurden in kurze, eigenständige Aussagen
+  umformuliert. Deutsch und Englisch sind sinngemäß, aber nicht wortgleich.
+  Der Vorverkaufshinweis besteht jetzt aus einem eigenen Linkabsatz und einer
+  schlanken Inline-Linkklasse; es wurde keine Geschäftslogik verändert.
+- **Ergebnis:** Zusätzlich wurden Versandspannen, Kontolöschung, Metadaten,
+  API-Fehlertexte und Verkäufermails sprachlich bereinigt. Ein Regressionstest
+  prüft die sichtbaren Textschlüssel auf Gedankenstriche und schützt die
+  Inline-Darstellung des Vorverkaufslinks.
+
 ## 2026-08-10 — Vollständige EU-Länderauswahl im Checkout
 
 - **Befund:** `app/checkout/page.tsx` bot nur Deutschland, Österreich,

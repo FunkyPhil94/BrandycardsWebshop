@@ -61,7 +61,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     return { title: "Karte nicht verfügbar", robots: { index: false, follow: false }, alternates: { canonical: url } };
   }
 
-  const description = card.description?.trim() || `Sportkarte ${card.title} bei BrandyCards — für Sammler geprüft und sicher verpackt.`;
+  const description = card.description?.trim() || `Sportkarte ${card.title} bei BrandyCards. Für Sammler geprüft und sicher verpackt.`;
   return {
     title: card.title,
     description,

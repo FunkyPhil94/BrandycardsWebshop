@@ -161,8 +161,8 @@ test("keine Gedankenstriche in den Nachrichten", () => {
     cardSubmissionReceived({ title: "Karte", shopUrl: SHOP }),
   ];
   for (const nachricht of alle) {
-    assert.ok(!nachricht.text.includes("—"), `Gedankenstrich im Text: ${nachricht.subject}`);
-    assert.ok(!nachricht.html.includes("—"), `Gedankenstrich im HTML: ${nachricht.subject}`);
+    assert.ok(!/[—–]/u.test(nachricht.text), `Gedankenstrich im Text: ${nachricht.subject}`);
+    assert.ok(!/[—–]/u.test(nachricht.html), `Gedankenstrich im HTML: ${nachricht.subject}`);
   }
 });
 

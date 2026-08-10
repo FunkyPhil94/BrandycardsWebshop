@@ -54,3 +54,25 @@ test("customer-facing pages keep card data untranslated while translating the sh
   assert.match(pages[1], /\{product\.title\}/);
   assert.match(pages[2], /\{card\.title\}/);
 });
+
+test("öffentliche Texte verwenden keine Gedankenstriche und Vorverkauf bleibt im Fließtext", async () => {
+  const [anfragen, home, cards, offer, preSale, account, privacy, shipping, styles] = await Promise.all([
+    read("app/anfragen/page.tsx"),
+    read("app/page.tsx"),
+    read("app/karten/page.tsx"),
+    read("app/karten/[id]/offer-form.tsx"),
+    read("app/vorverkauf/page.tsx"),
+    read("app/account/page.tsx"),
+    read("app/datenschutz/page.tsx"),
+    read("app/versand-zahlung/page.tsx"),
+    read("app/globals.css"),
+  ]);
+
+  for (const source of [anfragen, home, cards, offer, preSale, account, privacy, shipping]) {
+    for (const match of source.matchAll(/\bt\("([^"]*)"/gu)) {
+      assert.doesNotMatch(match[1], /[—–]/u, `Gedankenstrich in sichtbarem Text: ${match[1]}`);
+    }
+  }
+  assert.match(anfragen, /text-link text-link-inline/u);
+  assert.match(styles, /\.text-link-inline \{[^}]*min-width:0/u);
+});
