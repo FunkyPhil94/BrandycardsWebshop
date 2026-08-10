@@ -4975,3 +4975,9 @@ selbst; die Schrittfolge samt Nachprüfung steht in
   `<Item>`. Verkaufte und neu eingestellte Karten erschienen dadurch doppelt.
   Parsing auf `<ActiveList>` begrenzt, übrige Container abgewählt. Commit
   `7635ef4`, Regressionstest `tests/ebay-active-list.test.mjs`.
+## 2026-08-10 – Projektstand vollständig erfassen
+
+- Status: läuft
+- Auftrag: Projekt vollständig einlesen und aktuellen Stand erfassen.
+- Beginn: 2026-08-10
+- Nächster Schritt: Repository-Anweisungen, Projektstruktur, Konfiguration, Quellcode, Tests und offene Aufgaben prüfen.
