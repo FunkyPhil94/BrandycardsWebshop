@@ -1,5 +1,17 @@
 # BrandyCards Agentenprotokoll
 
+## 2026-08-10 — Chrome-Rahmen pixelgenau als Flyer umgesetzt
+
+Der Nutzer hat die Nutzungsrechte für das bereitgestellte Kartendesign bestätigt.
+Deshalb wurde die Vorderseite nicht nachgezeichnet oder generativ verändert,
+sondern als unveränderte Pixelvorlage übernommen. So bleibt der Rahmen exakt
+identisch zum Referenzbild.
+
+Für die Rückseite wurde der innere Bildbereich durch eigenständige BrandyCards-
+Inhalte ersetzt. QR-Code, Instagram-Hinweis und MESSE26-Rabatt sind enthalten;
+die Vorderseite wurde anschließend nochmals pixelweise gegen die Referenz
+geprüft. Beide Seiten wurden als PNG und zweiseitige PDF ausgegeben.
+
 ## 2026-08-10 — Vier eigenständige Karten-inspirierte Messeflyer gestaltet
 
 Die Referenzkarten liefern unterschiedliche Gestaltungssprachen: Gold/Premium,

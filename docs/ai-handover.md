@@ -37,16 +37,18 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-**Exaktpixelige Rahmenintegration für einen neuen BrandyCards-Flyer** — Stand: LÄUFT (2026-08-10)
-
-- Den vom Nutzer freigegebenen Referenzrahmen als unveränderte Pixelvorlage
-  verwenden, statt ihn künstlich nachzuzeichnen.
-- Einen eigenständigen BrandyCards-Flyer mit bestehendem Logo, QR-Code,
-  Instagram-Hinweis und MESSE26-Rabatt daraus aufbauen.
-- Druckfähige Vorder- und Rückseite als PDF sowie Vorschauen erzeugen und
-  visuell prüfen.
+*(derzeit kein Auftrag aktiv)*
 
 ## Historie
+
+### 2026-08-10 — Chrome-Rahmen pixelgenau als Flyer umgesetzt
+
+- Die vom Nutzer freigegebene Referenz wurde unverändert als Vorderseite
+  übernommen; die Pixelprüfung ist erfolgreich.
+- Eine passende Rückseite mit BrandyCards-Texten, QR-Code, Instagram-Hinweis
+  und MESSE26-Rabatt wurde innerhalb des Rahmenaufbaus erstellt.
+- Vorder- und Rückseite wurden als PNG und zweiseitige PDF erzeugt und visuell
+  geprüft.
 
 ### 2026-08-10 — Vier eigenständige Flyer aus Sammelkarten-Designprinzipien entwickelt
 
