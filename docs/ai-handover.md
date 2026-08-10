@@ -541,6 +541,12 @@ Sicherheits- und Funktionsbefunde im
 
 ## Historie
 
+### 2026-08-10 — Flyer C QR-Feld luftiger gesetzt
+
+- Der vertikale Abstand zwischen den vier QR-Zeilen wurde vergrößert.
+- Schriftfamilie, Schriftgröße und Schriftstärke blieben unverändert.
+- Flyer-C-PNG und PDF wurden neu gerendert und visuell geprüft.
+
 ### 2026-08-10 — Flyer C QR-Feld vollständig vereinheitlicht
 
 - Alle vier Zeilen neben dem QR-Code nutzen jetzt identische Schriftfamilie,
