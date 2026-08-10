@@ -1018,6 +1018,17 @@ stellen nur DNS-Zustellung her und erzeugen keine HTTP-Weiterleitung. Der
 Apex-Aufruf endet derzeit mit Cloudflare HTTP 525, bevor der Worker greift.
 Eine separate 301-Weiterleitung des Apex auf den Shop ist daher noch offen.
 
+## 2026-08-10 — Flyer D mit mehr visueller Präsenz erstellt
+
+Flyer D bleibt bewusst in der ruhigen C-Farbwelt, füllt die Vorderseite aber
+mit einem klaren Dreierblock: Kaufen, Sammeln und Verkaufen. Dadurch bekommt
+die Seite mehr Struktur und Inhalt, ohne zusätzliche Bilder zu erfinden oder
+die Gestaltung zu überladen. Die Rückseite übernimmt den bewährten Aufbau mit
+den drei Kontakt-Schritten und dem gleichmäßig gesetzten QR-Rabattfeld.
+
+Die beiden PNG-Vorschauen und die zweiseitige PDF wurden nach einem Korrekturlauf
+für die QR-Klassenbindung erneut gerendert und visuell geprüft.
+
 ## 2026-08-10 — QR-Feld von Flyer C mit mehr Luft gesetzt
 
 Die vier einheitlich formatierten QR-Zeilen standen noch zu dicht beieinander.

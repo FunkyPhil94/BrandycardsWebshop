@@ -541,6 +541,15 @@ Sicherheits- und Funktionsbefunde im
 
 ## Historie
 
+### 2026-08-10 — Flyer D als lebendigere Alternative zu Flyer C erstellt
+
+- Die Vorderseite übernimmt die ruhige Flyer-C-Grundgestaltung und ergänzt
+  einen klaren Dreierblock für **Kaufen**, **Sammeln** und **Verkaufen**.
+- Die Rückseite bleibt im bewährten Aufbau mit Schritten, QR-Code, Rabatt und
+  Kontaktmöglichkeiten.
+- Zwei PNGs, eine HTML-Datei und eine zweiseitige PDF wurden erzeugt und
+  visuell geprüft.
+
 ### 2026-08-10 — Flyer C QR-Feld luftiger gesetzt
 
 - Der vertikale Abstand zwischen den vier QR-Zeilen wurde vergrößert.
