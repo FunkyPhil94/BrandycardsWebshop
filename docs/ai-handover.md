@@ -541,6 +541,15 @@ Sicherheits- und Funktionsbefunde im
 
 ## Historie
 
+### 2026-08-10 — Flyer C typografisch vereinheitlicht
+
+- Für Flyer C ist die Schriftfamilie für alle Seitenelemente explizit auf
+  Arial/Helvetica vereinheitlicht.
+- Die vier Rabattzeilen im QR-Feld sind jetzt als gleichmäßig gesetzte
+  Textblöcke mit konsistenten Zeilenhöhen und Abständen aufgebaut.
+- Die beiden PNGs und die zweiseitige PDF wurden neu gerendert und visuell
+  geprüft.
+
 ### 2026-08-10 — Flyer C aus Flyer-A-Vorderseite und Flyer-B-Rückseite erstellt
 
 - Flyer C kombiniert die helle Vorderseite von Flyer A mit der Rückseite von

@@ -1018,6 +1018,18 @@ stellen nur DNS-Zustellung her und erzeugen keine HTTP-Weiterleitung. Der
 Apex-Aufruf endet derzeit mit Cloudflare HTTP 525, bevor der Worker greift.
 Eine separate 301-Weiterleitung des Apex auf den Shop ist daher noch offen.
 
+## 2026-08-10 — Flyer C typografisch vereinheitlicht
+
+Die QR-Beschriftung bestand zuvor aus unterschiedlich gesetzten Elementen mit
+abweichenden Größen und Abständen. Für Flyer C verwenden alle Seitenelemente
+jetzt explizit dieselbe Schriftfamilie. Der QR-Hinweis ist als gleichmäßige
+Abfolge aus Überschrift, Frist, Rabatt und Rabattcode umgesetzt. Dadurch bleibt
+die Hierarchie erhalten, ohne wie mehrere unterschiedliche Schriftstile zu
+wirken.
+
+Die beiden PNG-Vorschauen und die zweiseitige PDF wurden neu gerendert und
+visuell geprüft.
+
 ## 2026-08-10 — Flyer C aus A-Vorderseite und B-Rückseite zusammengeführt
 
 Flyer C verbindet die stärkere Vorderseite von Flyer A mit der ruhigeren
