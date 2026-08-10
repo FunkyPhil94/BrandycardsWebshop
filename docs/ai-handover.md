@@ -37,17 +37,19 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-**Zwei vollständig neue, rasterbasierte BrandyCards-Flyer entwickeln** — Stand: LÄUFT (2026-08-10)
-
-- Alle bisherigen Flyer als gestalterische Grundlage verwerfen.
-- Zwei neue zweiseitige Varianten mit systematischem Raster, klarer Ausrichtung,
-  ausreichend Weißraum, begrenzter Farbpalette und höchstens zwei Schriftstilen
-  erstellen.
-- Neue Texte verwenden; Logo, QR-Code, Instagram-Hinweis und MESSE26-Rabatt
-  weiterhin korrekt integrieren.
-- HTML, PNG und druckfähige PDF erzeugen und visuell prüfen.
+*(derzeit kein Auftrag aktiv)*
 
 ## Historie
+
+### 2026-08-10 — Zwei vollständig neue, rasterbasierte BrandyCards-Flyer erstellt
+
+- Alle bisherigen Flyer als gestalterische Grundlage verworfen.
+- Zwei neue zweiseitige Varianten mit systematischem Raster, klarer Ausrichtung,
+  ausreichend Weißraum, begrenzter Farbpalette und maximal zwei Schriftstilen
+  umgesetzt.
+- Neue Texte verwendet; Logo, QR-Code, Instagram-Hinweis und MESSE26-Rabatt
+  korrekt integriert.
+- HTML, PNGs und druckfähige PDFs erzeugt und visuell geprüft.
 
 ### 2026-08-10 — Eigenständigen Chrome-/Collector-Rahmen für Flyer erstellt
 
@@ -5185,3 +5187,11 @@ selbst; die Schrittfolge samt Nachprüfung steht in
   Kartenformen, eine begrenzte Farbpalette und eine strukturierte Rueckseite.
   PDF und beide Seiten-PNGs wurden gerendert und visuell geprueft; der QR-Code
   bleibt bewusst als Platzhalter markiert.
+## 2026-08-10 - Card-Hunt-Flyer mit mehr Spannung
+
+- Auftrag: Die zuletzt beruhigte Card-Hunt-Variante weiterentwickeln, weil sie
+  zu langweilig wirkt.
+- Ziel: Mehr Energie und Charakter durch ein kontrolliertes asymmetrisches
+  Raster, eine markante Diagonale und ein starkes Kartenmotiv; keine Deko-
+  Ansammlung und kein AI-Slop.
+- Stand: LAEUFT.

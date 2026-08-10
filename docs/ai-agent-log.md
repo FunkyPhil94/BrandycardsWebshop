@@ -1,5 +1,18 @@
 # BrandyCards Agentenprotokoll
 
+## 2026-08-10 — Zwei vollständig neue, rasterbasierte BrandyCards-Flyer erstellt
+
+Die bisherigen Flyer wurden für diesen Durchlauf nicht weiterverwendet. Stattdessen
+wurden zwei neue Systeme entwickelt: eine helle, redaktionelle Variante mit
+klarer Seitenleiste und eine dunkle, kontrastreiche Variante mit modularen
+Informationskacheln.
+
+Beide Varianten arbeiten mit einem festen 12-Spalten-Raster, konsistenter
+Ausrichtung, zwei Schriftstilen, begrenzten Farben und bewusstem Weißraum.
+Die Inhalte wurden neu formuliert und QR-Code, Instagram-Hinweis sowie
+MESSE26-Rabatt in klar getrennten Bereichen platziert. Vorder- und Rückseiten
+wurden als HTML, PNG und PDF gerendert und visuell geprüft.
+
 ## 2026-08-10 — Eigenständigen Chrome-/Collector-Rahmen für Flyer erstellt
 
 Die 1:1-Übernahme der Referenz war für den Flyer zu wörtlich. Deshalb wurde
