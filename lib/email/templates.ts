@@ -177,6 +177,78 @@ export function orderConfirmation(daten: BestellDaten): Nachricht {
   return { subject: sanitizeSubject(`Deine Bestellung ${daten.orderNumber} bei BrandyCards`), text, html };
 }
 
+// --- 1b. Versandbestätigung -------------------------------------------------
+
+export type VersandDaten = {
+  orderNumber: string;
+  shippedAt: string;
+  carrier: string | null;
+  trackingNumber: string | null;
+  trackingUrl: string | null;
+  shopUrl: string;
+};
+
+export function orderShipped(daten: VersandDaten): Nachricht {
+  const tracking = daten.trackingNumber
+    ? [`Trackingnummer: ${daten.trackingNumber}`, ...(daten.carrier ? [`Versanddienstleister: ${daten.carrier}`] : []), ...(daten.trackingUrl ? ["", `Sendung verfolgen: ${daten.trackingUrl}`] : [])]
+    : ["Eine Trackingnummer wurde nicht hinterlegt."];
+  const text = [
+    `Deine Bestellung ist unterwegs!`,
+    ``,
+    `Bestellnummer: ${daten.orderNumber}`,
+    `Versendet am: ${formatDatum(daten.shippedAt)}`,
+    ``,
+    ...tracking,
+    ``,
+    `Wenn etwas unklar ist, antworte einfach auf diese E-Mail.`,
+    ``,
+    `Viele Grüße`,
+    `die Brüder von BrandyCards`,
+    fussText(daten.shopUrl),
+  ].join("\n");
+  const trackingHtml = daten.trackingNumber
+    ? [
+      `<p style="margin:0 0 8px"><strong>Trackingnummer:</strong> ${escapeHtml(daten.trackingNumber)}</p>`,
+      ...(daten.carrier ? [`<p style="margin:0 0 8px"><strong>Versanddienstleister:</strong> ${escapeHtml(daten.carrier)}</p>`] : []),
+      ...(daten.trackingUrl ? [`<p style="margin:16px 0 0"><a href="${escapeHtml(daten.trackingUrl)}" style="color:#c0472c;font-weight:bold">Sendung verfolgen</a></p>`] : []),
+    ].join("")
+    : `<p style="margin:0;color:#7c7770">Eine Trackingnummer wurde nicht hinterlegt.</p>`;
+  const html = rahmen([
+    `<h1 style="font-size:22px;margin:0 0 16px">Deine Bestellung ist unterwegs!</h1>`,
+    `<p style="margin:0 0 6px;color:#7c7770;font-size:13px">Bestellnummer</p>`,
+    `<p style="margin:0 0 6px;font-weight:bold">${escapeHtml(daten.orderNumber)}</p>`,
+    `<p style="margin:0 0 20px;color:#7c7770;font-size:13px">Versendet am ${escapeHtml(formatDatum(daten.shippedAt))}</p>`,
+    trackingHtml,
+    `<p style="margin:22px 0 0">Wenn etwas unklar ist, antworte einfach auf diese E-Mail.</p>`,
+    `<p style="margin:18px 0 0">Viele Grüße<br>die Brüder von BrandyCards</p>`,
+  ].join(""), daten.shopUrl);
+  return { subject: sanitizeSubject(`Deine Bestellung ${daten.orderNumber} ist unterwegs`), text, html };
+}
+
+export function orderRefunded(daten: { orderNumber: string; amount: Betrag; shopUrl: string }): Nachricht {
+  const text = [
+    `Deine Erstattung wurde bestätigt.`,
+    ``,
+    `Bestellnummer: ${daten.orderNumber}`,
+    `Erstatteter Betrag: ${formatMoney(daten.amount)}`,
+    ``,
+    `PayPal verarbeitet die Rückzahlung auf die ursprüngliche Zahlungsquelle.`,
+    ``,
+    `Viele Grüße`,
+    `die Brüder von BrandyCards`,
+    fussText(daten.shopUrl),
+  ].join("\n");
+  const html = rahmen([
+    `<h1 style="font-size:22px;margin:0 0 16px">Deine Erstattung wurde bestätigt.</h1>`,
+    `<p style="margin:0 0 6px;color:#7c7770;font-size:13px">Bestellnummer</p>`,
+    `<p style="margin:0 0 18px;font-weight:bold">${escapeHtml(daten.orderNumber)}</p>`,
+    `<p style="margin:0">Erstatteter Betrag: <strong>${escapeHtml(formatMoney(daten.amount))}</strong></p>`,
+    `<p style="margin:22px 0 0">PayPal verarbeitet die Rückzahlung auf die ursprüngliche Zahlungsquelle.</p>`,
+    `<p style="margin:18px 0 0">Viele Grüße<br>die Brüder von BrandyCards</p>`,
+  ].join(""), daten.shopUrl);
+  return { subject: sanitizeSubject(`Erstattung zu deiner Bestellung ${daten.orderNumber}`), text, html };
+}
+
 // --- 2. Preisvorschlag angenommen -------------------------------------------
 
 export type AngebotDaten = {

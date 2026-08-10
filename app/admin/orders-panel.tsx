@@ -14,6 +14,12 @@ type AdminOrder = {
   totalAmountCents: number;
   createdAt: string;
   paidAt: string | null;
+  shippedAt: string | null;
+  shippingCarrier: string | null;
+  trackingNumber: string | null;
+  completedAt: string | null;
+  cancelledAt: string | null;
+  refundedAt: string | null;
   email: string | null;
   shippingAddress: { name: string; street: string; postalCode: string; city: string; country: string } | null;
   items: Array<{ title: string; quantity: number; unitAmountCents: number; totalAmountCents: number }>;
@@ -49,6 +55,7 @@ export function OrdersPanel() {
   const [page, setPage] = useState(1);
   const [pageInfo, setPageInfo] = useState({ page: 1, pageSize: 25, total: 0, totalPages: 1 });
   const [updatingOrder, setUpdatingOrder] = useState<string | null>(null);
+  const [shippingDrafts, setShippingDrafts] = useState<Record<string, { carrier: string; trackingNumber: string }>>({});
 
   useEffect(() => {
     let cancelled = false;
@@ -81,14 +88,30 @@ export function OrdersPanel() {
     setUpdatingOrder(orderId);
     setNote("");
     try {
+      const draft = shippingDrafts[orderId] ?? { carrier: "", trackingNumber: "" };
       const response = await fetch("/api/admin/orders", {
         method: "PATCH",
         headers: await authHeaders(true, true),
-        body: JSON.stringify({ orderId, status: "SHIPPED" }),
+        body: JSON.stringify({ orderId, status: "SHIPPED", shippingCarrier: draft.carrier || undefined, trackingNumber: draft.trackingNumber || undefined }),
       });
+      const data = await response.json() as { status?: string; shippedAt?: string; error?: string };
+      if (!response.ok) throw new Error(data.error ?? "Bestellung konnte nicht aktualisiert werden.");
+      setOrders((current) => current?.map((order) => order.id === orderId ? { ...order, status: data.status ?? "SHIPPED", shippedAt: data.shippedAt ?? order.shippedAt, shippingCarrier: draft.carrier || null, trackingNumber: draft.trackingNumber || null } : order) ?? current);
+    } catch (error) {
+      setNote(error instanceof Error ? error.message : "Bestellung konnte nicht aktualisiert werden.");
+    } finally {
+      setUpdatingOrder(null);
+    }
+  }
+
+  async function changeStatus(orderId: string, endpoint: string, body: Record<string, string>, successStatus: string) {
+    setUpdatingOrder(orderId);
+    setNote("");
+    try {
+      const response = await fetch(endpoint, { method: "POST", headers: await authHeaders(true, true), body: JSON.stringify({ orderId, ...body }) });
       const data = await response.json() as { status?: string; error?: string };
       if (!response.ok) throw new Error(data.error ?? "Bestellung konnte nicht aktualisiert werden.");
-      setOrders((current) => current?.map((order) => order.id === orderId ? { ...order, status: data.status ?? "SHIPPED" } : order) ?? current);
+      setOrders((current) => current?.map((order) => order.id === orderId ? { ...order, status: data.status ?? successStatus } : order) ?? current);
     } catch (error) {
       setNote(error instanceof Error ? error.message : "Bestellung konnte nicht aktualisiert werden.");
     } finally {
@@ -132,14 +155,30 @@ export function OrdersPanel() {
                   <div><dt>Versand</dt><dd>{formatPrice(order.shippingAmountCents, order.currency)}</dd></div>
                   <div><dt>Gesamt</dt><dd>{formatPrice(order.totalAmountCents, order.currency)}</dd></div>
                   <div><dt>Bezahlt</dt><dd>{formatDate(order.paidAt) ?? "—"}</dd></div>
+                  {order.shippedAt && <div><dt>Versendet</dt><dd>{formatDate(order.shippedAt)}</dd></div>}
+                  {order.completedAt && <div><dt>Abgeschlossen</dt><dd>{formatDate(order.completedAt)}</dd></div>}
+                  {order.shippingCarrier && <div><dt>Dienstleister</dt><dd>{order.shippingCarrier}</dd></div>}
+                  {order.trackingNumber && <div><dt>Tracking</dt><dd className="admin-order-mono">{order.trackingNumber}</dd></div>}
                   <div><dt>Zahlung</dt><dd>{payment ? `${payment.provider} · ${payment.status}` : "keine"}</dd></div>
                   {/* Die Capture-Id ist der Faden zum PayPal-Konto: ohne sie
                       lässt sich eine Rückerstattung dort nicht zuordnen. */}
                   {payment?.providerCaptureId && <div><dt>Capture-Id</dt><dd className="admin-order-mono">{payment.providerCaptureId}</dd></div>}
                 </dl>
-                {(order.status === "PAID" || order.status === "PROCESSING") && <button className="button button-outline admin-order-ship" type="button" onClick={() => void markShipped(order.id)} disabled={updatingOrder === order.id}>
-                  {updatingOrder === order.id ? "Wird gespeichert …" : "Als versendet markieren"}
+                {(order.status === "PAID" || order.status === "PROCESSING") && <div className="admin-order-shipping-form">
+                  <label><span>Versanddienstleister</span><select value={shippingDrafts[order.id]?.carrier ?? order.shippingCarrier ?? ""} onChange={(event) => setShippingDrafts((current) => ({ ...current, [order.id]: { carrier: event.target.value, trackingNumber: current[order.id]?.trackingNumber ?? order.trackingNumber ?? "" } }))}>
+                    <option value="">Nicht angegeben</option><option value="DHL">DHL</option><option value="DEUTSCHE_POST">Deutsche Post</option><option value="HERMES">Hermes</option><option value="DPD">DPD</option><option value="GLS">GLS</option><option value="UPS">UPS</option>
+                  </select></label>
+                  <label><span>Trackingnummer</span><input value={shippingDrafts[order.id]?.trackingNumber ?? order.trackingNumber ?? ""} onChange={(event) => setShippingDrafts((current) => ({ ...current, [order.id]: { carrier: current[order.id]?.carrier ?? order.shippingCarrier ?? "", trackingNumber: event.target.value } }))} placeholder="optional" maxLength={80} /></label>
+                  <button className="button button-outline admin-order-ship" type="button" onClick={() => void markShipped(order.id)} disabled={updatingOrder === order.id}>
+                    {updatingOrder === order.id ? "Wird gespeichert …" : "Als versendet markieren"}
+                  </button>
+                </div>}
+                {order.status === "SHIPPED" && <button className="button button-outline admin-order-ship" type="button" onClick={() => void changeStatus(order.id, "/api/admin/orders", { status: "COMPLETED" }, "COMPLETED")} disabled={updatingOrder === order.id}>
+                  {updatingOrder === order.id ? "Wird gespeichert …" : "Als abgeschlossen markieren"}
                 </button>}
+                {order.status === "PENDING" && <button className="privacy-delete admin-order-action" type="button" onClick={() => { if (window.confirm("Diese offene Bestellung wirklich stornieren?")) void changeStatus(order.id, "/api/admin/orders/cancel", {}, "CANCELLED"); }} disabled={updatingOrder === order.id}>Stornieren</button>}
+                {(order.status === "PAID" || order.status === "SHIPPED" || order.status === "COMPLETED") && payment?.status === "CAPTURED" && <button className="privacy-delete admin-order-action" type="button" onClick={() => { if (window.confirm("Den vollständigen Betrag über PayPal erstatten? Bestand und eBay-Angebot werden nicht automatisch reaktiviert.")) void changeStatus(order.id, "/api/admin/orders/refund", {}, "REFUNDED"); }} disabled={updatingOrder === order.id}>Vollständig erstatten</button>}
+                {order.status === "REFUNDED" && <p className="admin-order-note">Erstattet. Bestand und eBay-Angebot werden nicht automatisch reaktiviert. Nach einer Retoure bitte Karte prüfen und manuell neu einstellen.</p>}
                 {order.shippingAddress
                   ? <address className="admin-order-address">
                       {order.shippingAddress.name}<br />

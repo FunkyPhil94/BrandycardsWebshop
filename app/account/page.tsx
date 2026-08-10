@@ -4,10 +4,48 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import type { User } from "@supabase/supabase-js";
 import { getSupabaseBrowserClient } from "../../lib/supabase-browser";
-import { SiteFooter, SiteHeader } from "../site-chrome";
+import { SiteFooter, SiteHeader, formatPrice } from "../site-chrome";
 import { useI18n } from "../i18n";
 
 type Mode = "login" | "signup" | "reset";
+
+type AccountOrder = {
+  id: string;
+  orderNumber: string;
+  status: string;
+  currency: string;
+  subtotalAmountCents: number;
+  shippingAmountCents: number;
+  totalAmountCents: number;
+  shippingAddress: { name: string; street: string; postalCode: string; city: string; country: string } | null;
+  createdAt: string;
+  paidAt: string | null;
+  shippedAt: string | null;
+  shippingCarrier: string | null;
+  trackingNumber: string | null;
+  trackingUrl: string | null;
+  completedAt: string | null;
+  cancelledAt: string | null;
+  refundedAt: string | null;
+  items: Array<{ title: string; quantity: number; unitAmountCents: number; totalAmountCents: number }>;
+  payments: Array<{ provider: string; status: string; amountCents: number; currency: string; createdAt: string }>;
+};
+
+const ORDER_STATUS_KEYS: Record<string, string> = {
+  PENDING: "Offen",
+  PAID: "Bezahlt",
+  PROCESSING: "In Bearbeitung",
+  SHIPPED: "Versendet",
+  COMPLETED: "Abgeschlossen",
+  CANCELLED: "Storniert",
+  REFUNDED: "Erstattet",
+};
+
+function orderDate(value: string | null, locale: "de" | "en") {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleString(locale === "en" ? "en-GB" : "de-DE", { dateStyle: "medium", timeStyle: "short" });
+}
 
 function safeReturnPath() {
   if (typeof window === "undefined") return "/";
@@ -24,7 +62,7 @@ function safeReturnPath() {
 }
 
 export default function AccountPage() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
@@ -36,6 +74,7 @@ export default function AccountPage() {
   const [user, setUser] = useState<User | null>(null);
   const [recovery, setRecovery] = useState(() => typeof window !== "undefined" && new URLSearchParams(window.location.hash.replace(/^#/, "")).get("type") === "recovery");
   const [deletionReady, setDeletionReady] = useState<boolean | null>(null);
+  const [orders, setOrders] = useState<AccountOrder[] | null>(null);
 
   async function syncProfile(sessionUser: User | null, accessToken?: string, profile?: { username?: string; displayName?: string }) {
     if (!sessionUser || !accessToken) return;
@@ -93,6 +132,24 @@ export default function AccountPage() {
     })();
     return () => { cancelled = true; };
   }, [accessToken, user]);
+
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const response = await fetch("/api/account/orders", { headers: { Authorization: `Bearer ${await accessToken()}` } });
+        const body = await response.json() as { orders?: AccountOrder[]; error?: string };
+        if (!response.ok) throw new Error(body.error ?? t("Bestellungen konnten nicht geladen werden."));
+        if (!cancelled) setOrders(body.orders ?? []);
+      } catch (error) {
+        if (!cancelled) setMessage(error instanceof Error ? t(error.message) : t("Bestellungen konnten nicht geladen werden."));
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [accessToken, t, user]);
 
   /** Auskunft nach Art. 15 DSGVO. Der Browser lädt die Datei selbst herunter —
    *  der Umweg über ein `<a download>` ist nötig, weil die Route ein
@@ -242,6 +299,40 @@ export default function AccountPage() {
               <label className="form-field"><span>{t("Anzeigename")}</span><input type="text" value={displayName} onChange={(event) => setDisplayName(event.target.value)} maxLength={120} /></label>
               <button className="button button-primary" type="submit" disabled={busy}>{busy ? t("Speichere …") : t("Profil speichern")}</button>
             </form>
+          </section>
+          <section className="orders-history" aria-labelledby="orders-title">
+            <h2 id="orders-title">{t("Bestellhistorie")}</h2>
+            {orders === null && <p className="privacy-note">{t("Bestellungen werden geladen …")}</p>}
+            {orders?.length === 0 && <p className="privacy-note">{t("Du hast noch keine Bestellungen.")}</p>}
+            <div className="account-orders">
+              {orders?.map((order) => <article className="account-order" key={order.id}>
+                <header className="account-order-head">
+                  <div><strong>{order.orderNumber}</strong><span>{orderDate(order.createdAt, locale)}</span></div>
+                  <span className={`admin-order-status status-${order.status.toLowerCase()}`}>{t(ORDER_STATUS_KEYS[order.status] ?? order.status)}</span>
+                </header>
+                <div className="account-order-body">
+                  <dl className="account-order-facts">
+                    <div><dt>{t("Bestellt am")}</dt><dd>{orderDate(order.createdAt, locale)}</dd></div>
+                    <div><dt>{t("Gesamt")}</dt><dd>{formatPrice(order.totalAmountCents, order.currency, locale)}</dd></div>
+                    <div><dt>{t("Zahlung")}</dt><dd>{order.paidAt ? t("Bezahlt") : t("Noch nicht bezahlt")}</dd></div>
+                    {order.shippedAt && <div><dt>{t("Versendet am")}</dt><dd>{orderDate(order.shippedAt, locale)}</dd></div>}
+                    {order.completedAt && <div><dt>{t("Abgeschlossen am")}</dt><dd>{orderDate(order.completedAt, locale)}</dd></div>}
+                  </dl>
+                  <ul className="account-order-items">
+                    {order.items.map((item, index) => <li key={`${order.id}-${index}`}><span>{item.quantity} × {item.title}</span><strong>{formatPrice(item.totalAmountCents, order.currency, locale)}</strong></li>)}
+                  </ul>
+                  {order.trackingNumber && <p className="account-tracking">
+                    {order.shippingCarrier && <span>{order.shippingCarrier} · </span>}
+                    {order.trackingUrl ? <a href={order.trackingUrl} target="_blank" rel="noreferrer">{t("Sendung verfolgen")}</a> : <span>{order.trackingNumber}</span>}
+                  </p>}
+                  {order.shippingAddress && <address className="account-order-address">
+                    <strong>{t("Lieferadresse")}</strong><br />
+                    {order.shippingAddress.name}<br />{order.shippingAddress.street}<br />
+                    {order.shippingAddress.postalCode} {order.shippingAddress.city}<br />{order.shippingAddress.country}
+                  </address>}
+                </div>
+              </article>)}
+            </div>
           </section>
           <section className="privacy-panel" aria-labelledby="privacy-title">
             <h2 id="privacy-title">{t("Meine Daten")}</h2>

@@ -271,6 +271,25 @@ footer { background:var(--ink); color:#fff; padding:52px max(48px,calc((100vw - 
 .form-field input:disabled { background:#efece5; border-style:dashed; color:var(--muted); cursor:not-allowed; }
 .profile-panel { border-top:1px solid var(--line); margin-top:36px; padding-top:32px; }
 .profile-panel h2 { font-size:clamp(24px,3vw,34px); letter-spacing:-.05em; line-height:1.05; margin:0; }
+.orders-history { border-top:1px solid var(--line); margin-top:36px; padding-top:32px; }
+.orders-history h2 { font-size:clamp(24px,3vw,34px); letter-spacing:-.05em; line-height:1.05; margin:0 0 18px; }
+.account-orders { display:grid; gap:12px; }
+.account-order { background:#ebe8e1; }
+.account-order-head { align-items:center; display:flex; gap:14px; justify-content:space-between; padding:16px 18px; }
+.account-order-head > div { display:grid; gap:4px; }
+.account-order-head strong { font-family:'DM Mono',monospace; font-size:11px; letter-spacing:.04em; }
+.account-order-head span:not(.admin-order-status) { color:var(--muted); font-size:11px; }
+.account-order-body { border-top:1px solid var(--line); display:grid; gap:16px; padding:16px 18px; }
+.account-order-facts { display:grid; gap:7px 20px; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); margin:0; }
+.account-order-facts div { display:flex; font-size:11px; gap:10px; justify-content:space-between; }
+.account-order-facts dt { color:var(--muted); }
+.account-order-facts dd { margin:0; text-align:right; }
+.account-order-items { display:grid; gap:7px; list-style:none; margin:0; padding:0; }
+.account-order-items li { display:flex; font-size:12px; gap:14px; justify-content:space-between; }
+.account-tracking { font-size:12px; margin:0; }
+.account-tracking a { border-bottom:1px solid currentColor; color:var(--red); font-weight:800; }
+.account-order-address { color:var(--muted); font-size:11px; font-style:normal; line-height:1.6; }
+.account-order-address strong { color:var(--ink); font-size:10px; letter-spacing:.08em; text-transform:uppercase; }
 /* Auskunft und Kontolöschung. Der Löschknopf ist bewusst kein `button-primary`:
    Er soll auffindbar sein, aber nicht einladend — daneben steht der harmlose
    Download in derselben Zeile. */
@@ -695,5 +714,12 @@ footer { background:var(--ink); color:#fff; padding:52px max(48px,calc((100vw - 
 .admin-order-mono { font-family:'DM Mono',monospace; font-size:10px; }
 .admin-order-address { color:var(--muted); font-size:12px; font-style:normal; line-height:1.7; }
 .admin-order-ship { justify-self:start; min-width:220px; }
+.admin-order-shipping-form { align-items:end; display:flex; flex-wrap:wrap; gap:10px; }
+.admin-order-shipping-form label { display:grid; gap:5px; }
+.admin-order-shipping-form label span { color:var(--muted); font-size:10px; letter-spacing:.07em; text-transform:uppercase; }
+.admin-order-shipping-form select,.admin-order-shipping-form input { background:#fff; border:1px solid var(--line); font-size:12px; min-height:42px; padding:10px 12px; }
+.admin-order-shipping-form input { width:190px; }
+.admin-order-action { justify-self:start; }
+.admin-order-note { background:#fff4e8; border-left:3px solid var(--gold); color:var(--muted); font-size:11px; line-height:1.6; margin:0; padding:10px 12px; }
 .admin-orders-pagination { align-items:center; display:flex; gap:16px; justify-content:center; margin-top:18px; }
 @media (max-width:640px) { .admin-order-head { grid-template-columns:1fr; } }

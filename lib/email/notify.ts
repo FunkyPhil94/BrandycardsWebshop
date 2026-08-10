@@ -3,8 +3,9 @@ import type { getDb } from "../../db";
 import { orderItems, orders, priceOffers, products, users } from "../../db/schema";
 import { getEmailConfig } from "./config.ts";
 import { protokolliereVersand, sendEmail, versucheVersand } from "./send.ts";
-import { accountDeleted, cardSubmissionReceived, inquiryReceived, offerAccepted, offerRejected, orderConfirmation, sellerOrderNotification } from "./templates.ts";
+import { accountDeleted, cardSubmissionReceived, inquiryReceived, offerAccepted, offerRejected, orderConfirmation, orderRefunded, orderShipped, sellerOrderNotification } from "./templates.ts";
 import { notifyOperationalAlert } from "../ops-alerts.ts";
+import { shippingCarrierLabel, trackingUrl } from "../shipping";
 
 /** Die Brücke zwischen Datenbank und Vorlagen.
  *
@@ -131,6 +132,45 @@ export async function notifyOrderPaid(
     });
 
     await sendeMitBetriebsalarm("Verkäufernachricht", ziel, nachricht, `order:${orderId}:seller`, { orderId });
+  });
+}
+
+/** Versandbestätigung nach dem einmaligen Übergang auf SHIPPED. */
+export async function notifyOrderShipped(db: Db, orderId: string): Promise<void> {
+  await versucheVersand("Versandbestätigung", async () => {
+    const daten = await bestelldaten(db, orderId);
+    if (!daten || !daten.empfaenger) {
+      await notifyOperationalAlert({
+        key: `email:order:${orderId}:shipping-missing`,
+        category: "E-Mail",
+        title: "Versandbestätigung nicht möglich",
+        detail: "Die versendete Bestellung hat keine Empfängeradresse.",
+      });
+      return;
+    }
+    const nachricht = orderShipped({
+      orderNumber: daten.order.orderNumber,
+      shippedAt: daten.order.shippedAt ?? new Date().toISOString(),
+      carrier: shippingCarrierLabel(daten.order.shippingCarrier),
+      trackingNumber: daten.order.trackingNumber,
+      trackingUrl: trackingUrl(daten.order.shippingCarrier, daten.order.trackingNumber),
+      shopUrl: shopUrl(),
+    });
+    await sendeMitBetriebsalarm("Versandbestätigung", daten.empfaenger, nachricht, `order:${orderId}:shipped`, { orderId });
+  });
+}
+
+/** Bestätigung einer vom Admin ausgelösten vollständigen PayPal-Erstattung. */
+export async function notifyOrderRefunded(db: Db, orderId: string): Promise<void> {
+  await versucheVersand("Erstattungsbestätigung", async () => {
+    const daten = await bestelldaten(db, orderId);
+    if (!daten || !daten.empfaenger) return;
+    const nachricht = orderRefunded({
+      orderNumber: daten.order.orderNumber,
+      amount: { cents: daten.order.totalAmountCents, currency: daten.order.currency },
+      shopUrl: shopUrl(),
+    });
+    await sendeMitBetriebsalarm("Erstattungsbestätigung", daten.empfaenger, nachricht, `order:${orderId}:refunded`, { orderId });
   });
 }
 

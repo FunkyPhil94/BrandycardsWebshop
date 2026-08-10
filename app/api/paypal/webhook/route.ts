@@ -148,7 +148,7 @@ export async function POST(request: Request) {
     } else if (eventType === "PAYMENT.CAPTURE.REFUNDED") {
       if (!payment) throw new Error("Zugehörige PayPal-Zahlung wurde nicht gefunden.");
       await db.update(payments).set({ status: "REFUNDED", rawData: event, updatedAt: now }).where(and(eq(payments.id, payment.id), inArray(payments.status, ["CAPTURED", "REFUNDED"])));
-      await db.update(orders).set({ status: "REFUNDED", updatedAt: now }).where(and(eq(orders.id, payment.orderId), inArray(orders.status, ["PAID", "REFUNDED"])));
+      await db.update(orders).set({ status: "REFUNDED", refundedAt: now, updatedAt: now }).where(and(eq(orders.id, payment.orderId), inArray(orders.status, ["PAID", "REFUNDED"])));
     }
 
     // Der eine Ausgang, den jeder Pfad nimmt — auch der Dubletten-Pfad. Die

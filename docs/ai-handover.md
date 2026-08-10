@@ -49,6 +49,15 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 - Nach Tests, Typprüfung, Lint und Build committen, pushen, deployen und die
   Kundenkonto-/Adminroute produktiv verifizieren.
 
+**Zwischenstand (2026-08-10):** Die Code- und Testumsetzung ist lokal fertig.
+Bestellhistorie, Versandfelder, Trackinglinks, Versand-/Erstattungsmails sowie
+MFA-geschützte Adminpfade für Versand, Abschluss, Storno und vollständige
+PayPal-Erstattung sind ergänzt. `npm test` läuft mit 343 Tests durch.
+Offen ist vor dem Deployment die produktive D1-Migration
+`drizzle/0007_order_fulfillment.sql`; sie braucht die ausdrückliche Freigabe
+des Betreibers, weil sie das Produktionsschema ändert. Danach folgen Commit,
+Push, Deployment und ein Live-Check von `/account` und `/admin`.
+
 **N2 eBay-Notification-Endpoint und Order-Event umsetzen** — Stand: ABGESCHLOSSEN (2026-08-09)
 
 - Einen öffentlichen `GET`/`POST`-Endpoint unter

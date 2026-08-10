@@ -94,6 +94,29 @@ export async function capturePayPalOrder(paypalOrderId: string): Promise<PayPalC
   return await response.json() as PayPalCaptureResponse;
 }
 
+/** Führt eine vollständige Erstattung für eine bereits eingezogene Capture-ID
+ * aus. Der Aufrufer markiert die Datenbank erst nach einem erfolgreichen
+ * PayPal-Response als erstattet. Der feste Request-Key macht Wiederholungen
+ * nach einem Timeout bei PayPal idempotent. */
+export async function refundPayPalCapture(captureId: string): Promise<Record<string, unknown>> {
+  const config = getPayPalConfig();
+  const token = await getAccessToken();
+  const response = await fetchWithTimeout(`${getPayPalApiBaseUrl(config.environment)}/v2/payments/captures/${encodeURIComponent(captureId)}/refund`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      Prefer: "return=representation",
+      "PayPal-Request-Id": `refund-${captureId}`,
+    },
+    body: "{}",
+  });
+  if (!response.ok) throw new Error("PayPal-Erstattung konnte nicht ausgeführt werden.");
+  if (response.status === 204) return {};
+  const data = await response.json().catch(() => ({})) as unknown;
+  return data && typeof data === "object" ? data as Record<string, unknown> : {};
+}
+
 export async function verifyPayPalWebhookSignature(input: {
   body: string;
   transmissionId: string;

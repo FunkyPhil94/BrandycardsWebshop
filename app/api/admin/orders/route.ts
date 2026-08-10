@@ -5,6 +5,8 @@ import { orderItems, orders, payments, users } from "../../../../db/schema";
 import { recordAdminAudit } from "../../../../lib/admin-audit";
 import { requireAdmin } from "../../../../lib/admin-access";
 import { D1_SAFE_ID_LIST } from "../../../../lib/d1-limits";
+import { notifyOrderShipped } from "../../../../lib/email/notify.ts";
+import { normalizeShippingCarrier, normalizeTrackingNumber } from "../../../../lib/shipping";
 
 /** Wie viele Bestellungen die Übersicht zeigt.
  *
@@ -51,6 +53,12 @@ export async function GET(request: Request) {
       shippingAddress: orders.shippingAddress,
       createdAt: orders.createdAt,
       paidAt: orders.paidAt,
+      shippedAt: orders.shippedAt,
+      shippingCarrier: orders.shippingCarrier,
+      trackingNumber: orders.trackingNumber,
+      completedAt: orders.completedAt,
+      cancelledAt: orders.cancelledAt,
+      refundedAt: orders.refundedAt,
       guestEmail: orders.guestEmail,
       email: users.email,
     }).from(orders)
@@ -93,6 +101,12 @@ export async function GET(request: Request) {
         totalAmountCents: row.totalAmountCents,
         createdAt: row.createdAt,
         paidAt: row.paidAt,
+        shippedAt: row.shippedAt,
+        shippingCarrier: row.shippingCarrier,
+        trackingNumber: row.trackingNumber,
+        completedAt: row.completedAt,
+        cancelledAt: row.cancelledAt,
+        refundedAt: row.refundedAt,
         // Gastbestellungen gibt es im Schema, im Checkout heute nicht — der
         // Rückfall hält die Ansicht trotzdem lesbar, falls doch eine auftaucht.
         email: row.email ?? row.guestEmail,
@@ -116,29 +130,45 @@ export async function PATCH(request: Request) {
   if (guard.response) return guard.response;
 
   try {
-    const body = await request.json() as { orderId?: unknown; status?: unknown };
+    const body = await request.json() as { orderId?: unknown; status?: unknown; shippingCarrier?: unknown; trackingNumber?: unknown };
     if (typeof body.orderId !== "string" || !body.orderId.trim()) {
       return NextResponse.json({ error: "Eine Bestellnummer fehlt." }, { status: 400 });
     }
-    if (body.status !== "SHIPPED") {
-      return NextResponse.json({ error: "Es kann nur auf versendet gesetzt werden." }, { status: 400 });
+    if (body.status !== "SHIPPED" && body.status !== "COMPLETED") {
+      return NextResponse.json({ error: "Es kann nur auf versendet oder abgeschlossen gesetzt werden." }, { status: 400 });
     }
 
     const orderId = body.orderId.trim();
-    const result = await getDb().update(orders)
-      .set({ status: "SHIPPED", updatedAt: new Date().toISOString() })
-      .where(and(eq(orders.id, orderId), inArray(orders.status, [...SHIPPABLE_STATUSES])))
-      .run();
+    const now = new Date().toISOString();
+    const nextStatus = body.status;
+    const carrier = normalizeShippingCarrier(body.shippingCarrier);
+    const trackingNumber = normalizeTrackingNumber(body.trackingNumber);
+    if (nextStatus === "SHIPPED" && body.trackingNumber != null && typeof body.trackingNumber === "string" && body.trackingNumber.trim() && !trackingNumber) {
+      return NextResponse.json({ error: "Die Trackingnummer enthält ungültige Zeichen oder ist zu lang." }, { status: 400 });
+    }
+    if (nextStatus === "SHIPPED" && body.shippingCarrier != null && typeof body.shippingCarrier === "string" && body.shippingCarrier.trim() && !carrier) {
+      return NextResponse.json({ error: "Der Versanddienstleister wird nicht unterstützt." }, { status: 400 });
+    }
+    const result = nextStatus === "SHIPPED"
+      ? await getDb().update(orders)
+        .set({ status: "SHIPPED", shippedAt: now, shippingCarrier: carrier, trackingNumber, updatedAt: now })
+        .where(and(eq(orders.id, orderId), inArray(orders.status, [...SHIPPABLE_STATUSES])))
+        .run()
+      : await getDb().update(orders)
+        .set({ status: "COMPLETED", completedAt: now, updatedAt: now })
+        .where(and(eq(orders.id, orderId), eq(orders.status, "SHIPPED")))
+        .run();
 
     if (result.meta.changes === 1) {
-      await recordAdminAudit({ request, actorUserId: guard.user.id, action: "order.status_change", entityType: "order", entityId: orderId, metadata: { status: "SHIPPED" } });
-      return NextResponse.json({ orderId, status: "SHIPPED" });
+      await recordAdminAudit({ request, actorUserId: guard.user.id, action: "order.status_change", entityType: "order", entityId: orderId, metadata: { status: nextStatus, ...(carrier ? { shippingCarrier: carrier } : {}), ...(trackingNumber ? { trackingNumber } : {}) } });
+      if (nextStatus === "SHIPPED") await notifyOrderShipped(getDb(), orderId);
+      return NextResponse.json({ orderId, status: nextStatus, shippedAt: nextStatus === "SHIPPED" ? now : undefined, completedAt: nextStatus === "COMPLETED" ? now : undefined });
     }
 
     const existing = await getDb().select({ status: orders.status }).from(orders).where(eq(orders.id, orderId)).limit(1);
     if (existing.length === 0) return NextResponse.json({ error: "Unbekannte Bestellung." }, { status: 404 });
-    if (existing[0].status === "SHIPPED") return NextResponse.json({ orderId, status: "SHIPPED" });
-    return NextResponse.json({ error: `Bestellung steht auf ${existing[0].status} und kann nicht als versendet markiert werden.` }, { status: 409 });
+    if (existing[0].status === nextStatus) return NextResponse.json({ orderId, status: nextStatus });
+    return NextResponse.json({ error: `Bestellung steht auf ${existing[0].status} und kann nicht auf ${nextStatus === "SHIPPED" ? "versendet" : "abgeschlossen"} gesetzt werden.` }, { status: 409 });
   } catch (error) {
     console.error("admin order update failed", error);
     return NextResponse.json({ error: "Bestellung konnte nicht aktualisiert werden." }, { status: 503 });

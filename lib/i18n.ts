@@ -670,6 +670,21 @@ const ENGLISH_EXTRA_2: Record<string, string> = {
   "Wir verwenden deine Angaben nur zur Bearbeitung deiner Anfrage. Mehr dazu in unserer": "We use your information only to process your request. More information is available in our",
   "Wonach suchst du? Zustand, Variante, Preisrahmen \u2026": "What are you looking for? Condition, variant, price range \u2026",
   "ZWEI BR\u00dcDER, EIN BESTAND": "TWO BROTHERS, ONE COLLECTION",
+  "Bestellhistorie": "Order history",
+  "Bestellungen werden geladen …": "Loading orders …",
+  "Du hast noch keine Bestellungen.": "You have no orders yet.",
+  "Bestellt am": "Ordered on",
+  "Versendet am": "Shipped on",
+  "Abgeschlossen am": "Completed on",
+  "Noch nicht bezahlt": "Not paid yet",
+  "Sendung verfolgen": "Track shipment",
+  "Offen": "Open",
+  "Bezahlt": "Paid",
+  "In Bearbeitung": "Processing",
+  "Versendet": "Shipped",
+  "Abgeschlossen": "Completed",
+  "Storniert": "Cancelled",
+  "Erstattet": "Refunded",
 };
 
 export function translate(locale: Locale, key: string, values: Values = {}) {

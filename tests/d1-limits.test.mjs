@@ -84,10 +84,11 @@ test("die Admin-Bestellansicht paginiert und liefert die Gesamtseiten", async ()
   assert.match(quelle, /totalPages/u, "die Route muss die Gesamtseitenzahl zurückgeben");
 });
 
-test("Bestellungen lassen sich nur nach Bezahlt oder In Bearbeitung als versendet markieren", async () => {
+test("Bestellungen lassen sich nur in fachlich erlaubte Versand- und Abschlussstatus setzen", async () => {
   const { readFile } = await import("node:fs/promises");
   const quelle = await readFile(new URL("../app/api/admin/orders/route.ts", import.meta.url), "utf8");
   assert.match(quelle, /status: "SHIPPED"/u, "der Versandstatus muss gesetzt werden");
   assert.match(quelle, /inArray\(orders\.status, \[\.\.\.SHIPPABLE_STATUSES\]\)/u, "der Übergang muss serverseitig beschränkt sein");
-  assert.match(quelle, /if \(body\.status !== "SHIPPED"\)/u, "andere Statuswechsel dürfen nicht durch die Route gehen");
+  assert.match(quelle, /body\.status !== "SHIPPED" && body\.status !== "COMPLETED"/u, "andere Statuswechsel dürfen nicht durch die Route gehen");
+  assert.match(quelle, /eq\(orders\.status, "SHIPPED"\)/u, "der Abschluss muss aus dem Versandstatus kommen");
 });

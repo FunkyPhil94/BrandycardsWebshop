@@ -190,6 +190,12 @@ export const orders = sqliteTable("orders", {
   createdAt: timestamp("created_at"),
   updatedAt: timestamp("updated_at"),
   paidAt: optionalTimestamp("paid_at"),
+  shippedAt: optionalTimestamp("shipped_at"),
+  shippingCarrier: text("shipping_carrier"),
+  trackingNumber: text("tracking_number"),
+  completedAt: optionalTimestamp("completed_at"),
+  cancelledAt: optionalTimestamp("cancelled_at"),
+  refundedAt: optionalTimestamp("refunded_at"),
 }, (table) => [
   uniqueIndex("orders_number_unique").on(table.orderNumber),
   index("orders_user_status_idx").on(table.userId, table.status),
