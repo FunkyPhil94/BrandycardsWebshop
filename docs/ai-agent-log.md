@@ -1,5 +1,23 @@
 # BrandyCards Agentenprotokoll
 
+## 2026-08-10 — Produktionsprüfung eBay-Notifications
+
+- **Befund:** In `webhook_events` existiert insgesamt genau eine eBay-
+  `ORDER_CONFIRMATION`, eingegangen am 2026-08-09 um 20:42:15 UTC für
+  eBay-Bestellung `12-15006-19207`, Artikel `398174236865`, Menge 1.
+- **Verarbeitung:** Das Ereignis ist `PROCESSED`, ohne `error_message`; es gibt
+  in den letzten 48 Stunden weder `FAILED`- noch hängende `RECEIVED`-Ereignisse
+  und keine doppelte `external_event_id`. Das Listing wurde auf `ENDED` mit
+  Restmenge 0 und `quantity_sold` 1 gesetzt. Produkt und Inventory stehen auf
+  `INACTIVE`/`SOLD`, verfügbar 0, verkauft 1.
+- **Nebenprüfungen:** Die eBay-Sync-Läufe bis 2026-08-10 06:01 UTC sind
+  `SUCCEEDED` mit `failed_count = 0`; die eBay-Outbox enthält keine offenen oder
+  fehlgeschlagenen Aufträge.
+- **Offene Auffälligkeit:** Die Betreiberangabe nennt mehrere Verkäufe, die
+  Datenbank enthält aber nur diese eine eBay-Notification. Der nächste
+  Prüfpunkt liegt deshalb bei der eBay-Notification-Zustellung bzw. der
+  eBay-Developer-Konfiguration; Produktionsdaten wurden nicht verändert.
+
 ## 2026-08-09 — N4: Datenschutz, Aufbewahrung und Wiederherstellung
 
 - **Minimierung:** `payments.raw_data` wird nur für abgeschlossene PayPal-

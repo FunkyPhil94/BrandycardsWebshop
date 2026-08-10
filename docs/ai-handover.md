@@ -37,14 +37,7 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-**Produktionsprüfung eBay-Notifications — Stand: LÄUFT (2026-08-10)**
-
-- Die eBay-Notification-Ereignisse der vergangenen Nacht in der produktiven
-  D1-Datenbank lesend auswerten.
-- `ORDER_CONFIRMATION`-Ereignisse mit Bestellungen, eBay-Listings, Bestand,
-  Idempotenz und Betriebsalarmen abgleichen.
-- Keine Produktionsdaten verändern; Ergebnis und eventuelle Auffälligkeiten
-  nach der Prüfung dokumentieren und den Handover wieder schließen.
+*(kein aktueller Auftrag)*
 
 **N2 eBay-Notification-Endpoint und Order-Event umsetzen** — Stand: ABGESCHLOSSEN (2026-08-09)
 
@@ -547,6 +540,23 @@ Sicherheits- und Funktionsbefunde im
 ---
 
 ## Historie
+
+### 2026-08-10 — Produktionsprüfung eBay-Notifications
+
+- In der produktiven D1-Datenbank existiert insgesamt genau eine eBay-
+  `ORDER_CONFIRMATION`: eingegangen am 2026-08-09 um 20:42:15 UTC für die
+  eBay-Bestellung `12-15006-19207`, Artikel `398174236865`, Menge 1.
+- Die Notification steht auf `PROCESSED`, ohne Fehler, ohne offene
+  `RECEIVED`-Zeile und ohne Duplikat. Das Listing steht auf `ENDED`, Restmenge
+  0 und `quantity_sold` 1; Produkt und Inventory stehen auf `INACTIVE` bzw.
+  `SOLD`, verfügbar 0 und verkauft 1.
+- Die eBay-Sync-Läufe der letzten Stunden sind erfolgreich; die vorhandene
+  eBay-Outbox enthält keine offenen oder fehlgeschlagenen Jobs.
+- **Auffälligkeit:** Der Betreiber meldete mehrere eBay-Verkäufe, in D1 ist
+  bislang aber nur diese eine Notification gespeichert. Weitere Verkäufe sind
+  daher entweder noch nicht von eBay zugestellt worden oder liegen außerhalb
+  des aktuell gespeicherten Notification-Flusses und müssen bei eBay geprüft
+  werden. Es wurden keine Produktionsdaten verändert.
 
 ### 2026-08-09 — N4: Datenschutz, Aufbewahrung und Wiederherstellung
 
