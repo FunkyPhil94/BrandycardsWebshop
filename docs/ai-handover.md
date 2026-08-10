@@ -555,7 +555,12 @@ Sicherheits- und Funktionsbefunde im
 - Build, Lint und **348 Tests** erfolgreich. Der erste produktive Smoke-Test
   zeigte zunächst einen leeren Katalog; die Sichtbarkeitsabfrage wurde danach
   auf eine explizite, NULL-sichere SQL-Bedingung korrigiert. Der anschließende
-  Smoke-Test lieferte 291 sichtbare Karten. N4-Prüfung: In Repository,
+  Smoke-Test auf dem kanonischen Worker `shop.brandycards.de` lieferte 291
+  sichtbare Karten, Seite 2 die Karten 11–20. Cloudflare-Version
+  `21860ce5-47ae-4273-b705-3dba1da4cf30` ist deployed; Sites-Version 17 ist
+  ebenfalls gespeichert und deployed. Die separate Sites-URL hat keine
+  befüllte D1-Produktionsbindung und ist daher nicht der kanonische Shop.
+  N4-Prüfung: In Repository,
   `.env.local` und Cloudflare-Konfiguration existiert kein Offsite-Ziel,
   Upload-Endpunkt oder Backup-Secret. N4 bleibt daher bewusst teilweise
   erledigt, bis der Betreiber Ziel, Verschlüsselung, Aufbewahrung und

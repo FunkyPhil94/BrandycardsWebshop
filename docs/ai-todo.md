@@ -260,7 +260,10 @@ zeigen weiterhin keinen Festpreis und führen ausschließlich zum
 Preisvorschlag. Build, Lint und **348 Tests** sind erfolgreich. Der produktive
 Smoke-Test bestätigt außerdem `/api/products?pro=10` mit 291 sichtbaren Karten;
 die Sichtbarkeitsabfrage wurde dafür auf eine explizite, NULL-sichere SQL-
-Bedingung korrigiert.
+Bedingung korrigiert. Der Cloudflare-Worker ist als Version
+`21860ce5-47ae-4273-b705-3dba1da4cf30` auf `shop.brandycards.de` deployed;
+Seite 2 liefert die Karten 11–20. Die separate Sites-URL bleibt ein
+datenleerer Preview-/Hosting-Pfad und ist nicht der kanonische Shop.
 
 **Fertig, wenn:** manuelle Karten dort erscheinen, wo Kunden sie erwarten, und
 ein größerer Bestand ohne übergroße API-Antworten schnell durchsuchbar bleibt.
