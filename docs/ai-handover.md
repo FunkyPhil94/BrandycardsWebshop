@@ -541,6 +541,18 @@ Sicherheits- und Funktionsbefunde im
 
 ## Historie
 
+### 2026-08-10 — Messeflyer ruhiger überarbeitet
+
+- Die bestehenden zweiseitigen A6-Flyer A und B wurden ruhiger gestaltet und
+  enthalten jetzt den Hinweis, dass BrandyCards Sportkarten kauft und verkauft.
+- Der Messevorteil ist eindeutig als **5 % Rabatt** mit **Code: MESSE26**
+  formuliert. Neben den QR-Codes stehen nur diese Rabattinformationen.
+- Instagram erscheint ausschließlich im unteren Banner und nutzt das vom
+  Betreiber bereitgestellte Logo.
+- Die vier PNG-Vorschauen und beide zweiseitigen PDFs im Ausgabeordner
+  `C:\Users\pbran\.codex\visualizations\2026\08\10\019fead6-4dd9-7391-9e14-7946b66afd7f\brandycards-kurzflyer-ruhig`
+  wurden neu gerendert und visuell geprüft.
+
 ### 2026-08-10 — Öffentliche Texte und Vorverkaufslink überarbeitet
 
 - Die sichtbaren deutschen und englischen Texte auf Startseite, Kartenbestand,

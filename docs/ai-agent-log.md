@@ -1017,3 +1017,19 @@ Die bestehende Produktion bleibt `https://shop.brandycards.de`. In
 stellen nur DNS-Zustellung her und erzeugen keine HTTP-Weiterleitung. Der
 Apex-Aufruf endet derzeit mit Cloudflare HTTP 525, bevor der Worker greift.
 Eine separate 301-Weiterleitung des Apex auf den Shop ist daher noch offen.
+
+## 2026-08-10 — Messeflyer für die Messekommunikation überarbeitet
+
+Die ruhige Gestaltung der beiden zweiseitigen Flyer bleibt bewusst bei der
+bestehenden Farbwelt aus Navy, Creme und gedämpftem Rot. Der Shop-Hinweis wurde
+auf Kaufen und Verkaufen erweitert, weil der QR-Code nicht ausschließlich den
+Ankauf von Sammlungen vermitteln soll. Der Rabatt ist jetzt ohne Erklärung
+verständlich: **5 % Rabatt** und **Code: MESSE26** stehen direkt neben dem
+QR-Code. Dort wurde der Instagram-Hinweis entfernt, damit der QR-Bereich eine
+einzige klare Handlung unterstützt. Instagram steht ausschließlich im unteren
+Banner und verwendet das vom Betreiber bereitgestellte Logo.
+
+Die HTML-Quelle, vier PNG-Vorschauen und zwei zweiseitige PDFs liegen im
+Ausgabeordner des Visualisierungsprojekts. Alle Seiten wurden nach dem Rendern
+visuell geprüft; die PDFs sind vollständig geschrieben und enthalten Vorder-
+und Rückseite.
