@@ -541,6 +541,16 @@ Sicherheits- und Funktionsbefunde im
 
 ## Historie
 
+### 2026-08-10 — Zwei neue Messeflyer-Designrichtungen E und F erstellt
+
+- Variante E ist ein kontraststarker Messe-Eyecatcher mit großer Typografie,
+  dunklem Grund und dynamischen Farbflächen.
+- Variante F ist sportlich-künstlerisch mit diagonalen Formen, einer starken
+  typografischen Komposition und dynamischem Seitenrhythmus.
+- Logo, QR-Code, Instagram-Hinweis und Rabattcode wurden beibehalten.
+- Je Variante wurden PNGs, HTML-Datei und zweiseitige PDF erzeugt und visuell
+  geprüft.
+
 ### 2026-08-10 — Flyer D als lebendigere Alternative zu Flyer C erstellt
 
 - Die Vorderseite übernimmt die ruhige Flyer-C-Grundgestaltung und ergänzt

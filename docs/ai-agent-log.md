@@ -1018,6 +1018,21 @@ stellen nur DNS-Zustellung her und erzeugen keine HTTP-Weiterleitung. Der
 Apex-Aufruf endet derzeit mit Cloudflare HTTP 525, bevor der Worker greift.
 Eine separate 301-Weiterleitung des Apex auf den Shop ist daher noch offen.
 
+## 2026-08-10 — Neue Messeflyer E und F gestaltet
+
+Auf Wunsch nach einem komplett neuen Messeauftritt wurden zwei eigenständige
+Richtungen gebaut. Variante E arbeitet als Eyecatcher mit tiefem Navy,
+kontrastierendem Rot, großen Headlines und diagonalen Farbflächen. Variante F
+ist sportlich-künstlerisch angelegt: Ein großer grafischer Seitenkeil, eine
+reduzierte „90“-Marke und eine typografisch stärker komponierte Vorderseite
+geben ihr mehr Bewegung. Beide Richtungen bleiben bewusst bei Logo, QR-Code,
+Instagram-Hinweis und vorhandenen Shopinformationen; zusätzliche Bilder wurden
+nicht erfunden.
+
+Die je zwei PNG-Vorschauen und zweiseitigen PDFs wurden nach visueller Prüfung
+und kleinen Layoutkorrekturen an F-Vorderseite und E-Rückseiten-Schrittleiste
+final neu gerendert.
+
 ## 2026-08-10 — Flyer D mit mehr visueller Präsenz erstellt
 
 Flyer D bleibt bewusst in der ruhigen C-Farbwelt, füllt die Vorderseite aber
