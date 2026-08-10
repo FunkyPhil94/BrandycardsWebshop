@@ -5213,4 +5213,20 @@ selbst; die Schrittfolge samt Nachprüfung steht in
   verwenden und auf Sportkarten ausrichten.
 - Vorgabe: Sportkarten im Text referenzieren; in allen dargestellten Motiven
   ausschliesslich Fussball und American Football verwenden.
-- Stand: LAEUFT.
+- Stand: ABGESCHLOSSEN.
+- Ergebnis: Die uebertriebene Original-Pop-Art-Richtung wurde auf Sportkarten
+  umgestellt. Der Text referenziert Sportkarten, Sammeln, Tauschen sowie
+  An- und Verkauf; die dargestellten Sportmotive sind ausschliesslich Fussball
+  und American Football. Die neue PNG-Version wurde separat gespeichert und
+  visuell geprueft.
+## 2026-08-10 - Sportkarten-Flyer als Vorder- und Rueckseite
+
+- Auftrag: Die Original-Pop-Art-Richtung als beidseitigen Flyer ausarbeiten.
+- Vorgabe: Im unteren Textbereich keine einzelnen Sportarten nennen; Fussball
+  und American Football duerfen ausschliesslich als Bildmotive erscheinen.
+- Stand: ABGESCHLOSSEN.
+- Ergebnis: Vorder- und Rueckseite im uebertriebenen Original-Pop-Art-Stil
+  erstellt und separat gespeichert. Die unteren Textfelder verwenden nur
+  allgemeine Kategorien (Karten, Sammlungen, An- & Verkauf); Fussball und
+  American Football erscheinen ausschliesslich als Bildmotive. Beide Seiten
+  wurden visuell geprueft.
