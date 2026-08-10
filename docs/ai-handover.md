@@ -5129,3 +5129,11 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 - Nicht durchgeführt: kein Deploy und keine Produktionsdatenänderung.
 - Git: Die vorgeschriebene Handover-Dokumentation wurde ergänzt und lokal
   committed; der abschließende Git-Status wird nach diesem Eintrag geprüft.
+## 2026-08-10 – Messe-Flyer BrandyCards
+
+- Auftrag: Flyer für die kommende Messe vorbereiten; vorhandenes Logo und Markenmaterial prüfen.
+- Status: ABGESCHLOSSEN
+- Ergebnis: Das transparente Logo ist vorhanden unter `app/brand/brandycards-logo.png`;
+  ein erneuter Upload ist nicht noetig. Vorhandene Messeflyer-Ausgaben und
+  Gestaltungsdokumentation wurden ebenfalls gefunden. Fuer eine neue Variante
+  fehlen noch konkrete Messedaten bzw. gewuenschte Inhalte.
