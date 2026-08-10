@@ -37,14 +37,9 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-**EU-Versandländer im Checkout erweitern** — Stand: LÄUFT
-
-- Das Checkout-Dropdown zeigt derzeit nur DE, AT, BE, FR, IT, NL und ES.
-- Die Servervalidierung in `app/api/orders/route.ts` kennt bereits alle 27
-  EU-Mitgliedstaaten. Die Auswahlliste, die englischen Übersetzungen und die
-  Regressionstests werden auf denselben vollständigen Satz gebracht.
-- Nach der Änderung: TypeScript, Lint, Tests, Build, Commit, Push sowie Deploy
-  auf den kanonischen Worker und die Sites-Preview prüfen.
+*(Kein Auftrag aktiv. N8 ist abgeschlossen; N4 bleibt wegen des fehlenden
+externen Backup-Ziels teilweise offen. N2 bleibt als echter Betriebsnachweis
+offen.)*
 
 **N2 eBay-Notification-Endpoint und Order-Event umsetzen** — Stand: ABGESCHLOSSEN (2026-08-09)
 
@@ -547,6 +542,18 @@ Sicherheits- und Funktionsbefunde im
 ---
 
 ## Historie
+
+### 2026-08-10 — EU-Versandländer im Checkout erweitert
+
+- Die bisherige Auswahlliste im Checkout enthielt nur sieben Länder, obwohl die
+  Servervalidierung bereits die EU-Länder vollständig kannte.
+- `lib/shipping-countries.ts` ist jetzt die gemeinsame Quelle für alle 27
+  EU-Mitgliedstaaten. Deutschland wird weiterhin mit 3,45 € berechnet, die
+  übrigen EU-Länder mit 14,49 €.
+- Deutsche Länderbezeichnungen werden über die bestehende Sprachumschaltung auf
+  Englisch angezeigt. Zwei Regressionstests prüfen die vollständige Liste.
+- `npx tsc --noEmit`, `npm run lint`, `npm test` (352 Tests) und Build waren
+  erfolgreich. Die vorbestehende ESLint-Warnung in `app/account/page.tsx` bleibt.
 
 ### 2026-08-10 — N8: Auffindbarkeit und Wartbarkeit
 

@@ -1101,6 +1101,11 @@ unten.)*
 
 ### Erledigt, zweite Runde
 
+- ~~**Checkout: vollständige EU-Länderauswahl.**~~ Erledigt am 2026-08-10.
+  Die zuvor auf sieben Länder begrenzte Auswahl nutzt jetzt alle 27 EU-
+  Mitgliedstaaten. Die Servervalidierung und die Versandkostenlogik bleiben
+  konsistent; englische Länderbezeichnungen sind ergänzt.
+
 - ~~**Toter Auktionscode.**~~ Erledigt am 2026-08-09, deployed als `11c2dd57`.
   Auktionszweige in `app/karten/page.tsx` und `app/karten/[id]/page.tsx`
   ersatzlos gestrichen, Kategorie `"Auktion"` aus den Typen entfernt. Vorher

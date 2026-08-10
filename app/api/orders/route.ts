@@ -8,8 +8,7 @@ import { effectiveUnitPrice } from "../../../lib/offer-price";
 import { acceptedOfferPrices } from "../../../lib/price-offers";
 import { releaseExpiredReservations, reservedUnitsForUser } from "../../../lib/paypal/settle-order";
 import { enforcePublicRateLimit } from "../../../lib/rate-limit";
-
-const EU_COUNTRIES = new Set(["AT", "BE", "BG", "HR", "CY", "CZ", "DK", "EE", "ES", "FI", "FR", "GR", "HU", "IE", "IT", "LT", "LU", "LV", "MT", "NL", "PL", "PT", "RO", "SE", "SI", "SK"]);
+import { EU_COUNTRIES } from "../../../lib/shipping-countries";
 
 class OrderIssue extends Error {
   constructor(public readonly publicMessage: string) {

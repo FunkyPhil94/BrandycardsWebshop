@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { istKaufbareKategorie } from "../../lib/catalog-availability";
 import { effectiveUnitPrice } from "../../lib/offer-price";
+import { SHIPPING_COUNTRIES } from "../../lib/shipping-countries";
 import { getSupabaseBrowserClient } from "../../lib/supabase-browser";
 import { useI18n } from "../i18n";
 
@@ -16,11 +17,6 @@ type Product = {
   category: string;
 };
 type Address = { name: string; street: string; postalCode: string; city: string; country: string };
-
-const countryNames: Record<string, string> = {
-  DE: "Deutschland", AT: "Österreich", BE: "Belgien", FR: "Frankreich",
-  IT: "Italien", NL: "Niederlande", ES: "Spanien",
-};
 
 function formatMoney(cents: number, currency = "EUR", locale: "de" | "en" = "de") {
   return (cents / 100).toLocaleString(locale === "en" ? "en-IE" : "de-DE", { style: "currency", currency });
@@ -191,7 +187,7 @@ export default function CheckoutPage() {
               <section className="checkout-panel"><div className="panel-heading"><span>01</span><h2>{t("Lieferadresse")}</h2></div><p className="panel-intro">{t("Wir versenden innerhalb Deutschlands und der EU.")}</p>
                 <div className="checkout-fields">
                   {(["name", "street", "postalCode", "city"] as const).map((field) => <label key={field}>{t(field === "name" ? "Name" : field === "street" ? "Straße und Hausnummer" : field === "postalCode" ? "Postleitzahl" : "Ort")}<input required autoComplete={field === "postalCode" ? "postal-code" : field} value={address[field]} onChange={(event) => setAddress({ ...address, [field]: event.target.value })} /></label>)}
-                  <label>{t("Land")}<select value={address.country} onChange={(event) => setAddress({ ...address, country: event.target.value })}>{Object.entries(countryNames).map(([code, name]) => <option key={code} value={code}>{t(name)}</option>)}</select></label>
+                  <label>{t("Land")}<select value={address.country} onChange={(event) => setAddress({ ...address, country: event.target.value })}>{SHIPPING_COUNTRIES.map(({ code, name }) => <option key={code} value={code}>{t(name)}</option>)}</select></label>
                 </div>
               </section>
               <section className="checkout-panel checkout-payment"><div className="panel-heading"><span>02</span><h2>{t("Zahlung")}</h2></div><p className="panel-intro">{t("Die Zahlung wird sicher über PayPal abgewickelt. Du wirst anschließend zu PayPal weitergeleitet.")}</p><div className="paypal-note"><strong>PayPal</strong><span>{t("Nur PayPal-Zahlung verfügbar")}</span></div></section>

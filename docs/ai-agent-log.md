@@ -1,5 +1,17 @@
 # BrandyCards Agentenprotokoll
 
+## 2026-08-10 — Vollständige EU-Länderauswahl im Checkout
+
+- **Befund:** `app/checkout/page.tsx` bot nur Deutschland, Österreich,
+  Belgien, Frankreich, Italien, Niederlande und Spanien an. Die API in
+  `app/api/orders/route.ts` akzeptierte dagegen bereits alle 27 EU-
+  Mitgliedstaaten.
+- **Entscheidung:** Eine gemeinsame Liste in `lib/shipping-countries.ts`
+  verhindert, dass Dropdown und Servervalidierung erneut auseinanderlaufen.
+  Deutschland bleibt wegen der abweichenden Versandpauschale separat behandelt.
+- **Ergebnis:** Alle EU-Länder sind auf Deutsch und Englisch auswählbar; die
+  Versandkosten- und Adressvalidierung bleibt unverändert fachlich korrekt.
+
 ## 2026-08-10 — Drei eBay-Verkäufe mit nur einer Notification abgeglichen
 
 - **Obsidian:** Artikel `398174236865` hat die einzige gespeicherte
