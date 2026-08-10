@@ -1,5 +1,24 @@
 # BrandyCards Agentenprotokoll
 
+## 2026-08-10 — Drei eBay-Verkäufe mit nur einer Notification abgeglichen
+
+- **Obsidian:** Artikel `398174236865` hat die einzige gespeicherte
+  `ORDER_CONFIRMATION` erhalten. Sie wurde verarbeitet; Listing `ENDED`,
+  Restmenge 0, `quantity_sold` 1, Inventory `SOLD`.
+- **Vieira:** Artikel `398249844242` ist um 20:43:05 UTC durch den Sync als
+  „nicht mehr in eBay-Aktivliste vorhanden“ deaktiviert worden. Es gibt keine
+  passende Notification; `quantity_sold` blieb 0 und Inventory steht auf
+  `UNAVAILABLE`.
+- **Mikey Moore:** Der zeitlich passende Artikel `398174236850` wurde um
+  20:52:04 UTC ebenfalls nur vom Sync deaktiviert. Es gibt keine passende
+  Notification und `quantity_sold` blieb 0. Ein anderer Mikey-Moore-Artikel
+  (`398174220750`) ist noch aktiv und daher nicht bestätigt.
+- **Schlussfolgerung:** Der Fallback-Sync entfernt verschwundene Listings aus
+  dem Shop, kann aber einen Verkauf nicht sicher von einer Beendigung oder
+  Löschung unterscheiden. Die zwei Verkäufe wurden deshalb nicht als verkauft
+  verbucht. Als nächste Maßnahme ist die eBay-Zustellhistorie zu prüfen; eine
+  manuelle Produktionsbuchung wurde nicht vorgenommen.
+
 ## 2026-08-10 — Produktionsprüfung eBay-Notifications
 
 - **Befund:** In `webhook_events` existiert insgesamt genau eine eBay-

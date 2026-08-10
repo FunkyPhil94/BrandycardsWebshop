@@ -37,14 +37,7 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-**Abgleich der drei gemeldeten eBay-Verkäufe — Stand: LÄUFT (2026-08-10)**
-
-- Mikey Moore, Vieira und Obsidian in der Produktionsdatenbank mit eBay-
-  Listings, Inventory, Outbox und `webhook_events` abgleichen.
-- Klären, ob die zwei fehlenden Verkäufe nicht zugestellt wurden oder ob der
-  eBay-Sync sie überschrieben hat.
-- Nur lesend prüfen; keine Produktionsdaten verändern. Ergebnis und offene
-  Zustelllücke anschließend dokumentieren.
+*(kein aktueller Auftrag)*
 
 **N2 eBay-Notification-Endpoint und Order-Event umsetzen** — Stand: ABGESCHLOSSEN (2026-08-09)
 
@@ -547,6 +540,29 @@ Sicherheits- und Funktionsbefunde im
 ---
 
 ## Historie
+
+### 2026-08-10 — Abgleich der drei gemeldeten eBay-Verkäufe
+
+- **Obsidian:** eBay-Artikel `398174236865` hat eine `ORDER_CONFIRMATION`
+  erhalten und steht auf `PROCESSED`; Listing `ENDED`, Restmenge 0,
+  `quantity_sold` 1, Inventory `SOLD`.
+- **Vieira:** eBay-Artikel `398249844242` hat keine Notification. Der
+  Scheduled Sync hat das Listing um 20:43:05 UTC mit
+  „Angebot nicht mehr in eBay-Aktivliste vorhanden“ deaktiviert. Restmenge 1,
+  `quantity_sold` 0, Inventory `UNAVAILABLE`.
+- **Mikey Moore:** Der zeitlich passende eBay-Artikel `398174236850` hat keine
+  Notification. Der Sync hat ihn um 20:52:04 UTC aus demselben Grund
+  deaktiviert; `quantity_sold` blieb 0. Ein anderer Mikey-Moore-Artikel
+  (`398174220750`) blieb aktiv und ist deshalb nicht als der gemeldete Verkauf
+  bestätigt.
+- **Bewertung:** Für die zwei fehlenden Verkäufe liegt kein lokaler
+  Verarbeitungsfehler vor; eBay hat keine `ORDER_CONFIRMATION` zugestellt. Der
+  Fallback-Sync hat die Karten aus dem Shop genommen, kann aber ohne Notification
+  keinen Verkauf verbuchen. Es wurden keine Produktionsdaten verändert.
+- **Nächster Prüfpunkt:** Zustellhistorie und Subscription-Konfiguration in der
+  eBay Developer Console für die beiden Artikel bzw. die entsprechende
+  Bestellung prüfen. Eine manuelle D1-Korrektur oder ein erneutes eBay-Event
+  wurde bewusst nicht simuliert.
 
 ### 2026-08-10 — Produktionsprüfung eBay-Notifications
 
