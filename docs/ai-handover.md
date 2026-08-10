@@ -541,6 +541,15 @@ Sicherheits- und Funktionsbefunde im
 
 ## Historie
 
+### 2026-08-10 — Flyer C QR-Feld vollständig vereinheitlicht
+
+- Alle vier Zeilen neben dem QR-Code nutzen jetzt identische Schriftfamilie,
+  Schriftgröße, Schriftstärke und Zeilenhöhe.
+- Nur die Farben unterscheiden sich noch zur Orientierung zwischen Hinweis,
+  Frist, Rabatt und Code.
+- Das Flyer-C-PNG und die zweiseitige PDF wurden neu gerendert und visuell
+  geprüft.
+
 ### 2026-08-10 — Flyer C typografisch vereinheitlicht
 
 - Für Flyer C ist die Schriftfamilie für alle Seitenelemente explizit auf
