@@ -5151,3 +5151,16 @@ selbst; die Schrittfolge samt Nachprüfung steht in
   umgesetzt: hohe Fernwirkung, groesser als eine Visitenkarte und mit klaren
   Informationsbloecken. Vorhandene Flyer wurden nicht als Gestaltungsreferenz
   verwendet.
+## 2026-08-10 - Drei neue beidseitige Flyer ohne AI-Slop
+
+- Auftrag: Drei neue Flyer-Richtungen mit Vorder- und Rueckseite entwickeln;
+  fruehere Entwuerfe ausdruecklich nicht als Gestaltungsvorlage verwenden.
+- Leitplanken: realistisch produzierbares Layout, saubere Typografie, wenig
+  Dekoration, starke Mitnahme- und Fernwirkung, Rueckseite mit eigenstaendigem
+  Informationsnutzen.
+- Stand: ABGESCHLOSSEN.
+- Ergebnis: Drei eigenstaendige beidseitige A5-Flyer wurden als sauber gesetzte
+  ReportLab-PDFs erstellt: Karte gefunden, Sammlungs-Check und Nicht nur Karten.
+  Jede PDF hat zwei Seiten; alle sechs Seiten wurden als PNG gerendert und
+  visuell auf Rand, Lesbarkeit und Hierarchie geprueft. Die frueheren
+  Entwuerfe und AI-Bildkonzepte wurden nicht als Vorlage verwendet.
