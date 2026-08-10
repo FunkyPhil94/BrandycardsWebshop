@@ -39,6 +39,20 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 *(derzeit kein Auftrag aktiv)*
 
+## Historie
+
+### 2026-08-10 — Vier eigenständige Flyer aus Sammelkarten-Designprinzipien entwickelt
+
+- Vier neue Richtungen erstellt: G Premium Gold, H Dark Collector, I Red Power
+  und J Future/Chrome.
+- Die Referenzen wurden nur als visuelle Anregung für Farbwelt, Rahmen, Dynamik
+  und Premium-/Collector-Anmutung verwendet; Topps-, Liga-, Vereins- und
+  Spieler-Elemente wurden nicht direkt übernommen.
+- Bestehendes Logo, QR-Code, Instagram-Hinweis und MESSE26-Rabatt bleiben
+  enthalten.
+- Je Variante wurden PNGs, HTML-Datei und zweiseitige PDF erzeugt; alle Seiten
+  wurden visuell geprüft.
+
 **N2 eBay-Notification-Endpoint und Order-Event umsetzen** — Stand: ABGESCHLOSSEN (2026-08-09)
 
 - Einen öffentlichen `GET`/`POST`-Endpoint unter

@@ -1,5 +1,17 @@
 # BrandyCards Agentenprotokoll
 
+## 2026-08-10 — Vier eigenständige Karten-inspirierte Messeflyer gestaltet
+
+Die Referenzkarten liefern unterschiedliche Gestaltungssprachen: Gold/Premium,
+dunkle Collector-Optik, starke rote Dynamik und eine chromatisch-futuristische
+Rahmung. Diese Prinzipien wurden als eigenständige Flyer-Systeme umgesetzt,
+ohne Topps-, Liga-, Vereins- oder Spieler-Elemente zu kopieren. So bleiben Logo,
+QR-Code, Instagram-Hinweis und Messeaktion nutzbar, während die Flyer klar auf
+die BrandyCards-Marke einzahlen.
+
+Die vier Varianten G bis J wurden jeweils als Vorder- und Rückseite, PNG-
+Vorschau, HTML-Datei und zweiseitige PDF gerendert und visuell geprüft.
+
 ## 2026-08-10 — Textüberarbeitung und Vorverkaufslink
 
 - **Befund:** Die sichtbaren Angebotsformulierungen nutzten Gedankenstriche als
