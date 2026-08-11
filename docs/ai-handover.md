@@ -5269,3 +5269,10 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 - Umsetzung: Logo als originale PNG-Ebene ueber die bestehenden Aufsteller gesetzt und die vorherigen kuenstlichen Logoformen abgedeckt.
 - Ergebnis: PayPal-Logo oben als Markenanker; Buy/Sell/Trade-Logo unten als klarer Sign-off unter dem CTA. Neue PNGs liegen im Visualisierungsordner.
 - Stand: ABGESCHLOSSEN.
+
+## 2026-08-11 - A4-Aufsteller ohne Sport- und Kartenmotive neu setzen
+
+- Auftrag: Das bestehende Navy-Rot-Warmweiss-Gold-Basisdesign beibehalten, aber alle sport- und kartenbezogenen Bilder sowie Panel-Layouts entfernen.
+- Umsetzung: Zwei abstrakte Hintergruende mit gemeinsamem Logo-Feld oben erstellen und das Original-Logo anschliessend unveraendert technisch einsetzen.
+- Ergebnis: Beide PNGs sind abstrakt und typografisch; Sport- und Kartenmotive sowie kartenartige Panels wurden entfernt. Das Original-Logo sitzt im gemeinsamen Kopfbereich, der PayPal-QR-Platzhalter bleibt funktional erhalten.
+- Stand: ABGESCHLOSSEN.
