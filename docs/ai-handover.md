@@ -5255,3 +5255,10 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 - Ziel: Navy, Rot, Warmweiss und dezente Goldakzente; Layout, Texte und QR-Platzhalter beibehalten.
 - Ergebnis: Beide Varianten in einer Navy-Rot-Warmweiss-Gold-Farbwelt neu erstellt und im Visualisierungsordner abgelegt. Der echte Markenlogo- und QR-Code-Einsatz bleibt fuer den finalen Drucksatz austauschbar.
 - Stand: ABGESCHLOSSEN.
+
+## 2026-08-11 - Echtes BrandyCards-Logo in A4-Aufsteller integrieren
+
+- Auftrag: Das vorhandene Logo als echtes Gestaltungselement in beide A4-Aufsteller einbetten, statt den Markennamen nur als Schriftzug zu setzen.
+- Ziel: Sinnvolle, logisch platzierte Logo-Positionen bei unveraendertem Text- und Informationsaufbau.
+- Ergebnis: Das echte Logo ist beim PayPal-Aufsteller oben als Markenanker und beim Buy/Sell/Trade-Aufsteller unten unter dem CTA als Sign-off eingebettet. Beide PNGs liegen im Visualisierungsordner.
+- Stand: ABGESCHLOSSEN.
