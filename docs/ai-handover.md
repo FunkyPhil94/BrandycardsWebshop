@@ -5293,8 +5293,10 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 - Ergebnis: Der weisse Balken ist entfernt. Das Original-Logo sitzt direkt auf dem durchgehenden dunklen Flyer-Hintergrund; Sport- und Kartenmotive bleiben entfernt.
 - Stand: ABGESCHLOSSEN.
 
+
 ## 2026-08-11 - Referenzfarbwelt auf bestehende Flyer uebertragen
 
 - Auftrag: Die bestehende abstrakte A4-Flyerbasis in die Schwarz-Dunkelbraun-Gold-Weiss/Creme-Farbwelt der bereitgestellten Referenz uebertragen.
 - Umsetzung: Layout und Original-Logo erhalten; nur die Farben der bestehenden Flyer systematisch anpassen.
-- Stand: LAEUFT.
+- Ergebnis: Beide Flyer liegen als neue Referenzfarbwelt-Varianten vor; Schwarz/Dunkelbraun dominiert, Gold ersetzt die roten Akzente, Weiss/Creme bleibt fuer Kontrast. Das Original-Logo wurde erneut unveraendert eingesetzt.
+- Stand: ABGESCHLOSSEN.
