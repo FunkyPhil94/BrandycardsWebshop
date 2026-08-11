@@ -5399,3 +5399,10 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 - Umsetzung: Aeusseren Slab-Rahmen und Grundstruktur erhalten; nur den inneren rechteckigen Labelrahmen ueberdecken.
 - Ergebnis: Der komplette innere obere Labelrahmen ist entfernt; der aeussere Slab-Rahmen bleibt als Kontur erhalten.
 - Stand: ABGESCHLOSSEN.
+
+## 2026-08-11 - Slab-Basis mit Plakette und PayPal-QR vorbereiten
+
+- Auftrag: In die markierten Bereiche der bereinigten Slab-Basis eine blanke Goldplakette, den echten PayPal-QR-Code und einen freien Textbereich einsetzen.
+- Umsetzung: Farbmarkierungen nur als Koordinaten verwenden; finale Datei ohne gruene, rote oder blaue Markierungen ausgeben.
+- Ergebnis: Goldene Metallplakette oben links und echter PayPal-QR-Code oben rechts eingesetzt. Der grosse Hauptbereich bleibt frei fuer den spaeteren Text.
+- Stand: ABGESCHLOSSEN.
