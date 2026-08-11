@@ -37,15 +37,16 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-### 2026-08-11 - Ausdrucksstaerkeres American-Sports-Logo fuer BrandyCards
-
-- Auftrag: Die bisherige sportliche Logoidee bewusst aus der Corporate-Minimal-Richtung herausentwickeln. Mehr Charakter, Layer und Dynamik zulassen, ohne in AI-Slop oder beliebige Deko zu kippen.
-- Leitplanken: Zwei Brueder weiterhin ueber ein gemeinsames, geteiltes Hauptmotiv erkennbar; American-Basketball-/Football-Energie durch Badge, Konturen, Diagonalen und Varsity-Typografie. Mehr Details sind erlaubt, aber hierarchisch kontrolliert.
-- Zu vermeiden: direkte Portraets, AI-Gesichter, zufaellige Symbolsammlung, Maskottchen, Ballclipart, ueberladene Retro-College-Wappen, 3D und Gloss.
-- Geplant: Drei ausdrucksstaerkere Konzeptvarianten erzeugen und auf Charakter, Teamgefuehl, Bruederreferenz und Markentauglichkeit bewerten.
-- Status: LÄUFT
+*(derzeit kein Auftrag aktiv)*
 
 ## Historie
+
+### 2026-08-11 - Ausdrucksstaerkeres American-Sports-Logo fuer BrandyCards
+
+- Auftrag: Die bisherige Sportlogoidee aus der Corporate-Minimal-Richtung herausentwickeln und mehr Charakter, Layer und Dynamik zulassen.
+- Ergebnis: Drei ausdrucksstaerkere Sports-Richtungen und eine Zwischenstufe erzeugt. Die staerkste Variante nutzt zwei gespiegelt gesetzte B-Haelften in Navy und Rot, verbunden durch eine gemeinsame Blitz-/Fugenform, eine einzelne Badge-Kontur und eine varsity-inspirierte Wortmarke.
+- Beurteilung: Mehr Team- und Bruedercharakter sowie sichtbare Sportenergie, ohne direkte Portraets, Maskottchen, Ballclipart oder eine zufaellige Dekorationssammlung.
+- Status: Vorschau abgeschlossen; keine Website-Integration und keine finale Produktionsvektorisierung vorgenommen.
 
 ### 2026-08-11 - Cleanes American-Sports-Logo fuer BrandyCards
 
