@@ -5435,3 +5435,10 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 - Umsetzung: Vierfache Zielaufloesung; Text neu rasterisieren und QR-Code erneut pixelgenau einsetzen; Layout und Inhalte beibehalten.
 - Ergebnis: Hochauflösende PNG-Version mit 2176 x 3240 Pixeln und 300 DPI erzeugt; Texte neu gerastert und QR-Code erneut pixelgenau eingesetzt.
 - Stand: ABGESCHLOSSEN.
+
+## 2026-08-11 - Mittleren Ankaufstext schaerfen
+
+- Auftrag: Die Unschärfe des mehrzeiligen Haupttexts im unteren mittleren Feld korrigieren.
+- Umsetzung: Text neu mit klareren Kanten und reduziertem Schatten-/Highlight-Versatz in die hochauflösende PNG-Version rendern.
+- Ergebnis: Mittlerer Ankaufstext mit klarerer Arial-Typografie und reduziertem Schatten neu gerendert; Datei weiterhin 2176 x 3240 Pixel bei 300 DPI.
+- Stand: ABGESCHLOSSEN.
