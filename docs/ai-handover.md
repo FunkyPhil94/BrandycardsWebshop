@@ -37,15 +37,16 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-### 2026-08-11 - Cleanes American-Sports-Logo fuer BrandyCards
-
-- Auftrag: Die abstrakte Zwei-Brueder-Idee in eine maessig sportliche American-Basketball-/Football-Logo-Richtung weiterentwickeln.
-- Leitplanken: Mehr Team-/Founders-Charakter und etwas mehr visuelles Gewicht als die vorige Runde, aber weiterhin clean. Zwei gleichwertige Haelften oder Elemente muessen klar zusammengehoeren.
-- Zu vermeiden: direkte Portraets, AI-Gesichter, ueberladene College-Wappen, Maskottchen, Ballillustrationen, zu viele Streifen/Schriftbanner, 3D und Gloss.
-- Geplant: Drei vectorfreundliche Logo-Konzepte als Vorschau erzeugen und auf Sportlichkeit, Bruederreferenz und Eigenstaendigkeit bewerten.
-- Status: LÄUFT
+*(derzeit kein Auftrag aktiv)*
 
 ## Historie
+
+### 2026-08-11 - Cleanes American-Sports-Logo fuer BrandyCards
+
+- Auftrag: Die abstrakte Zwei-Brueder-Idee mit moderatem American-Basketball-/Football-Charakter weiterentwickeln.
+- Ergebnis: Drei sportlichere Logo-Richtungen und eine gezielte Verfeinerung erzeugt. Die beste Richtung nutzt zwei gleichwertige, gespiegelt gesetzte B-Haelften mit gemeinsamer Mitte und varsity-inspirierter Wortmarke.
+- Gestaltung: Navy, Brick Red, Warmweiss und nur sehr sparsam Gold; Team-Badge-Energie ohne Maskottchen, Portraet, Ballclipart, Banner oder ueberladene College-Rahmung.
+- Status: Vorschau abgeschlossen; keine Website-Integration und keine finale Produktionsvektorisierung vorgenommen.
 
 ### 2026-08-11 - Abstraktes Bruederzeichen fuer BrandyCards
 
