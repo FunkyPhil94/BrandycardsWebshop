@@ -5248,3 +5248,10 @@ selbst; die Schrittfolge samt Nachprüfung steht in
   "Sportskarten".
 - Ergebnis: Beide Aufsteller neu erstellt; dekorative untere Textboxen und Footer-Baender entfernt. Der PayPal-QR-Platzhalter bleibt als einziges funktionales Feld erhalten. Die finalen PNGs liegen im Visualisierungsordner.
 - Stand: ABGESCHLOSSEN.
+
+## 2026-08-11 - A4-Aufsteller an BrandyCards-Farbwelt anpassen
+
+- Auftrag: Die beiden korrigierten A4-Aufsteller farblich an das BrandyCards-Logo anpassen.
+- Ziel: Navy, Rot, Warmweiss und dezente Goldakzente; Layout, Texte und QR-Platzhalter beibehalten.
+- Ergebnis: Beide Varianten in einer Navy-Rot-Warmweiss-Gold-Farbwelt neu erstellt und im Visualisierungsordner abgelegt. Der echte Markenlogo- und QR-Code-Einsatz bleibt fuer den finalen Drucksatz austauschbar.
+- Stand: ABGESCHLOSSEN.
