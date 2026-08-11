@@ -37,14 +37,16 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-### 2026-08-11 - Gruenderportraet ins BrandyCards-Logo integrieren
-
-- Auftrag: Die zwei Maenner aus dem vorhandenen BrandyCards-Logo mit Cap und Bart als menschliche Wiedererkennung behalten, aber sauber und nicht nach AI-Slop in eine reduzierte Logoform ueberfuehren.
-- Leitplanken: Identitaet und markante Merkmale bewahren; keine fotorealistischen KI-Gesichter, keine ueberladenen Karten-/Sportklischees, keine 3D-/Gloss-Effekte.
-- Geplant: Das Originalbild als Referenz pruefen und mehrere reduzierte Integrationsrichtungen als Vorschau entwickeln. Danach eine saubere, nutzbare Markenvariante ausarbeiten.
-- Status: LÄUFT
+*(derzeit kein Auftrag aktiv)*
 
 ## Historie
+
+### 2026-08-11 - Gruenderportraet ins BrandyCards-Logo integriert
+
+- Auftrag: Die zwei Maenner aus dem bestehenden Logo mit Cap und Bart behalten, aber die Marke von Schild-, Banner- und Stern-Dekoration loesen.
+- Ergebnis: Das Originalbild wurde unveraendert als Referenz genutzt. Drei neue Integrationsrichtungen und eine gezielte Verfeinerung wurden als preview-only Rasterkonzepte erzeugt.
+- Beurteilung: Die reduzierte, rahmenlose Doppelportraet-Variante ist am staerksten. Sie bewahrt die persoenliche Wiedererkennbarkeit und wirkt deutlich ruhiger als das bestehende Wappen.
+- Status: Vorschau abgeschlossen; noch keine finale Produktionsvektorisierung oder Website-Integration. Original-Logo im Repository blieb unveraendert.
 
 ### 2026-08-11 - Drei neue beidseitige BrandyCards-Flyer
 
