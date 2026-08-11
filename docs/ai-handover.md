@@ -37,7 +37,12 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-*(derzeit kein Auftrag aktiv)*
+### 2026-08-11 - Abstraktes Bruederzeichen fuer BrandyCards
+
+- Auftrag: Neue Logo-Richtungen entwickeln, die nur abstrakt auf zwei Brueder und Sammelkarten verweisen. Keine direkte Uebernahme der beiden Maenner aus dem bestehenden Bild.
+- Leitplanken: Zwei gleichwertige, leicht unterschiedliche Formen; gemeinsame Verbindung oder Spiegelung; clean, eigenstaendig und frei von AI-Slop. Keine Gesichter, Caps, Baerte, Figuren, Schilde, Banner oder Sterne.
+- Geplant: Mehrere vectorfreundliche Markenzeichen mit minimaler Kartenkante oder Ecke als konzeptioneller Hinweis erzeugen und visuell bewerten.
+- Status: LÄUFT
 
 ## Historie
 
