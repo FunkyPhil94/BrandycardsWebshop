@@ -5449,3 +5449,10 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 - Umsetzung: Symmetrische feine Goldornamente, Divider und sehr zurückhaltende Fächerlinien ergänzen; Text, QR-Code und Slab-Rahmen unverändert lassen.
 - Ergebnis: Symmetrische, dezente Goldornamente und Fächerlinien in das Hauptfenster integriert; Text, QR-Code und Rahmen unverändert belassen.
 - Stand: ABGESCHLOSSEN.
+
+## 2026-08-11 - Fliessende Wellenlinien statt Art-deco-Ornamente
+
+- Auftrag: Das bisherige Art-deco-Design im Hauptfenster durch leichte, parallel verlaufende Wellenlinien nach Referenz ersetzen.
+- Umsetzung: Dezente antike Goldlinien als fliessende Wellen oberhalb und unterhalb des Textes; Text, QR-Code und Rahmen unverändert lassen.
+- Ergebnis: Das Art-deco-Design ersetzt durch feine, parallel laufende antike Gold-Wellenlinien nach Referenz; Text, QR-Code und Rahmen unverändert.
+- Stand: ABGESCHLOSSEN.
