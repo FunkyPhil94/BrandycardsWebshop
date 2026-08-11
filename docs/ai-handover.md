@@ -5420,3 +5420,11 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 - Text: BrandyCards / Cologne Card Con 2026 / Buy · Sell · Trade.
 - Ergebnis: Die drei vorgegebenen Zeilen wurden exakt auf der Goldplakette als schwarze, leicht vertiefte Gravur umgesetzt.
 - Stand: ABGESCHLOSSEN.
+
+## 2026-08-11 - Ankaufstext im unteren Textfeld
+
+- Auftrag: Einen kürzeren, professionellen und nahbaren mehrzeiligen Ankaufstext in das große untere Feld der Slab-Grafik setzen.
+- Umsetzung: Überschrift in hochwertiger Serifenschrift; Zusatzzeilen in klarer Sans-Serif; warmes Gold und Elfenbein passend zur Schwarz-Gold-Gestaltung.
+- Text: KARTEN ZU VERKAUFEN? / Wir kaufen einzelne Karten / und komplette Sammlungen. / Fair bewertet · persönlich & unkompliziert. / Sprich uns gerne an.
+- Ergebnis: Text sauber zentriert in einer neuen PNG-Version umgesetzt.
+- Stand: ABGESCHLOSSEN.
