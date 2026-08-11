@@ -49,6 +49,7 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
   `app/brand/brandycards-logo-concept-bc-monogram.svg`.
 - Gestaltung: Deep Ink Navy, Brick Red und Warmweiss; flache Geometrie, klare Wortmarke, keine 3D-/Gloss-Effekte und keine dekorative Ueberladung.
 - Hinweis: Die Dateien sind eigenstaendige Konzeptlogos und noch nicht in der Website verdrahtet. Die Rastervorschauen bleiben preview-only ausserhalb des Repositories.
+- Lokal committed als `ef7dbc5`; ein Push auf `main` wurde wegen fehlender ausdruecklicher Freigabe fuer die gemeinsame Standard-Branch nicht ausgefuehrt.
 
 ### 2026-08-10 — Aufmerksamkeitsstärkere Impact-Flyer erstellt
 
