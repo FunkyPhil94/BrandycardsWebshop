@@ -5276,3 +5276,10 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 - Umsetzung: Zwei abstrakte Hintergruende mit gemeinsamem Logo-Feld oben erstellen und das Original-Logo anschliessend unveraendert technisch einsetzen.
 - Ergebnis: Beide PNGs sind abstrakt und typografisch; Sport- und Kartenmotive sowie kartenartige Panels wurden entfernt. Das Original-Logo sitzt im gemeinsamen Kopfbereich, der PayPal-QR-Platzhalter bleibt funktional erhalten.
 - Stand: ABGESCHLOSSEN.
+
+## 2026-08-11 - Logo direkt in abstrakten Flyer integrieren
+
+- Auftrag: Den weissen Kopfstreifen entfernen und das bereitgestellte Original-Logo direkt auf den durchgehenden Flyer-Hintergrund setzen.
+- Umsetzung: Bestehendes abstraktes Navy-Rot-Warmweiss-Gold-Basisdesign beibehalten; nur den Kopfbereich integrieren und das Original-Logo unveraendert platzieren.
+- Ergebnis: Der weisse Balken ist entfernt. Das Original-Logo sitzt direkt auf dem durchgehenden dunklen Flyer-Hintergrund; Sport- und Kartenmotive bleiben entfernt.
+- Stand: ABGESCHLOSSEN.
