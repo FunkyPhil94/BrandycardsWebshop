@@ -5406,3 +5406,10 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 - Umsetzung: Farbmarkierungen nur als Koordinaten verwenden; finale Datei ohne gruene, rote oder blaue Markierungen ausgeben.
 - Ergebnis: Goldene Metallplakette oben links und echter PayPal-QR-Code oben rechts eingesetzt. Der grosse Hauptbereich bleibt frei fuer den spaeteren Text.
 - Stand: ABGESCHLOSSEN.
+
+## 2026-08-11 - QR-Feld verkleinern und Goldplakette verfeinern
+
+- Auftrag: Das quadratische QR-Feld verkleinern, die Goldplakette proportional verlaengern und deren Materialwirkung realistischer als gebuerstetes Gold gestalten.
+- Umsetzung: Originale Slab-Basis und echter QR-Code beibehalten; nur Plaque und QR-Platzierung anpassen.
+- Ergebnis: QR-Feld kleiner und weiterhin quadratisch; Goldplakette laenger angelegt und mit feinen horizontalen Metallreflexen als gebuerstetes Gold gestaltet. Der Hauptbereich bleibt frei.
+- Stand: ABGESCHLOSSEN.
