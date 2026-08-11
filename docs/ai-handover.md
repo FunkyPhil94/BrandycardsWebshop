@@ -5240,3 +5240,11 @@ selbst; die Schrittfolge samt Nachprüfung steht in
   Die Entwuerfe liegen im Visualisierungsordner; das vorhandene Logo und der
   echte PayPal-QR-Code muessen im finalen Satz noch exakt eingesetzt werden.
 - Stand: ABGESCHLOSSEN.
+
+## 2026-08-11 - A4-Aufsteller bereinigen und Sportkarten korrigieren
+
+- Auftrag: Die beiden A4-Aufsteller ohne sinnlose untere Textboxen neu setzen.
+- Korrektur: Ueberall die Schreibweise "Sportkarten" verwenden, nicht
+  "Sportskarten".
+- Ergebnis: Beide Aufsteller neu erstellt; dekorative untere Textboxen und Footer-Baender entfernt. Der PayPal-QR-Platzhalter bleibt als einziges funktionales Feld erhalten. Die finalen PNGs liegen im Visualisierungsordner.
+- Stand: ABGESCHLOSSEN.
