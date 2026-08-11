@@ -5344,3 +5344,10 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 - Umsetzung: Layout und Original-Logo erhalten; nur die Farben der bestehenden Flyer systematisch anpassen.
 - Ergebnis: Beide Flyer liegen als neue Referenzfarbwelt-Varianten vor; Schwarz/Dunkelbraun dominiert, Gold ersetzt die roten Akzente, Weiss/Creme bleibt fuer Kontrast. Das Original-Logo wurde erneut unveraendert eingesetzt.
 - Stand: ABGESCHLOSSEN.
+
+## 2026-08-11 - Graded-Slab-Flyer mit Vorder- und Rueckseite erstellen
+
+- Auftrag: Einen Flyer im Stil einer gegradeten Karte als Vorder- und Rueckseite fuer BrandyCards erstellen.
+- Umsetzung: Einheitlichen Slab-Rahmen als Basis erzeugen; Original-Logo, exakte Texte und QR-Platzhalter separat und sauber einsetzen.
+- Ergebnis: Vorder- und Rueckseite als PNG erstellt. Das Original-Logo ist unveraendert eingebettet; die Vorderseite ist markenorientiert, die Rueckseite enthaelt Buy/Sell/Trade-Informationen und einen neutralen PayPal-QR-Platzhalter ohne Fake-QR.
+- Stand: ABGESCHLOSSEN.
