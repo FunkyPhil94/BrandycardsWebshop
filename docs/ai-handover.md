@@ -5428,3 +5428,10 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 - Text: KARTEN ZU VERKAUFEN? / Wir kaufen einzelne Karten / und komplette Sammlungen. / Fair bewertet · persönlich & unkompliziert. / Sprich uns gerne an.
 - Ergebnis: Text sauber zentriert in einer neuen PNG-Version umgesetzt.
 - Stand: ABGESCHLOSSEN.
+
+## 2026-08-11 - Hochaufloesende Flyer-Version erzeugen
+
+- Auftrag: Die bestehende Slab-Flyer-Grafik in deutlich besserer Aufloesung ausgeben.
+- Umsetzung: Vierfache Zielaufloesung; Text neu rasterisieren und QR-Code erneut pixelgenau einsetzen; Layout und Inhalte beibehalten.
+- Ergebnis: Hochauflösende PNG-Version mit 2176 x 3240 Pixeln und 300 DPI erzeugt; Texte neu gerastert und QR-Code erneut pixelgenau eingesetzt.
+- Stand: ABGESCHLOSSEN.
