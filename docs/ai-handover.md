@@ -5413,3 +5413,10 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 - Umsetzung: Originale Slab-Basis und echter QR-Code beibehalten; nur Plaque und QR-Platzierung anpassen.
 - Ergebnis: QR-Feld kleiner und weiterhin quadratisch; Goldplakette laenger angelegt und mit feinen horizontalen Metallreflexen als gebuerstetes Gold gestaltet. Der Hauptbereich bleibt frei.
 - Stand: ABGESCHLOSSEN.
+
+## 2026-08-11 - Dreizeilige Gravur auf Goldplakette setzen
+
+- Auftrag: Die Goldplakette mit drei vorgegebenen Zeilen in schwarzer, leicht vertiefter Gravuroptik beschriften.
+- Text: BrandyCards / Cologne Card Con 2026 / Buy · Sell · Trade.
+- Ergebnis: Die drei vorgegebenen Zeilen wurden exakt auf der Goldplakette als schwarze, leicht vertiefte Gravur umgesetzt.
+- Stand: ABGESCHLOSSEN.
