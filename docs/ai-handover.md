@@ -5230,3 +5230,13 @@ selbst; die Schrittfolge samt Nachprüfung steht in
   allgemeine Kategorien (Karten, Sammlungen, An- & Verkauf); Fussball und
   American Football erscheinen ausschliesslich als Bildmotive. Beide Seiten
   wurden visuell geprueft.
+
+## 2026-08-11 - A4-Aufsteller fuer Messe gestalten
+
+- Auftrag: Zwei passende A4-Aufsteller aus der vorgelegten Idee entwickeln:
+  PayPal-Zahlung mit QR-Code sowie BrandyCards Buy/Sell/Trade.
+- Ergebnis: Zwei A4-Aufsteller als getrennte Konzept-PNGs erstellt: PayPal-Zahlung
+  mit leerem QR-Code-Feld sowie Buy/Sell/Trade mit Sportkarten-Informationen.
+  Die Entwuerfe liegen im Visualisierungsordner; das vorhandene Logo und der
+  echte PayPal-QR-Code muessen im finalen Satz noch exakt eingesetzt werden.
+- Stand: ABGESCHLOSSEN.
