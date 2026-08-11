@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 260" role="img" aria-labelledby="title desc">
+  <title id="title">BrandyCards Twin Corners Logo</title>
+  <desc id="desc">Two mirrored geometric card corners in navy and brick red beside the BrandyCards wordmark.</desc>
+  <g id="symbol">
+    <path fill="#172433" d="M72 30h78a24 24 0 0 1 24 24v18l-55 55 55 55v48H72a24 24 0 0 1-24-24V54a24 24 0 0 1 24-24Z"/>
+    <path fill="#C94A3D" d="M230 30h78a24 24 0 0 1 24 24v152a24 24 0 0 1-24 24h-78v-48l55-55-55-55V54a24 24 0 0 1 24-24Z"/>
+  </g>
+  <text x="400" y="166" fill="#172433" font-family="Inter, Arial, Helvetica, sans-serif" font-size="92" font-weight="750" letter-spacing="-3">BrandyCards</text>
+</svg>

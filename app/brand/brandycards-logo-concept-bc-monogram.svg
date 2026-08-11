@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 300" role="img" aria-labelledby="title desc">
+  <title id="title">BrandyCards BC Monogram Logo</title>
+  <desc id="desc">A compact BC monogram made from two separate geometric forms beside the BrandyCards wordmark.</desc>
+  <g id="symbol">
+    <path fill="#172433" fill-rule="evenodd" d="M48 30h98c25 0 44 19 44 44v20c0 14-6 25-18 33 12 8 18 19 18 33v21c0 25-19 44-44 44H48V30Zm42 38v43h42c10 0 16-6 16-16V84c0-10-6-16-16-16H90Zm0 81v38h42c10 0 16-6 16-16v-6c0-10-6-16-16-16H90Z"/>
+    <path fill="#C94A3D" d="M250 30h104v42h-58a20 20 0 0 0-20 20v56a20 20 0 0 0 20 20h58v42H250c-27 0-48-21-48-48V78c0-27 21-48 48-48Z"/>
+    <path fill="#F7F3EA" d="m214 30 38 38-18 18-38-38zM214 204l38-38 18 18-38 38z"/>
+  </g>
+  <text x="420" y="176" fill="#172433" font-family="Inter, Arial, Helvetica, sans-serif" font-size="92" font-weight="750" letter-spacing="-3">Brandy</text>
+  <text x="750" y="176" fill="#C94A3D" font-family="Inter, Arial, Helvetica, sans-serif" font-size="92" font-weight="750" letter-spacing="-3">Cards</text>
+</svg>

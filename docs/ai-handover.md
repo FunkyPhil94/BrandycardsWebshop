@@ -37,18 +37,18 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-### 2026-08-11 - Logo-Exploration fuer BrandyCards
-
-- Auftrag: Mehrere clean gehaltene Logo-Richtungen fuer BrandyCards entwickeln.
-- Leitplanken: Zwei Brueder, Sammelkarten-Leidenschaft, eigenstaendig und
-  professionell; keine ueberladenen Kartenstapel, keine 3D-/Gloss-Effekte,
-  keine dekorative AI-Slop-Aesthetik.
-- Geplant: Eine kleine Konzeptauswahl als Vorschau erzeugen und visuell auf
-  Wiedererkennbarkeit, Reduktion und brauchbare Typografie pruefen. Die
-  Konzepte sind zunaechst Entwuerfe, keine ungeprueften Produktionslogos.
-- Status: LÄUFT
+*(derzeit kein Auftrag aktiv)*
 
 ## Historie
+
+### 2026-08-11 - Logo-Exploration fuer BrandyCards
+
+- Auftrag: Mehrere reduzierte Logo-Richtungen fuer das Zwei-Brueder-Sammelkartenunternehmen BrandyCards entwickeln.
+- Ergebnis: Drei visuelle Konzeptvorschauen wurden erzeugt. Die zwei staerksten Richtungen wurden anschliessend als transparente SVGs nachgebaut:
+  `app/brand/brandycards-logo-concept-twin-corners.svg` und
+  `app/brand/brandycards-logo-concept-bc-monogram.svg`.
+- Gestaltung: Deep Ink Navy, Brick Red und Warmweiss; flache Geometrie, klare Wortmarke, keine 3D-/Gloss-Effekte und keine dekorative Ueberladung.
+- Hinweis: Die Dateien sind eigenstaendige Konzeptlogos und noch nicht in der Website verdrahtet. Die Rastervorschauen bleiben preview-only ausserhalb des Repositories.
 
 ### 2026-08-10 — Aufmerksamkeitsstärkere Impact-Flyer erstellt
 
