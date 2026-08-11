@@ -37,7 +37,12 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-*(derzeit kein Auftrag aktiv)*
+### 2026-08-11 - Gruenderportraet ins BrandyCards-Logo integrieren
+
+- Auftrag: Die zwei Maenner aus dem vorhandenen BrandyCards-Logo mit Cap und Bart als menschliche Wiedererkennung behalten, aber sauber und nicht nach AI-Slop in eine reduzierte Logoform ueberfuehren.
+- Leitplanken: Identitaet und markante Merkmale bewahren; keine fotorealistischen KI-Gesichter, keine ueberladenen Karten-/Sportklischees, keine 3D-/Gloss-Effekte.
+- Geplant: Das Originalbild als Referenz pruefen und mehrere reduzierte Integrationsrichtungen als Vorschau entwickeln. Danach eine saubere, nutzbare Markenvariante ausarbeiten.
+- Status: LÄUFT
 
 ## Historie
 
