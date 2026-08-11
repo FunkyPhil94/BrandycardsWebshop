@@ -5392,3 +5392,10 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 - Umsetzung: Nur Material- und Flaechenfarben anpassen; keine Texte, Logos oder Flyer-Inhalte einsetzen.
 - Ergebnis: Neue blanke Basisdatei mit schwarzem/dunkelbraunem Grund, Goldrahmen und warmen Metallreflexen erstellt. Struktur und Slab-Aufbau bleiben erhalten.
 - Stand: ABGESCHLOSSEN.
+
+## 2026-08-11 - Inneren Label-Rahmen der Slab-Basis entfernen
+
+- Auftrag: Den zusaetzlichen inneren Goldrahmen im oberen Labelbereich der schwarz-goldenen Slab-Basis entfernen.
+- Umsetzung: Aeusseren Slab-Rahmen und Grundstruktur erhalten; nur den inneren rechteckigen Labelrahmen ueberdecken.
+- Ergebnis: Der komplette innere obere Labelrahmen ist entfernt; der aeussere Slab-Rahmen bleibt als Kontur erhalten.
+- Stand: ABGESCHLOSSEN.
