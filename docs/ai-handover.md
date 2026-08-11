@@ -5262,3 +5262,10 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 - Ziel: Sinnvolle, logisch platzierte Logo-Positionen bei unveraendertem Text- und Informationsaufbau.
 - Ergebnis: Das echte Logo ist beim PayPal-Aufsteller oben als Markenanker und beim Buy/Sell/Trade-Aufsteller unten unter dem CTA als Sign-off eingebettet. Beide PNGs liegen im Visualisierungsordner.
 - Stand: ABGESCHLOSSEN.
+
+## 2026-08-11 - Originales BrandyCards-Logo unveraendert einsetzen
+
+- Auftrag: Die beiden A4-Aufsteller mit der bereitgestellten Original-PNG des Logos ausstatten; keine KI-Neuzeichnung des Logos verwenden.
+- Umsetzung: Logo als originale PNG-Ebene ueber die bestehenden Aufsteller gesetzt und die vorherigen kuenstlichen Logoformen abgedeckt.
+- Ergebnis: PayPal-Logo oben als Markenanker; Buy/Sell/Trade-Logo unten als klarer Sign-off unter dem CTA. Neue PNGs liegen im Visualisierungsordner.
+- Stand: ABGESCHLOSSEN.
