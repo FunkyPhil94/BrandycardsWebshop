@@ -37,7 +37,16 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-*(derzeit kein Auftrag aktiv)*
+### 2026-08-11 - Logo-Exploration fuer BrandyCards
+
+- Auftrag: Mehrere clean gehaltene Logo-Richtungen fuer BrandyCards entwickeln.
+- Leitplanken: Zwei Brueder, Sammelkarten-Leidenschaft, eigenstaendig und
+  professionell; keine ueberladenen Kartenstapel, keine 3D-/Gloss-Effekte,
+  keine dekorative AI-Slop-Aesthetik.
+- Geplant: Eine kleine Konzeptauswahl als Vorschau erzeugen und visuell auf
+  Wiedererkennbarkeit, Reduktion und brauchbare Typografie pruefen. Die
+  Konzepte sind zunaechst Entwuerfe, keine ungeprueften Produktionslogos.
+- Status: LÄUFT
 
 ## Historie
 
@@ -5283,3 +5292,9 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 - Umsetzung: Bestehendes abstraktes Navy-Rot-Warmweiss-Gold-Basisdesign beibehalten; nur den Kopfbereich integrieren und das Original-Logo unveraendert platzieren.
 - Ergebnis: Der weisse Balken ist entfernt. Das Original-Logo sitzt direkt auf dem durchgehenden dunklen Flyer-Hintergrund; Sport- und Kartenmotive bleiben entfernt.
 - Stand: ABGESCHLOSSEN.
+
+## 2026-08-11 - Referenzfarbwelt auf bestehende Flyer uebertragen
+
+- Auftrag: Die bestehende abstrakte A4-Flyerbasis in die Schwarz-Dunkelbraun-Gold-Weiss/Creme-Farbwelt der bereitgestellten Referenz uebertragen.
+- Umsetzung: Layout und Original-Logo erhalten; nur die Farben der bestehenden Flyer systematisch anpassen.
+- Stand: LAEUFT.
