@@ -41,6 +41,21 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Historie
 
+### 2026-08-11 - Drei neue beidseitige BrandyCards-Flyer
+
+- Auftrag: Drei Flyer von Grund auf neu entwickeln, jeweils mit Vorder- und
+  Rueckseite; fruehere Flyer ausdruecklich nicht als Gestaltungsvorlage nutzen.
+- Ergebnis: Drei eigenstaendige A5-Flyer als zweiseitige PDFs erstellt:
+  "Die Karte, die du suchst" (editorial), "Karten, die bleiben" (Archiv /
+  Premium) und "Siehst du die Luecke?" (energetisch Buy/Sell/Trade).
+- Das vorhandene Original-Logo wurde in alle sechs Seiten unveraendert als
+  PNG eingebettet. Je PDF liegen Vorder- und Rueckseite vor; sechs PNG-
+  Vorschauen wurden aus den finalen PDFs gerendert.
+- Technische QA: 3 PDFs mit je 2 A5-Seiten, Text innerhalb der Seitenrahmen,
+  Logo-Rasterbild auf allen Seiten, URL und E-Mail in allen Flyer-Saetzen,
+  sechs PNGs in 933 x 1323 px. Ergebnis: PASS.
+- Stand: ABGESCHLOSSEN.
+
 ### 2026-08-11 - Logo-Exploration fuer BrandyCards
 
 - Auftrag: Mehrere reduzierte Logo-Richtungen fuer das Zwei-Brueder-Sammelkartenunternehmen BrandyCards entwickeln.

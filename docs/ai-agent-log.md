@@ -1175,3 +1175,23 @@ Die HTML-Quelle, vier PNG-Vorschauen und zwei zweiseitige PDFs liegen im
 Ausgabeordner des Visualisierungsprojekts. Alle Seiten wurden nach dem Rendern
 visuell geprüft; die PDFs sind vollständig geschrieben und enthalten Vorder-
 und Rückseite.
+
+## 2026-08-11 - Drei neue beidseitige Flyer von Grund auf
+
+Die drei Richtungen wurden bewusst nicht aus den bisherigen Flyern abgeleitet.
+Stattdessen teilen sie nur die belastbaren Markenanforderungen: gute Fernwirkung,
+klare Typografie, echte Shop-Kontaktdaten und das unveraenderte Original-Logo.
+
+- Flyer 01 arbeitet editorial mit Creme, Navy und Coral; eine klare Such-Headline
+  und die Rueckseite mit drei Nutzungswegen richten sich an spontane Messe- und
+  Shopbesucher.
+- Flyer 02 nutzt eine ruhige Archiv-/Premiumwelt aus Navy, Creme und Gold; die
+  Rueckseite baut Vertrauen ueber Herkunft, Auswahl, Verpackung und Erreichbarkeit
+  auf.
+- Flyer 03 setzt auf eine energische Coral/Navy-Diagonale; Buy, Sell und Trade
+  sind visuell der Hauptgedanke, ohne erfundene Spieler- oder Produktbilder.
+
+Alle sechs Seiten wurden als A5-PDF gesetzt, mit dem Original-Logo eingebettet,
+als PNG gerendert und technisch auf Seitenformat, Textrahmen, URL, E-Mail,
+Logo-Einbettung und Aufloesung geprueft. Die finalen PDF-Ausgaben liegen unter
+`output/pdf/`, die gerenderten Vorschauen unter `output/previews/`.
