@@ -5385,3 +5385,10 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 - Umsetzung: Einheitlichen Slab-Rahmen als Basis erzeugen; Original-Logo, exakte Texte und QR-Platzhalter separat und sauber einsetzen.
 - Ergebnis: Vorder- und Rueckseite als PNG erstellt. Das Original-Logo ist unveraendert eingebettet; die Vorderseite ist markenorientiert, die Rueckseite enthaelt Buy/Sell/Trade-Informationen und einen neutralen PayPal-QR-Platzhalter ohne Fake-QR.
 - Stand: ABGESCHLOSSEN.
+
+## 2026-08-11 - Slab-Basis in Referenzfarbwelt umsetzen
+
+- Auftrag: Die blanke Slab-Basis aus Bild 1 strukturell unveraendert in die Schwarz-Dunkelbraun-Gold-Farbwelt aus Bild 2 uebertragen.
+- Umsetzung: Nur Material- und Flaechenfarben anpassen; keine Texte, Logos oder Flyer-Inhalte einsetzen.
+- Ergebnis: Neue blanke Basisdatei mit schwarzem/dunkelbraunem Grund, Goldrahmen und warmen Metallreflexen erstellt. Struktur und Slab-Aufbau bleiben erhalten.
+- Stand: ABGESCHLOSSEN.
