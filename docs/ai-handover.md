@@ -5442,3 +5442,10 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 - Umsetzung: Text neu mit klareren Kanten und reduziertem Schatten-/Highlight-Versatz in die hochauflösende PNG-Version rendern.
 - Ergebnis: Mittlerer Ankaufstext mit klarerer Arial-Typografie und reduziertem Schatten neu gerendert; Datei weiterhin 2176 x 3240 Pixel bei 300 DPI.
 - Stand: ABGESCHLOSSEN.
+
+## 2026-08-11 - Dezentes Art-deco-Design im Hauptfenster
+
+- Auftrag: Den freien Raum im großen mittleren Textfenster elegant und dezent gestalten.
+- Umsetzung: Symmetrische feine Goldornamente, Divider und sehr zurückhaltende Fächerlinien ergänzen; Text, QR-Code und Slab-Rahmen unverändert lassen.
+- Ergebnis: Symmetrische, dezente Goldornamente und Fächerlinien in das Hauptfenster integriert; Text, QR-Code und Rahmen unverändert belassen.
+- Stand: ABGESCHLOSSEN.
