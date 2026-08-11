@@ -41,6 +41,23 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Historie
 
+### 2026-08-11 - Neuer BrandyCards-Flyer im Graded-Sports-Card-Look
+
+- Auftrag: Einen neuen Flyer entwickeln, der wie eine gegradete Sportkarte in
+  einer Schutz-Slab wirkt; Vorder- und Rueckseite als zusammenhaengender Satz.
+- Ergebnis: Eine eigenstaendige A5-PDF mit zwei Seiten sowie zwei gerenderte
+  PNG-Vorschauen erstellt. Das Original-Logo ist auf beiden Seiten eingebettet.
+- Gestaltung: Slab-Rahmen, Schraubpunkte, oberes BrandyCards-Ident-Label,
+  BC-GRADE-10-Badge, Holo-Diagonalen, Kartenfenster, Seriennummer, Barcode,
+  Collector-Score und QR-CTA. Fremde Grading- oder Sportmarkenlogos wurden
+  nicht kopiert.
+- Eine erste Koordinatenfassung hatte versehentlich einzelne mm-/Punktwerte
+  vermischt; das wurde vor der Abnahme korrigiert und neu gerendert.
+- Technische QA: 2 A5-Seiten, Text innerhalb der Seiten, Logo-Rasterbild auf
+  beiden Seiten, URL/E-Mail/CTA vorhanden, PNGs in 933 x 1323 px. Ergebnis:
+  PASS.
+- Stand: ABGESCHLOSSEN.
+
 ### 2026-08-11 - Ausdrucksstaerkeres American-Sports-Logo fuer BrandyCards
 
 - Auftrag: Die bisherige Sportlogoidee aus der Corporate-Minimal-Richtung herausentwickeln und mehr Charakter, Layer und Dynamik zulassen.
@@ -642,6 +659,23 @@ Sicherheits- und Funktionsbefunde im
 ---
 
 ## Historie
+
+### 2026-08-11 - Neuer BrandyCards-Flyer im Graded-Sports-Card-Look
+
+- Auftrag: Einen neuen Flyer entwickeln, der wie eine gegradete Sportkarte in
+  einer Schutz-Slab wirkt; Vorder- und Rueckseite als zusammenhaengender Satz.
+- Ergebnis: Eine eigenstaendige A5-PDF mit zwei Seiten sowie zwei gerenderte
+  PNG-Vorschauen erstellt. Das Original-Logo ist auf beiden Seiten eingebettet.
+- Gestaltung: Slab-Rahmen, Schraubpunkte, oberes BrandyCards-Ident-Label,
+  BC-GRADE-10-Badge, Holo-Diagonalen, Kartenfenster, Seriennummer, Barcode,
+  Collector-Score und QR-CTA. Fremde Grading- oder Sportmarkenlogos wurden
+  nicht kopiert.
+- Eine erste Koordinatenfassung hatte versehentlich einzelne mm-/Punktwerte
+  vermischt; das wurde vor der Abnahme korrigiert und neu gerendert.
+- Technische QA: 2 A5-Seiten, Text innerhalb der Seiten, Logo-Rasterbild auf
+  beiden Seiten, URL/E-Mail/CTA vorhanden, PNGs in 933 x 1323 px. Ergebnis:
+  PASS.
+- Stand: ABGESCHLOSSEN.
 
 ### 2026-08-10 — Zwei neue Messeflyer-Designrichtungen E und F erstellt
 

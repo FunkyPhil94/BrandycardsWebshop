@@ -1195,3 +1195,20 @@ Alle sechs Seiten wurden als A5-PDF gesetzt, mit dem Original-Logo eingebettet,
 als PNG gerendert und technisch auf Seitenformat, Textrahmen, URL, E-Mail,
 Logo-Einbettung und Aufloesung geprueft. Die finalen PDF-Ausgaben liegen unter
 `output/pdf/`, die gerenderten Vorschauen unter `output/previews/`.
+## 2026-08-11 - Graded-Sports-Card-Flyer fuer BrandyCards
+
+Der neue Flyer greift die wiedererkennbaren Konventionen einer gegradeten
+Sportkarte auf: ein oberes Ident-Label, eine Grade-Zone, die sichtbare
+Kartenkammer, Serien- und Barcode-Details, Sicherheitslinien, Schraubpunkte und
+eine Holografik. Diese Sprache wurde als eigenstaendiges BrandyCards-System
+gebaut, mit Navy, Peach, Coral, Ice und Gold statt fremder Markenkennzeichen.
+
+Auf der Vorderseite liegt der Schwerpunkt auf dem Objektcharakter: Der Flyer
+soll auf Distanz wie ein versiegeltes Sammlerstueck gelesen werden. Die
+Rueckseite funktioniert wie ein Collector Report mit Kaufen, Verkaufen,
+Sammeln, Kontakt und QR-CTA. Ein abstraktes Sportmotiv ersetzt ein erfundenes
+Spielerfoto und bleibt dadurch fuer Fussball- und andere Sportkarten offen.
+
+Die erste Renderfassung hatte einzelne Koordinaten als Millimeter interpretiert,
+obwohl Punkte gemeint waren. Das wurde vor der Ausgabe korrigiert; der finale
+Renderlauf besteht die A5-, Textrahmen-, Logo- und PNG-Aufloesungspruefung.
