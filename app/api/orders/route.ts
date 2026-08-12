@@ -6,7 +6,7 @@ import { getAuthenticatedAppUser } from "../../../lib/app-user";
 import { checkReservationCapacity, MAX_ORDER_POSITIONS, RESERVATION_MINUTES } from "../../../lib/order-guard";
 import { effectiveUnitPrice } from "../../../lib/offer-price";
 import { acceptedOfferPrices } from "../../../lib/price-offers";
-import { releaseExpiredReservations, reservedUnitsForUser } from "../../../lib/paypal/settle-order";
+import { releaseExpiredReservations, reservedUnitsForGuest, reservedUnitsForUser } from "../../../lib/paypal/settle-order";
 import { enforcePublicRateLimit } from "../../../lib/rate-limit";
 import { EU_COUNTRIES } from "../../../lib/shipping-countries";
 
@@ -39,8 +39,10 @@ export async function POST(request: Request) {
   try {
     await enforcePublicRateLimit(request, "orders");
     const appUser = await getAuthenticatedAppUser(request);
-    if (!appUser) return NextResponse.json({ error: "Bitte melde dich für den Checkout an." }, { status: 401 });
-    const body = await request.json() as { items?: unknown; shippingAddress?: unknown };
+    const body = await request.json() as { items?: unknown; shippingAddress?: unknown; customerEmail?: unknown };
+    const guestEmail = cleanEmail(body.customerEmail);
+    const orderGuestEmail = appUser ? null : guestEmail;
+    if (!appUser && !guestEmail) return NextResponse.json({ error: "Bitte gib eine E-Mail-Adresse f\u00fcr die Bestellbest\u00e4tigung an." }, { status: 400 });
     if (!Array.isArray(body.items) || body.items.length < 1 || body.items.length > MAX_ORDER_POSITIONS) return NextResponse.json({ error: "Der Warenkorb ist leer." }, { status: 400 });
     const shippingAddress = cleanAddress(body.shippingAddress);
     if (!shippingAddress) return NextResponse.json({ error: "Bitte vervollständige die Lieferadresse für Deutschland oder die EU." }, { status: 400 });
@@ -56,9 +58,13 @@ export async function POST(request: Request) {
     // Give this customer's own lapsed holds back before counting what they
     // hold. Without it the ceiling below would lock someone out for up to an
     // hour over a checkout they abandoned fifteen minutes ago.
-    await releaseExpiredReservations(db, new Date().toISOString(), appUser.id);
+    if (appUser) await releaseExpiredReservations(db, new Date().toISOString(), appUser.id);
+    else await releaseExpiredReservations(db, new Date().toISOString(), undefined, guestEmail ?? undefined);
     const requestedUnits = [...requested.values()].reduce((sum, quantity) => sum + quantity, 0);
-    const capacity = checkReservationCapacity(await reservedUnitsForUser(db, appUser.id), requestedUnits);
+    const heldUnits = appUser
+      ? await reservedUnitsForUser(db, appUser.id)
+      : await reservedUnitsForGuest(db, guestEmail ?? "");
+    const capacity = checkReservationCapacity(heldUnits, requestedUnits);
     if (!capacity.allowed) throw new OrderIssue(capacity.message);
 
     const ids = Array.from(requested.keys());
@@ -79,7 +85,7 @@ export async function POST(request: Request) {
     // Negotiated prices are resolved here, never taken from the request. The
     // browser only names product ids; what each one costs for this customer is
     // decided server-side from their accepted, unexpired offers.
-    const negotiated = await acceptedOfferPrices(db, appUser.id, ids);
+    const negotiated = appUser ? await acceptedOfferPrices(db, appUser.id, ids) : new Map<string, number>();
     const lineItems = rows.map(({ product, listing, stock }) => {
         const quantity = requested.get(product.id) ?? 0;
         // eBay-Karten haben einen serverseitig ermittelten Listing-Preis.
@@ -134,12 +140,12 @@ export async function POST(request: Request) {
       throw new OrderIssue("Ein Artikel wurde gerade von einem anderen Kunden reserviert.");
     }
     const writes = [
-      db.insert(orders).values({ id, orderNumber: number, userId: appUser.id, status: "PENDING", currency: "EUR", subtotalAmountCents: subtotal, shippingAmountCents: shipping, totalAmountCents: total, shippingAddress, billingAddress: shippingAddress }),
+      db.insert(orders).values({ id, orderNumber: number, userId: appUser?.id ?? null, guestEmail: orderGuestEmail, status: "PENDING", currency: "EUR", subtotalAmountCents: subtotal, shippingAmountCents: shipping, totalAmountCents: total, shippingAddress, billingAddress: shippingAddress }),
       // `listing` fehlt bei manuellen Karten. Die Momentaufnahme in der
       // Bestellposition hält dann fest, dass es keine gab — der Beleg soll
       // sagen, was war, nicht so tun, als wäre alles gleich.
       ...lineItems.map((item) => db.insert(orderItems).values({ orderId: id, productId: item.product.id, titleSnapshot: item.product.title, skuSnapshot: item.listing?.sku ?? null, quantity: item.quantity, unitAmountCents: item.unitPrice, totalAmountCents: item.total, productSnapshot: { title: item.product.title, listingId: item.listing?.id ?? null, origin: item.product.origin } })),
-      ...lineItems.map((item) => db.insert(reservations).values({ orderId: id, productId: item.product.id, inventoryId: item.stock.id, userId: appUser.id, quantity: item.quantity, status: "ACTIVE", expiresAt })),
+      ...lineItems.map((item) => db.insert(reservations).values({ orderId: id, productId: item.product.id, inventoryId: item.stock.id, userId: appUser?.id ?? null, guestEmail: orderGuestEmail, quantity: item.quantity, status: "ACTIVE", expiresAt })),
     ] as const;
     await db.batch(writes);
     const created = { id, orderNumber: number, subtotal, shipping, total, expiresAt };
@@ -149,4 +155,10 @@ export async function POST(request: Request) {
     console.error("Order creation failed", error);
     return NextResponse.json({ error: message }, { status: error instanceof OrderIssue ? 409 : 500 });
   }
+}
+
+function cleanEmail(value: unknown) {
+  if (typeof value !== "string") return null;
+  const email = value.trim().toLowerCase();
+  return email && email.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/u.test(email) ? email : null;
 }

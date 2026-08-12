@@ -1212,3 +1212,20 @@ Spielerfoto und bleibt dadurch fuer Fussball- und andere Sportkarten offen.
 Die erste Renderfassung hatte einzelne Koordinaten als Millimeter interpretiert,
 obwohl Punkte gemeint waren. Das wurde vor der Ausgabe korrigiert; der finale
 Renderlauf besteht die A5-, Textrahmen-, Logo- und PNG-Aufloesungspruefung.
+## 2026-08-12 — Gastcheckout ohne Kundenkonto
+
+Der Checkout akzeptiert jetzt auch Besucher ohne Supabase-Konto. Die E-Mail für
+Bestellbestätigung und Zuordnung wird serverseitig validiert und zusammen mit
+der Lieferadresse gespeichert. Kontobestellungen bleiben unverändert; bei
+Gastbestellungen sind `userId` und `guestEmail` sauber getrennt.
+
+PayPal-Start, Capture und Abbruch suchen die Bestellung nur noch über ihre
+zufällige Bestell-ID und prüfen dann, ob sie entweder dem eingeloggten Konto oder
+einer Gastbestellung gehört. Die Serverlogik berechnet Preise und Bestand weiter
+selbst, begrenzt auch Gastreservierungen und behält die vorhandene idempotente
+Capture-/Webhook-Logik. Ein erfolgreicher Capture kann dadurch weiterhin die
+Bestell- und Verkäufernachricht auslösen.
+
+Die Oberfläche zeigt den Gastweg verständlich an, ohne Registrierung oder Login
+zu verlangen. `npx tsc --noEmit`, ESLint, Build und 356 Tests waren erfolgreich;
+es bleibt nur die bereits vorhandene Hook-Warnung in `app/account/page.tsx`.

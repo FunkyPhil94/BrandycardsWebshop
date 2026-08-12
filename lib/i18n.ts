@@ -741,6 +741,8 @@ const ENGLISH_EXTRA_2: Record<string, string> = {
   "Dein Konto ist gelöscht. Eine Bestätigung ist unterwegs.": "Your account has been deleted. A confirmation email is on its way.",
   "Wir erledigen das von Hand.": "We will take care of it manually.",
   "3 bis 30 Zeichen: nur Buchstaben, Zahlen und Unterstrich (_).": "3 to 30 characters: letters, numbers and underscores only (_).",
+  "E-Mail f\u00fcr die Bestellbest\u00e4tigung": "Email for order confirmation",
+  "Kein Kundenkonto n\u00f6tig. Du kannst direkt als Gast bezahlen.": "No customer account needed. You can pay as a guest.",
 };
 
 export function translate(locale: Locale, key: string, values: Values = {}) {

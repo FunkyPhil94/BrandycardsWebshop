@@ -27,7 +27,6 @@ export async function POST(request: Request) {
   try {
     await enforcePublicRateLimit(request, "paypal-capture");
     const appUser = await getAuthenticatedAppUser(request);
-    if (!appUser) return NextResponse.json({ error: "Nicht authentifiziert." }, { status: 401 });
 
     let body: CaptureRequest;
     try {
@@ -39,8 +38,9 @@ export async function POST(request: Request) {
     if (!ids) return NextResponse.json({ error: "Ungültige Zahlungsdaten." }, { status: 400 });
 
     const db = getDb();
-    const order = await db.query.orders.findFirst({ where: and(eq(orders.id, ids.orderId), eq(orders.userId, appUser.id)) });
-    if (!order) return NextResponse.json({ error: "Bestellung nicht gefunden." }, { status: 404 });
+    const order = await db.query.orders.findFirst({ where: eq(orders.id, ids.orderId) });
+    const ownerMatches = appUser ? order?.userId === appUser.id : order?.userId === null && Boolean(order?.guestEmail);
+    if (!order || !ownerMatches) return NextResponse.json({ error: "Bestellung nicht gefunden." }, { status: 404 });
     assertValidMoney(order.totalAmountCents, order.currency);
 
     const payment = await db.query.payments.findFirst({ where: and(eq(payments.orderId, order.id), eq(payments.provider, "PAYPAL"), eq(payments.providerOrderId, ids.paypalOrderId)) });

@@ -13,14 +13,14 @@ export async function POST(request: Request) {
   try {
     await enforcePublicRateLimit(request, "paypal-orders");
     const appUser = await getAuthenticatedAppUser(request);
-    if (!appUser) return NextResponse.json({ error: "Nicht authentifiziert." }, { status: 401 });
     const body = await request.json() as { orderId?: unknown };
     const orderId = typeof body.orderId === "string" ? body.orderId.trim() : "";
     if (!orderId || orderId.length > 64) return NextResponse.json({ error: "Ungültige Bestellung." }, { status: 400 });
 
     const db = getDb();
-    const order = await db.query.orders.findFirst({ where: and(eq(orders.id, orderId), eq(orders.userId, appUser.id)) });
-    if (!order || order.status !== "PENDING") return NextResponse.json({ error: "Bestellung nicht verfügbar." }, { status: 409 });
+    const order = await db.query.orders.findFirst({ where: eq(orders.id, orderId) });
+    const ownerMatches = appUser ? order?.userId === appUser.id : order?.userId === null && Boolean(order?.guestEmail);
+    if (!order || !ownerMatches || order.status !== "PENDING") return NextResponse.json({ error: "Bestellung nicht verfügbar." }, { status: 409 });
     const items = await db.select({ quantity: orderItems.quantity, totalAmountCents: orderItems.totalAmountCents }).from(orderItems).where(eq(orderItems.orderId, order.id));
     if (!items.length || items.some((item) => item.quantity < 1 || item.totalAmountCents < 1)) return NextResponse.json({ error: "Bestellung enthält keine gültigen Artikel." }, { status: 409 });
     const calculatedSubtotal = items.reduce((sum, item) => sum + item.totalAmountCents, 0);

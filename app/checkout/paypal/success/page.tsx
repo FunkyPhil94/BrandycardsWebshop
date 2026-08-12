@@ -21,19 +21,22 @@ export default function PayPalSuccessPage() {
     const run = async () => {
       const params = new URLSearchParams(window.location.search);
       const paypalOrderId = params.get("token");
-      const session = (await getSupabaseBrowserClient().auth.getSession()).data.session;
+      let accessToken = "";
+      try { accessToken = (await getSupabaseBrowserClient().auth.getSession()).data.session?.access_token ?? ""; } catch { /* Gastcheckout ohne Supabase-Sitzung */ }
       const orderId = sessionStorage.getItem("brandycards-pending-order");
 
-      if (!paypalOrderId || !session || !orderId) {
+      if (!paypalOrderId || !orderId) {
         setState("error");
         setMessage(tRef.current("Die Zahlung konnte nicht eindeutig zugeordnet werden."));
         return;
       }
 
       setOrderReference(orderId.slice(0, 8).toUpperCase());
+      const captureHeaders: Record<string, string> = { "Content-Type": "application/json" };
+      if (accessToken) captureHeaders.Authorization = `Bearer ${accessToken}`;
       const response = await fetch("/api/paypal/capture", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+        headers: captureHeaders,
         body: JSON.stringify({ orderId, paypalOrderId }),
       });
       const data = await response.json();

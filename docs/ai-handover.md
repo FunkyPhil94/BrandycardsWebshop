@@ -37,15 +37,24 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-### Guest checkout without customer account
-
-- Status: RUNNING
-- Task: Allow checkout with PayPal, delivery address and confirmation email,
-  without registration or login.
-- Security: Keep server-side price and stock checks, idempotent PayPal capture,
-  webhook handling, and guest reservation limits per email.
+_(leer — der letzte Auftrag ist abgeschlossen.)_
 
 ## Historie
+
+### 2026-08-12 - Gastcheckout ohne Kundenkonto
+
+- Auftrag: Käufe ohne Registrierung oder Login ermöglichen, mit PayPal,
+  Lieferadresse und Bestellbestätigungs-E-Mail.
+- Umsetzung: Bestellanlage, PayPal-Start, Capture und Reservierungsfreigabe
+  akzeptieren nun entweder die bestehende Kontositzung oder eine Gastbestellung.
+  Gastbestellungen werden per E-Mail und zufälliger Bestell-ID zugeordnet;
+  Preise, Bestand, Reservierungslimit, eBay-Bestandsprüfung und PayPal-Capture
+  bleiben serverseitig verbindlich.
+- Oberfläche: Der Checkout erklärt die Gastzahlung und fragt nur die E-Mail
+  für die Bestellbestätigung ab; ein Kundenkonto und Login sind nicht nötig.
+- Prüfung: TypeScript erfolgreich, Lint ohne Fehler (eine bestehende Hook-Warnung
+  in `app/account/page.tsx` bleibt), Build und 356 Tests erfolgreich.
+- Stand: ABGESCHLOSSEN.
 
 ### 2026-08-11 - Neuer BrandyCards-Flyer im Graded-Sports-Card-Look
 
@@ -5462,3 +5471,21 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 - Umsetzung: Dezente antike Goldlinien als fliessende Wellen oberhalb und unterhalb des Textes; Text, QR-Code und Rahmen unverändert lassen.
 - Ergebnis: Das Art-deco-Design ersetzt durch feine, parallel laufende antike Gold-Wellenlinien nach Referenz; Text, QR-Code und Rahmen unverändert.
 - Stand: ABGESCHLOSSEN.
+
+
+## Auftrag 2026-08-12: Webshop erklären
+- Status: ABGESCHLOSSEN.
+- Ergebnis: Projektstruktur, Technologien, Datenhaltung, Checkout, eBay-Synchronisierung, Authentifizierung und wichtige Dateipfade vollständig lesend untersucht.
+- Festgestellt: TypeScript/TSX mit vinext, Next.js App Router und React; Cloudflare Workers, D1, R2, Supabase, PayPal und eBay.
+- Änderungen: Nur dieser Übergabevermerk wurde ergänzt; die vorbestehenden Änderungen in app/api/orders/route.ts und lib/paypal/settle-order.ts wurden nicht verändert.
+
+
+## Auftrag 2026-08-12: Gesamtarchitektur als Architekturschaubild
+- Status: LÄUFT.
+- Ziel: Die vollständige Webshop-Architektur mit internen Komponenten, Cloudflare-Diensten, externen Integrationen und Datenflüssen als clean strukturiertes Diagramm visualisieren.
+- Umsetzung: Visualisierungsfunktion verwenden; keine Produktionsdaten oder Anwendungscodes verändern.
+
+
+## Auftrag 2026-08-12: Gesamtarchitektur als Architekturschaubild — abgeschlossen
+- Ergebnis: Eine clean strukturierte Mermaid-Architekturübersicht erstellt, die Browser, Cloudflare Worker, vinext/Next.js/React, API-Routen, Geschäftslogik, D1, R2, Cron, Supabase, PayPal, eBay, Resend sowie Build/Deployment und Tests verbindet.
+- Status: ABGESCHLOSSEN.

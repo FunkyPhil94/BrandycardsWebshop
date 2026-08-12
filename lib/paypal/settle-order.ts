@@ -82,10 +82,11 @@ export async function releaseOrderReservations(db: ReturnType<typeof getDb>, ord
  * a fifteen minute window, could be another 45 minutes away. See
  * docs/security-findings.md, SEC-03.
  */
-export async function releaseExpiredReservations(db: ReturnType<typeof getDb>, now: string, userId?: string) {
+export async function releaseExpiredReservations(db: ReturnType<typeof getDb>, now: string, userId?: string, guestEmail?: string) {
   const lapsed = and(eq(reservations.status, "ACTIVE"), lte(reservations.expiresAt, now));
+  const owner = userId ? eq(reservations.userId, userId) : guestEmail ? eq(reservations.guestEmail, guestEmail) : null;
   const expired = await db.select({ orderId: reservations.orderId }).from(reservations)
-    .where(userId ? and(lapsed, eq(reservations.userId, userId)) : lapsed);
+    .where(owner ? and(lapsed, owner) : lapsed);
   const orderIds = [...new Set(expired.map((row) => row.orderId).filter((id): id is string => Boolean(id)))];
   for (const orderId of orderIds) await releaseOrderReservations(db, orderId, now, "EXPIRED");
   return orderIds.length;
@@ -110,5 +111,13 @@ export async function reservedUnitsForUser(db: ReturnType<typeof getDb>, userId:
   const [row] = await db.select({ total: sql<number>`COALESCE(SUM(${reservations.quantity}), 0)` })
     .from(reservations)
     .where(and(eq(reservations.userId, userId), eq(reservations.status, "ACTIVE")));
+  return Number(row?.total ?? 0);
+}
+
+/** Units a guest currently holds, identified by the confirmation email. */
+export async function reservedUnitsForGuest(db: ReturnType<typeof getDb>, guestEmail: string) {
+  const [row] = await db.select({ total: sql<number>`COALESCE(SUM(${reservations.quantity}), 0)` })
+    .from(reservations)
+    .where(and(eq(reservations.guestEmail, guestEmail), eq(reservations.status, "ACTIVE")));
   return Number(row?.total ?? 0);
 }

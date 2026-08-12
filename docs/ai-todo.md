@@ -1112,6 +1112,12 @@ unten.)*
   Mitgliedstaaten. Die Servervalidierung und die Versandkostenlogik bleiben
   konsistent; englische Länderbezeichnungen sind ergänzt.
 
+- ~~**Gastcheckout ohne Kundenkonto.**~~ Erledigt am 2026-08-12.
+  Der Checkout akzeptiert jetzt PayPal-Zahlungen ohne Registrierung oder Login.
+  Lieferadresse und E-Mail für die Bestellbestätigung werden erfasst; Preise,
+  Bestand, Reservierungslimit, eBay-Bestandsprüfung und idempotenter PayPal-
+  Capture bleiben serverseitig geschützt. Erfolgs- und Abbruchseite arbeiten
+  auch ohne Supabase-Sitzung.
 - ~~**Toter Auktionscode.**~~ Erledigt am 2026-08-09, deployed als `11c2dd57`.
   Auktionszweige in `app/karten/page.tsx` und `app/karten/[id]/page.tsx`
   ersatzlos gestrichen, Kategorie `"Auktion"` aus den Typen entfernt. Vorher

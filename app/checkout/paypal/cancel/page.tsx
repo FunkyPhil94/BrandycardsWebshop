@@ -8,11 +8,17 @@ export default function PayPalCancelPage() {
   const { t } = useI18n();
   useEffect(() => {
     const orderId = sessionStorage.getItem("brandycards-pending-order");
-    void getSupabaseBrowserClient().auth.getSession().then(({ data }) => {
-      const token = data.session?.access_token;
-      if (orderId && token) void fetch("/api/orders/release", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ orderId }) });
+    const release = async () => {
+      if (orderId) {
+        let accessToken = "";
+        try { accessToken = (await getSupabaseBrowserClient().auth.getSession()).data.session?.access_token ?? ""; } catch { /* Gastcheckout ohne Supabase-Sitzung */ }
+        const headers: Record<string, string> = { "Content-Type": "application/json" };
+        if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
+        void fetch("/api/orders/release", { method: "POST", headers, body: JSON.stringify({ orderId }) });
+      }
       sessionStorage.removeItem("brandycards-pending-order");
-    });
+    };
+    void release();
   }, []);
   return (
     <main className="paypal-return-page" aria-labelledby="paypal-cancel-title">
