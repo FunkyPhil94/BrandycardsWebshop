@@ -37,7 +37,13 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-*(derzeit kein Auftrag aktiv)*
+### Guest checkout without customer account
+
+- Status: RUNNING
+- Task: Allow checkout with PayPal, delivery address and confirmation email,
+  without registration or login.
+- Security: Keep server-side price and stock checks, idempotent PayPal capture,
+  webhook handling, and guest reservation limits per email.
 
 ## Historie
 
