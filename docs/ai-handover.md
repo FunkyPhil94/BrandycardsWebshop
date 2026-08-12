@@ -5489,3 +5489,14 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 ## Auftrag 2026-08-12: Gesamtarchitektur als Architekturschaubild — abgeschlossen
 - Ergebnis: Eine clean strukturierte Mermaid-Architekturübersicht erstellt, die Browser, Cloudflare Worker, vinext/Next.js/React, API-Routen, Geschäftslogik, D1, R2, Cron, Supabase, PayPal, eBay, Resend sowie Build/Deployment und Tests verbindet.
 - Status: ABGESCHLOSSEN.
+
+
+## Auftrag 2026-08-12: Architektur als UML-Komponentendiagramm
+- Status: LÄUFT.
+- Ziel: Die bisherige Architekturübersicht in ein besser lesbares UML-Komponentenmodell und eine kompakte UML-Sequenz für den Kaufablauf überführen.
+- Umsetzung: Statische Mermaid-UML-Darstellung; keine Anwendungscodes oder Produktionsdaten verändern.
+
+
+## Auftrag 2026-08-12: Architektur als UML-Komponentendiagramm — abgeschlossen
+- Ergebnis: Eine besser lesbare UML-Komponentendarstellung mit Stereotypen für Akteur, Komponenten, Datenbank, Speicher und externe Systeme sowie eine separate UML-Sequenz für den Kaufablauf erstellt.
+- Status: ABGESCHLOSSEN.
