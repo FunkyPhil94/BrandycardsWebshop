@@ -39,11 +39,12 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ### 2026-08-13 - Jira-Projekt und Board einrichten
 
-- Status: LÄUFT.
+- Status: WARTET AUF NUTZER.
 - Ziel: Für den bestehenden BrandyCards-Bereich ein Scrum-Board mit Backlog und Sprint-Ansicht einrichten, ohne bestehende Aufgaben oder das Kanban-Board zu löschen.
 - Rahmen: Keine Passwörter, Einmalcodes oder Sicherheitsabfragen übernehmen; nur die vom Nutzer autorisierten Jira-Änderungen durchführen.
 - Ergebnis: Jira-Site `brandycards.atlassian.net` registriert; das Board `BrandyCards Webshop` mit den Spalten `To Do`, `In Progress`, `In Review` und `Done` erstellt. Der automatisch gestartete Premium-Test wurde auf Free zurückgestuft; es wurde keine Zahlungsmethode hinterlegt.
-- Offen: Erste Tasks gemeinsam mit dem Nutzer definieren und anlegen.
+- Ergebnis ergänzt: Der teamverwaltete BrandyCards-Bereich nutzt jetzt Backlog und Sprints; Jira hat den ersten Sprint `KAN Sprint 1` angelegt. Der technische Zwischenfilter für die Board-Anlage wurde wieder gelöscht. Es wurden keine Tasks verändert oder angelegt.
+- Offen: Erste Tasks gemeinsam mit dem Nutzer definieren und in den Backlog bzw. Sprint einordnen.
 
 ## Historie
 
