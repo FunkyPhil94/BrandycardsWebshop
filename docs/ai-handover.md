@@ -37,7 +37,11 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-_(leer — der letzte Auftrag ist abgeschlossen.)_
+### 2026-08-13 - Jira-Projekt und Board einrichten
+
+- Status: LÄUFT.
+- Ziel: Nach der Registrierung im geöffneten Jira-Browser ein kostenloses Jira-Projekt/Board für BrandyCards einrichten und anschließend gemeinsam erste Tasks anlegen.
+- Rahmen: Keine Passwörter, Einmalcodes oder Sicherheitsabfragen übernehmen; nur die vom Nutzer autorisierten Jira-Änderungen durchführen.
 
 ## Historie
 
@@ -5499,4 +5503,61 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 
 ## Auftrag 2026-08-12: Architektur als UML-Komponentendiagramm — abgeschlossen
 - Ergebnis: Eine besser lesbare UML-Komponentendarstellung mit Stereotypen für Akteur, Komponenten, Datenbank, Speicher und externe Systeme sowie eine separate UML-Sequenz für den Kaufablauf erstellt.
+- Status: ABGESCHLOSSEN.
+
+
+## Auftrag 2026-08-13: UML-Architekturdiagramme als PDFs
+- Status: LÄUFT.
+- Ziel: Das UML-Komponentendiagramm und das UML-Sequenzdiagramm als zwei lesbare PDF-Dateien ausgeben.
+- Umsetzung: Vektorbasierte PDFs mit ReportLab unter output/pdf/ erzeugen, rendern und visuell prüfen.
+
+
+## Auftrag 2026-08-13: UML-Architekturdiagramme als PDFs — abgeschlossen
+- Ergebnis: Zwei PDFs erstellt: output/pdf/brandycards_uml_komponentenarchitektur.pdf (UML-Komponentendiagramm) und output/pdf/brandycards_uml_kaufablauf.pdf (UML-Sequenzdiagramm).
+- Prüfung: Beide PDFs sind einseitig im A3-Querformat; Rendering erfolgreich; Textpositionen liegen vollständig innerhalb der Seitenränder; zentrale Komponenten und Kaufablaufschritte sind enthalten.
+- Aufräumen: Temporäre Builder- und Renderdateien wurden entfernt; die beiden finalen PDFs bleiben unter output/pdf/.
+- Status: ABGESCHLOSSEN.
+
+
+## Auftrag 2026-08-13: Zweites Adminkonto freischalten
+- Status: LÄUFT.
+- Ziel: rand_sebastian@gmx.de zusätzlich zu p.brand94@googlemail.com als Admin-Adresse konfigurieren.
+- Prüfung: Aktuelle Admin-Konfiguration und Worker-Deployment kontrollieren; keine Secrets ausgeben.
+- Umsetzung: Produktions-Secret ADMIN_EMAILS nur mit den beiden Allowlist-Adressen aktualisieren und danach die Worker-Konfiguration verifizieren.
+
+
+## Auftrag 2026-08-13: Zweites Adminkonto freischalten — abgeschlossen
+- Ergebnis: Produktives Cloudflare-Secret ADMIN_EMAILS erfolgreich auf p.brand94@googlemail.com,brand_sebastian@gmx.de gesetzt.
+- Prüfung: Secret ist vorhanden; https://shop.brandycards.de/ antwortet mit HTTP 200.
+- D1-Prüfung: p.brand94@googlemail.com war bereits bestätigter ADMIN; rand_sebastian@gmx.de war noch nicht als Benutzer vorhanden.
+- Hinweis: Sebastian muss sich mit rand_sebastian@gmx.de registrieren und die E-Mail bestätigen. Beim ersten authentifizierten Zugriff wird die D1-Rolle automatisch auf ADMIN gesetzt.
+- Status: ABGESCHLOSSEN.
+
+
+## Auftrag 2026-08-13: Korrektur der zweiten Admin-Adresse
+- Status: LÄUFT.
+- Ziel: rand_sebastian@gmx.net statt der versehentlich eingetragenen .de-Adresse in der produktiven ADMIN_EMAILS-Allowlist setzen; p.brand94@googlemail.com beibehalten.
+- Umsetzung: Cloudflare-Secret aktualisieren und Worker-Erreichbarkeit prüfen.
+
+
+## Auftrag 2026-08-13: Korrektur der zweiten Admin-Adresse — abgeschlossen
+- Ergebnis: Produktives Cloudflare-Secret ADMIN_EMAILS erfolgreich auf p.brand94@googlemail.com,brand_sebastian@gmx.net korrigiert; die .de-Adresse ist damit entfernt.
+- Prüfung: Secret ist vorhanden; https://shop.brandycards.de/ antwortet mit HTTP 200.
+- Hinweis: Sebastian muss sich mit rand_sebastian@gmx.net registrieren und die E-Mail bestätigen. Beim ersten authentifizierten Zugriff wird die D1-Rolle automatisch auf ADMIN gesetzt.
+- Status: ABGESCHLOSSEN.
+
+
+## Auftrag 2026-08-13: Inaktive Karten aus Produktion entfernen
+- Status: LÄUFT.
+- Ziel: Die aktuell sechs INACTIVE-Karten aus der produktiven D1-Datenbank entfernen.
+- Sicherheitsprüfung: Exakte Produkt-IDs sowie Verknüpfungen zu Bestellungen, Bestand, Bildern, eBay-Listings, Preisvorschlägen und Reservierungen vor dem Löschen prüfen.
+- Umsetzung: Nur die bestätigten inaktiven Karten und abhängigen Datensätze löschen; anschließend Produktionsdaten lesend verifizieren.
+
+
+- Zwischenstand: Keine Produktionsdaten gelöscht. Die Abfrage ergab 261 INACTIVE-Produkte insgesamt, davon 7 heute aktualisierte Einträge; zwei inaktive Produkte haben Bestellverknüpfungen. Die sechs heute aktualisierten Einzelkarten sind nicht eindeutig genug, solange der zusätzliche inaktive Bundle-Eintrag nicht ausgeschlossen ist. Löschung wartet auf Bestätigung der exakten sechs Karten.
+
+## Auftrag 2026-08-13: Inaktive Karten aus Produktion entfernen - abgeschlossen
+- Ergebnis: Genau sechs bestaetigte INACTIVE-Karten plus das zugehoerige Bundle aus der produktiven D1-Datenbank geloescht.
+- Sicherheitspruefung: Alle sieben Produkte hatten keine Bestellungen, Reservierungen, Preisangebote oder offenen Outbox-Jobs; die zugehoerigen eBay-Listings waren ENDED.
+- Kaskadenpruefung: Nach der Loeschung verblieben zu diesen sieben IDs 0 Produkte, 0 Bilder, 0 eBay-Listings, 0 Inventory-Eintraege, 0 Preisangebote, 0 Reservierungen und 0 Bestellverknuepfungen.
 - Status: ABGESCHLOSSEN.
