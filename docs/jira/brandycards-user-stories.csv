@@ -1,112 +1,113 @@
 Work type,Summary,Description,Work item ID,Parent
-Story,"E1-01 Karte anlegen","Als Admin möchte ich einzelne Karten anlegen, damit sie im Shop verkauft werden können.",2001,KAN-1
-Story,"E1-02 Kartendaten bearbeiten","Als Admin möchte ich Kartendaten bearbeiten, damit Informationen aktuell bleiben.",2002,KAN-1
-Story,"E1-03 Karten klassifizieren","Als Admin möchte ich Karten Sportart, Liga, Verein, Spieler und Saison zuordnen.",2003,KAN-1
-Story,"E1-04 Serien und Sets verwalten","Als Admin möchte ich Serien, Sets und Kollektionen verwalten.",2004,KAN-1
-Story,"E1-05 Zustand und Grading erfassen","Als Admin möchte ich Zustand und Grading einer Karte erfassen.",2005,KAN-1
-Story,"E1-06 Kartenbilder verwalten","Als Admin möchte ich mehrere Bilder pro Karte hochladen.",2006,KAN-1
-Story,"E1-07 Kartenpreise verwalten","Als Admin möchte ich Preise und Preisänderungen verwalten.",2007,KAN-1
-Story,"E1-08 Kartenbestand verwalten","Als Admin möchte ich Bestände und verfügbare Mengen pflegen.",2008,KAN-1
-Story,"E1-09 Bundles und Sammlungen verwalten","Als Admin möchte ich Karten als Bundles oder Sammlungen zusammenstellen.",2009,KAN-1
-Story,"E1-10 Kartenstatus verwalten","Als Admin möchte ich Karten als Entwurf, aktiv, ausverkauft oder inaktiv markieren.",2010,KAN-1
-Story,"E1-11 Karten importieren und synchronisieren","Als Admin möchte ich Karten und Sets gesammelt importieren oder synchronisieren.",2011,KAN-1
-Story,"E2-01 Karten suchen","Als Kunde möchte ich nach Karten, Spielern, Vereinen und Serien suchen.",2012,KAN-2
-Story,"E2-02 Suchvorschläge erhalten","Als Kunde möchte ich während der Eingabe Suchvorschläge erhalten.",2013,KAN-2
-Story,"E2-03 Nach Sportart und Saison filtern","Als Kunde möchte ich nach Sportart, Liga und Saison filtern.",2014,KAN-2
-Story,"E2-04 Nach Kartentyp und Set filtern","Als Kunde möchte ich nach Kartentyp, Set und Seltenheit filtern.",2015,KAN-2
-Story,"E2-05 Nach Zustand filtern","Als Kunde möchte ich nach Zustand und Grading filtern.",2016,KAN-2
-Story,"E2-06 Nach Preis und Verfügbarkeit filtern","Als Kunde möchte ich nach Preis und Verfügbarkeit filtern.",2017,KAN-2
-Story,"E2-07 Filter kombinieren","Als Kunde möchte ich mehrere Filter kombinieren.",2018,KAN-2
-Story,"E2-08 Ergebnisse sortieren","Als Kunde möchte ich Ergebnisse sortieren.",2019,KAN-2
-Story,"E2-09 Ergebnisse paginieren","Als Kunde möchte ich Ergebnisse paginiert oder kontinuierlich laden.",2020,KAN-2
-Story,"E2-10 Produktdetailseite anzeigen","Als Kunde möchte ich auf einer Produktdetailseite alle Kartendaten sehen.",2021,KAN-2
-Story,"E2-11 Produktbilder vergrößern","Als Kunde möchte ich Bilder vergrößern und durch eine Galerie blättern.",2022,KAN-2
-Story,"E2-12 Ähnliche Karten anzeigen","Als Kunde möchte ich ähnliche oder passende Karten angezeigt bekommen.",2023,KAN-2
-Story,"E2-13 Leere und fehlerhafte Ergebnisse verstehen","Als Kunde möchte ich verständliche Zustände bei leeren oder fehlerhaften Suchergebnissen sehen.",2024,KAN-2
-Story,"E3-01 Karte in den Warenkorb legen","Als Kunde möchte ich eine Karte in den Warenkorb legen.",2025,KAN-3
-Story,"E3-02 Warenkorbmenge ändern","Als Kunde möchte ich die Menge im Warenkorb ändern.",2026,KAN-3
-Story,"E3-03 Warenkorbartikel entfernen","Als Kunde möchte ich Artikel aus dem Warenkorb entfernen.",2027,KAN-3
-Story,"E3-04 Gesamtpreis anzeigen","Als Kunde möchte ich jederzeit den aktuellen Gesamtpreis sehen.",2028,KAN-3
-Story,"E3-05 Nichtverfügbarkeit erkennen","Als Kunde möchte ich informiert werden, wenn ein Artikel nicht mehr verfügbar ist.",2029,KAN-3
-Story,"E3-06 Warenkorb persistent halten","Als Kunde möchte ich meinen Warenkorb über mehrere Seitenaufrufe hinweg behalten.",2030,KAN-3
-Story,"E3-07 Als Gast bestellen","Als Gast möchte ich ohne Kundenkonto bestellen können.",2031,KAN-3
-Story,"E3-08 Mit Kundenkonto bestellen","Als eingeloggter Kunde möchte ich mit meinem Kundenkonto bestellen.",2032,KAN-3
-Story,"E3-09 Lieferadresse verwalten","Als Kunde möchte ich meine Lieferadresse eingeben und ändern können.",2033,KAN-3
-Story,"E3-10 Versandart auswählen","Als Kunde möchte ich verfügbare Versandarten und Versandkosten sehen.",2034,KAN-3
-Story,"E3-11 Bestellung vor dem Kauf prüfen","Als Kunde möchte ich vor dem Kauf alle Bestelldaten prüfen.",2035,KAN-3
-Story,"E3-12 Formularfehler verstehen","Als Kunde möchte ich verständliche Hinweise bei fehlenden oder fehlerhaften Angaben erhalten.",2036,KAN-3
-Story,"E4-01 Mit PayPal bezahlen","Als Kunde möchte ich per PayPal bezahlen.",2037,KAN-4
-Story,"E4-02 Zahlbetrag vor Zahlung prüfen","Als Kunde möchte ich vor der Zahlung den korrekten Zahlbetrag sehen.",2038,KAN-4
-Story,"E4-03 Fehlgeschlagene Zahlung verstehen","Als Kunde möchte ich eine verständliche Meldung bei einer fehlgeschlagenen Zahlung erhalten.",2039,KAN-4
-Story,"E4-04 Bestand reservieren","Als Shop möchte ich Bestand während des Bezahlvorgangs reservieren.",2040,KAN-4
-Story,"E4-05 Reservierungen freigeben","Als Shop möchte ich abgelaufene oder abgebrochene Reservierungen freigeben.",2041,KAN-4
-Story,"E4-06 Zahlung verifizieren","Als Shop möchte ich erfolgreiche Zahlungen sicher verifizieren.",2042,KAN-4
-Story,"E4-07 Bestellstatus aktualisieren","Als Shop möchte ich Bestellungen automatisch mit korrekten Statuswerten versehen.",2043,KAN-4
-Story,"E4-08 Doppelte Zahlungsbestätigungen verhindern","Als Shop möchte ich doppelte Zahlungsbestätigungen vermeiden.",2044,KAN-4
-Story,"E4-09 Bestellungen administrieren","Als Admin möchte ich alle Bestellungen übersichtlich sehen.",2045,KAN-4
-Story,"E4-10 Bestellung für Versand vorbereiten","Als Admin möchte ich Bestellungen bearbeiten und für den Versand vorbereiten.",2046,KAN-4
-Story,"E4-11 Sendungsnummer anzeigen","Als Kunde möchte ich eine Sendungsnummer hinterlegen und sehen können.",2047,KAN-4
-Story,"E4-12 Bestellung stornieren oder erstatten","Als Kunde möchte ich Bestellungen stornieren oder eine Rückerstattung anfragen können.",2048,KAN-4
-Story,"E5-01 Kundenkonto registrieren","Als Besucher möchte ich ein Kundenkonto registrieren.",2049,KAN-5
-Story,"E5-02 E-Mail-Adresse bestätigen","Als Kunde möchte ich meine E-Mail-Adresse bestätigen.",2050,KAN-5
-Story,"E5-03 Ein- und ausloggen","Als Kunde möchte ich mich ein- und ausloggen können.",2051,KAN-5
-Story,"E5-04 Passwort zurücksetzen","Als Kunde möchte ich mein Passwort zurücksetzen können.",2052,KAN-5
-Story,"E5-05 Persönliche Daten bearbeiten","Als Kunde möchte ich meine persönlichen Daten bearbeiten.",2053,KAN-5
-Story,"E5-06 Lieferadressen verwalten","Als Kunde möchte ich mehrere Lieferadressen verwalten.",2054,KAN-5
-Story,"E5-07 Bestellhistorie einsehen","Als Kunde möchte ich meine Bestellhistorie einsehen.",2055,KAN-5
-Story,"E5-08 Bestellstatus verfolgen","Als Kunde möchte ich Details und Status einer Bestellung sehen.",2056,KAN-5
-Story,"E5-09 Bestellung erneut zusammenstellen","Als Kunde möchte ich eine frühere Bestellung erneut zusammenstellen können.",2057,KAN-5
-Story,"E5-10 Konto löschen oder Daten exportieren","Als Kunde möchte ich meine Daten exportieren oder mein Konto löschen können.",2058,KAN-5
-Story,"E6-01 Einzelne Karte anbieten","Als Verkäufer möchte ich eine einzelne Karte zum Verkauf anbieten.",2059,KAN-6
-Story,"E6-02 Sammlung anbieten","Als Verkäufer möchte ich eine komplette Sammlung anbieten.",2060,KAN-6
-Story,"E6-03 Verkaufsbilder hochladen","Als Verkäufer möchte ich Bilder meiner Karten hochladen.",2061,KAN-6
-Story,"E6-04 Verkaufsdaten erfassen","Als Verkäufer möchte ich Kartendaten selbst erfassen.",2062,KAN-6
-Story,"E6-05 Verkaufszustand angeben","Als Verkäufer möchte ich Zustand und Grading angeben.",2063,KAN-6
-Story,"E6-06 Preiswunsch angeben","Als Verkäufer möchte ich meinen Preiswunsch angeben.",2064,KAN-6
-Story,"E6-07 Verkaufsangebot speichern","Als Verkäufer möchte ich ein Verkaufsangebot als Entwurf speichern.",2065,KAN-6
-Story,"E6-08 Angebotsstatus verfolgen","Als Verkäufer möchte ich den Status meines Angebots verfolgen.",2066,KAN-6
-Story,"E6-09 Verkaufsangebote prüfen","Als Admin möchte ich Verkaufsangebote prüfen.",2067,KAN-6
-Story,"E6-10 Angebot unterbreiten","Als Admin möchte ich dem Verkäufer ein Angebot unterbreiten.",2068,KAN-6
-Story,"E6-11 Angebot annehmen oder ablehnen","Als Verkäufer möchte ich ein Angebot annehmen oder ablehnen.",2069,KAN-6
-Story,"E6-12 Übergabe und Auszahlung verstehen","Als Verkäufer möchte ich Informationen zu Übergabe, Versand und Auszahlung erhalten.",2070,KAN-6
-Story,"E7-01 Adminbereich sicher anmelden","Als Admin möchte ich mich sicher im Administrationsbereich anmelden.",2071,KAN-7
-Story,"E7-02 Rollen und Berechtigungen verwalten","Als Admin möchte ich Rollen und Berechtigungen verwalten.",2072,KAN-7
-Story,"E7-03 Admin-Dashboard anzeigen","Als Admin möchte ich ein Dashboard mit wichtigen Kennzahlen sehen.",2073,KAN-7
-Story,"E7-04 Produkte administrieren","Als Admin möchte ich Produkte anlegen, bearbeiten und deaktivieren.",2074,KAN-7
-Story,"E7-05 Produktbilder administrieren","Als Admin möchte ich Produktbilder verwalten.",2075,KAN-7
-Story,"E7-06 Bestände korrigieren","Als Admin möchte ich Bestände korrigieren können.",2076,KAN-7
-Story,"E7-07 Bestellungen administrieren","Als Admin möchte ich Bestellungen verwalten.",2077,KAN-7
-Story,"E7-08 Kundenkonten administrieren","Als Admin möchte ich Kundenkonten einsehen und verwalten.",2078,KAN-7
-Story,"E7-09 Verkaufsangebote administrieren","Als Admin möchte ich Verkaufsangebote bearbeiten und bewerten.",2079,KAN-7
-Story,"E7-10 Katalogstammdaten verwalten","Als Admin möchte ich Kategorien, Sportarten, Ligen und Sets verwalten.",2080,KAN-7
-Story,"E7-11 Datenquellen synchronisieren","Als Admin möchte ich eBay- oder andere Datenquellen synchronisieren.",2081,KAN-7
-Story,"E7-12 Synchronisationsfehler beheben","Als Admin möchte ich Synchronisationsfehler erkennen und beheben.",2082,KAN-7
-Story,"E7-13 Änderungen nachvollziehen","Als Admin möchte ich wichtige Änderungen nachvollziehen können.",2083,KAN-7
-Story,"E8-01 Hauptnavigation verstehen","Als Besucher möchte ich eine klare und verständliche Hauptnavigation sehen.",2084,KAN-8
-Story,"E8-02 Globale Shop-Navigation nutzen","Als Besucher möchte ich auf jeder Seite Logo, Navigation und Warenkorb erreichen.",2085,KAN-8
-Story,"E8-03 Einheitliches Design erleben","Als Kunde möchte ich ein einheitliches Designsystem erleben.",2086,KAN-8
-Story,"E8-04 Produktlisten übersichtlich sehen","Als Kunde möchte ich Produktlisten übersichtlich auf Karten dargestellt sehen.",2087,KAN-8
-Story,"E8-05 Produktdetails übersichtlich sehen","Als Kunde möchte ich Produktdetails übersichtlich gegliedert sehen.",2088,KAN-8
-Story,"E8-06 Shop responsiv nutzen","Als Kunde möchte ich den Shop auf Smartphone, Tablet und Desktop nutzen können.",2089,KAN-8
-Story,"E8-07 Konsistente Formulare nutzen","Als Kunde möchte ich verständliche Formulare mit konsistenten Eingabefeldern sehen.",2090,KAN-8
-Story,"E8-08 Ladezustände erkennen","Als Kunde möchte ich Ladezustände und Fortschritte erkennen können.",2091,KAN-8
-Story,"E8-09 Fehler- und Leerzustände verstehen","Als Kunde möchte ich verständliche Fehler- und Leerzustände sehen.",2092,KAN-8
-Story,"E8-10 Shop per Tastatur bedienen","Als Kunde möchte ich den Shop vollständig per Tastatur bedienen können.",2093,KAN-8
-Story,"E8-11 Shop mit Screenreader nutzen","Als Kunde möchte ich den Shop mit Screenreader-Unterstützung nutzen können.",2094,KAN-8
-Story,"E8-12 Fokus- und Aktivzustände sehen","Als Kunde möchte ich gut sichtbare Fokus-, Hover- und Aktivzustände sehen.",2095,KAN-8
-Story,"E8-13 Optimierte Produktbilder erhalten","Als Kunde möchte ich schnell ladende und optimierte Produktbilder erhalten.",2096,KAN-8
-Story,"E8-14 Auflösungsunabhängiges Design erleben","Als Kunde möchte ich ein einheitliches und funktionierendes Design unabhängig von Bildschirmgröße und Bildschirmauflösung erleben, damit der Shop immer übersichtlich und professionell wirkt.",2097,KAN-8
-Story,"E9-01 Akzeptanzkriterien vereinheitlichen","Als Team möchte ich einheitliche Akzeptanzkriterien für User Stories verwenden.",2098,KAN-9
-Story,"E9-02 Xray-Testrepository strukturieren","Als QA-Verantwortlicher möchte ich das Xray-Test-Repository logisch strukturieren.",2099,KAN-9
-Story,"E9-03 Testfall-Template verwenden","Als QA-Verantwortlicher möchte ich ein einheitliches Testfall-Template verwenden.",2100,KAN-9
-Story,"E9-04 Testvorbedingungen definieren","Als QA-Verantwortlicher möchte ich Testvorbedingungen definieren können.",2101,KAN-9
-Story,"E9-05 Tests zu Test Sets bündeln","Als QA-Verantwortlicher möchte ich Tests zu Test Sets bündeln.",2102,KAN-9
-Story,"E9-06 Testpläne für Releases erstellen","Als QA-Verantwortlicher möchte ich Testpläne für Releases erstellen.",2103,KAN-9
-Story,"E9-07 Testausführungen starten","Als QA-Verantwortlicher möchte ich Testausführungen für einzelne Versionen starten.",2104,KAN-9
-Story,"E9-08 Tests mit Stories verknüpfen","Als Team möchte ich Tests direkt mit User Stories verknüpfen.",2105,KAN-9
-Story,"E9-09 Regressionstestsuite pflegen","Als QA-Verantwortlicher möchte ich eine Regressionstestsuite pflegen.",2106,KAN-9
-Story,"E9-10 Browser- und Gerätetests durchführen","Als QA-Verantwortlicher möchte ich Tests für Desktop, Tablet und Smartphone durchführen.",2107,KAN-9
-Story,"E9-11 Testergebnisse dokumentieren","Als Tester möchte ich Testergebnisse und Belege zu einem Test speichern.",2108,KAN-9
-Story,"E9-12 Fehler aus Tests erfassen","Als Team möchte ich Fehler direkt aus fehlgeschlagenen Tests erfassen.",2109,KAN-9
-Story,"E9-13 Testabdeckung sehen","Als Product Owner möchte ich die Testabdeckung pro Epic und Release sehen.",2110,KAN-9
-Story,"E9-14 Release-Abnahmekriterien definieren","Als Release-Verantwortlicher möchte ich klare Abnahmekriterien für einen Release haben.",2111,KAN-9
+Story,"E1-01 Karte anlegen","Als Admin möchte ich einzelne Karten anlegen, damit sie im Shop verkauft werden können.",2001,10000
+Story,"E1-02 Kartendaten bearbeiten","Als Admin möchte ich Kartendaten bearbeiten, damit Informationen aktuell bleiben.",2002,10000
+Story,"E1-03 Karten klassifizieren","Als Admin möchte ich Karten Sportart, Liga, Verein, Spieler und Saison zuordnen.",2003,10000
+Story,"E1-04 Serien und Sets verwalten","Als Admin möchte ich Serien, Sets und Kollektionen verwalten.",2004,10000
+Story,"E1-05 Zustand und Grading erfassen","Als Admin möchte ich Zustand und Grading einer Karte erfassen.",2005,10000
+Story,"E1-06 Kartenbilder verwalten","Als Admin möchte ich mehrere Bilder pro Karte hochladen.",2006,10000
+Story,"E1-07 Kartenpreise verwalten","Als Admin möchte ich Preise und Preisänderungen verwalten.",2007,10000
+Story,"E1-08 Kartenbestand verwalten","Als Admin möchte ich Bestände und verfügbare Mengen pflegen.",2008,10000
+Story,"E1-09 Bundles und Sammlungen verwalten","Als Admin möchte ich Karten als Bundles oder Sammlungen zusammenstellen.",2009,10000
+Story,"E1-10 Kartenstatus verwalten","Als Admin möchte ich Karten als Entwurf, aktiv, ausverkauft oder inaktiv markieren.",2010,10000
+Story,"E1-11 Karten importieren und synchronisieren","Als Admin möchte ich Karten und Sets gesammelt importieren oder synchronisieren.",2011,10000
+Story,"E2-01 Karten suchen","Als Kunde möchte ich nach Karten, Spielern, Vereinen und Serien suchen.",2012,10001
+Story,"E2-02 Suchvorschläge erhalten","Als Kunde möchte ich während der Eingabe Suchvorschläge erhalten.",2013,10001
+Story,"E2-03 Nach Sportart und Saison filtern","Als Kunde möchte ich nach Sportart, Liga und Saison filtern.",2014,10001
+Story,"E2-04 Nach Kartentyp und Set filtern","Als Kunde möchte ich nach Kartentyp, Set und Seltenheit filtern.",2015,10001
+Story,"E2-05 Nach Zustand filtern","Als Kunde möchte ich nach Zustand und Grading filtern.",2016,10001
+Story,"E2-06 Nach Preis und Verfügbarkeit filtern","Als Kunde möchte ich nach Preis und Verfügbarkeit filtern.",2017,10001
+Story,"E2-07 Filter kombinieren","Als Kunde möchte ich mehrere Filter kombinieren.",2018,10001
+Story,"E2-08 Ergebnisse sortieren","Als Kunde möchte ich Ergebnisse sortieren.",2019,10001
+Story,"E2-09 Ergebnisse paginieren","Als Kunde möchte ich Ergebnisse paginiert oder kontinuierlich laden.",2020,10001
+Story,"E2-10 Produktdetailseite anzeigen","Als Kunde möchte ich auf einer Produktdetailseite alle Kartendaten sehen.",2021,10001
+Story,"E2-11 Produktbilder vergrößern","Als Kunde möchte ich Bilder vergrößern und durch eine Galerie blättern.",2022,10001
+Story,"E2-12 Ähnliche Karten anzeigen","Als Kunde möchte ich ähnliche oder passende Karten angezeigt bekommen.",2023,10001
+Story,"E2-13 Leere und fehlerhafte Ergebnisse verstehen","Als Kunde möchte ich verständliche Zustände bei leeren oder fehlerhaften Suchergebnissen sehen.",2024,10001
+Story,"E3-01 Karte in den Warenkorb legen","Als Kunde möchte ich eine Karte in den Warenkorb legen.",2025,10002
+Story,"E3-02 Warenkorbmenge ändern","Als Kunde möchte ich die Menge im Warenkorb ändern.",2026,10002
+Story,"E3-03 Warenkorbartikel entfernen","Als Kunde möchte ich Artikel aus dem Warenkorb entfernen.",2027,10002
+Story,"E3-04 Gesamtpreis anzeigen","Als Kunde möchte ich jederzeit den aktuellen Gesamtpreis sehen.",2028,10002
+Story,"E3-05 Nichtverfügbarkeit erkennen","Als Kunde möchte ich informiert werden, wenn ein Artikel nicht mehr verfügbar ist.",2029,10002
+Story,"E3-06 Warenkorb persistent halten","Als Kunde möchte ich meinen Warenkorb über mehrere Seitenaufrufe hinweg behalten.",2030,10002
+Story,"E3-07 Als Gast bestellen","Als Gast möchte ich ohne Kundenkonto bestellen können.",2031,10002
+Story,"E3-08 Mit Kundenkonto bestellen","Als eingeloggter Kunde möchte ich mit meinem Kundenkonto bestellen.",2032,10002
+Story,"E3-09 Lieferadresse verwalten","Als Kunde möchte ich meine Lieferadresse eingeben und ändern können.",2033,10002
+Story,"E3-10 Versandart auswählen","Als Kunde möchte ich verfügbare Versandarten und Versandkosten sehen.",2034,10002
+Story,"E3-11 Bestellung vor dem Kauf prüfen","Als Kunde möchte ich vor dem Kauf alle Bestelldaten prüfen.",2035,10002
+Story,"E3-12 Formularfehler verstehen","Als Kunde möchte ich verständliche Hinweise bei fehlenden oder fehlerhaften Angaben erhalten.",2036,10002
+Story,"E4-01 Mit PayPal bezahlen","Als Kunde möchte ich per PayPal bezahlen.",2037,10003
+Story,"E4-02 Zahlbetrag vor Zahlung prüfen","Als Kunde möchte ich vor der Zahlung den korrekten Zahlbetrag sehen.",2038,10003
+Story,"E4-03 Fehlgeschlagene Zahlung verstehen","Als Kunde möchte ich eine verständliche Meldung bei einer fehlgeschlagenen Zahlung erhalten.",2039,10003
+Story,"E4-04 Bestand reservieren","Als Shop möchte ich Bestand während des Bezahlvorgangs reservieren.",2040,10003
+Story,"E4-05 Reservierungen freigeben","Als Shop möchte ich abgelaufene oder abgebrochene Reservierungen freigeben.",2041,10003
+Story,"E4-06 Zahlung verifizieren","Als Shop möchte ich erfolgreiche Zahlungen sicher verifizieren.",2042,10003
+Story,"E4-07 Bestellstatus aktualisieren","Als Shop möchte ich Bestellungen automatisch mit korrekten Statuswerten versehen.",2043,10003
+Story,"E4-08 Doppelte Zahlungsbestätigungen verhindern","Als Shop möchte ich doppelte Zahlungsbestätigungen vermeiden.",2044,10003
+Story,"E4-09 Bestellungen administrieren","Als Admin möchte ich alle Bestellungen übersichtlich sehen.",2045,10003
+Story,"E4-10 Bestellung für Versand vorbereiten","Als Admin möchte ich Bestellungen bearbeiten und für den Versand vorbereiten.",2046,10003
+Story,"E4-11 Sendungsnummer anzeigen","Als Kunde möchte ich eine Sendungsnummer hinterlegen und sehen können.",2047,10003
+Story,"E4-12 Bestellung stornieren oder erstatten","Als Kunde möchte ich Bestellungen stornieren oder eine Rückerstattung anfragen können.",2048,10003
+Story,"E5-01 Kundenkonto registrieren","Als Besucher möchte ich ein Kundenkonto registrieren.",2049,10004
+Story,"E5-02 E-Mail-Adresse bestätigen","Als Kunde möchte ich meine E-Mail-Adresse bestätigen.",2050,10004
+Story,"E5-03 Ein- und ausloggen","Als Kunde möchte ich mich ein- und ausloggen können.",2051,10004
+Story,"E5-04 Passwort zurücksetzen","Als Kunde möchte ich mein Passwort zurücksetzen können.",2052,10004
+Story,"E5-05 Persönliche Daten bearbeiten","Als Kunde möchte ich meine persönlichen Daten bearbeiten.",2053,10004
+Story,"E5-06 Lieferadressen verwalten","Als Kunde möchte ich mehrere Lieferadressen verwalten.",2054,10004
+Story,"E5-07 Bestellhistorie einsehen","Als Kunde möchte ich meine Bestellhistorie einsehen.",2055,10004
+Story,"E5-08 Bestellstatus verfolgen","Als Kunde möchte ich Details und Status einer Bestellung sehen.",2056,10004
+Story,"E5-09 Bestellung erneut zusammenstellen","Als Kunde möchte ich eine frühere Bestellung erneut zusammenstellen können.",2057,10004
+Story,"E5-10 Konto löschen oder Daten exportieren","Als Kunde möchte ich meine Daten exportieren oder mein Konto löschen können.",2058,10004
+Story,"E6-01 Einzelne Karte anbieten","Als Verkäufer möchte ich eine einzelne Karte zum Verkauf anbieten.",2059,10005
+Story,"E6-02 Sammlung anbieten","Als Verkäufer möchte ich eine komplette Sammlung anbieten.",2060,10005
+Story,"E6-03 Verkaufsbilder hochladen","Als Verkäufer möchte ich Bilder meiner Karten hochladen.",2061,10005
+Story,"E6-04 Verkaufsdaten erfassen","Als Verkäufer möchte ich Kartendaten selbst erfassen.",2062,10005
+Story,"E6-05 Verkaufszustand angeben","Als Verkäufer möchte ich Zustand und Grading angeben.",2063,10005
+Story,"E6-06 Preiswunsch angeben","Als Verkäufer möchte ich meinen Preiswunsch angeben.",2064,10005
+Story,"E6-07 Verkaufsangebot speichern","Als Verkäufer möchte ich ein Verkaufsangebot als Entwurf speichern.",2065,10005
+Story,"E6-08 Angebotsstatus verfolgen","Als Verkäufer möchte ich den Status meines Angebots verfolgen.",2066,10005
+Story,"E6-09 Verkaufsangebote prüfen","Als Admin möchte ich Verkaufsangebote prüfen.",2067,10005
+Story,"E6-10 Angebot unterbreiten","Als Admin möchte ich dem Verkäufer ein Angebot unterbreiten.",2068,10005
+Story,"E6-11 Angebot annehmen oder ablehnen","Als Verkäufer möchte ich ein Angebot annehmen oder ablehnen.",2069,10005
+Story,"E6-12 Übergabe und Auszahlung verstehen","Als Verkäufer möchte ich Informationen zu Übergabe, Versand und Auszahlung erhalten.",2070,10005
+Story,"E7-01 Adminbereich sicher anmelden","Als Admin möchte ich mich sicher im Administrationsbereich anmelden.",2071,10006
+Story,"E7-02 Rollen und Berechtigungen verwalten","Als Admin möchte ich Rollen und Berechtigungen verwalten.",2072,10006
+Story,"E7-03 Admin-Dashboard anzeigen","Als Admin möchte ich ein Dashboard mit wichtigen Kennzahlen sehen.",2073,10006
+Story,"E7-04 Produkte administrieren","Als Admin möchte ich Produkte anlegen, bearbeiten und deaktivieren.",2074,10006
+Story,"E7-05 Produktbilder administrieren","Als Admin möchte ich Produktbilder verwalten.",2075,10006
+Story,"E7-06 Bestände korrigieren","Als Admin möchte ich Bestände korrigieren können.",2076,10006
+Story,"E7-07 Bestellungen administrieren","Als Admin möchte ich Bestellungen verwalten.",2077,10006
+Story,"E7-08 Kundenkonten administrieren","Als Admin möchte ich Kundenkonten einsehen und verwalten.",2078,10006
+Story,"E7-09 Verkaufsangebote administrieren","Als Admin möchte ich Verkaufsangebote bearbeiten und bewerten.",2079,10006
+Story,"E7-10 Katalogstammdaten verwalten","Als Admin möchte ich Kategorien, Sportarten, Ligen und Sets verwalten.",2080,10006
+Story,"E7-11 Datenquellen synchronisieren","Als Admin möchte ich eBay- oder andere Datenquellen synchronisieren.",2081,10006
+Story,"E7-12 Synchronisationsfehler beheben","Als Admin möchte ich Synchronisationsfehler erkennen und beheben.",2082,10006
+Story,"E7-13 Änderungen nachvollziehen","Als Admin möchte ich wichtige Änderungen nachvollziehen können.",2083,10006
+Story,"E8-01 Hauptnavigation verstehen","Als Besucher möchte ich eine klare und verständliche Hauptnavigation sehen.",2084,10007
+Story,"E8-02 Globale Shop-Navigation nutzen","Als Besucher möchte ich auf jeder Seite Logo, Navigation und Warenkorb erreichen.",2085,10007
+Story,"E8-03 Einheitliches Design erleben","Als Kunde möchte ich ein einheitliches Designsystem erleben.",2086,10007
+Story,"E8-04 Produktlisten übersichtlich sehen","Als Kunde möchte ich Produktlisten übersichtlich auf Karten dargestellt sehen.",2087,10007
+Story,"E8-05 Produktdetails übersichtlich sehen","Als Kunde möchte ich Produktdetails übersichtlich gegliedert sehen.",2088,10007
+Story,"E8-06 Shop responsiv nutzen","Als Kunde möchte ich den Shop auf Smartphone, Tablet und Desktop nutzen können.",2089,10007
+Story,"E8-07 Konsistente Formulare nutzen","Als Kunde möchte ich verständliche Formulare mit konsistenten Eingabefeldern sehen.",2090,10007
+Story,"E8-08 Ladezustände erkennen","Als Kunde möchte ich Ladezustände und Fortschritte erkennen können.",2091,10007
+Story,"E8-09 Fehler- und Leerzustände verstehen","Als Kunde möchte ich verständliche Fehler- und Leerzustände sehen.",2092,10007
+Story,"E8-10 Shop per Tastatur bedienen","Als Kunde möchte ich den Shop vollständig per Tastatur bedienen können.",2093,10007
+Story,"E8-11 Shop mit Screenreader nutzen","Als Kunde möchte ich den Shop mit Screenreader-Unterstützung nutzen können.",2094,10007
+Story,"E8-12 Fokus- und Aktivzustände sehen","Als Kunde möchte ich gut sichtbare Fokus-, Hover- und Aktivzustände sehen.",2095,10007
+Story,"E8-13 Optimierte Produktbilder erhalten","Als Kunde möchte ich schnell ladende und optimierte Produktbilder erhalten.",2096,10007
+Story,"E8-14 Auflösungsunabhängiges Design erleben","Als Kunde möchte ich ein einheitliches und funktionierendes Design unabhängig von Bildschirmgröße und Bildschirmauflösung erleben, damit der Shop immer übersichtlich und professionell wirkt.",2097,10007
+Story,"E9-01 Akzeptanzkriterien vereinheitlichen","Als Team möchte ich einheitliche Akzeptanzkriterien für User Stories verwenden.",2098,10008
+Story,"E9-02 Xray-Testrepository strukturieren","Als QA-Verantwortlicher möchte ich das Xray-Test-Repository logisch strukturieren.",2099,10008
+Story,"E9-03 Testfall-Template verwenden","Als QA-Verantwortlicher möchte ich ein einheitliches Testfall-Template verwenden.",2100,10008
+Story,"E9-04 Testvorbedingungen definieren","Als QA-Verantwortlicher möchte ich Testvorbedingungen definieren können.",2101,10008
+Story,"E9-05 Tests zu Test Sets bündeln","Als QA-Verantwortlicher möchte ich Tests zu Test Sets bündeln.",2102,10008
+Story,"E9-06 Testpläne für Releases erstellen","Als QA-Verantwortlicher möchte ich Testpläne für Releases erstellen.",2103,10008
+Story,"E9-07 Testausführungen starten","Als QA-Verantwortlicher möchte ich Testausführungen für einzelne Versionen starten.",2104,10008
+Story,"E9-08 Tests mit Stories verknüpfen","Als Team möchte ich Tests direkt mit User Stories verknüpfen.",2105,10008
+Story,"E9-09 Regressionstestsuite pflegen","Als QA-Verantwortlicher möchte ich eine Regressionstestsuite pflegen.",2106,10008
+Story,"E9-10 Browser- und Gerätetests durchführen","Als QA-Verantwortlicher möchte ich Tests für Desktop, Tablet und Smartphone durchführen.",2107,10008
+Story,"E9-11 Testergebnisse dokumentieren","Als Tester möchte ich Testergebnisse und Belege zu einem Test speichern.",2108,10008
+Story,"E9-12 Fehler aus Tests erfassen","Als Team möchte ich Fehler direkt aus fehlgeschlagenen Tests erfassen.",2109,10008
+Story,"E9-13 Testabdeckung sehen","Als Product Owner möchte ich die Testabdeckung pro Epic und Release sehen.",2110,10008
+Story,"E9-14 Release-Abnahmekriterien definieren","Als Release-Verantwortlicher möchte ich klare Abnahmekriterien für einen Release haben.",2111,10008
+
