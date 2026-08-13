@@ -54,9 +54,13 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ### 2026-08-13 - Jira-Akzeptanzkriterien, Tasks und Xray-Testfälle
 
-- Status: LÄUFT.
+- Status: ABGESCHLOSSEN.
 - Ziel: Für alle 111 vorhandenen Stories detaillierte Akzeptanzkriterien ergänzen, fachlich passende Umsetzungstasks anlegen und mehrere ausführbare Xray-Testfälle je Story vorbereiten.
 - Rahmen: Keine Stories, Epics oder bestehenden Vorgänge löschen; bestehende Prioritäten und Epic-/Story-Beziehungen beibehalten. Die neuen Tasks werden direkt ihren Stories untergeordnet; Tests werden als Xray-Testvorgänge mit eindeutiger Story-Abdeckung angelegt.
+- Ergebnis: 111 Story-Beschreibungen per CSV anhand des Vorgangsschlüssels aktualisiert; KAN-10 stichprobenartig mit sechs Akzeptanzkriterien verifiziert.
+- Ergebnis: 444 detaillierte Tasks als Jira-Tasks importiert. Jira akzeptierte die regulären Tasks, setzte im teamverwalteten Projekt aber keine „Übergeordnet“-Beziehung zu Stories; jeder Task enthält deshalb seine zugehörige Story als Referenz und Abhängigkeit in der Beschreibung. Ein isolierter Korrekturtest mit KAN-121 bestätigte diese Jira-Einschränkung, ohne einen weiteren Vorgang anzulegen.
+- Ergebnis: 333 Xray-Tests importiert und als „is tested by“ mit den Stories verknüpft; KAN-10 zeigt die drei Tests KAN-565 bis KAN-567.
+- Artefakte: `docs/jira/generated/brandycards-story-acceptance-criteria.csv`, `brandycards-detailed-tasks.csv`, `brandycards-xray-tests.csv` und `brandycards-jira-expansion-review.xlsx`.
 
 ### 2026-08-13 - Jira-Projekt und Board einrichten
 

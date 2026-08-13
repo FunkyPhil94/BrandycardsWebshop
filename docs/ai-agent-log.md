@@ -1293,3 +1293,42 @@ unmittelbaren Shop-Kern und die notwendige Administration, 42 als `High` für
 UI, Xray und direkt anschließende Funktionen, 4 als `Medium` für spätere
 Betriebs- und Komfortfunktionen sowie 12 als `Lowest` für die vollständige
 Verkäuferfunktionalität. Eine JQL-Prüfung ergab keine Story ohne Priorität.
+
+## 2026-08-13 — Jira-Story-Erweiterung mit Akzeptanzkriterien, Tasks und Xray-Tests
+
+Der Nutzer wollte die nächsten Arbeitsschritte für alle 111 vorhandenen Stories
+ausführen und dabei lieber zu viele als zu wenige, detailliert beschriebene
+Testfälle und Tasks erhalten. Dafür wurden aus den vorhandenen Story-/Epic-Daten
+reproduzierbare CSV-Artefakte erzeugt: je Story sechs konkrete Akzeptanzkriterien,
+vier fachlich passende Umsetzungstasks und drei Xray-Testfälle (Happy Path,
+negative/Grenzwertfälle sowie Berechtigung/Betrieb). Die Beschreibungen enthalten
+Ziel, Vorgehen, Erledigt-Kriterien bzw. Vorbedingungen, Schritte, erwartetes
+Ergebnis und Nachbereitung.
+
+Die Akzeptanzkriterien wurden mit dem alten Jira-CSV-Importer über `Issue Key`
+als Update importiert; der Importlog meldete 111 erfolgreich aktualisierte
+Vorgänge und 0 neu erstellte Vorgänge. KAN-10 wurde anschließend direkt geprüft:
+Die Beschreibung enthält die sechs Akzeptanzkriterien.
+
+Die 444 Tasks wurden als Jira-Tasks importiert. Die Feldzuordnung enthielt
+`Vorgangs-ID`, `Übergeordnet`, `Vorgangstyp`, Zusammenfassung, Beschreibung und
+Priorität. Jira legte alle 444 Tasks an, setzte aber bei regulären Tasks im
+teamverwalteten Projekt keine Parent-Beziehung zu Stories. Ein isolierter
+Korrekturimport für KAN-121 mit der numerischen Story-ID 10009 meldete
+`Unable to retrieve issue key for parent : 10009` und importierte 0 Vorgänge.
+Damit wurde keine weitere Datenänderung verursacht. Die Tasks bleiben erhalten;
+ihre zugehörige Story ist in jeder Beschreibung als `Parent: KAN-xx` und als
+Abhängigkeit dokumentiert. KAN-121 wurde stichprobenartig geprüft.
+
+Die 333 Xray-Testfälle wurden anschließend mit Priorität, Beschreibung,
+Vorgangs-ID, Vorgangstyp und dem Linkfeld `Link "Test"` importiert. Der Importlog
+bestätigte 333 erfolgreich importierte Vorgänge. Die anschließende
+Stichprobenprüfung von KAN-565 zeigte den Link zu KAN-10; die Story KAN-10 zeigt
+im Bereich „Verknüpfte Vorgänge“ die drei Tests KAN-565 bis KAN-567. Eine
+JQL-Prüfung bestätigte 333 Testvorgänge.
+
+Die wiederverwendbaren Importdateien liegen unter `docs/jira/generated/`:
+`brandycards-story-acceptance-criteria.csv`, `brandycards-detailed-tasks.csv`,
+`brandycards-xray-tests.csv` sowie die Prüfübersicht
+`brandycards-jira-expansion-review.xlsx`. Der Builder liegt unter
+`docs/jira/artifact_work/build-expansion.mjs`.

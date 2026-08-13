@@ -1,0 +1,1014 @@
+Issue Key,Work type,Summary,Description,Priority,Epic
+KAN-10,Story,E1-01 Karte anlegen,"Als Admin möchte ich einzelne Karten anlegen, damit sie im Shop verkauft werden können.
+
+Akzeptanzkriterien
+1. Pflichtfelder, Datentypen und fachliche Wertebereiche werden vor dem Speichern validiert.
+2. Eine erfolgreiche Änderung ist nach dem erneuten Laden konsistent sichtbar und beeinflusst nur den betroffenen Katalogeintrag.
+3. Ungültige oder unvollständige Eingaben werden verständlich markiert, ohne bereits gültige Eingaben zu verlieren.
+4. Berechtigungen werden geprüft; nicht berechtigte Nutzer können den Vorgang weder ausführen noch über einen direkten Aufruf umgehen.
+5. Dubletten, verwaiste Datensätze und widersprüchliche Zustände werden erkannt und nachvollziehbar behandelt.
+6. Die Funktion ist für relevante Desktop- und Smartphone-Breakpoints bedienbar und erzeugt strukturierte Logs für Fehlerfälle.",Highest,KAN-1
+KAN-11,Story,E1-02 Kartendaten bearbeiten,"Als Admin möchte ich Kartendaten bearbeiten, damit Informationen aktuell bleiben.
+
+Akzeptanzkriterien
+1. Pflichtfelder, Datentypen und fachliche Wertebereiche werden vor dem Speichern validiert.
+2. Eine erfolgreiche Änderung ist nach dem erneuten Laden konsistent sichtbar und beeinflusst nur den betroffenen Katalogeintrag.
+3. Ungültige oder unvollständige Eingaben werden verständlich markiert, ohne bereits gültige Eingaben zu verlieren.
+4. Berechtigungen werden geprüft; nicht berechtigte Nutzer können den Vorgang weder ausführen noch über einen direkten Aufruf umgehen.
+5. Dubletten, verwaiste Datensätze und widersprüchliche Zustände werden erkannt und nachvollziehbar behandelt.
+6. Die Funktion ist für relevante Desktop- und Smartphone-Breakpoints bedienbar und erzeugt strukturierte Logs für Fehlerfälle.",Highest,KAN-1
+KAN-12,Story,E1-03 Karten klassifizieren,"Als Admin möchte ich Karten Sportart, Liga, Verein, Spieler und Saison zuordnen.
+
+Akzeptanzkriterien
+1. Pflichtfelder, Datentypen und fachliche Wertebereiche werden vor dem Speichern validiert.
+2. Eine erfolgreiche Änderung ist nach dem erneuten Laden konsistent sichtbar und beeinflusst nur den betroffenen Katalogeintrag.
+3. Ungültige oder unvollständige Eingaben werden verständlich markiert, ohne bereits gültige Eingaben zu verlieren.
+4. Berechtigungen werden geprüft; nicht berechtigte Nutzer können den Vorgang weder ausführen noch über einen direkten Aufruf umgehen.
+5. Dubletten, verwaiste Datensätze und widersprüchliche Zustände werden erkannt und nachvollziehbar behandelt.
+6. Die Funktion ist für relevante Desktop- und Smartphone-Breakpoints bedienbar und erzeugt strukturierte Logs für Fehlerfälle.",Highest,KAN-1
+KAN-13,Story,E1-04 Serien und Sets verwalten,"Als Admin möchte ich Serien, Sets und Kollektionen verwalten.
+
+Akzeptanzkriterien
+1. Pflichtfelder, Datentypen und fachliche Wertebereiche werden vor dem Speichern validiert.
+2. Eine erfolgreiche Änderung ist nach dem erneuten Laden konsistent sichtbar und beeinflusst nur den betroffenen Katalogeintrag.
+3. Ungültige oder unvollständige Eingaben werden verständlich markiert, ohne bereits gültige Eingaben zu verlieren.
+4. Berechtigungen werden geprüft; nicht berechtigte Nutzer können den Vorgang weder ausführen noch über einen direkten Aufruf umgehen.
+5. Dubletten, verwaiste Datensätze und widersprüchliche Zustände werden erkannt und nachvollziehbar behandelt.
+6. Die Funktion ist für relevante Desktop- und Smartphone-Breakpoints bedienbar und erzeugt strukturierte Logs für Fehlerfälle.",Highest,KAN-1
+KAN-14,Story,E1-05 Zustand und Grading erfassen,"Als Admin möchte ich Zustand und Grading einer Karte erfassen.
+
+Akzeptanzkriterien
+1. Pflichtfelder, Datentypen und fachliche Wertebereiche werden vor dem Speichern validiert.
+2. Eine erfolgreiche Änderung ist nach dem erneuten Laden konsistent sichtbar und beeinflusst nur den betroffenen Katalogeintrag.
+3. Ungültige oder unvollständige Eingaben werden verständlich markiert, ohne bereits gültige Eingaben zu verlieren.
+4. Berechtigungen werden geprüft; nicht berechtigte Nutzer können den Vorgang weder ausführen noch über einen direkten Aufruf umgehen.
+5. Dubletten, verwaiste Datensätze und widersprüchliche Zustände werden erkannt und nachvollziehbar behandelt.
+6. Die Funktion ist für relevante Desktop- und Smartphone-Breakpoints bedienbar und erzeugt strukturierte Logs für Fehlerfälle.",Highest,KAN-1
+KAN-15,Story,E1-06 Kartenbilder verwalten,"Als Admin möchte ich mehrere Bilder pro Karte hochladen.
+
+Akzeptanzkriterien
+1. Pflichtfelder, Datentypen und fachliche Wertebereiche werden vor dem Speichern validiert.
+2. Eine erfolgreiche Änderung ist nach dem erneuten Laden konsistent sichtbar und beeinflusst nur den betroffenen Katalogeintrag.
+3. Ungültige oder unvollständige Eingaben werden verständlich markiert, ohne bereits gültige Eingaben zu verlieren.
+4. Berechtigungen werden geprüft; nicht berechtigte Nutzer können den Vorgang weder ausführen noch über einen direkten Aufruf umgehen.
+5. Dubletten, verwaiste Datensätze und widersprüchliche Zustände werden erkannt und nachvollziehbar behandelt.
+6. Die Funktion ist für relevante Desktop- und Smartphone-Breakpoints bedienbar und erzeugt strukturierte Logs für Fehlerfälle.",Highest,KAN-1
+KAN-16,Story,E1-07 Kartenpreise verwalten,"Als Admin möchte ich Preise und Preisänderungen verwalten.
+
+Akzeptanzkriterien
+1. Pflichtfelder, Datentypen und fachliche Wertebereiche werden vor dem Speichern validiert.
+2. Eine erfolgreiche Änderung ist nach dem erneuten Laden konsistent sichtbar und beeinflusst nur den betroffenen Katalogeintrag.
+3. Ungültige oder unvollständige Eingaben werden verständlich markiert, ohne bereits gültige Eingaben zu verlieren.
+4. Berechtigungen werden geprüft; nicht berechtigte Nutzer können den Vorgang weder ausführen noch über einen direkten Aufruf umgehen.
+5. Dubletten, verwaiste Datensätze und widersprüchliche Zustände werden erkannt und nachvollziehbar behandelt.
+6. Die Funktion ist für relevante Desktop- und Smartphone-Breakpoints bedienbar und erzeugt strukturierte Logs für Fehlerfälle.",Highest,KAN-1
+KAN-17,Story,E1-08 Kartenbestand verwalten,"Als Admin möchte ich Bestände und verfügbare Mengen pflegen.
+
+Akzeptanzkriterien
+1. Pflichtfelder, Datentypen und fachliche Wertebereiche werden vor dem Speichern validiert.
+2. Eine erfolgreiche Änderung ist nach dem erneuten Laden konsistent sichtbar und beeinflusst nur den betroffenen Katalogeintrag.
+3. Ungültige oder unvollständige Eingaben werden verständlich markiert, ohne bereits gültige Eingaben zu verlieren.
+4. Berechtigungen werden geprüft; nicht berechtigte Nutzer können den Vorgang weder ausführen noch über einen direkten Aufruf umgehen.
+5. Dubletten, verwaiste Datensätze und widersprüchliche Zustände werden erkannt und nachvollziehbar behandelt.
+6. Die Funktion ist für relevante Desktop- und Smartphone-Breakpoints bedienbar und erzeugt strukturierte Logs für Fehlerfälle.",Highest,KAN-1
+KAN-18,Story,E1-09 Bundles und Sammlungen verwalten,"Als Admin möchte ich Karten als Bundles oder Sammlungen zusammenstellen.
+
+Akzeptanzkriterien
+1. Pflichtfelder, Datentypen und fachliche Wertebereiche werden vor dem Speichern validiert.
+2. Eine erfolgreiche Änderung ist nach dem erneuten Laden konsistent sichtbar und beeinflusst nur den betroffenen Katalogeintrag.
+3. Ungültige oder unvollständige Eingaben werden verständlich markiert, ohne bereits gültige Eingaben zu verlieren.
+4. Berechtigungen werden geprüft; nicht berechtigte Nutzer können den Vorgang weder ausführen noch über einen direkten Aufruf umgehen.
+5. Dubletten, verwaiste Datensätze und widersprüchliche Zustände werden erkannt und nachvollziehbar behandelt.
+6. Die Funktion ist für relevante Desktop- und Smartphone-Breakpoints bedienbar und erzeugt strukturierte Logs für Fehlerfälle.",High,KAN-1
+KAN-19,Story,E1-10 Kartenstatus verwalten,"Als Admin möchte ich Karten als Entwurf, aktiv, ausverkauft oder inaktiv markieren.
+
+Akzeptanzkriterien
+1. Pflichtfelder, Datentypen und fachliche Wertebereiche werden vor dem Speichern validiert.
+2. Eine erfolgreiche Änderung ist nach dem erneuten Laden konsistent sichtbar und beeinflusst nur den betroffenen Katalogeintrag.
+3. Ungültige oder unvollständige Eingaben werden verständlich markiert, ohne bereits gültige Eingaben zu verlieren.
+4. Berechtigungen werden geprüft; nicht berechtigte Nutzer können den Vorgang weder ausführen noch über einen direkten Aufruf umgehen.
+5. Dubletten, verwaiste Datensätze und widersprüchliche Zustände werden erkannt und nachvollziehbar behandelt.
+6. Die Funktion ist für relevante Desktop- und Smartphone-Breakpoints bedienbar und erzeugt strukturierte Logs für Fehlerfälle.",Highest,KAN-1
+KAN-20,Story,E1-11 Karten importieren und synchronisieren,"Als Admin möchte ich Karten und Sets gesammelt importieren oder synchronisieren.
+
+Akzeptanzkriterien
+1. Pflichtfelder, Datentypen und fachliche Wertebereiche werden vor dem Speichern validiert.
+2. Eine erfolgreiche Änderung ist nach dem erneuten Laden konsistent sichtbar und beeinflusst nur den betroffenen Katalogeintrag.
+3. Ungültige oder unvollständige Eingaben werden verständlich markiert, ohne bereits gültige Eingaben zu verlieren.
+4. Berechtigungen werden geprüft; nicht berechtigte Nutzer können den Vorgang weder ausführen noch über einen direkten Aufruf umgehen.
+5. Dubletten, verwaiste Datensätze und widersprüchliche Zustände werden erkannt und nachvollziehbar behandelt.
+6. Die Funktion ist für relevante Desktop- und Smartphone-Breakpoints bedienbar und erzeugt strukturierte Logs für Fehlerfälle.",Highest,KAN-1
+KAN-21,Story,E2-01 Karten suchen,"Als Kunde möchte ich nach Karten, Spielern, Vereinen und Serien suchen.
+
+Akzeptanzkriterien
+1. Die Suche beziehungsweise Filterung liefert bei gültigen Eingaben reproduzierbare Ergebnisse aus dem aktuellen Produktbestand.
+2. Mehrere Kriterien werden logisch korrekt kombiniert; Trefferzahl, Sortierung und Pagination bleiben konsistent.
+3. Leere, ungültige und technische Fehlerzustände werden verständlich unterschieden und bieten eine sinnvolle nächste Aktion.
+4. Die URL beziehungsweise der Zustand kann bei unterstützten Filtern sicher geteilt oder erneut geladen werden.
+5. Die Funktion ist tastaturbedienbar, responsiv und bleibt auch bei langen Ergebnismengen performant.
+6. Nicht verfügbare oder unvollständige Produktdaten werden nicht irreführend als kaufbar dargestellt.",Highest,KAN-2
+KAN-22,Story,E2-02 Suchvorschläge erhalten,"Als Kunde möchte ich während der Eingabe Suchvorschläge erhalten.
+
+Akzeptanzkriterien
+1. Die Suche beziehungsweise Filterung liefert bei gültigen Eingaben reproduzierbare Ergebnisse aus dem aktuellen Produktbestand.
+2. Mehrere Kriterien werden logisch korrekt kombiniert; Trefferzahl, Sortierung und Pagination bleiben konsistent.
+3. Leere, ungültige und technische Fehlerzustände werden verständlich unterschieden und bieten eine sinnvolle nächste Aktion.
+4. Die URL beziehungsweise der Zustand kann bei unterstützten Filtern sicher geteilt oder erneut geladen werden.
+5. Die Funktion ist tastaturbedienbar, responsiv und bleibt auch bei langen Ergebnismengen performant.
+6. Nicht verfügbare oder unvollständige Produktdaten werden nicht irreführend als kaufbar dargestellt.",High,KAN-2
+KAN-23,Story,E2-03 Nach Sportart und Saison filtern,"Als Kunde möchte ich nach Sportart, Liga und Saison filtern.
+
+Akzeptanzkriterien
+1. Die Suche beziehungsweise Filterung liefert bei gültigen Eingaben reproduzierbare Ergebnisse aus dem aktuellen Produktbestand.
+2. Mehrere Kriterien werden logisch korrekt kombiniert; Trefferzahl, Sortierung und Pagination bleiben konsistent.
+3. Leere, ungültige und technische Fehlerzustände werden verständlich unterschieden und bieten eine sinnvolle nächste Aktion.
+4. Die URL beziehungsweise der Zustand kann bei unterstützten Filtern sicher geteilt oder erneut geladen werden.
+5. Die Funktion ist tastaturbedienbar, responsiv und bleibt auch bei langen Ergebnismengen performant.
+6. Nicht verfügbare oder unvollständige Produktdaten werden nicht irreführend als kaufbar dargestellt.",Highest,KAN-2
+KAN-24,Story,E2-04 Nach Kartentyp und Set filtern,"Als Kunde möchte ich nach Kartentyp, Set und Seltenheit filtern.
+
+Akzeptanzkriterien
+1. Die Suche beziehungsweise Filterung liefert bei gültigen Eingaben reproduzierbare Ergebnisse aus dem aktuellen Produktbestand.
+2. Mehrere Kriterien werden logisch korrekt kombiniert; Trefferzahl, Sortierung und Pagination bleiben konsistent.
+3. Leere, ungültige und technische Fehlerzustände werden verständlich unterschieden und bieten eine sinnvolle nächste Aktion.
+4. Die URL beziehungsweise der Zustand kann bei unterstützten Filtern sicher geteilt oder erneut geladen werden.
+5. Die Funktion ist tastaturbedienbar, responsiv und bleibt auch bei langen Ergebnismengen performant.
+6. Nicht verfügbare oder unvollständige Produktdaten werden nicht irreführend als kaufbar dargestellt.",Highest,KAN-2
+KAN-25,Story,E2-05 Nach Zustand filtern,"Als Kunde möchte ich nach Zustand und Grading filtern.
+
+Akzeptanzkriterien
+1. Die Suche beziehungsweise Filterung liefert bei gültigen Eingaben reproduzierbare Ergebnisse aus dem aktuellen Produktbestand.
+2. Mehrere Kriterien werden logisch korrekt kombiniert; Trefferzahl, Sortierung und Pagination bleiben konsistent.
+3. Leere, ungültige und technische Fehlerzustände werden verständlich unterschieden und bieten eine sinnvolle nächste Aktion.
+4. Die URL beziehungsweise der Zustand kann bei unterstützten Filtern sicher geteilt oder erneut geladen werden.
+5. Die Funktion ist tastaturbedienbar, responsiv und bleibt auch bei langen Ergebnismengen performant.
+6. Nicht verfügbare oder unvollständige Produktdaten werden nicht irreführend als kaufbar dargestellt.",Highest,KAN-2
+KAN-26,Story,E2-06 Nach Preis und Verfügbarkeit filtern,"Als Kunde möchte ich nach Preis und Verfügbarkeit filtern.
+
+Akzeptanzkriterien
+1. Die Suche beziehungsweise Filterung liefert bei gültigen Eingaben reproduzierbare Ergebnisse aus dem aktuellen Produktbestand.
+2. Mehrere Kriterien werden logisch korrekt kombiniert; Trefferzahl, Sortierung und Pagination bleiben konsistent.
+3. Leere, ungültige und technische Fehlerzustände werden verständlich unterschieden und bieten eine sinnvolle nächste Aktion.
+4. Die URL beziehungsweise der Zustand kann bei unterstützten Filtern sicher geteilt oder erneut geladen werden.
+5. Die Funktion ist tastaturbedienbar, responsiv und bleibt auch bei langen Ergebnismengen performant.
+6. Nicht verfügbare oder unvollständige Produktdaten werden nicht irreführend als kaufbar dargestellt.",Highest,KAN-2
+KAN-27,Story,E2-07 Filter kombinieren,"Als Kunde möchte ich mehrere Filter kombinieren.
+
+Akzeptanzkriterien
+1. Die Suche beziehungsweise Filterung liefert bei gültigen Eingaben reproduzierbare Ergebnisse aus dem aktuellen Produktbestand.
+2. Mehrere Kriterien werden logisch korrekt kombiniert; Trefferzahl, Sortierung und Pagination bleiben konsistent.
+3. Leere, ungültige und technische Fehlerzustände werden verständlich unterschieden und bieten eine sinnvolle nächste Aktion.
+4. Die URL beziehungsweise der Zustand kann bei unterstützten Filtern sicher geteilt oder erneut geladen werden.
+5. Die Funktion ist tastaturbedienbar, responsiv und bleibt auch bei langen Ergebnismengen performant.
+6. Nicht verfügbare oder unvollständige Produktdaten werden nicht irreführend als kaufbar dargestellt.",Highest,KAN-2
+KAN-28,Story,E2-08 Ergebnisse sortieren,"Als Kunde möchte ich Ergebnisse sortieren.
+
+Akzeptanzkriterien
+1. Die Suche beziehungsweise Filterung liefert bei gültigen Eingaben reproduzierbare Ergebnisse aus dem aktuellen Produktbestand.
+2. Mehrere Kriterien werden logisch korrekt kombiniert; Trefferzahl, Sortierung und Pagination bleiben konsistent.
+3. Leere, ungültige und technische Fehlerzustände werden verständlich unterschieden und bieten eine sinnvolle nächste Aktion.
+4. Die URL beziehungsweise der Zustand kann bei unterstützten Filtern sicher geteilt oder erneut geladen werden.
+5. Die Funktion ist tastaturbedienbar, responsiv und bleibt auch bei langen Ergebnismengen performant.
+6. Nicht verfügbare oder unvollständige Produktdaten werden nicht irreführend als kaufbar dargestellt.",Highest,KAN-2
+KAN-29,Story,E2-09 Ergebnisse paginieren,"Als Kunde möchte ich Ergebnisse paginiert oder kontinuierlich laden.
+
+Akzeptanzkriterien
+1. Die Suche beziehungsweise Filterung liefert bei gültigen Eingaben reproduzierbare Ergebnisse aus dem aktuellen Produktbestand.
+2. Mehrere Kriterien werden logisch korrekt kombiniert; Trefferzahl, Sortierung und Pagination bleiben konsistent.
+3. Leere, ungültige und technische Fehlerzustände werden verständlich unterschieden und bieten eine sinnvolle nächste Aktion.
+4. Die URL beziehungsweise der Zustand kann bei unterstützten Filtern sicher geteilt oder erneut geladen werden.
+5. Die Funktion ist tastaturbedienbar, responsiv und bleibt auch bei langen Ergebnismengen performant.
+6. Nicht verfügbare oder unvollständige Produktdaten werden nicht irreführend als kaufbar dargestellt.",Highest,KAN-2
+KAN-30,Story,E2-10 Produktdetailseite anzeigen,"Als Kunde möchte ich auf einer Produktdetailseite alle Kartendaten sehen.
+
+Akzeptanzkriterien
+1. Die Suche beziehungsweise Filterung liefert bei gültigen Eingaben reproduzierbare Ergebnisse aus dem aktuellen Produktbestand.
+2. Mehrere Kriterien werden logisch korrekt kombiniert; Trefferzahl, Sortierung und Pagination bleiben konsistent.
+3. Leere, ungültige und technische Fehlerzustände werden verständlich unterschieden und bieten eine sinnvolle nächste Aktion.
+4. Die URL beziehungsweise der Zustand kann bei unterstützten Filtern sicher geteilt oder erneut geladen werden.
+5. Die Funktion ist tastaturbedienbar, responsiv und bleibt auch bei langen Ergebnismengen performant.
+6. Nicht verfügbare oder unvollständige Produktdaten werden nicht irreführend als kaufbar dargestellt.",Highest,KAN-2
+KAN-31,Story,E2-11 Produktbilder vergrößern,"Als Kunde möchte ich Bilder vergrößern und durch eine Galerie blättern.
+
+Akzeptanzkriterien
+1. Die Suche beziehungsweise Filterung liefert bei gültigen Eingaben reproduzierbare Ergebnisse aus dem aktuellen Produktbestand.
+2. Mehrere Kriterien werden logisch korrekt kombiniert; Trefferzahl, Sortierung und Pagination bleiben konsistent.
+3. Leere, ungültige und technische Fehlerzustände werden verständlich unterschieden und bieten eine sinnvolle nächste Aktion.
+4. Die URL beziehungsweise der Zustand kann bei unterstützten Filtern sicher geteilt oder erneut geladen werden.
+5. Die Funktion ist tastaturbedienbar, responsiv und bleibt auch bei langen Ergebnismengen performant.
+6. Nicht verfügbare oder unvollständige Produktdaten werden nicht irreführend als kaufbar dargestellt.",Highest,KAN-2
+KAN-32,Story,E2-12 Ähnliche Karten anzeigen,"Als Kunde möchte ich ähnliche oder passende Karten angezeigt bekommen.
+
+Akzeptanzkriterien
+1. Die Suche beziehungsweise Filterung liefert bei gültigen Eingaben reproduzierbare Ergebnisse aus dem aktuellen Produktbestand.
+2. Mehrere Kriterien werden logisch korrekt kombiniert; Trefferzahl, Sortierung und Pagination bleiben konsistent.
+3. Leere, ungültige und technische Fehlerzustände werden verständlich unterschieden und bieten eine sinnvolle nächste Aktion.
+4. Die URL beziehungsweise der Zustand kann bei unterstützten Filtern sicher geteilt oder erneut geladen werden.
+5. Die Funktion ist tastaturbedienbar, responsiv und bleibt auch bei langen Ergebnismengen performant.
+6. Nicht verfügbare oder unvollständige Produktdaten werden nicht irreführend als kaufbar dargestellt.",High,KAN-2
+KAN-33,Story,E2-13 Leere und fehlerhafte Ergebnisse verstehen,"Als Kunde möchte ich verständliche Zustände bei leeren oder fehlerhaften Suchergebnissen sehen.
+
+Akzeptanzkriterien
+1. Die Suche beziehungsweise Filterung liefert bei gültigen Eingaben reproduzierbare Ergebnisse aus dem aktuellen Produktbestand.
+2. Mehrere Kriterien werden logisch korrekt kombiniert; Trefferzahl, Sortierung und Pagination bleiben konsistent.
+3. Leere, ungültige und technische Fehlerzustände werden verständlich unterschieden und bieten eine sinnvolle nächste Aktion.
+4. Die URL beziehungsweise der Zustand kann bei unterstützten Filtern sicher geteilt oder erneut geladen werden.
+5. Die Funktion ist tastaturbedienbar, responsiv und bleibt auch bei langen Ergebnismengen performant.
+6. Nicht verfügbare oder unvollständige Produktdaten werden nicht irreführend als kaufbar dargestellt.",Highest,KAN-2
+KAN-34,Story,E3-01 Karte in den Warenkorb legen,"Als Kunde möchte ich eine Karte in den Warenkorb legen.
+
+Akzeptanzkriterien
+1. Der Warenkorb beziehungsweise Checkout hält Mengen, Preise und Verfügbarkeit über alle relevanten Schritte konsistent.
+2. Jede Änderung aktualisiert Zwischensummen, Versandkosten und Gesamtbetrag nachvollziehbar.
+3. Nicht verfügbare oder zwischenzeitlich geänderte Artikel werden vor dem Kauf erkannt und sicher behandelt.
+4. Gast- und Kundenkonto-Flows verwenden dieselben fachlichen Preis-, Bestands- und Validierungsregeln.
+5. Adress-, Versand- und Formulareingaben werden feldgenau validiert und verständlich erklärt.
+6. Vor dem Absenden kann der Nutzer alle kaufrelevanten Daten prüfen; ein erneutes Absenden erzeugt keine Doppelbestellung.",Highest,KAN-3
+KAN-35,Story,E3-02 Warenkorbmenge ändern,"Als Kunde möchte ich die Menge im Warenkorb ändern.
+
+Akzeptanzkriterien
+1. Der Warenkorb beziehungsweise Checkout hält Mengen, Preise und Verfügbarkeit über alle relevanten Schritte konsistent.
+2. Jede Änderung aktualisiert Zwischensummen, Versandkosten und Gesamtbetrag nachvollziehbar.
+3. Nicht verfügbare oder zwischenzeitlich geänderte Artikel werden vor dem Kauf erkannt und sicher behandelt.
+4. Gast- und Kundenkonto-Flows verwenden dieselben fachlichen Preis-, Bestands- und Validierungsregeln.
+5. Adress-, Versand- und Formulareingaben werden feldgenau validiert und verständlich erklärt.
+6. Vor dem Absenden kann der Nutzer alle kaufrelevanten Daten prüfen; ein erneutes Absenden erzeugt keine Doppelbestellung.",Highest,KAN-3
+KAN-36,Story,E3-03 Warenkorbartikel entfernen,"Als Kunde möchte ich Artikel aus dem Warenkorb entfernen.
+
+Akzeptanzkriterien
+1. Der Warenkorb beziehungsweise Checkout hält Mengen, Preise und Verfügbarkeit über alle relevanten Schritte konsistent.
+2. Jede Änderung aktualisiert Zwischensummen, Versandkosten und Gesamtbetrag nachvollziehbar.
+3. Nicht verfügbare oder zwischenzeitlich geänderte Artikel werden vor dem Kauf erkannt und sicher behandelt.
+4. Gast- und Kundenkonto-Flows verwenden dieselben fachlichen Preis-, Bestands- und Validierungsregeln.
+5. Adress-, Versand- und Formulareingaben werden feldgenau validiert und verständlich erklärt.
+6. Vor dem Absenden kann der Nutzer alle kaufrelevanten Daten prüfen; ein erneutes Absenden erzeugt keine Doppelbestellung.",Highest,KAN-3
+KAN-37,Story,E3-04 Gesamtpreis anzeigen,"Als Kunde möchte ich jederzeit den aktuellen Gesamtpreis sehen.
+
+Akzeptanzkriterien
+1. Der Warenkorb beziehungsweise Checkout hält Mengen, Preise und Verfügbarkeit über alle relevanten Schritte konsistent.
+2. Jede Änderung aktualisiert Zwischensummen, Versandkosten und Gesamtbetrag nachvollziehbar.
+3. Nicht verfügbare oder zwischenzeitlich geänderte Artikel werden vor dem Kauf erkannt und sicher behandelt.
+4. Gast- und Kundenkonto-Flows verwenden dieselben fachlichen Preis-, Bestands- und Validierungsregeln.
+5. Adress-, Versand- und Formulareingaben werden feldgenau validiert und verständlich erklärt.
+6. Vor dem Absenden kann der Nutzer alle kaufrelevanten Daten prüfen; ein erneutes Absenden erzeugt keine Doppelbestellung.",Highest,KAN-3
+KAN-38,Story,E3-05 Nichtverfügbarkeit erkennen,"Als Kunde möchte ich informiert werden, wenn ein Artikel nicht mehr verfügbar ist.
+
+Akzeptanzkriterien
+1. Der Warenkorb beziehungsweise Checkout hält Mengen, Preise und Verfügbarkeit über alle relevanten Schritte konsistent.
+2. Jede Änderung aktualisiert Zwischensummen, Versandkosten und Gesamtbetrag nachvollziehbar.
+3. Nicht verfügbare oder zwischenzeitlich geänderte Artikel werden vor dem Kauf erkannt und sicher behandelt.
+4. Gast- und Kundenkonto-Flows verwenden dieselben fachlichen Preis-, Bestands- und Validierungsregeln.
+5. Adress-, Versand- und Formulareingaben werden feldgenau validiert und verständlich erklärt.
+6. Vor dem Absenden kann der Nutzer alle kaufrelevanten Daten prüfen; ein erneutes Absenden erzeugt keine Doppelbestellung.",Highest,KAN-3
+KAN-39,Story,E3-06 Warenkorb persistent halten,"Als Kunde möchte ich meinen Warenkorb über mehrere Seitenaufrufe hinweg behalten.
+
+Akzeptanzkriterien
+1. Der Warenkorb beziehungsweise Checkout hält Mengen, Preise und Verfügbarkeit über alle relevanten Schritte konsistent.
+2. Jede Änderung aktualisiert Zwischensummen, Versandkosten und Gesamtbetrag nachvollziehbar.
+3. Nicht verfügbare oder zwischenzeitlich geänderte Artikel werden vor dem Kauf erkannt und sicher behandelt.
+4. Gast- und Kundenkonto-Flows verwenden dieselben fachlichen Preis-, Bestands- und Validierungsregeln.
+5. Adress-, Versand- und Formulareingaben werden feldgenau validiert und verständlich erklärt.
+6. Vor dem Absenden kann der Nutzer alle kaufrelevanten Daten prüfen; ein erneutes Absenden erzeugt keine Doppelbestellung.",High,KAN-3
+KAN-40,Story,E3-07 Als Gast bestellen,"Als Gast möchte ich ohne Kundenkonto bestellen können.
+
+Akzeptanzkriterien
+1. Der Warenkorb beziehungsweise Checkout hält Mengen, Preise und Verfügbarkeit über alle relevanten Schritte konsistent.
+2. Jede Änderung aktualisiert Zwischensummen, Versandkosten und Gesamtbetrag nachvollziehbar.
+3. Nicht verfügbare oder zwischenzeitlich geänderte Artikel werden vor dem Kauf erkannt und sicher behandelt.
+4. Gast- und Kundenkonto-Flows verwenden dieselben fachlichen Preis-, Bestands- und Validierungsregeln.
+5. Adress-, Versand- und Formulareingaben werden feldgenau validiert und verständlich erklärt.
+6. Vor dem Absenden kann der Nutzer alle kaufrelevanten Daten prüfen; ein erneutes Absenden erzeugt keine Doppelbestellung.",Highest,KAN-3
+KAN-41,Story,E3-08 Mit Kundenkonto bestellen,"Als eingeloggter Kunde möchte ich mit meinem Kundenkonto bestellen.
+
+Akzeptanzkriterien
+1. Der Warenkorb beziehungsweise Checkout hält Mengen, Preise und Verfügbarkeit über alle relevanten Schritte konsistent.
+2. Jede Änderung aktualisiert Zwischensummen, Versandkosten und Gesamtbetrag nachvollziehbar.
+3. Nicht verfügbare oder zwischenzeitlich geänderte Artikel werden vor dem Kauf erkannt und sicher behandelt.
+4. Gast- und Kundenkonto-Flows verwenden dieselben fachlichen Preis-, Bestands- und Validierungsregeln.
+5. Adress-, Versand- und Formulareingaben werden feldgenau validiert und verständlich erklärt.
+6. Vor dem Absenden kann der Nutzer alle kaufrelevanten Daten prüfen; ein erneutes Absenden erzeugt keine Doppelbestellung.",High,KAN-3
+KAN-42,Story,E3-09 Lieferadresse verwalten,"Als Kunde möchte ich meine Lieferadresse eingeben und ändern können.
+
+Akzeptanzkriterien
+1. Der Warenkorb beziehungsweise Checkout hält Mengen, Preise und Verfügbarkeit über alle relevanten Schritte konsistent.
+2. Jede Änderung aktualisiert Zwischensummen, Versandkosten und Gesamtbetrag nachvollziehbar.
+3. Nicht verfügbare oder zwischenzeitlich geänderte Artikel werden vor dem Kauf erkannt und sicher behandelt.
+4. Gast- und Kundenkonto-Flows verwenden dieselben fachlichen Preis-, Bestands- und Validierungsregeln.
+5. Adress-, Versand- und Formulareingaben werden feldgenau validiert und verständlich erklärt.
+6. Vor dem Absenden kann der Nutzer alle kaufrelevanten Daten prüfen; ein erneutes Absenden erzeugt keine Doppelbestellung.",Highest,KAN-3
+KAN-43,Story,E3-10 Versandart auswählen,"Als Kunde möchte ich verfügbare Versandarten und Versandkosten sehen.
+
+Akzeptanzkriterien
+1. Der Warenkorb beziehungsweise Checkout hält Mengen, Preise und Verfügbarkeit über alle relevanten Schritte konsistent.
+2. Jede Änderung aktualisiert Zwischensummen, Versandkosten und Gesamtbetrag nachvollziehbar.
+3. Nicht verfügbare oder zwischenzeitlich geänderte Artikel werden vor dem Kauf erkannt und sicher behandelt.
+4. Gast- und Kundenkonto-Flows verwenden dieselben fachlichen Preis-, Bestands- und Validierungsregeln.
+5. Adress-, Versand- und Formulareingaben werden feldgenau validiert und verständlich erklärt.
+6. Vor dem Absenden kann der Nutzer alle kaufrelevanten Daten prüfen; ein erneutes Absenden erzeugt keine Doppelbestellung.",Highest,KAN-3
+KAN-44,Story,E3-11 Bestellung vor dem Kauf prüfen,"Als Kunde möchte ich vor dem Kauf alle Bestelldaten prüfen.
+
+Akzeptanzkriterien
+1. Der Warenkorb beziehungsweise Checkout hält Mengen, Preise und Verfügbarkeit über alle relevanten Schritte konsistent.
+2. Jede Änderung aktualisiert Zwischensummen, Versandkosten und Gesamtbetrag nachvollziehbar.
+3. Nicht verfügbare oder zwischenzeitlich geänderte Artikel werden vor dem Kauf erkannt und sicher behandelt.
+4. Gast- und Kundenkonto-Flows verwenden dieselben fachlichen Preis-, Bestands- und Validierungsregeln.
+5. Adress-, Versand- und Formulareingaben werden feldgenau validiert und verständlich erklärt.
+6. Vor dem Absenden kann der Nutzer alle kaufrelevanten Daten prüfen; ein erneutes Absenden erzeugt keine Doppelbestellung.",Highest,KAN-3
+KAN-45,Story,E3-12 Formularfehler verstehen,"Als Kunde möchte ich verständliche Hinweise bei fehlenden oder fehlerhaften Angaben erhalten.
+
+Akzeptanzkriterien
+1. Der Warenkorb beziehungsweise Checkout hält Mengen, Preise und Verfügbarkeit über alle relevanten Schritte konsistent.
+2. Jede Änderung aktualisiert Zwischensummen, Versandkosten und Gesamtbetrag nachvollziehbar.
+3. Nicht verfügbare oder zwischenzeitlich geänderte Artikel werden vor dem Kauf erkannt und sicher behandelt.
+4. Gast- und Kundenkonto-Flows verwenden dieselben fachlichen Preis-, Bestands- und Validierungsregeln.
+5. Adress-, Versand- und Formulareingaben werden feldgenau validiert und verständlich erklärt.
+6. Vor dem Absenden kann der Nutzer alle kaufrelevanten Daten prüfen; ein erneutes Absenden erzeugt keine Doppelbestellung.",Highest,KAN-3
+KAN-46,Story,E4-01 Mit PayPal bezahlen,"Als Kunde möchte ich per PayPal bezahlen.
+
+Akzeptanzkriterien
+1. Der Zahlbetrag wird vor der Zahlung aus den serverseitig ermittelten Bestelldaten gebildet und korrekt an den Zahlungsdienst übergeben.
+2. Reservierung, Zahlung, Bestellung und Freigabe folgen einer nachvollziehbaren Zustandsmaschine.
+3. Fehlgeschlagene, abgebrochene und doppelt zugestellte Zahlungsereignisse sind idempotent und erzeugen keinen falschen Bestand oder Umsatz.
+4. Administrative Folgeaktionen sind berechtigt, protokolliert und für Support und Versand nachvollziehbar.
+5. Kunde und Betreiber erhalten bei relevanten Statusänderungen klare, konsistente Informationen.
+6. Erstattungen und Stornierungen berücksichtigen Bestand, Zahlungsstatus und bereits ausgeführte Folgeaktionen.",Highest,KAN-4
+KAN-47,Story,E4-02 Zahlbetrag vor Zahlung prüfen,"Als Kunde möchte ich vor der Zahlung den korrekten Zahlbetrag sehen.
+
+Akzeptanzkriterien
+1. Der Zahlbetrag wird vor der Zahlung aus den serverseitig ermittelten Bestelldaten gebildet und korrekt an den Zahlungsdienst übergeben.
+2. Reservierung, Zahlung, Bestellung und Freigabe folgen einer nachvollziehbaren Zustandsmaschine.
+3. Fehlgeschlagene, abgebrochene und doppelt zugestellte Zahlungsereignisse sind idempotent und erzeugen keinen falschen Bestand oder Umsatz.
+4. Administrative Folgeaktionen sind berechtigt, protokolliert und für Support und Versand nachvollziehbar.
+5. Kunde und Betreiber erhalten bei relevanten Statusänderungen klare, konsistente Informationen.
+6. Erstattungen und Stornierungen berücksichtigen Bestand, Zahlungsstatus und bereits ausgeführte Folgeaktionen.",Highest,KAN-4
+KAN-48,Story,E4-03 Fehlgeschlagene Zahlung verstehen,"Als Kunde möchte ich eine verständliche Meldung bei einer fehlgeschlagenen Zahlung erhalten.
+
+Akzeptanzkriterien
+1. Der Zahlbetrag wird vor der Zahlung aus den serverseitig ermittelten Bestelldaten gebildet und korrekt an den Zahlungsdienst übergeben.
+2. Reservierung, Zahlung, Bestellung und Freigabe folgen einer nachvollziehbaren Zustandsmaschine.
+3. Fehlgeschlagene, abgebrochene und doppelt zugestellte Zahlungsereignisse sind idempotent und erzeugen keinen falschen Bestand oder Umsatz.
+4. Administrative Folgeaktionen sind berechtigt, protokolliert und für Support und Versand nachvollziehbar.
+5. Kunde und Betreiber erhalten bei relevanten Statusänderungen klare, konsistente Informationen.
+6. Erstattungen und Stornierungen berücksichtigen Bestand, Zahlungsstatus und bereits ausgeführte Folgeaktionen.",Highest,KAN-4
+KAN-49,Story,E4-04 Bestand reservieren,"Als Shop möchte ich Bestand während des Bezahlvorgangs reservieren.
+
+Akzeptanzkriterien
+1. Der Zahlbetrag wird vor der Zahlung aus den serverseitig ermittelten Bestelldaten gebildet und korrekt an den Zahlungsdienst übergeben.
+2. Reservierung, Zahlung, Bestellung und Freigabe folgen einer nachvollziehbaren Zustandsmaschine.
+3. Fehlgeschlagene, abgebrochene und doppelt zugestellte Zahlungsereignisse sind idempotent und erzeugen keinen falschen Bestand oder Umsatz.
+4. Administrative Folgeaktionen sind berechtigt, protokolliert und für Support und Versand nachvollziehbar.
+5. Kunde und Betreiber erhalten bei relevanten Statusänderungen klare, konsistente Informationen.
+6. Erstattungen und Stornierungen berücksichtigen Bestand, Zahlungsstatus und bereits ausgeführte Folgeaktionen.",Highest,KAN-4
+KAN-50,Story,E4-05 Reservierungen freigeben,"Als Shop möchte ich abgelaufene oder abgebrochene Reservierungen freigeben.
+
+Akzeptanzkriterien
+1. Der Zahlbetrag wird vor der Zahlung aus den serverseitig ermittelten Bestelldaten gebildet und korrekt an den Zahlungsdienst übergeben.
+2. Reservierung, Zahlung, Bestellung und Freigabe folgen einer nachvollziehbaren Zustandsmaschine.
+3. Fehlgeschlagene, abgebrochene und doppelt zugestellte Zahlungsereignisse sind idempotent und erzeugen keinen falschen Bestand oder Umsatz.
+4. Administrative Folgeaktionen sind berechtigt, protokolliert und für Support und Versand nachvollziehbar.
+5. Kunde und Betreiber erhalten bei relevanten Statusänderungen klare, konsistente Informationen.
+6. Erstattungen und Stornierungen berücksichtigen Bestand, Zahlungsstatus und bereits ausgeführte Folgeaktionen.",Highest,KAN-4
+KAN-51,Story,E4-06 Zahlung verifizieren,"Als Shop möchte ich erfolgreiche Zahlungen sicher verifizieren.
+
+Akzeptanzkriterien
+1. Der Zahlbetrag wird vor der Zahlung aus den serverseitig ermittelten Bestelldaten gebildet und korrekt an den Zahlungsdienst übergeben.
+2. Reservierung, Zahlung, Bestellung und Freigabe folgen einer nachvollziehbaren Zustandsmaschine.
+3. Fehlgeschlagene, abgebrochene und doppelt zugestellte Zahlungsereignisse sind idempotent und erzeugen keinen falschen Bestand oder Umsatz.
+4. Administrative Folgeaktionen sind berechtigt, protokolliert und für Support und Versand nachvollziehbar.
+5. Kunde und Betreiber erhalten bei relevanten Statusänderungen klare, konsistente Informationen.
+6. Erstattungen und Stornierungen berücksichtigen Bestand, Zahlungsstatus und bereits ausgeführte Folgeaktionen.",Highest,KAN-4
+KAN-52,Story,E4-07 Bestellstatus aktualisieren,"Als Shop möchte ich Bestellungen automatisch mit korrekten Statuswerten versehen.
+
+Akzeptanzkriterien
+1. Der Zahlbetrag wird vor der Zahlung aus den serverseitig ermittelten Bestelldaten gebildet und korrekt an den Zahlungsdienst übergeben.
+2. Reservierung, Zahlung, Bestellung und Freigabe folgen einer nachvollziehbaren Zustandsmaschine.
+3. Fehlgeschlagene, abgebrochene und doppelt zugestellte Zahlungsereignisse sind idempotent und erzeugen keinen falschen Bestand oder Umsatz.
+4. Administrative Folgeaktionen sind berechtigt, protokolliert und für Support und Versand nachvollziehbar.
+5. Kunde und Betreiber erhalten bei relevanten Statusänderungen klare, konsistente Informationen.
+6. Erstattungen und Stornierungen berücksichtigen Bestand, Zahlungsstatus und bereits ausgeführte Folgeaktionen.",Highest,KAN-4
+KAN-53,Story,E4-08 Doppelte Zahlungsbestätigungen verhindern,"Als Shop möchte ich doppelte Zahlungsbestätigungen vermeiden.
+
+Akzeptanzkriterien
+1. Der Zahlbetrag wird vor der Zahlung aus den serverseitig ermittelten Bestelldaten gebildet und korrekt an den Zahlungsdienst übergeben.
+2. Reservierung, Zahlung, Bestellung und Freigabe folgen einer nachvollziehbaren Zustandsmaschine.
+3. Fehlgeschlagene, abgebrochene und doppelt zugestellte Zahlungsereignisse sind idempotent und erzeugen keinen falschen Bestand oder Umsatz.
+4. Administrative Folgeaktionen sind berechtigt, protokolliert und für Support und Versand nachvollziehbar.
+5. Kunde und Betreiber erhalten bei relevanten Statusänderungen klare, konsistente Informationen.
+6. Erstattungen und Stornierungen berücksichtigen Bestand, Zahlungsstatus und bereits ausgeführte Folgeaktionen.",Highest,KAN-4
+KAN-54,Story,E4-09 Bestellungen administrieren,"Als Admin möchte ich alle Bestellungen übersichtlich sehen.
+
+Akzeptanzkriterien
+1. Der Zahlbetrag wird vor der Zahlung aus den serverseitig ermittelten Bestelldaten gebildet und korrekt an den Zahlungsdienst übergeben.
+2. Reservierung, Zahlung, Bestellung und Freigabe folgen einer nachvollziehbaren Zustandsmaschine.
+3. Fehlgeschlagene, abgebrochene und doppelt zugestellte Zahlungsereignisse sind idempotent und erzeugen keinen falschen Bestand oder Umsatz.
+4. Administrative Folgeaktionen sind berechtigt, protokolliert und für Support und Versand nachvollziehbar.
+5. Kunde und Betreiber erhalten bei relevanten Statusänderungen klare, konsistente Informationen.
+6. Erstattungen und Stornierungen berücksichtigen Bestand, Zahlungsstatus und bereits ausgeführte Folgeaktionen.",Highest,KAN-4
+KAN-55,Story,E4-10 Bestellung für Versand vorbereiten,"Als Admin möchte ich Bestellungen bearbeiten und für den Versand vorbereiten.
+
+Akzeptanzkriterien
+1. Der Zahlbetrag wird vor der Zahlung aus den serverseitig ermittelten Bestelldaten gebildet und korrekt an den Zahlungsdienst übergeben.
+2. Reservierung, Zahlung, Bestellung und Freigabe folgen einer nachvollziehbaren Zustandsmaschine.
+3. Fehlgeschlagene, abgebrochene und doppelt zugestellte Zahlungsereignisse sind idempotent und erzeugen keinen falschen Bestand oder Umsatz.
+4. Administrative Folgeaktionen sind berechtigt, protokolliert und für Support und Versand nachvollziehbar.
+5. Kunde und Betreiber erhalten bei relevanten Statusänderungen klare, konsistente Informationen.
+6. Erstattungen und Stornierungen berücksichtigen Bestand, Zahlungsstatus und bereits ausgeführte Folgeaktionen.",Highest,KAN-4
+KAN-56,Story,E4-11 Sendungsnummer anzeigen,"Als Kunde möchte ich eine Sendungsnummer hinterlegen und sehen können.
+
+Akzeptanzkriterien
+1. Der Zahlbetrag wird vor der Zahlung aus den serverseitig ermittelten Bestelldaten gebildet und korrekt an den Zahlungsdienst übergeben.
+2. Reservierung, Zahlung, Bestellung und Freigabe folgen einer nachvollziehbaren Zustandsmaschine.
+3. Fehlgeschlagene, abgebrochene und doppelt zugestellte Zahlungsereignisse sind idempotent und erzeugen keinen falschen Bestand oder Umsatz.
+4. Administrative Folgeaktionen sind berechtigt, protokolliert und für Support und Versand nachvollziehbar.
+5. Kunde und Betreiber erhalten bei relevanten Statusänderungen klare, konsistente Informationen.
+6. Erstattungen und Stornierungen berücksichtigen Bestand, Zahlungsstatus und bereits ausgeführte Folgeaktionen.",High,KAN-4
+KAN-57,Story,E4-12 Bestellung stornieren oder erstatten,"Als Kunde möchte ich Bestellungen stornieren oder eine Rückerstattung anfragen können.
+
+Akzeptanzkriterien
+1. Der Zahlbetrag wird vor der Zahlung aus den serverseitig ermittelten Bestelldaten gebildet und korrekt an den Zahlungsdienst übergeben.
+2. Reservierung, Zahlung, Bestellung und Freigabe folgen einer nachvollziehbaren Zustandsmaschine.
+3. Fehlgeschlagene, abgebrochene und doppelt zugestellte Zahlungsereignisse sind idempotent und erzeugen keinen falschen Bestand oder Umsatz.
+4. Administrative Folgeaktionen sind berechtigt, protokolliert und für Support und Versand nachvollziehbar.
+5. Kunde und Betreiber erhalten bei relevanten Statusänderungen klare, konsistente Informationen.
+6. Erstattungen und Stornierungen berücksichtigen Bestand, Zahlungsstatus und bereits ausgeführte Folgeaktionen.",Medium,KAN-4
+KAN-58,Story,E5-01 Kundenkonto registrieren,"Als Besucher möchte ich ein Kundenkonto registrieren.
+
+Akzeptanzkriterien
+1. Registrierung, Anmeldung, Abmeldung und Passwortwiederherstellung behandeln Authentifizierung und Fehlversuche sicher.
+2. Bestätigte Kontodaten werden korrekt gespeichert; unbestätigte oder abgelaufene Nachweise werden verständlich behandelt.
+3. Persönliche Daten und Bestellhistorie sind ausschließlich für das berechtigte Konto sichtbar.
+4. Adressen und Kontodaten werden vor dem Speichern validiert und bei Änderungen konsistent verwendet.
+5. Datenschutzrelevante Aktionen wie Löschung oder Export sind nachvollziehbar, vollständig und gegen Fehlbedienung geschützt.
+6. Die Oberfläche ist responsiv, tastaturbedienbar und liefert klare Zustände für Laden, Erfolg und Fehler.",High,KAN-5
+KAN-59,Story,E5-02 E-Mail-Adresse bestätigen,"Als Kunde möchte ich meine E-Mail-Adresse bestätigen.
+
+Akzeptanzkriterien
+1. Registrierung, Anmeldung, Abmeldung und Passwortwiederherstellung behandeln Authentifizierung und Fehlversuche sicher.
+2. Bestätigte Kontodaten werden korrekt gespeichert; unbestätigte oder abgelaufene Nachweise werden verständlich behandelt.
+3. Persönliche Daten und Bestellhistorie sind ausschließlich für das berechtigte Konto sichtbar.
+4. Adressen und Kontodaten werden vor dem Speichern validiert und bei Änderungen konsistent verwendet.
+5. Datenschutzrelevante Aktionen wie Löschung oder Export sind nachvollziehbar, vollständig und gegen Fehlbedienung geschützt.
+6. Die Oberfläche ist responsiv, tastaturbedienbar und liefert klare Zustände für Laden, Erfolg und Fehler.",High,KAN-5
+KAN-60,Story,E5-03 Ein- und ausloggen,"Als Kunde möchte ich mich ein- und ausloggen können.
+
+Akzeptanzkriterien
+1. Registrierung, Anmeldung, Abmeldung und Passwortwiederherstellung behandeln Authentifizierung und Fehlversuche sicher.
+2. Bestätigte Kontodaten werden korrekt gespeichert; unbestätigte oder abgelaufene Nachweise werden verständlich behandelt.
+3. Persönliche Daten und Bestellhistorie sind ausschließlich für das berechtigte Konto sichtbar.
+4. Adressen und Kontodaten werden vor dem Speichern validiert und bei Änderungen konsistent verwendet.
+5. Datenschutzrelevante Aktionen wie Löschung oder Export sind nachvollziehbar, vollständig und gegen Fehlbedienung geschützt.
+6. Die Oberfläche ist responsiv, tastaturbedienbar und liefert klare Zustände für Laden, Erfolg und Fehler.",High,KAN-5
+KAN-61,Story,E5-04 Passwort zurücksetzen,"Als Kunde möchte ich mein Passwort zurücksetzen können.
+
+Akzeptanzkriterien
+1. Registrierung, Anmeldung, Abmeldung und Passwortwiederherstellung behandeln Authentifizierung und Fehlversuche sicher.
+2. Bestätigte Kontodaten werden korrekt gespeichert; unbestätigte oder abgelaufene Nachweise werden verständlich behandelt.
+3. Persönliche Daten und Bestellhistorie sind ausschließlich für das berechtigte Konto sichtbar.
+4. Adressen und Kontodaten werden vor dem Speichern validiert und bei Änderungen konsistent verwendet.
+5. Datenschutzrelevante Aktionen wie Löschung oder Export sind nachvollziehbar, vollständig und gegen Fehlbedienung geschützt.
+6. Die Oberfläche ist responsiv, tastaturbedienbar und liefert klare Zustände für Laden, Erfolg und Fehler.",High,KAN-5
+KAN-62,Story,E5-05 Persönliche Daten bearbeiten,"Als Kunde möchte ich meine persönlichen Daten bearbeiten.
+
+Akzeptanzkriterien
+1. Registrierung, Anmeldung, Abmeldung und Passwortwiederherstellung behandeln Authentifizierung und Fehlversuche sicher.
+2. Bestätigte Kontodaten werden korrekt gespeichert; unbestätigte oder abgelaufene Nachweise werden verständlich behandelt.
+3. Persönliche Daten und Bestellhistorie sind ausschließlich für das berechtigte Konto sichtbar.
+4. Adressen und Kontodaten werden vor dem Speichern validiert und bei Änderungen konsistent verwendet.
+5. Datenschutzrelevante Aktionen wie Löschung oder Export sind nachvollziehbar, vollständig und gegen Fehlbedienung geschützt.
+6. Die Oberfläche ist responsiv, tastaturbedienbar und liefert klare Zustände für Laden, Erfolg und Fehler.",High,KAN-5
+KAN-63,Story,E5-06 Lieferadressen verwalten,"Als Kunde möchte ich mehrere Lieferadressen verwalten.
+
+Akzeptanzkriterien
+1. Registrierung, Anmeldung, Abmeldung und Passwortwiederherstellung behandeln Authentifizierung und Fehlversuche sicher.
+2. Bestätigte Kontodaten werden korrekt gespeichert; unbestätigte oder abgelaufene Nachweise werden verständlich behandelt.
+3. Persönliche Daten und Bestellhistorie sind ausschließlich für das berechtigte Konto sichtbar.
+4. Adressen und Kontodaten werden vor dem Speichern validiert und bei Änderungen konsistent verwendet.
+5. Datenschutzrelevante Aktionen wie Löschung oder Export sind nachvollziehbar, vollständig und gegen Fehlbedienung geschützt.
+6. Die Oberfläche ist responsiv, tastaturbedienbar und liefert klare Zustände für Laden, Erfolg und Fehler.",High,KAN-5
+KAN-64,Story,E5-07 Bestellhistorie einsehen,"Als Kunde möchte ich meine Bestellhistorie einsehen.
+
+Akzeptanzkriterien
+1. Registrierung, Anmeldung, Abmeldung und Passwortwiederherstellung behandeln Authentifizierung und Fehlversuche sicher.
+2. Bestätigte Kontodaten werden korrekt gespeichert; unbestätigte oder abgelaufene Nachweise werden verständlich behandelt.
+3. Persönliche Daten und Bestellhistorie sind ausschließlich für das berechtigte Konto sichtbar.
+4. Adressen und Kontodaten werden vor dem Speichern validiert und bei Änderungen konsistent verwendet.
+5. Datenschutzrelevante Aktionen wie Löschung oder Export sind nachvollziehbar, vollständig und gegen Fehlbedienung geschützt.
+6. Die Oberfläche ist responsiv, tastaturbedienbar und liefert klare Zustände für Laden, Erfolg und Fehler.",High,KAN-5
+KAN-65,Story,E5-08 Bestellstatus verfolgen,"Als Kunde möchte ich Details und Status einer Bestellung sehen.
+
+Akzeptanzkriterien
+1. Registrierung, Anmeldung, Abmeldung und Passwortwiederherstellung behandeln Authentifizierung und Fehlversuche sicher.
+2. Bestätigte Kontodaten werden korrekt gespeichert; unbestätigte oder abgelaufene Nachweise werden verständlich behandelt.
+3. Persönliche Daten und Bestellhistorie sind ausschließlich für das berechtigte Konto sichtbar.
+4. Adressen und Kontodaten werden vor dem Speichern validiert und bei Änderungen konsistent verwendet.
+5. Datenschutzrelevante Aktionen wie Löschung oder Export sind nachvollziehbar, vollständig und gegen Fehlbedienung geschützt.
+6. Die Oberfläche ist responsiv, tastaturbedienbar und liefert klare Zustände für Laden, Erfolg und Fehler.",High,KAN-5
+KAN-66,Story,E5-09 Bestellung erneut zusammenstellen,"Als Kunde möchte ich eine frühere Bestellung erneut zusammenstellen können.
+
+Akzeptanzkriterien
+1. Registrierung, Anmeldung, Abmeldung und Passwortwiederherstellung behandeln Authentifizierung und Fehlversuche sicher.
+2. Bestätigte Kontodaten werden korrekt gespeichert; unbestätigte oder abgelaufene Nachweise werden verständlich behandelt.
+3. Persönliche Daten und Bestellhistorie sind ausschließlich für das berechtigte Konto sichtbar.
+4. Adressen und Kontodaten werden vor dem Speichern validiert und bei Änderungen konsistent verwendet.
+5. Datenschutzrelevante Aktionen wie Löschung oder Export sind nachvollziehbar, vollständig und gegen Fehlbedienung geschützt.
+6. Die Oberfläche ist responsiv, tastaturbedienbar und liefert klare Zustände für Laden, Erfolg und Fehler.",Medium,KAN-5
+KAN-67,Story,E5-10 Konto löschen oder Daten exportieren,"Als Kunde möchte ich meine Daten exportieren oder mein Konto löschen können.
+
+Akzeptanzkriterien
+1. Registrierung, Anmeldung, Abmeldung und Passwortwiederherstellung behandeln Authentifizierung und Fehlversuche sicher.
+2. Bestätigte Kontodaten werden korrekt gespeichert; unbestätigte oder abgelaufene Nachweise werden verständlich behandelt.
+3. Persönliche Daten und Bestellhistorie sind ausschließlich für das berechtigte Konto sichtbar.
+4. Adressen und Kontodaten werden vor dem Speichern validiert und bei Änderungen konsistent verwendet.
+5. Datenschutzrelevante Aktionen wie Löschung oder Export sind nachvollziehbar, vollständig und gegen Fehlbedienung geschützt.
+6. Die Oberfläche ist responsiv, tastaturbedienbar und liefert klare Zustände für Laden, Erfolg und Fehler.",Medium,KAN-5
+KAN-68,Story,E6-01 Einzelne Karte anbieten,"Als Verkäufer möchte ich eine einzelne Karte zum Verkauf anbieten.
+
+Akzeptanzkriterien
+1. Verkäuferdaten, Bilder, Zustandsangaben und Preiswünsche werden vollständig und validiert erfasst.
+2. Ein Angebot besitzt einen eindeutigen, nachvollziehbaren Status und kann nicht unbemerkt in einen widersprüchlichen Zustand wechseln.
+3. Berechtigungen verhindern Zugriff auf fremde Angebote und schützen sensible Auszahlungs- und Kontodaten.
+4. Annahme, Ablehnung, Rückfragen und Übergabe erzeugen klare Status- und Benachrichtigungsinformationen.
+5. Fehler bei Upload, Speicherung oder Statuswechseln sind wiederholbar und hinterlassen keine halbfertigen Angebote.
+6. Die Funktion ist für Desktop und Smartphone verständlich und enthält Hinweise zu nächsten Schritten und Verantwortlichkeiten.",Lowest,KAN-6
+KAN-69,Story,E6-02 Sammlung anbieten,"Als Verkäufer möchte ich eine komplette Sammlung anbieten.
+
+Akzeptanzkriterien
+1. Verkäuferdaten, Bilder, Zustandsangaben und Preiswünsche werden vollständig und validiert erfasst.
+2. Ein Angebot besitzt einen eindeutigen, nachvollziehbaren Status und kann nicht unbemerkt in einen widersprüchlichen Zustand wechseln.
+3. Berechtigungen verhindern Zugriff auf fremde Angebote und schützen sensible Auszahlungs- und Kontodaten.
+4. Annahme, Ablehnung, Rückfragen und Übergabe erzeugen klare Status- und Benachrichtigungsinformationen.
+5. Fehler bei Upload, Speicherung oder Statuswechseln sind wiederholbar und hinterlassen keine halbfertigen Angebote.
+6. Die Funktion ist für Desktop und Smartphone verständlich und enthält Hinweise zu nächsten Schritten und Verantwortlichkeiten.",Lowest,KAN-6
+KAN-70,Story,E6-03 Verkaufsbilder hochladen,"Als Verkäufer möchte ich Bilder meiner Karten hochladen.
+
+Akzeptanzkriterien
+1. Verkäuferdaten, Bilder, Zustandsangaben und Preiswünsche werden vollständig und validiert erfasst.
+2. Ein Angebot besitzt einen eindeutigen, nachvollziehbaren Status und kann nicht unbemerkt in einen widersprüchlichen Zustand wechseln.
+3. Berechtigungen verhindern Zugriff auf fremde Angebote und schützen sensible Auszahlungs- und Kontodaten.
+4. Annahme, Ablehnung, Rückfragen und Übergabe erzeugen klare Status- und Benachrichtigungsinformationen.
+5. Fehler bei Upload, Speicherung oder Statuswechseln sind wiederholbar und hinterlassen keine halbfertigen Angebote.
+6. Die Funktion ist für Desktop und Smartphone verständlich und enthält Hinweise zu nächsten Schritten und Verantwortlichkeiten.",Lowest,KAN-6
+KAN-71,Story,E6-04 Verkaufsdaten erfassen,"Als Verkäufer möchte ich Kartendaten selbst erfassen.
+
+Akzeptanzkriterien
+1. Verkäuferdaten, Bilder, Zustandsangaben und Preiswünsche werden vollständig und validiert erfasst.
+2. Ein Angebot besitzt einen eindeutigen, nachvollziehbaren Status und kann nicht unbemerkt in einen widersprüchlichen Zustand wechseln.
+3. Berechtigungen verhindern Zugriff auf fremde Angebote und schützen sensible Auszahlungs- und Kontodaten.
+4. Annahme, Ablehnung, Rückfragen und Übergabe erzeugen klare Status- und Benachrichtigungsinformationen.
+5. Fehler bei Upload, Speicherung oder Statuswechseln sind wiederholbar und hinterlassen keine halbfertigen Angebote.
+6. Die Funktion ist für Desktop und Smartphone verständlich und enthält Hinweise zu nächsten Schritten und Verantwortlichkeiten.",Lowest,KAN-6
+KAN-72,Story,E6-05 Verkaufszustand angeben,"Als Verkäufer möchte ich Zustand und Grading angeben.
+
+Akzeptanzkriterien
+1. Verkäuferdaten, Bilder, Zustandsangaben und Preiswünsche werden vollständig und validiert erfasst.
+2. Ein Angebot besitzt einen eindeutigen, nachvollziehbaren Status und kann nicht unbemerkt in einen widersprüchlichen Zustand wechseln.
+3. Berechtigungen verhindern Zugriff auf fremde Angebote und schützen sensible Auszahlungs- und Kontodaten.
+4. Annahme, Ablehnung, Rückfragen und Übergabe erzeugen klare Status- und Benachrichtigungsinformationen.
+5. Fehler bei Upload, Speicherung oder Statuswechseln sind wiederholbar und hinterlassen keine halbfertigen Angebote.
+6. Die Funktion ist für Desktop und Smartphone verständlich und enthält Hinweise zu nächsten Schritten und Verantwortlichkeiten.",Lowest,KAN-6
+KAN-73,Story,E6-06 Preiswunsch angeben,"Als Verkäufer möchte ich meinen Preiswunsch angeben.
+
+Akzeptanzkriterien
+1. Verkäuferdaten, Bilder, Zustandsangaben und Preiswünsche werden vollständig und validiert erfasst.
+2. Ein Angebot besitzt einen eindeutigen, nachvollziehbaren Status und kann nicht unbemerkt in einen widersprüchlichen Zustand wechseln.
+3. Berechtigungen verhindern Zugriff auf fremde Angebote und schützen sensible Auszahlungs- und Kontodaten.
+4. Annahme, Ablehnung, Rückfragen und Übergabe erzeugen klare Status- und Benachrichtigungsinformationen.
+5. Fehler bei Upload, Speicherung oder Statuswechseln sind wiederholbar und hinterlassen keine halbfertigen Angebote.
+6. Die Funktion ist für Desktop und Smartphone verständlich und enthält Hinweise zu nächsten Schritten und Verantwortlichkeiten.",Lowest,KAN-6
+KAN-74,Story,E6-07 Verkaufsangebot speichern,"Als Verkäufer möchte ich ein Verkaufsangebot als Entwurf speichern.
+
+Akzeptanzkriterien
+1. Verkäuferdaten, Bilder, Zustandsangaben und Preiswünsche werden vollständig und validiert erfasst.
+2. Ein Angebot besitzt einen eindeutigen, nachvollziehbaren Status und kann nicht unbemerkt in einen widersprüchlichen Zustand wechseln.
+3. Berechtigungen verhindern Zugriff auf fremde Angebote und schützen sensible Auszahlungs- und Kontodaten.
+4. Annahme, Ablehnung, Rückfragen und Übergabe erzeugen klare Status- und Benachrichtigungsinformationen.
+5. Fehler bei Upload, Speicherung oder Statuswechseln sind wiederholbar und hinterlassen keine halbfertigen Angebote.
+6. Die Funktion ist für Desktop und Smartphone verständlich und enthält Hinweise zu nächsten Schritten und Verantwortlichkeiten.",Lowest,KAN-6
+KAN-75,Story,E6-08 Angebotsstatus verfolgen,"Als Verkäufer möchte ich den Status meines Angebots verfolgen.
+
+Akzeptanzkriterien
+1. Verkäuferdaten, Bilder, Zustandsangaben und Preiswünsche werden vollständig und validiert erfasst.
+2. Ein Angebot besitzt einen eindeutigen, nachvollziehbaren Status und kann nicht unbemerkt in einen widersprüchlichen Zustand wechseln.
+3. Berechtigungen verhindern Zugriff auf fremde Angebote und schützen sensible Auszahlungs- und Kontodaten.
+4. Annahme, Ablehnung, Rückfragen und Übergabe erzeugen klare Status- und Benachrichtigungsinformationen.
+5. Fehler bei Upload, Speicherung oder Statuswechseln sind wiederholbar und hinterlassen keine halbfertigen Angebote.
+6. Die Funktion ist für Desktop und Smartphone verständlich und enthält Hinweise zu nächsten Schritten und Verantwortlichkeiten.",Lowest,KAN-6
+KAN-76,Story,E6-09 Verkaufsangebote prüfen,"Als Admin möchte ich Verkaufsangebote prüfen.
+
+Akzeptanzkriterien
+1. Verkäuferdaten, Bilder, Zustandsangaben und Preiswünsche werden vollständig und validiert erfasst.
+2. Ein Angebot besitzt einen eindeutigen, nachvollziehbaren Status und kann nicht unbemerkt in einen widersprüchlichen Zustand wechseln.
+3. Berechtigungen verhindern Zugriff auf fremde Angebote und schützen sensible Auszahlungs- und Kontodaten.
+4. Annahme, Ablehnung, Rückfragen und Übergabe erzeugen klare Status- und Benachrichtigungsinformationen.
+5. Fehler bei Upload, Speicherung oder Statuswechseln sind wiederholbar und hinterlassen keine halbfertigen Angebote.
+6. Die Funktion ist für Desktop und Smartphone verständlich und enthält Hinweise zu nächsten Schritten und Verantwortlichkeiten.",Lowest,KAN-6
+KAN-77,Story,E6-10 Angebot unterbreiten,"Als Admin möchte ich dem Verkäufer ein Angebot unterbreiten.
+
+Akzeptanzkriterien
+1. Verkäuferdaten, Bilder, Zustandsangaben und Preiswünsche werden vollständig und validiert erfasst.
+2. Ein Angebot besitzt einen eindeutigen, nachvollziehbaren Status und kann nicht unbemerkt in einen widersprüchlichen Zustand wechseln.
+3. Berechtigungen verhindern Zugriff auf fremde Angebote und schützen sensible Auszahlungs- und Kontodaten.
+4. Annahme, Ablehnung, Rückfragen und Übergabe erzeugen klare Status- und Benachrichtigungsinformationen.
+5. Fehler bei Upload, Speicherung oder Statuswechseln sind wiederholbar und hinterlassen keine halbfertigen Angebote.
+6. Die Funktion ist für Desktop und Smartphone verständlich und enthält Hinweise zu nächsten Schritten und Verantwortlichkeiten.",Lowest,KAN-6
+KAN-78,Story,E6-11 Angebot annehmen oder ablehnen,"Als Verkäufer möchte ich ein Angebot annehmen oder ablehnen.
+
+Akzeptanzkriterien
+1. Verkäuferdaten, Bilder, Zustandsangaben und Preiswünsche werden vollständig und validiert erfasst.
+2. Ein Angebot besitzt einen eindeutigen, nachvollziehbaren Status und kann nicht unbemerkt in einen widersprüchlichen Zustand wechseln.
+3. Berechtigungen verhindern Zugriff auf fremde Angebote und schützen sensible Auszahlungs- und Kontodaten.
+4. Annahme, Ablehnung, Rückfragen und Übergabe erzeugen klare Status- und Benachrichtigungsinformationen.
+5. Fehler bei Upload, Speicherung oder Statuswechseln sind wiederholbar und hinterlassen keine halbfertigen Angebote.
+6. Die Funktion ist für Desktop und Smartphone verständlich und enthält Hinweise zu nächsten Schritten und Verantwortlichkeiten.",Lowest,KAN-6
+KAN-79,Story,E6-12 Übergabe und Auszahlung verstehen,"Als Verkäufer möchte ich Informationen zu Übergabe, Versand und Auszahlung erhalten.
+
+Akzeptanzkriterien
+1. Verkäuferdaten, Bilder, Zustandsangaben und Preiswünsche werden vollständig und validiert erfasst.
+2. Ein Angebot besitzt einen eindeutigen, nachvollziehbaren Status und kann nicht unbemerkt in einen widersprüchlichen Zustand wechseln.
+3. Berechtigungen verhindern Zugriff auf fremde Angebote und schützen sensible Auszahlungs- und Kontodaten.
+4. Annahme, Ablehnung, Rückfragen und Übergabe erzeugen klare Status- und Benachrichtigungsinformationen.
+5. Fehler bei Upload, Speicherung oder Statuswechseln sind wiederholbar und hinterlassen keine halbfertigen Angebote.
+6. Die Funktion ist für Desktop und Smartphone verständlich und enthält Hinweise zu nächsten Schritten und Verantwortlichkeiten.",Lowest,KAN-6
+KAN-80,Story,E7-01 Adminbereich sicher anmelden,"Als Admin möchte ich mich sicher im Administrationsbereich anmelden.
+
+Akzeptanzkriterien
+1. Administrative Aktionen erfordern die richtige Rolle und werden serverseitig autorisiert.
+2. Listen, Detailansichten und Formulare zeigen den aktuellen Datenstand und validieren Änderungen vor dem Speichern.
+3. Kritische Änderungen an Produkten, Beständen, Bestellungen und Konten sind nachvollziehbar protokolliert.
+4. Synchronisationen sind wiederholbar, idempotent und zeigen Laufstatus, Ergebnis und Fehlerursache.
+5. Fehlerhafte Datensätze werden isoliert behandelt, ohne gültige Bestände oder Bestellungen zu beschädigen.
+6. Das Admin-Interface ist für die vorgesehenen Breakpoints bedienbar und schützt irreversible Aktionen vor Fehlbedienung.",Highest,KAN-7
+KAN-81,Story,E7-02 Rollen und Berechtigungen verwalten,"Als Admin möchte ich Rollen und Berechtigungen verwalten.
+
+Akzeptanzkriterien
+1. Administrative Aktionen erfordern die richtige Rolle und werden serverseitig autorisiert.
+2. Listen, Detailansichten und Formulare zeigen den aktuellen Datenstand und validieren Änderungen vor dem Speichern.
+3. Kritische Änderungen an Produkten, Beständen, Bestellungen und Konten sind nachvollziehbar protokolliert.
+4. Synchronisationen sind wiederholbar, idempotent und zeigen Laufstatus, Ergebnis und Fehlerursache.
+5. Fehlerhafte Datensätze werden isoliert behandelt, ohne gültige Bestände oder Bestellungen zu beschädigen.
+6. Das Admin-Interface ist für die vorgesehenen Breakpoints bedienbar und schützt irreversible Aktionen vor Fehlbedienung.",Highest,KAN-7
+KAN-82,Story,E7-03 Admin-Dashboard anzeigen,"Als Admin möchte ich ein Dashboard mit wichtigen Kennzahlen sehen.
+
+Akzeptanzkriterien
+1. Administrative Aktionen erfordern die richtige Rolle und werden serverseitig autorisiert.
+2. Listen, Detailansichten und Formulare zeigen den aktuellen Datenstand und validieren Änderungen vor dem Speichern.
+3. Kritische Änderungen an Produkten, Beständen, Bestellungen und Konten sind nachvollziehbar protokolliert.
+4. Synchronisationen sind wiederholbar, idempotent und zeigen Laufstatus, Ergebnis und Fehlerursache.
+5. Fehlerhafte Datensätze werden isoliert behandelt, ohne gültige Bestände oder Bestellungen zu beschädigen.
+6. Das Admin-Interface ist für die vorgesehenen Breakpoints bedienbar und schützt irreversible Aktionen vor Fehlbedienung.",Highest,KAN-7
+KAN-83,Story,E7-04 Produkte administrieren,"Als Admin möchte ich Produkte anlegen, bearbeiten und deaktivieren.
+
+Akzeptanzkriterien
+1. Administrative Aktionen erfordern die richtige Rolle und werden serverseitig autorisiert.
+2. Listen, Detailansichten und Formulare zeigen den aktuellen Datenstand und validieren Änderungen vor dem Speichern.
+3. Kritische Änderungen an Produkten, Beständen, Bestellungen und Konten sind nachvollziehbar protokolliert.
+4. Synchronisationen sind wiederholbar, idempotent und zeigen Laufstatus, Ergebnis und Fehlerursache.
+5. Fehlerhafte Datensätze werden isoliert behandelt, ohne gültige Bestände oder Bestellungen zu beschädigen.
+6. Das Admin-Interface ist für die vorgesehenen Breakpoints bedienbar und schützt irreversible Aktionen vor Fehlbedienung.",Highest,KAN-7
+KAN-84,Story,E7-05 Produktbilder administrieren,"Als Admin möchte ich Produktbilder verwalten.
+
+Akzeptanzkriterien
+1. Administrative Aktionen erfordern die richtige Rolle und werden serverseitig autorisiert.
+2. Listen, Detailansichten und Formulare zeigen den aktuellen Datenstand und validieren Änderungen vor dem Speichern.
+3. Kritische Änderungen an Produkten, Beständen, Bestellungen und Konten sind nachvollziehbar protokolliert.
+4. Synchronisationen sind wiederholbar, idempotent und zeigen Laufstatus, Ergebnis und Fehlerursache.
+5. Fehlerhafte Datensätze werden isoliert behandelt, ohne gültige Bestände oder Bestellungen zu beschädigen.
+6. Das Admin-Interface ist für die vorgesehenen Breakpoints bedienbar und schützt irreversible Aktionen vor Fehlbedienung.",Highest,KAN-7
+KAN-85,Story,E7-06 Bestände korrigieren,"Als Admin möchte ich Bestände korrigieren können.
+
+Akzeptanzkriterien
+1. Administrative Aktionen erfordern die richtige Rolle und werden serverseitig autorisiert.
+2. Listen, Detailansichten und Formulare zeigen den aktuellen Datenstand und validieren Änderungen vor dem Speichern.
+3. Kritische Änderungen an Produkten, Beständen, Bestellungen und Konten sind nachvollziehbar protokolliert.
+4. Synchronisationen sind wiederholbar, idempotent und zeigen Laufstatus, Ergebnis und Fehlerursache.
+5. Fehlerhafte Datensätze werden isoliert behandelt, ohne gültige Bestände oder Bestellungen zu beschädigen.
+6. Das Admin-Interface ist für die vorgesehenen Breakpoints bedienbar und schützt irreversible Aktionen vor Fehlbedienung.",Highest,KAN-7
+KAN-86,Story,E7-07 Bestellungen administrieren,"Als Admin möchte ich Bestellungen verwalten.
+
+Akzeptanzkriterien
+1. Administrative Aktionen erfordern die richtige Rolle und werden serverseitig autorisiert.
+2. Listen, Detailansichten und Formulare zeigen den aktuellen Datenstand und validieren Änderungen vor dem Speichern.
+3. Kritische Änderungen an Produkten, Beständen, Bestellungen und Konten sind nachvollziehbar protokolliert.
+4. Synchronisationen sind wiederholbar, idempotent und zeigen Laufstatus, Ergebnis und Fehlerursache.
+5. Fehlerhafte Datensätze werden isoliert behandelt, ohne gültige Bestände oder Bestellungen zu beschädigen.
+6. Das Admin-Interface ist für die vorgesehenen Breakpoints bedienbar und schützt irreversible Aktionen vor Fehlbedienung.",Highest,KAN-7
+KAN-87,Story,E7-08 Kundenkonten administrieren,"Als Admin möchte ich Kundenkonten einsehen und verwalten.
+
+Akzeptanzkriterien
+1. Administrative Aktionen erfordern die richtige Rolle und werden serverseitig autorisiert.
+2. Listen, Detailansichten und Formulare zeigen den aktuellen Datenstand und validieren Änderungen vor dem Speichern.
+3. Kritische Änderungen an Produkten, Beständen, Bestellungen und Konten sind nachvollziehbar protokolliert.
+4. Synchronisationen sind wiederholbar, idempotent und zeigen Laufstatus, Ergebnis und Fehlerursache.
+5. Fehlerhafte Datensätze werden isoliert behandelt, ohne gültige Bestände oder Bestellungen zu beschädigen.
+6. Das Admin-Interface ist für die vorgesehenen Breakpoints bedienbar und schützt irreversible Aktionen vor Fehlbedienung.",Highest,KAN-7
+KAN-88,Story,E7-09 Verkaufsangebote administrieren,"Als Admin möchte ich Verkaufsangebote bearbeiten und bewerten.
+
+Akzeptanzkriterien
+1. Administrative Aktionen erfordern die richtige Rolle und werden serverseitig autorisiert.
+2. Listen, Detailansichten und Formulare zeigen den aktuellen Datenstand und validieren Änderungen vor dem Speichern.
+3. Kritische Änderungen an Produkten, Beständen, Bestellungen und Konten sind nachvollziehbar protokolliert.
+4. Synchronisationen sind wiederholbar, idempotent und zeigen Laufstatus, Ergebnis und Fehlerursache.
+5. Fehlerhafte Datensätze werden isoliert behandelt, ohne gültige Bestände oder Bestellungen zu beschädigen.
+6. Das Admin-Interface ist für die vorgesehenen Breakpoints bedienbar und schützt irreversible Aktionen vor Fehlbedienung.",Medium,KAN-7
+KAN-89,Story,E7-10 Katalogstammdaten verwalten,"Als Admin möchte ich Kategorien, Sportarten, Ligen und Sets verwalten.
+
+Akzeptanzkriterien
+1. Administrative Aktionen erfordern die richtige Rolle und werden serverseitig autorisiert.
+2. Listen, Detailansichten und Formulare zeigen den aktuellen Datenstand und validieren Änderungen vor dem Speichern.
+3. Kritische Änderungen an Produkten, Beständen, Bestellungen und Konten sind nachvollziehbar protokolliert.
+4. Synchronisationen sind wiederholbar, idempotent und zeigen Laufstatus, Ergebnis und Fehlerursache.
+5. Fehlerhafte Datensätze werden isoliert behandelt, ohne gültige Bestände oder Bestellungen zu beschädigen.
+6. Das Admin-Interface ist für die vorgesehenen Breakpoints bedienbar und schützt irreversible Aktionen vor Fehlbedienung.",Highest,KAN-7
+KAN-90,Story,E7-11 Datenquellen synchronisieren,"Als Admin möchte ich eBay- oder andere Datenquellen synchronisieren.
+
+Akzeptanzkriterien
+1. Administrative Aktionen erfordern die richtige Rolle und werden serverseitig autorisiert.
+2. Listen, Detailansichten und Formulare zeigen den aktuellen Datenstand und validieren Änderungen vor dem Speichern.
+3. Kritische Änderungen an Produkten, Beständen, Bestellungen und Konten sind nachvollziehbar protokolliert.
+4. Synchronisationen sind wiederholbar, idempotent und zeigen Laufstatus, Ergebnis und Fehlerursache.
+5. Fehlerhafte Datensätze werden isoliert behandelt, ohne gültige Bestände oder Bestellungen zu beschädigen.
+6. Das Admin-Interface ist für die vorgesehenen Breakpoints bedienbar und schützt irreversible Aktionen vor Fehlbedienung.",Highest,KAN-7
+KAN-91,Story,E7-12 Synchronisationsfehler beheben,"Als Admin möchte ich Synchronisationsfehler erkennen und beheben.
+
+Akzeptanzkriterien
+1. Administrative Aktionen erfordern die richtige Rolle und werden serverseitig autorisiert.
+2. Listen, Detailansichten und Formulare zeigen den aktuellen Datenstand und validieren Änderungen vor dem Speichern.
+3. Kritische Änderungen an Produkten, Beständen, Bestellungen und Konten sind nachvollziehbar protokolliert.
+4. Synchronisationen sind wiederholbar, idempotent und zeigen Laufstatus, Ergebnis und Fehlerursache.
+5. Fehlerhafte Datensätze werden isoliert behandelt, ohne gültige Bestände oder Bestellungen zu beschädigen.
+6. Das Admin-Interface ist für die vorgesehenen Breakpoints bedienbar und schützt irreversible Aktionen vor Fehlbedienung.",Highest,KAN-7
+KAN-92,Story,E7-13 Änderungen nachvollziehen,"Als Admin möchte ich wichtige Änderungen nachvollziehen können.
+
+Akzeptanzkriterien
+1. Administrative Aktionen erfordern die richtige Rolle und werden serverseitig autorisiert.
+2. Listen, Detailansichten und Formulare zeigen den aktuellen Datenstand und validieren Änderungen vor dem Speichern.
+3. Kritische Änderungen an Produkten, Beständen, Bestellungen und Konten sind nachvollziehbar protokolliert.
+4. Synchronisationen sind wiederholbar, idempotent und zeigen Laufstatus, Ergebnis und Fehlerursache.
+5. Fehlerhafte Datensätze werden isoliert behandelt, ohne gültige Bestände oder Bestellungen zu beschädigen.
+6. Das Admin-Interface ist für die vorgesehenen Breakpoints bedienbar und schützt irreversible Aktionen vor Fehlbedienung.",Highest,KAN-7
+KAN-93,Story,E8-01 Hauptnavigation verstehen,"Als Besucher möchte ich eine klare und verständliche Hauptnavigation sehen.
+
+Akzeptanzkriterien
+1. Navigation, Seitenhierarchie und aktive Zustände sind ohne visuelle Rätsel verständlich.
+2. Layouts, Komponenten, Abstände, Farben und Typografie folgen einem konsistenten Designsystem.
+3. Die Oberfläche funktioniert bei den definierten Desktop-, Tablet- und Smartphone-Breiten ohne horizontales Überlaufen.
+4. Lade-, Leer-, Fehler- und Erfolgsmeldungen sind unterscheidbar, verständlich und nicht nur farblich codiert.
+5. Interaktive Elemente haben sichtbare Fokus- und Aktivzustände und sind vollständig per Tastatur bedienbar.
+6. Kontraste, Beschriftungen, semantische Struktur und Alternativtexte unterstützen Screenreader und assistive Technologien.
+7. Bilder, Schriftgrößen und Inhalte bleiben bei unterschiedlichen Auflösungen scharf, lesbar und ohne Layoutsprünge.",High,KAN-8
+KAN-94,Story,E8-02 Globale Shop-Navigation nutzen,"Als Besucher möchte ich auf jeder Seite Logo, Navigation und Warenkorb erreichen.
+
+Akzeptanzkriterien
+1. Navigation, Seitenhierarchie und aktive Zustände sind ohne visuelle Rätsel verständlich.
+2. Layouts, Komponenten, Abstände, Farben und Typografie folgen einem konsistenten Designsystem.
+3. Die Oberfläche funktioniert bei den definierten Desktop-, Tablet- und Smartphone-Breiten ohne horizontales Überlaufen.
+4. Lade-, Leer-, Fehler- und Erfolgsmeldungen sind unterscheidbar, verständlich und nicht nur farblich codiert.
+5. Interaktive Elemente haben sichtbare Fokus- und Aktivzustände und sind vollständig per Tastatur bedienbar.
+6. Kontraste, Beschriftungen, semantische Struktur und Alternativtexte unterstützen Screenreader und assistive Technologien.
+7. Bilder, Schriftgrößen und Inhalte bleiben bei unterschiedlichen Auflösungen scharf, lesbar und ohne Layoutsprünge.",High,KAN-8
+KAN-95,Story,E8-03 Einheitliches Design erleben,"Als Kunde möchte ich ein einheitliches Designsystem erleben.
+
+Akzeptanzkriterien
+1. Navigation, Seitenhierarchie und aktive Zustände sind ohne visuelle Rätsel verständlich.
+2. Layouts, Komponenten, Abstände, Farben und Typografie folgen einem konsistenten Designsystem.
+3. Die Oberfläche funktioniert bei den definierten Desktop-, Tablet- und Smartphone-Breiten ohne horizontales Überlaufen.
+4. Lade-, Leer-, Fehler- und Erfolgsmeldungen sind unterscheidbar, verständlich und nicht nur farblich codiert.
+5. Interaktive Elemente haben sichtbare Fokus- und Aktivzustände und sind vollständig per Tastatur bedienbar.
+6. Kontraste, Beschriftungen, semantische Struktur und Alternativtexte unterstützen Screenreader und assistive Technologien.
+7. Bilder, Schriftgrößen und Inhalte bleiben bei unterschiedlichen Auflösungen scharf, lesbar und ohne Layoutsprünge.",High,KAN-8
+KAN-96,Story,E8-04 Produktlisten übersichtlich sehen,"Als Kunde möchte ich Produktlisten übersichtlich auf Karten dargestellt sehen.
+
+Akzeptanzkriterien
+1. Navigation, Seitenhierarchie und aktive Zustände sind ohne visuelle Rätsel verständlich.
+2. Layouts, Komponenten, Abstände, Farben und Typografie folgen einem konsistenten Designsystem.
+3. Die Oberfläche funktioniert bei den definierten Desktop-, Tablet- und Smartphone-Breiten ohne horizontales Überlaufen.
+4. Lade-, Leer-, Fehler- und Erfolgsmeldungen sind unterscheidbar, verständlich und nicht nur farblich codiert.
+5. Interaktive Elemente haben sichtbare Fokus- und Aktivzustände und sind vollständig per Tastatur bedienbar.
+6. Kontraste, Beschriftungen, semantische Struktur und Alternativtexte unterstützen Screenreader und assistive Technologien.
+7. Bilder, Schriftgrößen und Inhalte bleiben bei unterschiedlichen Auflösungen scharf, lesbar und ohne Layoutsprünge.",High,KAN-8
+KAN-97,Story,E8-05 Produktdetails übersichtlich sehen,"Als Kunde möchte ich Produktdetails übersichtlich gegliedert sehen.
+
+Akzeptanzkriterien
+1. Navigation, Seitenhierarchie und aktive Zustände sind ohne visuelle Rätsel verständlich.
+2. Layouts, Komponenten, Abstände, Farben und Typografie folgen einem konsistenten Designsystem.
+3. Die Oberfläche funktioniert bei den definierten Desktop-, Tablet- und Smartphone-Breiten ohne horizontales Überlaufen.
+4. Lade-, Leer-, Fehler- und Erfolgsmeldungen sind unterscheidbar, verständlich und nicht nur farblich codiert.
+5. Interaktive Elemente haben sichtbare Fokus- und Aktivzustände und sind vollständig per Tastatur bedienbar.
+6. Kontraste, Beschriftungen, semantische Struktur und Alternativtexte unterstützen Screenreader und assistive Technologien.
+7. Bilder, Schriftgrößen und Inhalte bleiben bei unterschiedlichen Auflösungen scharf, lesbar und ohne Layoutsprünge.",High,KAN-8
+KAN-98,Story,E8-06 Shop responsiv nutzen,"Als Kunde möchte ich den Shop auf Smartphone, Tablet und Desktop nutzen können.
+
+Akzeptanzkriterien
+1. Navigation, Seitenhierarchie und aktive Zustände sind ohne visuelle Rätsel verständlich.
+2. Layouts, Komponenten, Abstände, Farben und Typografie folgen einem konsistenten Designsystem.
+3. Die Oberfläche funktioniert bei den definierten Desktop-, Tablet- und Smartphone-Breiten ohne horizontales Überlaufen.
+4. Lade-, Leer-, Fehler- und Erfolgsmeldungen sind unterscheidbar, verständlich und nicht nur farblich codiert.
+5. Interaktive Elemente haben sichtbare Fokus- und Aktivzustände und sind vollständig per Tastatur bedienbar.
+6. Kontraste, Beschriftungen, semantische Struktur und Alternativtexte unterstützen Screenreader und assistive Technologien.
+7. Bilder, Schriftgrößen und Inhalte bleiben bei unterschiedlichen Auflösungen scharf, lesbar und ohne Layoutsprünge.",High,KAN-8
+KAN-99,Story,E8-07 Konsistente Formulare nutzen,"Als Kunde möchte ich verständliche Formulare mit konsistenten Eingabefeldern sehen.
+
+Akzeptanzkriterien
+1. Navigation, Seitenhierarchie und aktive Zustände sind ohne visuelle Rätsel verständlich.
+2. Layouts, Komponenten, Abstände, Farben und Typografie folgen einem konsistenten Designsystem.
+3. Die Oberfläche funktioniert bei den definierten Desktop-, Tablet- und Smartphone-Breiten ohne horizontales Überlaufen.
+4. Lade-, Leer-, Fehler- und Erfolgsmeldungen sind unterscheidbar, verständlich und nicht nur farblich codiert.
+5. Interaktive Elemente haben sichtbare Fokus- und Aktivzustände und sind vollständig per Tastatur bedienbar.
+6. Kontraste, Beschriftungen, semantische Struktur und Alternativtexte unterstützen Screenreader und assistive Technologien.
+7. Bilder, Schriftgrößen und Inhalte bleiben bei unterschiedlichen Auflösungen scharf, lesbar und ohne Layoutsprünge.",High,KAN-8
+KAN-100,Story,E8-08 Ladezustände erkennen,"Als Kunde möchte ich Ladezustände und Fortschritte erkennen können.
+
+Akzeptanzkriterien
+1. Navigation, Seitenhierarchie und aktive Zustände sind ohne visuelle Rätsel verständlich.
+2. Layouts, Komponenten, Abstände, Farben und Typografie folgen einem konsistenten Designsystem.
+3. Die Oberfläche funktioniert bei den definierten Desktop-, Tablet- und Smartphone-Breiten ohne horizontales Überlaufen.
+4. Lade-, Leer-, Fehler- und Erfolgsmeldungen sind unterscheidbar, verständlich und nicht nur farblich codiert.
+5. Interaktive Elemente haben sichtbare Fokus- und Aktivzustände und sind vollständig per Tastatur bedienbar.
+6. Kontraste, Beschriftungen, semantische Struktur und Alternativtexte unterstützen Screenreader und assistive Technologien.
+7. Bilder, Schriftgrößen und Inhalte bleiben bei unterschiedlichen Auflösungen scharf, lesbar und ohne Layoutsprünge.",High,KAN-8
+KAN-101,Story,E8-09 Fehler- und Leerzustände verstehen,"Als Kunde möchte ich verständliche Fehler- und Leerzustände sehen.
+
+Akzeptanzkriterien
+1. Navigation, Seitenhierarchie und aktive Zustände sind ohne visuelle Rätsel verständlich.
+2. Layouts, Komponenten, Abstände, Farben und Typografie folgen einem konsistenten Designsystem.
+3. Die Oberfläche funktioniert bei den definierten Desktop-, Tablet- und Smartphone-Breiten ohne horizontales Überlaufen.
+4. Lade-, Leer-, Fehler- und Erfolgsmeldungen sind unterscheidbar, verständlich und nicht nur farblich codiert.
+5. Interaktive Elemente haben sichtbare Fokus- und Aktivzustände und sind vollständig per Tastatur bedienbar.
+6. Kontraste, Beschriftungen, semantische Struktur und Alternativtexte unterstützen Screenreader und assistive Technologien.
+7. Bilder, Schriftgrößen und Inhalte bleiben bei unterschiedlichen Auflösungen scharf, lesbar und ohne Layoutsprünge.",High,KAN-8
+KAN-102,Story,E8-10 Shop per Tastatur bedienen,"Als Kunde möchte ich den Shop vollständig per Tastatur bedienen können.
+
+Akzeptanzkriterien
+1. Navigation, Seitenhierarchie und aktive Zustände sind ohne visuelle Rätsel verständlich.
+2. Layouts, Komponenten, Abstände, Farben und Typografie folgen einem konsistenten Designsystem.
+3. Die Oberfläche funktioniert bei den definierten Desktop-, Tablet- und Smartphone-Breiten ohne horizontales Überlaufen.
+4. Lade-, Leer-, Fehler- und Erfolgsmeldungen sind unterscheidbar, verständlich und nicht nur farblich codiert.
+5. Interaktive Elemente haben sichtbare Fokus- und Aktivzustände und sind vollständig per Tastatur bedienbar.
+6. Kontraste, Beschriftungen, semantische Struktur und Alternativtexte unterstützen Screenreader und assistive Technologien.
+7. Bilder, Schriftgrößen und Inhalte bleiben bei unterschiedlichen Auflösungen scharf, lesbar und ohne Layoutsprünge.",High,KAN-8
+KAN-103,Story,E8-11 Shop mit Screenreader nutzen,"Als Kunde möchte ich den Shop mit Screenreader-Unterstützung nutzen können.
+
+Akzeptanzkriterien
+1. Navigation, Seitenhierarchie und aktive Zustände sind ohne visuelle Rätsel verständlich.
+2. Layouts, Komponenten, Abstände, Farben und Typografie folgen einem konsistenten Designsystem.
+3. Die Oberfläche funktioniert bei den definierten Desktop-, Tablet- und Smartphone-Breiten ohne horizontales Überlaufen.
+4. Lade-, Leer-, Fehler- und Erfolgsmeldungen sind unterscheidbar, verständlich und nicht nur farblich codiert.
+5. Interaktive Elemente haben sichtbare Fokus- und Aktivzustände und sind vollständig per Tastatur bedienbar.
+6. Kontraste, Beschriftungen, semantische Struktur und Alternativtexte unterstützen Screenreader und assistive Technologien.
+7. Bilder, Schriftgrößen und Inhalte bleiben bei unterschiedlichen Auflösungen scharf, lesbar und ohne Layoutsprünge.",High,KAN-8
+KAN-104,Story,E8-12 Fokus- und Aktivzustände sehen,"Als Kunde möchte ich gut sichtbare Fokus-, Hover- und Aktivzustände sehen.
+
+Akzeptanzkriterien
+1. Navigation, Seitenhierarchie und aktive Zustände sind ohne visuelle Rätsel verständlich.
+2. Layouts, Komponenten, Abstände, Farben und Typografie folgen einem konsistenten Designsystem.
+3. Die Oberfläche funktioniert bei den definierten Desktop-, Tablet- und Smartphone-Breiten ohne horizontales Überlaufen.
+4. Lade-, Leer-, Fehler- und Erfolgsmeldungen sind unterscheidbar, verständlich und nicht nur farblich codiert.
+5. Interaktive Elemente haben sichtbare Fokus- und Aktivzustände und sind vollständig per Tastatur bedienbar.
+6. Kontraste, Beschriftungen, semantische Struktur und Alternativtexte unterstützen Screenreader und assistive Technologien.
+7. Bilder, Schriftgrößen und Inhalte bleiben bei unterschiedlichen Auflösungen scharf, lesbar und ohne Layoutsprünge.",High,KAN-8
+KAN-105,Story,E8-13 Optimierte Produktbilder erhalten,"Als Kunde möchte ich schnell ladende und optimierte Produktbilder erhalten.
+
+Akzeptanzkriterien
+1. Navigation, Seitenhierarchie und aktive Zustände sind ohne visuelle Rätsel verständlich.
+2. Layouts, Komponenten, Abstände, Farben und Typografie folgen einem konsistenten Designsystem.
+3. Die Oberfläche funktioniert bei den definierten Desktop-, Tablet- und Smartphone-Breiten ohne horizontales Überlaufen.
+4. Lade-, Leer-, Fehler- und Erfolgsmeldungen sind unterscheidbar, verständlich und nicht nur farblich codiert.
+5. Interaktive Elemente haben sichtbare Fokus- und Aktivzustände und sind vollständig per Tastatur bedienbar.
+6. Kontraste, Beschriftungen, semantische Struktur und Alternativtexte unterstützen Screenreader und assistive Technologien.
+7. Bilder, Schriftgrößen und Inhalte bleiben bei unterschiedlichen Auflösungen scharf, lesbar und ohne Layoutsprünge.",High,KAN-8
+KAN-106,Story,E8-14 Auflösungsunabhängiges Design erleben,"Als Kunde möchte ich ein einheitliches und funktionierendes Design unabhängig von Bildschirmgröße und Bildschirmauflösung erleben, damit der Shop immer übersichtlich und professionell wirkt.
+
+Akzeptanzkriterien
+1. Navigation, Seitenhierarchie und aktive Zustände sind ohne visuelle Rätsel verständlich.
+2. Layouts, Komponenten, Abstände, Farben und Typografie folgen einem konsistenten Designsystem.
+3. Die Oberfläche funktioniert bei den definierten Desktop-, Tablet- und Smartphone-Breiten ohne horizontales Überlaufen.
+4. Lade-, Leer-, Fehler- und Erfolgsmeldungen sind unterscheidbar, verständlich und nicht nur farblich codiert.
+5. Interaktive Elemente haben sichtbare Fokus- und Aktivzustände und sind vollständig per Tastatur bedienbar.
+6. Kontraste, Beschriftungen, semantische Struktur und Alternativtexte unterstützen Screenreader und assistive Technologien.
+7. Bilder, Schriftgrößen und Inhalte bleiben bei unterschiedlichen Auflösungen scharf, lesbar und ohne Layoutsprünge.",High,KAN-8
+KAN-107,Story,E9-01 Akzeptanzkriterien vereinheitlichen,"Als Team möchte ich einheitliche Akzeptanzkriterien für User Stories verwenden.
+
+Akzeptanzkriterien
+1. Testfälle besitzen eindeutige Vorbedingungen, Testdaten, Schritte und erwartete Ergebnisse.
+2. Stories, Tests, Test Sets, Pläne und Ausführungen sind nachvollziehbar miteinander verknüpft.
+3. Positive, negative, Grenzwert-, Berechtigungs- und Gerätefälle werden angemessen abgedeckt.
+4. Testergebnisse und Belege können pro Schritt dokumentiert und einem reproduzierbaren Lauf zugeordnet werden.
+5. Fehlgeschlagene Tests führen zu nachvollziehbaren Fehlern mit ausreichendem Kontext für die Analyse.
+6. Testabdeckung und Release-Abnahme lassen sich nach Epic, Priorität und Status auswerten.",High,KAN-9
+KAN-108,Story,E9-02 Xray-Testrepository strukturieren,"Als QA-Verantwortlicher möchte ich das Xray-Test-Repository logisch strukturieren.
+
+Akzeptanzkriterien
+1. Testfälle besitzen eindeutige Vorbedingungen, Testdaten, Schritte und erwartete Ergebnisse.
+2. Stories, Tests, Test Sets, Pläne und Ausführungen sind nachvollziehbar miteinander verknüpft.
+3. Positive, negative, Grenzwert-, Berechtigungs- und Gerätefälle werden angemessen abgedeckt.
+4. Testergebnisse und Belege können pro Schritt dokumentiert und einem reproduzierbaren Lauf zugeordnet werden.
+5. Fehlgeschlagene Tests führen zu nachvollziehbaren Fehlern mit ausreichendem Kontext für die Analyse.
+6. Testabdeckung und Release-Abnahme lassen sich nach Epic, Priorität und Status auswerten.",High,KAN-9
+KAN-109,Story,E9-03 Testfall-Template verwenden,"Als QA-Verantwortlicher möchte ich ein einheitliches Testfall-Template verwenden.
+
+Akzeptanzkriterien
+1. Testfälle besitzen eindeutige Vorbedingungen, Testdaten, Schritte und erwartete Ergebnisse.
+2. Stories, Tests, Test Sets, Pläne und Ausführungen sind nachvollziehbar miteinander verknüpft.
+3. Positive, negative, Grenzwert-, Berechtigungs- und Gerätefälle werden angemessen abgedeckt.
+4. Testergebnisse und Belege können pro Schritt dokumentiert und einem reproduzierbaren Lauf zugeordnet werden.
+5. Fehlgeschlagene Tests führen zu nachvollziehbaren Fehlern mit ausreichendem Kontext für die Analyse.
+6. Testabdeckung und Release-Abnahme lassen sich nach Epic, Priorität und Status auswerten.",High,KAN-9
+KAN-110,Story,E9-04 Testvorbedingungen definieren,"Als QA-Verantwortlicher möchte ich Testvorbedingungen definieren können.
+
+Akzeptanzkriterien
+1. Testfälle besitzen eindeutige Vorbedingungen, Testdaten, Schritte und erwartete Ergebnisse.
+2. Stories, Tests, Test Sets, Pläne und Ausführungen sind nachvollziehbar miteinander verknüpft.
+3. Positive, negative, Grenzwert-, Berechtigungs- und Gerätefälle werden angemessen abgedeckt.
+4. Testergebnisse und Belege können pro Schritt dokumentiert und einem reproduzierbaren Lauf zugeordnet werden.
+5. Fehlgeschlagene Tests führen zu nachvollziehbaren Fehlern mit ausreichendem Kontext für die Analyse.
+6. Testabdeckung und Release-Abnahme lassen sich nach Epic, Priorität und Status auswerten.",High,KAN-9
+KAN-111,Story,E9-05 Tests zu Test Sets bündeln,"Als QA-Verantwortlicher möchte ich Tests zu Test Sets bündeln.
+
+Akzeptanzkriterien
+1. Testfälle besitzen eindeutige Vorbedingungen, Testdaten, Schritte und erwartete Ergebnisse.
+2. Stories, Tests, Test Sets, Pläne und Ausführungen sind nachvollziehbar miteinander verknüpft.
+3. Positive, negative, Grenzwert-, Berechtigungs- und Gerätefälle werden angemessen abgedeckt.
+4. Testergebnisse und Belege können pro Schritt dokumentiert und einem reproduzierbaren Lauf zugeordnet werden.
+5. Fehlgeschlagene Tests führen zu nachvollziehbaren Fehlern mit ausreichendem Kontext für die Analyse.
+6. Testabdeckung und Release-Abnahme lassen sich nach Epic, Priorität und Status auswerten.",High,KAN-9
+KAN-112,Story,E9-06 Testpläne für Releases erstellen,"Als QA-Verantwortlicher möchte ich Testpläne für Releases erstellen.
+
+Akzeptanzkriterien
+1. Testfälle besitzen eindeutige Vorbedingungen, Testdaten, Schritte und erwartete Ergebnisse.
+2. Stories, Tests, Test Sets, Pläne und Ausführungen sind nachvollziehbar miteinander verknüpft.
+3. Positive, negative, Grenzwert-, Berechtigungs- und Gerätefälle werden angemessen abgedeckt.
+4. Testergebnisse und Belege können pro Schritt dokumentiert und einem reproduzierbaren Lauf zugeordnet werden.
+5. Fehlgeschlagene Tests führen zu nachvollziehbaren Fehlern mit ausreichendem Kontext für die Analyse.
+6. Testabdeckung und Release-Abnahme lassen sich nach Epic, Priorität und Status auswerten.",High,KAN-9
+KAN-113,Story,E9-07 Testausführungen starten,"Als QA-Verantwortlicher möchte ich Testausführungen für einzelne Versionen starten.
+
+Akzeptanzkriterien
+1. Testfälle besitzen eindeutige Vorbedingungen, Testdaten, Schritte und erwartete Ergebnisse.
+2. Stories, Tests, Test Sets, Pläne und Ausführungen sind nachvollziehbar miteinander verknüpft.
+3. Positive, negative, Grenzwert-, Berechtigungs- und Gerätefälle werden angemessen abgedeckt.
+4. Testergebnisse und Belege können pro Schritt dokumentiert und einem reproduzierbaren Lauf zugeordnet werden.
+5. Fehlgeschlagene Tests führen zu nachvollziehbaren Fehlern mit ausreichendem Kontext für die Analyse.
+6. Testabdeckung und Release-Abnahme lassen sich nach Epic, Priorität und Status auswerten.",High,KAN-9
+KAN-114,Story,E9-08 Tests mit Stories verknüpfen,"Als Team möchte ich Tests direkt mit User Stories verknüpfen.
+
+Akzeptanzkriterien
+1. Testfälle besitzen eindeutige Vorbedingungen, Testdaten, Schritte und erwartete Ergebnisse.
+2. Stories, Tests, Test Sets, Pläne und Ausführungen sind nachvollziehbar miteinander verknüpft.
+3. Positive, negative, Grenzwert-, Berechtigungs- und Gerätefälle werden angemessen abgedeckt.
+4. Testergebnisse und Belege können pro Schritt dokumentiert und einem reproduzierbaren Lauf zugeordnet werden.
+5. Fehlgeschlagene Tests führen zu nachvollziehbaren Fehlern mit ausreichendem Kontext für die Analyse.
+6. Testabdeckung und Release-Abnahme lassen sich nach Epic, Priorität und Status auswerten.",High,KAN-9
+KAN-115,Story,E9-09 Regressionstestsuite pflegen,"Als QA-Verantwortlicher möchte ich eine Regressionstestsuite pflegen.
+
+Akzeptanzkriterien
+1. Testfälle besitzen eindeutige Vorbedingungen, Testdaten, Schritte und erwartete Ergebnisse.
+2. Stories, Tests, Test Sets, Pläne und Ausführungen sind nachvollziehbar miteinander verknüpft.
+3. Positive, negative, Grenzwert-, Berechtigungs- und Gerätefälle werden angemessen abgedeckt.
+4. Testergebnisse und Belege können pro Schritt dokumentiert und einem reproduzierbaren Lauf zugeordnet werden.
+5. Fehlgeschlagene Tests führen zu nachvollziehbaren Fehlern mit ausreichendem Kontext für die Analyse.
+6. Testabdeckung und Release-Abnahme lassen sich nach Epic, Priorität und Status auswerten.",High,KAN-9
+KAN-116,Story,E9-10 Browser- und Gerätetests durchführen,"Als QA-Verantwortlicher möchte ich Tests für Desktop, Tablet und Smartphone durchführen.
+
+Akzeptanzkriterien
+1. Testfälle besitzen eindeutige Vorbedingungen, Testdaten, Schritte und erwartete Ergebnisse.
+2. Stories, Tests, Test Sets, Pläne und Ausführungen sind nachvollziehbar miteinander verknüpft.
+3. Positive, negative, Grenzwert-, Berechtigungs- und Gerätefälle werden angemessen abgedeckt.
+4. Testergebnisse und Belege können pro Schritt dokumentiert und einem reproduzierbaren Lauf zugeordnet werden.
+5. Fehlgeschlagene Tests führen zu nachvollziehbaren Fehlern mit ausreichendem Kontext für die Analyse.
+6. Testabdeckung und Release-Abnahme lassen sich nach Epic, Priorität und Status auswerten.",High,KAN-9
+KAN-117,Story,E9-11 Testergebnisse dokumentieren,"Als Tester möchte ich Testergebnisse und Belege zu einem Test speichern.
+
+Akzeptanzkriterien
+1. Testfälle besitzen eindeutige Vorbedingungen, Testdaten, Schritte und erwartete Ergebnisse.
+2. Stories, Tests, Test Sets, Pläne und Ausführungen sind nachvollziehbar miteinander verknüpft.
+3. Positive, negative, Grenzwert-, Berechtigungs- und Gerätefälle werden angemessen abgedeckt.
+4. Testergebnisse und Belege können pro Schritt dokumentiert und einem reproduzierbaren Lauf zugeordnet werden.
+5. Fehlgeschlagene Tests führen zu nachvollziehbaren Fehlern mit ausreichendem Kontext für die Analyse.
+6. Testabdeckung und Release-Abnahme lassen sich nach Epic, Priorität und Status auswerten.",High,KAN-9
+KAN-118,Story,E9-12 Fehler aus Tests erfassen,"Als Team möchte ich Fehler direkt aus fehlgeschlagenen Tests erfassen.
+
+Akzeptanzkriterien
+1. Testfälle besitzen eindeutige Vorbedingungen, Testdaten, Schritte und erwartete Ergebnisse.
+2. Stories, Tests, Test Sets, Pläne und Ausführungen sind nachvollziehbar miteinander verknüpft.
+3. Positive, negative, Grenzwert-, Berechtigungs- und Gerätefälle werden angemessen abgedeckt.
+4. Testergebnisse und Belege können pro Schritt dokumentiert und einem reproduzierbaren Lauf zugeordnet werden.
+5. Fehlgeschlagene Tests führen zu nachvollziehbaren Fehlern mit ausreichendem Kontext für die Analyse.
+6. Testabdeckung und Release-Abnahme lassen sich nach Epic, Priorität und Status auswerten.",High,KAN-9
+KAN-119,Story,E9-13 Testabdeckung sehen,"Als Product Owner möchte ich die Testabdeckung pro Epic und Release sehen.
+
+Akzeptanzkriterien
+1. Testfälle besitzen eindeutige Vorbedingungen, Testdaten, Schritte und erwartete Ergebnisse.
+2. Stories, Tests, Test Sets, Pläne und Ausführungen sind nachvollziehbar miteinander verknüpft.
+3. Positive, negative, Grenzwert-, Berechtigungs- und Gerätefälle werden angemessen abgedeckt.
+4. Testergebnisse und Belege können pro Schritt dokumentiert und einem reproduzierbaren Lauf zugeordnet werden.
+5. Fehlgeschlagene Tests führen zu nachvollziehbaren Fehlern mit ausreichendem Kontext für die Analyse.
+6. Testabdeckung und Release-Abnahme lassen sich nach Epic, Priorität und Status auswerten.",High,KAN-9
+KAN-120,Story,E9-14 Release-Abnahmekriterien definieren,"Als Release-Verantwortlicher möchte ich klare Abnahmekriterien für einen Release haben.
+
+Akzeptanzkriterien
+1. Testfälle besitzen eindeutige Vorbedingungen, Testdaten, Schritte und erwartete Ergebnisse.
+2. Stories, Tests, Test Sets, Pläne und Ausführungen sind nachvollziehbar miteinander verknüpft.
+3. Positive, negative, Grenzwert-, Berechtigungs- und Gerätefälle werden angemessen abgedeckt.
+4. Testergebnisse und Belege können pro Schritt dokumentiert und einem reproduzierbaren Lauf zugeordnet werden.
+5. Fehlgeschlagene Tests führen zu nachvollziehbaren Fehlern mit ausreichendem Kontext für die Analyse.
+6. Testabdeckung und Release-Abnahme lassen sich nach Epic, Priorität und Status auswerten.",High,KAN-9
