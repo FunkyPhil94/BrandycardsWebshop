@@ -1279,3 +1279,17 @@ CSV-Update wurde bei den bereits vorhandenen teamverwalteten Vorgängen
 Stapeländerungen den Epics KAN-1 bis KAN-9 zugeordnet. Die Verifikation ergab
 11, 13, 12, 12, 10, 12, 13, 14 und 14 Stories je Epic; die Gesamt-JQL-Abfrage
 zeigt 111 Stories. Es wurden keine Tasks, Tests oder weiteren Epics angelegt.
+
+## 2026-08-13 — Jira-Story-Priorisierung und MVP-Schnitt
+
+Für den MVP wurde angenommen, dass Kunden Karten finden, Produktdetails
+ansehen, Karten in den Warenkorb legen, als Gast bestellen und per PayPal
+bezahlen können. Der Betreiber soll Katalog, Bestand, Bestellungen,
+Synchronisation und Versandbetrieb verwalten können. Kundenkonto und
+Verkäuferfunktionen folgen danach.
+
+Die 111 Stories wurden in Jira priorisiert: 53 als `Highest` für den
+unmittelbaren Shop-Kern und die notwendige Administration, 42 als `High` für
+UI, Xray und direkt anschließende Funktionen, 4 als `Medium` für spätere
+Betriebs- und Komfortfunktionen sowie 12 als `Lowest` für die vollständige
+Verkäuferfunktionalität. Eine JQL-Prüfung ergab keine Story ohne Priorität.

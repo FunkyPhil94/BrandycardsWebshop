@@ -45,6 +45,13 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 - Ergebnis: Alle 111 nummerierten User Stories wurden per CSV als Stories KAN-10 bis KAN-120 importiert. Es entstanden keine Duplikate.
 - Ergebnis ergänzt: Die anfängliche Parent-Zuordnung meldete neun Warnungen; deshalb wurden die Stories anschließend in neun Stapelaktionen den Epics KAN-1 bis KAN-9 zugeordnet. Die verifizierten Mengen sind E1 11, E2 13, E3 12, E4 12, E5 10, E6 12, E7 13, E8 14 und E9 14 Stories.
 
+### 2026-08-13 - Jira-Story-Priorisierung und MVP-Schnitt
+
+- Status: ABGESCHLOSSEN.
+- Ziel: Die 111 Stories nach dem abgestimmten MVP-Schnitt priorisieren.
+- Ergebnis: 53 Stories als `Highest`, 42 als `High`, 4 als `Medium` und 12 als `Lowest` markiert; keine Story blieb ohne Priorität.
+- MVP-Annahme: Kunden können Karten finden, Details ansehen, in den Warenkorb legen, als Gast bestellen und per PayPal bezahlen. Der Betreiber kann Katalog, Bestand, Bestellungen, Synchronisation und Versandbetrieb verwalten. Kundenkonto und Verkäuferfunktionen folgen nach dem MVP.
+
 ### 2026-08-13 - Jira-Projekt und Board einrichten
 
 - Status: WARTET AUF NUTZER.
