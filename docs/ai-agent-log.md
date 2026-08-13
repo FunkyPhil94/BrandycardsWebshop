@@ -1229,3 +1229,13 @@ Bestell- und Verkäufernachricht auslösen.
 Die Oberfläche zeigt den Gastweg verständlich an, ohne Registrierung oder Login
 zu verlangen. `npx tsc --noEmit`, ESLint, Build und 356 Tests waren erfolgreich;
 es bleibt nur die bereits vorhandene Hook-Warnung in `app/account/page.tsx`.
+
+## 2026-08-13 — Arbeitsboard mit Epic-Swimlanes
+
+Der Nutzer möchte kein sprintzentriertes Setup, sondern ein Board, in dem
+Epics und darunter Stories bzw. Tasks visuell nach Status verfolgt werden.
+Daher wurden im bestehenden teamverwalteten BrandyCards-Bereich die Sprints
+deaktiviert und die Board-Gruppierung auf `Epic` gesetzt. Die vorhandene
+Kanban-Struktur bleibt erhalten; die Erstellungsmaske bietet `Epic`, `Story`
+und `Task`, und Unteraufgaben können über die Parent-Beziehung angelegt werden.
+Es wurden keine Beispielvorgänge erzeugt.
