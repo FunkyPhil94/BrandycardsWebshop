@@ -39,10 +39,10 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ### 2026-08-13 - Jira-User-Stories per CSV importieren
 
-- Status: LÄUFT.
+- Status: WARTET AUF NUTZER.
 - Ziel: Die 108 abgestimmten User Stories als Stories in das bestehende Jira-Projekt KAN importieren und den neun vorhandenen Epics KAN-1 bis KAN-9 zuordnen.
 - Rahmen: Keine Tasks, Tests oder neuen Epics anlegen; bestehende Vorgänge nicht verändern oder löschen.
-- Ausführung: CSV UTF-8 mit eindeutigen Work item IDs, Zusammenfassungen, Beschreibungen und Parent-Zuordnung erstellen; über Jira CSV-Importer importieren; Anzahl und Epic-Zuordnungen anschließend per JQL verifizieren.
+- Zwischenstand: Beim Abgleich der nummerierten Liste wurden 111 statt 108 Stories gezählt. Noch keine CSV erstellt und keine Stories importiert; Nutzerentscheidung ausstehend, ob alle 111 importiert werden sollen.
 
 ### 2026-08-13 - Jira-Projekt und Board einrichten
 
