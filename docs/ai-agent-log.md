@@ -1239,3 +1239,11 @@ deaktiviert und die Board-Gruppierung auf `Epic` gesetzt. Die vorhandene
 Kanban-Struktur bleibt erhalten; die Erstellungsmaske bietet `Epic`, `Story`
 und `Task`, und Unteraufgaben können über die Parent-Beziehung angelegt werden.
 Es wurden keine Beispielvorgänge erzeugt.
+
+## 2026-08-13 — Xray Standard-Trial
+
+Für das gewünschte Testmanagement wurde die einfachste Xray-Cloud-Edition
+(`Standard`) auf der Jira-Site `brandycards.atlassian.net` als 30-Tage-Trial
+installiert. Die Atlassian-Marketplace-Prüfung zeigte anschließend USD 10 pro
+Monat als Schätzung nach dem Trial bei 10 Nutzern, zuzüglich Steuern. Die
+Advanced-Edition wurde nicht ausgewählt und es wurden keine Testdaten angelegt.

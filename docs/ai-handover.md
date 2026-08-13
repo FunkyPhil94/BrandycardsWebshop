@@ -47,6 +47,14 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 - Ergebnis ergänzt: Sprints deaktiviert; auf dem Board ist jetzt `Nach Epic gruppieren` aktiv. Die Erstellungsmaske bietet `Epic`, `Story` und `Task`; Jira zeigt damit Epics als Swimlane-Gruppen, sobald zugehörige Vorgänge angelegt sind. Es wurden keine Vorgänge erstellt, gelöscht oder verändert.
 - Offen: Erste echte Epics und Stories nach Nutzerfreigabe anlegen.
 
+### 2026-08-13 - Xray-Trial integrieren
+
+- Status: WARTET AUF NUTZER.
+- Ziel: Xray als Testmanagement-App in der einfachsten Cloud-Edition für die Jira-Site `brandycards.atlassian.net` testen.
+- Rahmen: Nur den ausdrücklich gewünschten Trial starten; keine Advanced-Edition und keine Testdaten anlegen.
+- Ergebnis: `Xray - Test Management for Jira` in der Edition `Standard` erfolgreich als 30-Tage-Trial hinzugefügt. Jira bestätigt `Standard added` und stellt die Konfiguration bereit. Die Marketplace-Prüfseite zeigte danach USD 10/Monat als Schätzung nach dem Trial bei 10 Nutzern, zzgl. Steuern.
+- Offen: Xray konfigurieren und erste Testvorgänge bzw. Testfälle gemeinsam anlegen.
+
 ## Historie
 
 ### 2026-08-12 - Gastcheckout ohne Kundenkonto
