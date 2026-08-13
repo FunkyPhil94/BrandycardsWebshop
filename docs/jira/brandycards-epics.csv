@@ -1,0 +1,10 @@
+Work type,Summary,Description,Work item ID
+Epic,"Produktkatalog & Kartenverwaltung","Produkte, Sammelsets und einzelne Karten strukturiert verwalten – inklusive Bildern, Preisen, Zuständen und Verfügbarkeiten.",1001
+Epic,"Suche, Filter & Produktdetailseiten","Kunden finden passende Karten schnell über Suche und Filter und erhalten auf der Produktdetailseite alle relevanten Informationen.",1002
+Epic,"Warenkorb & Checkout","Ein klarer und zuverlässiger Kaufprozess vom Warenkorb bis zur Bestellbestätigung – einschließlich Gastcheckout.",1003
+Epic,"Zahlungen & Bestellabwicklung","Zahlungen, Bestellstatus, Reservierungen, Stornierungen, Rückerstattungen und die weitere Bestellabwicklung sicher unterstützen.",1004
+Epic,"Kundenkonto & Self-Service","Kunden können ihr Konto, ihre Bestellungen und persönliche Daten selbstständig verwalten.",1005
+Epic,"Karten verkaufen / Anbieter-Funktionalität","Nutzer können Karten oder Sammlungen zum Verkauf anbieten und den Ankaufprozess nachvollziehbar durchführen.",1006
+Epic,"Admin & Shop-Betrieb","Administratoren können Produkte, Bestände, Bestellungen, Nutzer und zentrale Shop-Einstellungen effizient verwalten.",1007
+Epic,"User Interface & Shop Experience","Ein moderner, übersichtlicher und vertrauenswürdiger Shop mit konsistentem Design, responsiver Darstellung und barrierearmer Bedienung.",1008
+Epic,"Qualitätssicherung & Testmanagement (Xray)","Funktionale Qualität, Regressionen und Abnahmen mit Xray strukturiert planen, durchführen und nachvollziehbar dokumentieren.",1009

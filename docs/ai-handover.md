@@ -42,7 +42,7 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 - Status: LÄUFT.
 - Ziel: Die acht fachlichen Epics für den BrandyCards Webshop als CSV vorbereiten und ausschließlich als Epics in das Jira-Projekt KAN importieren.
 - Rahmen: Keine User Stories, Tasks oder Tests anlegen; keine bestehenden Jira-Vorgänge verändern oder löschen.
-- Vorgesehene Epics: Produktkatalog & Kartenverwaltung; Suche, Filter & Produktdetailseiten; Warenkorb & Checkout; Zahlungen & Bestellabwicklung; Kundenkonto & Self-Service; Karten verkaufen / Anbieter-Funktionalität; Admin & Shop-Betrieb; User Interface & Shop Experience.
+- Vorgesehene Epics: Produktkatalog & Kartenverwaltung; Suche, Filter & Produktdetailseiten; Warenkorb & Checkout; Zahlungen & Bestellabwicklung; Kundenkonto & Self-Service; Karten verkaufen / Anbieter-Funktionalität; Admin & Shop-Betrieb; User Interface & Shop Experience; Qualitätssicherung & Testmanagement (Xray).
 - Ausführung: CSV UTF-8 mit eindeutiger Work item ID erstellen, im Jira-CSV-Importer prüfen und importieren; Ergebnis danach verifizieren.
 
 ### 2026-08-13 - Jira-Projekt und Board einrichten
