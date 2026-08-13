@@ -52,6 +52,12 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 - Ergebnis: 53 Stories als `Highest`, 42 als `High`, 4 als `Medium` und 12 als `Lowest` markiert; keine Story blieb ohne Priorität.
 - MVP-Annahme: Kunden können Karten finden, Details ansehen, in den Warenkorb legen, als Gast bestellen und per PayPal bezahlen. Der Betreiber kann Katalog, Bestand, Bestellungen, Synchronisation und Versandbetrieb verwalten. Kundenkonto und Verkäuferfunktionen folgen nach dem MVP.
 
+### 2026-08-13 - Jira-Akzeptanzkriterien, Tasks und Xray-Testfälle
+
+- Status: LÄUFT.
+- Ziel: Für alle 111 vorhandenen Stories detaillierte Akzeptanzkriterien ergänzen, fachlich passende Umsetzungstasks anlegen und mehrere ausführbare Xray-Testfälle je Story vorbereiten.
+- Rahmen: Keine Stories, Epics oder bestehenden Vorgänge löschen; bestehende Prioritäten und Epic-/Story-Beziehungen beibehalten. Die neuen Tasks werden direkt ihren Stories untergeordnet; Tests werden als Xray-Testvorgänge mit eindeutiger Story-Abdeckung angelegt.
+
 ### 2026-08-13 - Jira-Projekt und Board einrichten
 
 - Status: WARTET AUF NUTZER.
