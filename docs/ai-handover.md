@@ -39,10 +39,11 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ### 2026-08-13 - Jira-User-Stories per CSV importieren
 
-- Status: LÄUFT.
-- Ziel: Die 108 abgestimmten User Stories als Stories in das bestehende Jira-Projekt KAN importieren und den neun vorhandenen Epics KAN-1 bis KAN-9 zuordnen.
+- Status: ABGESCHLOSSEN.
+- Ziel: Die abgestimmten User Stories als Stories in das bestehende Jira-Projekt KAN importieren und den neun vorhandenen Epics KAN-1 bis KAN-9 zuordnen.
 - Rahmen: Keine Tasks, Tests oder neuen Epics anlegen; bestehende Vorgänge nicht verändern oder löschen.
-- Zwischenstand: Beim Abgleich der nummerierten Liste wurden 111 statt 108 Stories gezählt. Der Nutzer hat bestätigt, dass alle 111 importiert werden sollen, sofern keine Duplikate entstehen.
+- Ergebnis: Alle 111 nummerierten User Stories wurden per CSV als Stories KAN-10 bis KAN-120 importiert. Es entstanden keine Duplikate.
+- Ergebnis ergänzt: Die anfängliche Parent-Zuordnung meldete neun Warnungen; deshalb wurden die Stories anschließend in neun Stapelaktionen den Epics KAN-1 bis KAN-9 zugeordnet. Die verifizierten Mengen sind E1 11, E2 13, E3 12, E4 12, E5 10, E6 12, E7 13, E8 14 und E9 14 Stories.
 
 ### 2026-08-13 - Jira-Projekt und Board einrichten
 

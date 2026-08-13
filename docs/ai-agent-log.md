@@ -1267,3 +1267,15 @@ geeignete alte CSV-Importmaske verwendet. Dort wurden `Work type`,
 `Summary`, `Description` und `Work item ID` zugeordnet; der Import meldete
 anschließend neun erfolgreich angelegte Vorgänge. Eine JQL-Prüfung bestätigte
 alle neun Epics in KAN.
+
+## 2026-08-13 — Jira-User-Stories per CSV importieren
+
+Die CSV enthielt 111 eindeutige User Stories statt der zuvor erwarteten 108;
+der Nutzer bestätigte die vollständige Menge. Der Import legte alle 111 Stories
+als KAN-10 bis KAN-120 an. Jira konnte beim Erstimport die neun Parent-Epics
+nicht automatisch auflösen und meldete dafür neun Warnungen. Ein anschließender
+CSV-Update wurde bei den bereits vorhandenen teamverwalteten Vorgängen
+übersprungen. Deshalb wurden die Stories in neun kontrollierten
+Stapeländerungen den Epics KAN-1 bis KAN-9 zugeordnet. Die Verifikation ergab
+11, 13, 12, 12, 10, 12, 13, 14 und 14 Stories je Epic; die Gesamt-JQL-Abfrage
+zeigt 111 Stories. Es wurden keine Tasks, Tests oder weiteren Epics angelegt.
