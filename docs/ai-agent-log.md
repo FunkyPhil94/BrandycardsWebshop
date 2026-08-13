@@ -1256,3 +1256,14 @@ und den Xray-Entitäten zugeordnet. `Epic` und `Story` sind als testabdeckbare
 Vorgangstypen konfiguriert. Im funktionierenden Xray Testing Board wurde im
 Test Repository der Basisordner `Webshop` erstellt; fachliche Testfälle und
 sonstige Beispielvorgänge wurden bewusst noch nicht angelegt.
+
+## 2026-08-13 — Jira-Epics per CSV importieren
+
+Die fachliche Struktur wurde als neun reine Epic-Vorgänge importiert, damit
+Stories und Tasks später gezielt darunter angelegt werden können. Der neue
+Jira-Importassistent validierte die CSV zwar, legte im bestehenden
+teamverwalteten Projekt aber keine Vorgänge an. Deshalb wurde die dafür
+geeignete alte CSV-Importmaske verwendet. Dort wurden `Work type`,
+`Summary`, `Description` und `Work item ID` zugeordnet; der Import meldete
+anschließend neun erfolgreich angelegte Vorgänge. Eine JQL-Prüfung bestätigte
+alle neun Epics in KAN.

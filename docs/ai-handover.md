@@ -37,14 +37,6 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-### 2026-08-13 - Jira-Epics per CSV importieren
-
-- Status: LÄUFT.
-- Ziel: Die acht fachlichen Epics für den BrandyCards Webshop als CSV vorbereiten und ausschließlich als Epics in das Jira-Projekt KAN importieren.
-- Rahmen: Keine User Stories, Tasks oder Tests anlegen; keine bestehenden Jira-Vorgänge verändern oder löschen.
-- Vorgesehene Epics: Produktkatalog & Kartenverwaltung; Suche, Filter & Produktdetailseiten; Warenkorb & Checkout; Zahlungen & Bestellabwicklung; Kundenkonto & Self-Service; Karten verkaufen / Anbieter-Funktionalität; Admin & Shop-Betrieb; User Interface & Shop Experience; Qualitätssicherung & Testmanagement (Xray).
-- Ausführung: CSV UTF-8 mit eindeutiger Work item ID erstellen, im Jira-CSV-Importer prüfen und importieren; Ergebnis danach verifizieren.
-
 ### 2026-08-13 - Jira-Projekt und Board einrichten
 
 - Status: WARTET AUF NUTZER.
@@ -73,6 +65,13 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 - Offen: Fachliche Struktur und erste Epics, Tasks, User Stories und Tests gemeinsam festlegen.
 
 ## Historie
+
+### 2026-08-13 - Jira-Epics per CSV importieren
+
+- Status: ABGESCHLOSSEN.
+- Ergebnis: Eine UTF-8-CSV mit neun Epics erstellt und über Jira's CSV-Importer in das bestehende Projekt KAN importiert. Der Importbericht bestätigt "0 Projekte und 9 Vorgänge erfolgreich importiert".
+- Verifikation: Die JQL-Abfrage `project = KAN AND issuetype = Epic` zeigt KAN-1 bis KAN-9 mit den erwarteten Zusammenfassungen.
+- Rahmen eingehalten: Keine User Stories, Tasks oder Tests angelegt; bestehende Vorgänge nicht verändert oder gelöscht.
 
 ### 2026-08-12 - Gastcheckout ohne Kundenkonto
 
