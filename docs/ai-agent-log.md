@@ -1247,3 +1247,12 @@ Für das gewünschte Testmanagement wurde die einfachste Xray-Cloud-Edition
 installiert. Die Atlassian-Marketplace-Prüfung zeigte anschließend USD 10 pro
 Monat als Schätzung nach dem Trial bei 10 Nutzern, zuzüglich Steuern. Die
 Advanced-Edition wurde nicht ausgewählt und es wurden keine Testdaten angelegt.
+
+## 2026-08-13 — Xray konfigurieren und Test Repository anlegen
+
+Im teamverwalteten Jira-Bereich wurden die fünf benötigten Xray-Arbeitstypen
+`Test`, `Precondition`, `Test Set`, `Test Plan` und `Test Execution` angelegt
+und den Xray-Entitäten zugeordnet. `Epic` und `Story` sind als testabdeckbare
+Vorgangstypen konfiguriert. Im funktionierenden Xray Testing Board wurde im
+Test Repository der Basisordner `Webshop` erstellt; fachliche Testfälle und
+sonstige Beispielvorgänge wurden bewusst noch nicht angelegt.

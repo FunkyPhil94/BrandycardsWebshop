@@ -55,6 +55,15 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 - Ergebnis: `Xray - Test Management for Jira` in der Edition `Standard` erfolgreich als 30-Tage-Trial hinzugefügt. Jira bestätigt `Standard added` und stellt die Konfiguration bereit. Die Marketplace-Prüfseite zeigte danach USD 10/Monat als Schätzung nach dem Trial bei 10 Nutzern, zzgl. Steuern.
 - Offen: Xray konfigurieren und erste Testvorgänge bzw. Testfälle gemeinsam anlegen.
 
+### 2026-08-13 - Xray für BrandyCards konfigurieren
+
+- Status: WARTET AUF NUTZER.
+- Ziel: Xray im bestehenden teamverwalteten Bereich für Epics, Stories und Tests nutzbar machen und ein erstes Test-Repository anlegen.
+- Rahmen: Keine Beispieltests oder fachlichen Vorgänge anlegen; nur die ausdrücklich gewünschte Xray-Struktur konfigurieren.
+- Ergebnis: Die fünf Xray-Arbeitstypen `Test`, `Precondition`, `Test Set`, `Test Plan` und `Test Execution` angelegt und in Xray zugeordnet. `Epic` und `Story` als testabdeckbare Vorgangstypen konfiguriert.
+- Ergebnis ergänzt: Das Xray Testing Board funktioniert; im Test Repository wurde der Basisordner `Webshop` angelegt. Das Repository enthält noch keine Testfälle.
+- Offen: Fachliche Struktur und erste Epics, Tasks, User Stories und Tests gemeinsam festlegen.
+
 ## Historie
 
 ### 2026-08-12 - Gastcheckout ohne Kundenkonto
