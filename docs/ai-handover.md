@@ -37,15 +37,6 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-### 2026-08-14 - Xray-Tests um hohe Viewport-Aufloesungen erweitern
-
-- Status: LAEUFT.
-- Ziel: Alle 333 bestehenden Xray-Testbeschreibungen um Full HD, WQHD, Ultrawide und 4K ergaenzen und die wiederverwendbare Testgenerierung fuer dieselben Viewports erweitern.
-- Rahmen: Nur Testbeschreibungen, Importartefakte und die Builder-Regel aktualisieren; keine Testergebnisse, Anhange, Stories oder Shopdaten veraendern.
-- Bestehender Stand: Die zehn bisher ausgefuehrten Tests basieren auf der bisherigen Evidenz mit Desktop, Tablet und Smartphone; die neuen Viewports werden nicht als bereits getestet ausgegeben.
-- Zwischenstand: Der erste CSV-Import wurde von Jira als Neuanlage interpretiert und meldet 251 neu angelegte Vorgange im exakten Bereich KAN-900 bis KAN-1150; der gewuenschte Update-Import ist damit nicht als Erfolg zu werten.
-- Offen: Den neu angelegten Bereich read-only abgrenzen und entfernen, danach einen sicheren Update-Weg ohne Neuanlagen verwenden und die Beschreibungen sowie den unveraenderten KAN-899-Status verifizieren.
-
 ### 2026-08-14 - Xray-Schritt 5: Testplan und Testausführung anlegen
 
 - Status: ABGESCHLOSSEN.
@@ -107,6 +98,16 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 - Offen: Fachliche Struktur und erste Epics, Tasks, User Stories und Tests gemeinsam festlegen.
 
 ## Historie
+
+### 2026-08-14 - Xray-Tests um hohe Viewport-Aufloesungen erweitern
+
+- Status: ABGESCHLOSSEN.
+- Ziel: Alle 333 bestehenden Xray-Testbeschreibungen um Full HD, WQHD, Ultrawide und 4K ergaenzen und die wiederverwendbare Testgenerierung fuer dieselben Viewports erweitern.
+- Ergebnis: Alle 333 Tests KAN-565 bis KAN-897 enthalten jetzt die verbindliche Responsive-Viewport-Sektion fuer Desktop 1440 x 900, Full HD 1920 x 1080, WQHD 2560 x 1440, Ultrawide 3440 x 1440, 4K 3840 x 2160, Tablet 768 x 1024 und Smartphone 390 x 844.
+- Ergebnis: KAN-898 und KAN-899 enthalten dieselbe Viewport-Regel. Die JQL-Pruefung `project = KAN AND issuetype = Test AND issuekey >= KAN-565 AND issuekey <= KAN-897 AND description ~ "Responsive Viewports"` liefert `333` Vorgange.
+- Artefakte: Der Builder `docs/jira/artifact_work/build-expansion.mjs` sowie `brandycards-xray-tests.csv`, `brandycards-xray-responsive-viewports-update.csv` und die Update-Chunks `brandycards-xray-responsive-viewports-update-01.csv` und `-02.csv` wurden erweitert bzw. erzeugt.
+- Importbefund: Der alte Jira-CSV-Importer legte beim Updateversuch irrtuemlich Duplikate an. Die exakt abgegrenzten Bereiche KAN-900 bis KAN-1150, KAN-1151 bis KAN-1350 sowie KAN-1351 bis KAN-1354 wurden anschliessend geloescht und per JQL als leer verifiziert. Die eigentlichen Testbeschreibungen wurden danach sicher ueber Jira's Bearbeitungsformular aktualisiert.
+- Sicherheit: Es wurden keine Testergebnisse, Anhaenge, Stories, Tasks oder Shopdaten veraendert. Die Tests wurden an den neuen Viewports nicht erneut ausgefuehrt; PASS/FAIL/BLOCKED und die vorhandene Screenshot-Evidenz bleiben unveraendert. Die neuen Viewports muessen bei kuenftigen Ausfuehrungen jeweils mit eigenen Screenshots belegt werden.
 
 ### 2026-08-14 - Fehlende Xray-Screenshot-Anhaenge ergaenzen
 

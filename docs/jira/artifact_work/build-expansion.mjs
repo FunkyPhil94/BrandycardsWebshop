@@ -22,6 +22,17 @@ if (storyRows.length !== 111) {
 const storyHeaders = ["Issue Key", "Work type", "Summary", "Description", "Priority", "Epic"];
 const taskHeaders = ["Work type", "Summary", "Description", "Work item ID", "Parent", "Priority"];
 const testHeaders = ["Work type", "Summary", "Description", "Work item ID", "Tests", "Priority"];
+const viewportPolicy = [
+  "Responsive Viewports",
+  "- Desktop: 1440 x 900 CSS-Pixel.",
+  "- Full HD: 1920 x 1080 CSS-Pixel.",
+  "- WQHD: 2560 x 1440 CSS-Pixel.",
+  "- Ultrawide: 3440 x 1440 CSS-Pixel.",
+  "- 4K: 3840 x 2160 CSS-Pixel.",
+  "- Tablet: 768 x 1024 CSS-Pixel.",
+  "- Smartphone: 390 x 844 CSS-Pixel.",
+  "- Bei UI-Tests jeden definierten Viewport pruefen und je Viewport einen eigenen Screenshot am Testlauf hinterlegen.",
+].join("\n");
 
 const csvEscape = (value) => {
   const text = String(value ?? "");
@@ -311,6 +322,8 @@ for (let index = 0; index < storyRows.length; index += 1) {
       "Erwartetes Ergebnis",
       expected,
       "",
+      viewportPolicy,
+      "",
       "Beleg und Nachbereitung",
       "- Fuer jeden einzelnen Testschritt unmittelbar nach der Ausfuehrung einen Screenshot als Anhang am Testlauf hinterlegen.",
       "- Der Screenshot muss die relevante Ausgangslage bzw. Eingabe und das sichtbare Ergebnis des jeweiligen Schrittes nachvollziehbar zeigen.",
@@ -327,6 +340,21 @@ for (let index = 0; index < storyRows.length; index += 1) {
 await fs.writeFile(`${outputDir}/brandycards-story-acceptance-criteria.csv`, toCsv(storyHeaders, acceptanceRows), "utf8");
 await fs.writeFile(`${outputDir}/brandycards-detailed-tasks.csv`, toCsv(taskHeaders, taskRows), "utf8");
 await fs.writeFile(`${outputDir}/brandycards-xray-tests.csv`, toCsv(testHeaders, testRows), "utf8");
+const responsiveViewportUpdateRows = testRows.map((row, index) => [`KAN-${565 + index}`, row[1], row[2]]);
+await fs.writeFile(
+  `${outputDir}/brandycards-xray-responsive-viewports-update.csv`,
+  toCsv(["Issue Key", "Summary", "Description"], responsiveViewportUpdateRows),
+  "utf8",
+);
+const responsiveViewportUpdateChunkSize = 200;
+for (let offset = 0, chunkNumber = 1; offset < responsiveViewportUpdateRows.length; offset += responsiveViewportUpdateChunkSize, chunkNumber += 1) {
+  const chunkRows = responsiveViewportUpdateRows.slice(offset, offset + responsiveViewportUpdateChunkSize);
+  await fs.writeFile(
+    `${outputDir}/brandycards-xray-responsive-viewports-update-${String(chunkNumber).padStart(2, "0")}.csv`,
+    toCsv(["Issue Key", "Summary", "Description"], chunkRows),
+    "utf8",
+  );
+}
 
 const reviewWorkbook = Workbook.create();
 const summarySheet = reviewWorkbook.worksheets.add("Summary");

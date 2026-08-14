@@ -1,5 +1,30 @@
 # BrandyCards Agentenprotokoll
 
+## 2026-08-14 - Xray-Tests um hohe Viewport-Aufloesungen erweitert
+
+Die Responsive-Testvorgabe wurde auf alle 333 bestehenden Xray-Testvorgaenge
+angewendet. Neben Desktop 1440 x 900, Tablet 768 x 1024 und Smartphone
+390 x 844 sind jetzt Full HD 1920 x 1080, WQHD 2560 x 1440, Ultrawide
+3440 x 1440 und 4K 3840 x 2160 fest dokumentiert. KAN-898 und KAN-899
+wurden ebenfalls um dieselbe Regel ergaenzt.
+
+Der erste CSV-Updateversuch war in dieser Jira-Konfiguration nicht sicher:
+Jira interpretierte die Schluesselspalte als Neuanlage und erzeugte zunaechst
+die Bereiche KAN-900 bis KAN-1150 sowie KAN-1151 bis KAN-1350. Zwei weitere
+kleine Importproben erzeugten KAN-1351 bis KAN-1354. Alle diese exakten Bereiche
+wurden anschliessend ueber Jira-Bulk-Loeschen entfernt und mit JQL als leer
+verifiziert. Die bestehenden Tests wurden danach ueber das Jira-Bearbeitungs-
+formular anhand ihrer internen IDs aktualisiert.
+
+Die Abschlusspruefung ueber
+`project = KAN AND issuetype = Test AND issuekey >= KAN-565 AND issuekey <= KAN-897 AND description ~ "Responsive Viewports"`
+liefert 333 von 333 Tests. Der Builder und die vollstaendige sowie in zwei
+Chunks geteilte Update-CSV sind fuer kuenftige Testfaelle vorbereitet.
+
+Wichtig: Die Erweiterung aendert die Testdokumentation, nicht die Testergebnisse.
+Die neuen Viewports wurden nicht rueckwirkend als ausgefuehrt markiert; bei einer
+Ausfuehrung ist je definiertem Viewport ein eigener Screenshot nachzuweisen.
+
 ## 2026-08-10 — Aufmerksamkeitsstärkere Impact-Flyer erstellt
 
 Die klaren Rasterlayouts wurden bewusst nicht mit zusätzlichem Fließtext
