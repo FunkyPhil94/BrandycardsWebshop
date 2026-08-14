@@ -1547,3 +1547,11 @@ Testlaeufe wurde einzeln nachgeladen und auf seinen Status geprueft. Die
 Statusaenderung und Begruendung wurden zusaetzlich als Kommentar an KAN-899
 gespeichert. Es wurden keine Shopdaten, Bestellungen, Zahlungen oder Admin-
 Schreibvorgaenge veraendert.
+
+## 2026-08-14 - Naechste 20 Xray-Tests wegen fehlender nativer Schritte blockiert
+
+Die naechsten 20 offenen Tests der Ausfuehrung KAN-899 wurden in der Xray-Reihenfolge KAN-897 bis KAN-878 einzeln aufgerufen. Jeder Testlauf stand auf `TO DO`. Im unteren Bereich der Xray-Ausfuehrung zeigte jeder Vorgang `Schritte 0 / Keine`; die fachlichen Schritte aus der Beschreibung sind keine nativen Xray-Manual-Steps und koennen deshalb nicht schrittweise ausgefuehrt oder mit Schrittresultaten belegt werden.
+
+Es wurden keine PASS- oder FAIL-Werte erfunden. Alle 20 Testlaeufe bleiben `TO DO`; KAN-899 bleibt bei 7 PASSED, 2 FAILED, 324 TO DO und 333 Tests gesamt. Fuer jeden betroffenen Vorgang wurde ein eigener Screenshot des konkreten Xray-Testlaufs mit Titel, Status und Umgebung als Jira-Anhang gespeichert. Die lokalen Nachweise liegen unter `docs/jira/generated/e9-next-20/`.
+
+Waehrend der Diagnose wurden bei KAN-878 kurzzeitig vier unvollstaendige native Schritte angelegt. Sie wurden vollstaendig geloescht und KAN-878 anschliessend wieder mit `Schritte 0 / Keine` verifiziert; die Testbeschreibung wurde nicht veraendert. Als umsetzbarer Folgepunkt wurde Jira-Todo KAN-1356 erstellt. Es fordert die Anlage der nativen Schritte, deren fachliche Pruefung sowie die anschliessende erneute Ausfuehrung mit Schritt-, Viewport- und Screenshot-Nachweisen. Shopdaten, Bestellungen, Zahlungen und Admin-Schreibvorgaenge blieben unberuehrt.

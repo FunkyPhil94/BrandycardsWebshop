@@ -39,13 +39,6 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 <!-- Fuer den naechsten Auftrag freihalten. -->
 
-### 2026-08-14 - Die naechsten 20 offenen Xray-Tests ausfuehren
-
-- Status: LAEUFT.
-- Ziel: Die naechsten 20 noch offenen Testlaeufe der Testausfuehrung KAN-899 in der bestehenden Xray-Reihenfolge gegen den oeffentlichen Shop ausfuehren.
-- Umfang: Pro Test die definierten Responsive-Viewports pruefen, je Testschritt nachvollziehbare Screenshots hinterlegen, Ergebnis und tatsaechlichen Befund dokumentieren sowie reproduzierte Fehler als Jira-Todo verknuepfen.
-- Rahmen: Nur die 20 ausgewaehlten Xray-Ergebniswerte, Kommentare und Screenshot-Anhaenge aendern; keine Testbeschreibungen, Stories, Tasks, Shopdaten, Bestellungen oder Zahlungen loeschen bzw. schreiben. PASS nur bei vollstaendiger Evidenz; unvollstaendige Faelle bleiben TO DO bzw. werden als FAIL mit Nachweis dokumentiert.
-
 ### 2026-08-14 - Xray-Schritt 5: Testplan und Testausführung anlegen
 
 - Status: ABGESCHLOSSEN.
@@ -107,6 +100,19 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 - Offen: Fachliche Struktur und erste Epics, Tasks, User Stories und Tests gemeinsam festlegen.
 
 ## Historie
+
+### 2026-08-14 - Die naechsten 20 offenen Xray-Tests pruefen
+
+- Status: TEILWEISE ABGESCHLOSSEN.
+- Ziel: Die naechsten 20 offenen Testlaeufe in der bestehenden Xray-Reihenfolge gegen den oeffentlichen Shop pruefen und nur mit vollstaendiger Evidenz bewerten.
+- Betroffene Tests: KAN-897 bis KAN-878, konkret KAN-897, KAN-896, KAN-895, KAN-894, KAN-893, KAN-892, KAN-891, KAN-890, KAN-889, KAN-888, KAN-887, KAN-886, KAN-885, KAN-884, KAN-883, KAN-882, KAN-881, KAN-880, KAN-879 und KAN-878.
+- Befund: Jeder der 20 Xray-Testlaeufe zeigt `TO DO`; die native Xray-Schrittanzeige steht auf `Schritte 0 / Keine`. Die fachlichen Schritte, Viewports und Screenshotregeln existieren nur im Beschreibungstext und sind dadurch nicht schrittweise in Xray ausfuehrbar.
+- Konsequenz: Kein kuenstlicher PASS oder FAIL. Die 20 Ergebniswerte blieben unveraendert auf `TO DO`. Die Ausfuehrungsuebersicht bleibt bei 7 PASSED, 2 FAILED, 324 TO DO und 333 Tests gesamt.
+- Nachweise: Fuer jeden der 20 Vorgangs-Tests wurde ein eigener Screenshot des konkreten Xray-Testlaufs mit Testtitel, Ausfuehrungsstatus und Umgebung angehaengt. Die Dateien liegen zusaetzlich unter `docs/jira/generated/e9-next-20/`.
+- Korrektur: Bei KAN-878 wurden waehrend der Blockerpruefung kurzzeitig vier unvollstaendige native Schritte angelegt; diese wurden vollstaendig geloescht und anschliessend erneut als `Schritte 0 / Keine` verifiziert. Die Testbeschreibung blieb unveraendert.
+- Todo: Jira-Todo `KAN-1356` `Xray-Testfaelle KAN-878–KAN-897 als native Manual Steps anlegen` erstellt. Es beschreibt die erforderliche Umwandlung, die fachliche Pruefung, die Screenshotpflicht und die anschliessende erneute Ausfuehrung.
+- Rahmen: Keine Teststatuswerte ausserhalb der genannten 20, keine Stories, keine Shopdaten, keine Bestellungen, keine Zahlungen und keine Admin-Schreibvorgaenge veraendert.
+- Offen: Nach Umsetzung von KAN-1356 die nativen Schritte in Xray anlegen und die 20 Testlaeufe mit Schritt-, Viewport- und Ergebnisnachweisen ausfuehren.
 
 ### 2026-08-14 - Xray-Statuswerte der zehn Wiederholungstests anpassen
 
