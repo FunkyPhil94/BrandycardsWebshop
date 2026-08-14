@@ -1524,3 +1524,26 @@ vom BODY auf die Links wechseln. Deshalb wurde dieser Test nicht kuenstlich als
 PASS oder FAIL gebucht. Ebenso wurden die historischen Xray-Ergebniswerte nicht
 umgebucht; KAN-899 bleibt bei 10 PASS, 323 TO DO und 333 Tests gesamt. Es wurden
 keine Bestellungen, Zahlungen oder produktiven Admin-Schreibvorgaenge ausgefuehrt.
+
+## 2026-08-14 - Xray-Statuswerte der zehn Wiederholungstests angepasst
+
+Die Xray-Testausfuehrung KAN-899 wurde ueber die sichtbare Xray-Testlaufansicht
+aktualisiert. Die Statusauswahl war als `data-status-id`-Steuerung im Xray-
+Testlauf vorhanden; eine direkte Statusaenderung wurde jeweils gespeichert und
+anschliessend erneut geladen verifiziert.
+
+Geaendert wurden KAN-820 und KAN-829 von `PASSED` auf `FAILED`. Beide Tests
+zeigen den reproduzierten Layoutfehler im Abschnitt `Mach uns ein Angebot.` ab
+WQHD; der Fehler ist in KAN-1355 beschrieben und mit Screenshot belegt. KAN-841
+wurde von `PASSED` auf `TO DO` gesetzt, weil die Tab-Tastatursteuerung in der
+Browsersteuerung nicht verlaesslich simulierbar war. Die Xray-Konfiguration
+bietet keinen `BLOCKED`-Status; `TO DO` ist deshalb der nicht-irrefuehrende
+Status fuer einen nicht abgeschlossenen Testlauf.
+
+Die sieben uebrigen Tests blieben `PASSED`: KAN-814, KAN-817, KAN-823, KAN-826,
+KAN-832, KAN-835 und KAN-838. Die Ausfuehrungsuebersicht bestaetigt nach der
+Aenderung `7 PASSED`, `2 FAILED`, `324 TO DO`, `333` gesamt. Jeder der zehn
+Testlaeufe wurde einzeln nachgeladen und auf seinen Status geprueft. Die
+Statusaenderung und Begruendung wurden zusaetzlich als Kommentar an KAN-899
+gespeichert. Es wurden keine Shopdaten, Bestellungen, Zahlungen oder Admin-
+Schreibvorgaenge veraendert.

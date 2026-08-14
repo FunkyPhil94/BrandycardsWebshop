@@ -108,6 +108,16 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Historie
 
+### 2026-08-14 - Xray-Statuswerte der zehn Wiederholungstests anpassen
+
+- Status: ABGESCHLOSSEN.
+- Ziel: Die Ergebnisstatus der zehn bereits erneut geprueften UI-Tests in der Testausfuehrung KAN-899 an die dokumentierte Wiederholung anpassen.
+- Umsetzung: KAN-820 und KAN-829 von PASS auf FAILED gesetzt, weil der Angebotsabschnitt ab WQHD kollabiert. KAN-841 von PASS auf TO DO gesetzt, weil die Tab-Tastatursteuerung mit der Browsersteuerung nicht verlaesslich simulierbar war; Xray bietet in dieser Konfiguration keinen BLOCKED-Status.
+- Ergebnis: KAN-814, KAN-817, KAN-823, KAN-826, KAN-832, KAN-835 und KAN-838 = PASSED; KAN-820 und KAN-829 = FAILED; KAN-841 = TO DO.
+- Verifikation: Vorher 10 PASSED, 323 TO DO, 333 gesamt; nachher 7 PASSED, 2 FAILED, 324 TO DO, 333 gesamt. Die zehn Testlaeufe wurden einzeln verifiziert.
+- Dokumentation: Die Statusaenderung und die Begruendung wurden an KAN-899 kommentiert. KAN-1355 bleibt als Layout-Todo und Fehlernachweis verknuepft.
+- Rahmen: Nur Xray-Ergebniswerte und die Ausfuehrungsdokumentation geaendert; keine Testbeschreibungen, Anhaenge oder Shopdaten geloescht.
+
 ### 2026-08-14 - Die zehn abgeschlossenen Xray-Tests erneut ausfuehren
 
 - Status: TEILWEISE ABGESCHLOSSEN.
