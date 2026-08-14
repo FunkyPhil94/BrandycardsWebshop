@@ -37,8 +37,13 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-Der aktuelle Auftrag ist leer. Neue Auftraege werden vor der ersten Ausfuehrung
-hier eingetragen.
+### 2026-08-14 - Xray-Tests um hohe Viewport-Aufloesungen erweitern
+
+- Status: LAEUFT.
+- Ziel: Alle 333 bestehenden Xray-Testbeschreibungen um Full HD, WQHD, Ultrawide und 4K ergaenzen und die wiederverwendbare Testgenerierung fuer dieselben Viewports erweitern.
+- Rahmen: Nur Testbeschreibungen, Importartefakte und die Builder-Regel aktualisieren; keine Testergebnisse, Anhange, Stories oder Shopdaten veraendern.
+- Bestehender Stand: Die zehn bisher ausgefuehrten Tests basieren auf der bisherigen Evidenz mit Desktop, Tablet und Smartphone; die neuen Viewports werden nicht als bereits getestet ausgegeben.
+- Offen: Builder/CSV aktualisieren, Jira-Import ausfuehren und die Beschreibungen sowie den unveraenderten KAN-899-Status verifizieren.
 
 ### 2026-08-14 - Xray-Schritt 5: Testplan und Testausführung anlegen
 
