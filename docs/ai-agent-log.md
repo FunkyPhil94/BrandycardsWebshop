@@ -1393,3 +1393,21 @@ Testkonten und vorbereitete Testdaten. Insbesondere duerfen Kauf-, Zahlungs- und
 Adminfaelle nicht gegen Produktion oder mit privaten Zugangsdaten ausgefuehrt
 werden. Deshalb wurden keine Xray-Ergebnisse oder Screenshots als Testergebnis
 eingetragen; KAN-899 bleibt vollstaendig auf `TO DO` und wartet auf Testzugang.
+
+## 2026-08-14 - Xray-Ausfuehrung: zehn sichere UI-Smoke-Tests
+
+Nach der Freigabe einer angemeldeten Browser-Sitzung wurden zehn einfache,
+nicht-destruktive UI-Testfaelle gegen `https://shop.brandycards.de` ausgefuehrt:
+KAN-814, KAN-817, KAN-820, KAN-823, KAN-826, KAN-829, KAN-832, KAN-835,
+KAN-838 und KAN-841. Jeder Test wurde mit Startansicht, Desktop-, Tablet- und
+Smartphone-Viewport, Aktionsschritt und Ergebnisansicht belegt. Damit entstanden
+60 Screenshots; sie wurden an die jeweiligen Xray-Testvorgaenge angehaengt und
+sind im Testlauf als Vorgangs-Anhaenge zum Test einsehbar.
+
+Alle zehn Tests wurden nur nach erfolgreicher sichtbarer Pruefung als `PASS`
+gebucht. Die serverseitige Verifikation von KAN-899 zeigt `10 PASS`, `323 TO DO`
+und `333 Tests gesamt`. KAN-823 benoetigte fuer den Produktdetailaufruf eine
+direkte Produkt-URL, weil der sichtbare Link im aktuellen Viewport nicht klickbar
+war; der Detailinhalt wurde anschliessend geprueft. Kauf, Zahlung und
+Admin-Schreibvorgaenge wurden nicht ausgefuehrt. Die restlichen 323 Tests bleiben
+bewusst offen.

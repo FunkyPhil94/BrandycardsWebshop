@@ -37,15 +37,8 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-### 2026-08-14 - Xray-Testausfuehrung mit Screenshot-Nachweisen
-
-- Status: LAEUFT.
-- Ziel: Die in `KAN-899` enthaltenen Xray-Testfaelle gegen eine verfuegbare BrandyCards-Testumgebung ausfuehren und je Testschritt Screenshot, Ergebnis und Befund dokumentieren.
-- Rahmen: Keine echten Bestellungen, Zahlungen, Produktionsdaten- oder Admin-Schreibvorgaenge ohne sichere Testdaten und ausdrueckliche Freigabe; Passwoerter, Tokens und Zahlungsdaten niemals in Screenshots speichern.
-- Startpunkt: KAN-899 enthaelt 333 Tests im Status `TO DO`; bisher existieren keine Ausfuehrungsnachweise.
-- Ergebnis: `https://shop.brandycards.de` ist erreichbar; der oeffentliche Kartenbestand laedt. Der Nutzer hat jetzt eine Testsitzung im Browser angemeldet und zehn einfache, nicht-destruktive Faelle zur Ausfuehrung freigegeben.
-- Ergebnis: Keine Screenshots, Testergebnisse oder Statusaenderungen in KAN-899 erfunden; alle 333 Tests bleiben `TO DO`, und es wurden keine kaufenden, zahlenden oder administrativen Schreibvorgaenge ausgefuehrt.
-- Offen: Zehn ausgewaehlte Faelle mit Screenshot je Schritt ausfuehren, in Xray als PASS/FAIL/BLOCKED dokumentieren und danach den Stand von KAN-899 verifizieren. Kauf, Zahlung und Admin-Schreibvorgaenge bleiben ausserhalb dieses Laufs.
+Der aktuelle Auftrag ist leer. Neue Auftraege werden vor der ersten Ausfuehrung
+hier eingetragen.
 
 ### 2026-08-14 - Xray-Schritt 5: Testplan und Testausführung anlegen
 
@@ -108,6 +101,17 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 - Offen: Fachliche Struktur und erste Epics, Tasks, User Stories und Tests gemeinsam festlegen.
 
 ## Historie
+
+### 2026-08-14 - Xray-Testausfuehrung mit Screenshot-Nachweisen
+
+- Status: ABGESCHLOSSEN.
+- Ziel: Zehn einfache, nicht-destruktive Xray-Testfaelle gegen `https://shop.brandycards.de` ausfuehren und je Testschritt Screenshot, Ergebnis und Befund dokumentieren.
+- Rahmen: Keine echten Bestellungen, Zahlungen, Produktionsdaten- oder Admin-Schreibvorgaenge; keine Passwoerter, Tokens oder Zahlungsdaten in Screenshots speichern.
+- Ergebnis: KAN-814, KAN-817, KAN-820, KAN-823, KAN-826, KAN-829, KAN-832, KAN-835, KAN-838 und KAN-841 wurden ausgefuehrt und als PASS gebucht.
+- Nachweise: 60 Screenshots erstellt (je Test Start, drei Viewports, Aktionsschritt und Ergebnis) und an den jeweiligen Xray-Testvorgang angehaengt.
+- Verifikation: KAN-899 serverseitig geprueft mit `10 PASS`, `323 TO DO`, `333 Tests gesamt`.
+- Hinweis: KAN-823 benoetigte fuer den Produktdetailaufruf eine direkte, zuvor im DOM ermittelte Produkt-URL, da der sichtbare Link im aktuellen Viewport nicht klickbar war; der Detailinhalt wurde anschliessend geprueft.
+- Sicherheit: Keine Kauf-, Zahlungs- oder Admin-Schreibvorgaenge ausgefuehrt. Die vollstaendige Suite mit 333 Tests ist nicht abgeschlossen; 323 Tests bleiben bewusst `TO DO`.
 
 ### 2026-08-13 - Jira-Epics per CSV importieren
 
