@@ -37,6 +37,12 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
+### 2026-08-14 - Xray-Schritt 5: Testplan und Testausführung anlegen
+
+- Status: LÄUFT.
+- Ziel: Für die 333 vorhandenen Xray-Testfälle einen Testplan und eine erste Testausführung anlegen, damit die Tests anschließend mit PASS, FAIL oder BLOCKED ausgeführt und dokumentiert werden können.
+- Rahmen: Keine Testergebnisse vorwegnehmen; bestehende Stories, Tasks und Tests nicht löschen oder inhaltlich verändern. Nur neue Xray-Container und die erforderlichen Testzuordnungen anlegen.
+
 ### 2026-08-13 - Jira-User-Stories per CSV importieren
 
 - Status: ABGESCHLOSSEN.
