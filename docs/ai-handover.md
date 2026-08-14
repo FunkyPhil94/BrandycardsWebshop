@@ -37,13 +37,8 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-### 2026-08-14 - Xray-Nachweise KAN-820 reparieren
-
-- Status: LAEUFT.
-- Ziel: Die gemeldete Inkonsistenz zwischen KAN-820 ohne sichtbare Bilder/Screenshots und KAN-823 mit Nachweisen untersuchen, fehlende Nachweise fuer KAN-820 ergaenzen und beide Xray-Testvorgaenge verifizieren.
-- Rahmen: Nur die betroffenen Xray-Testvorgaenge und ihre Anhange bearbeiten; keine Bestellungen, Zahlungen, Admin-Schreibvorgaenge oder sensiblen Daten in Screenshots.
-- Startpunkt: Nutzer meldet, dass KAN-820 keine Bilder/Screenshots zeigt, waehrend KAN-823 Nachweise zeigt.
-- Offen: Ursache im Jira/Xray-Anhangzustand feststellen, KAN-820 korrigieren und den Testlauf anschliessend erneut pruefen.
+Der aktuelle Auftrag ist leer. Neue Auftraege werden vor der ersten Ausfuehrung
+hier eingetragen.
 
 ### 2026-08-14 - Xray-Schritt 5: Testplan und Testausführung anlegen
 
@@ -106,6 +101,14 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 - Offen: Fachliche Struktur und erste Epics, Tasks, User Stories und Tests gemeinsam festlegen.
 
 ## Historie
+
+### 2026-08-14 - Xray-Nachweise KAN-820 reparieren
+
+- Status: ABGESCHLOSSEN.
+- Ursache: Die lokalen KAN-820-Screenshots waren noch vorhanden, wurden beim urspruenglichen Durchlauf aber nicht als Jira-Anhaenge an KAN-820 uebertragen. KAN-823 hatte dagegen sechs erfolgreiche Standard-Jira-Anhaenge.
+- Korrektur: Die sechs KAN-820-Nachweise `S01_Ausgangslage`, `S02_Desktop`, `S02_Tablet`, `S02_Smartphone`, `S03_Kernaktion` und `S04_Ergebnis` wurden nachtraeglich an KAN-820 angehaengt.
+- Verifikation: KAN-820 zeigt im Jira-Vorgang sechs Anhaenge und im Xray-Testlauf KAN-899 sechs Eintraege unter `Vorgangs-Anhänge zum Test`. KAN-899 bleibt bei `10 PASS`, `323 TO DO`, `333 Tests gesamt`.
+- Sicherheit: Es wurden nur die fehlenden Screenshot-Anhaenge ergaenzt; keine Tests, Statuswerte, Kauf-, Zahlungs- oder Adminvorgaenge wurden veraendert.
 
 ### 2026-08-14 - Xray-Testausfuehrung mit Screenshot-Nachweisen
 

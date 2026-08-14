@@ -1411,3 +1411,18 @@ direkte Produkt-URL, weil der sichtbare Link im aktuellen Viewport nicht klickba
 war; der Detailinhalt wurde anschliessend geprueft. Kauf, Zahlung und
 Admin-Schreibvorgaenge wurden nicht ausgefuehrt. Die restlichen 323 Tests bleiben
 bewusst offen.
+
+## 2026-08-14 - Xray-Nachweise KAN-820 repariert
+
+Die gemeldete Inkonsistenz wurde direkt in Jira geprüft: KAN-820 hatte im
+Bereich Anhänge keine Einträge, während KAN-823 sechs Screenshot-Anhänge zeigte.
+Die sechs lokalen KAN-820-Nachweise waren noch vorhanden. Ursache war damit
+kein fehlender Testlauf, sondern ein fehlgeschlagener bzw. nicht persistierter
+Upload beim ursprünglichen Durchlauf.
+
+Die sechs Dateien wurden über den Standard-Jira-Anhang am Vorgang KAN-820
+hochgeladen. Eine erneute Prüfung des Jira-Vorgangs zeigt alle sechs Dateien;
+eine Prüfung des Xray-Testlaufs KAN-899 zeigt sie zusätzlich unter
+„Vorgangs-Anhänge zum Test“. Der Teststatus blieb unverändert: 10 PASS, 323 TO
+DO, 333 Tests gesamt. Es wurden keine weiteren fachlichen Änderungen oder
+schreibenden Shop-Aktionen ausgeführt.
