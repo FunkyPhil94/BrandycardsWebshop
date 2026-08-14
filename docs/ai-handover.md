@@ -39,14 +39,6 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 <!-- Fuer den naechsten Auftrag freihalten. -->
 
-### 2026-08-14 - Naechste 50 offene Xray-Tests ausfuehren
-
-- Status: LÄUFT.
-- Ziel: Die naechsten 50 noch offenen Tests der Xray-Testausfuehrung KAN-899 mit nativen Xray-Schritten ausfuehren und in Xray dokumentieren.
-- Rahmen: Bereits abgeschlossene Tests ueberspringen; jeden neuen Test mit vier Schrittresultaten, Screenshot je Schritt und den sieben vereinbarten CSS-Viewports dokumentieren: 1440 x 900, 1920 x 1080, 2560 x 1440, 3440 x 1440, 3840 x 2160, 768 x 1024 und 390 x 844.
-- Geplant: Die tatsaechlich offenen Testschluessel aus KAN-899 ermitteln, ausfuehren, Nachweise anhaengen, Status und KAN-899 abschliessend verifizieren und die Browseransicht zuruecksetzen.
-- Offen: Der konkrete 50er-Block und die Statusverteilung werden vor dem Start aus der aktuellen Xray-Statusliste bestaetigt.
-
 ### 2026-08-14 - Xray-Schritt 5: Testplan und Testausführung anlegen
 
 - Status: ABGESCHLOSSEN.
@@ -108,6 +100,15 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 - Offen: Fachliche Struktur und erste Epics, Tasks, User Stories und Tests gemeinsam festlegen.
 
 ## Historie
+
+### 2026-08-14 - Naechste 50 offene Xray-Tests ausfuehren
+
+- Status: ABGESCHLOSSEN.
+- Betroffene Tests: KAN-789 bis KAN-740 in der bestehenden Xray-Reihenfolge; alle 50 waren zum Start `TO DO` und wurden ausgefuehrt.
+- Ergebnis: 33 Tests stehen auf `PASSED`, 17 auf `FAILED`. Die FAILED-Faelle sind die Fehler-/Regressionstests mit dem bekannten offenen Layoutfehler KAN-1355.
+- Nachweise: Jeder Test wurde mit vier nativen Xray-Schritten ausgefuehrt. Pro Test wurden vier Schritt-Screenshots und sieben Viewport-Screenshots fuer 1440 x 900, 1920 x 1080, 2560 x 1440, 3440 x 1440, 3840 x 2160, 768 x 1024 und 390 x 844 CSS-Pixel angehaengt; Fehlerfaelle erhielten zusaetzlich den KAN-1355-Referenznachweis. Kein horizontaler Ueberlauf wurde festgestellt.
+- Verifikation: Die lokale Evidenzpruefung bestaetigt fuer alle 50 Tests mindestens elf Dateien. Die Xray-Ausfuehrungsuebersicht KAN-899 zeigt nach Reload `101 PASSED`, `57 FAILED`, `175 TO DO`, `333` gesamt.
+- Nachbereitung: Die Testdefinitionen von KAN-787, KAN-775, KAN-779 und KAN-768 mussten wegen verzogerter Xray-Lazy-Anzeige gezielt zusammengefuehrt und anschliessend erneut ausgefuehrt werden. Kein Test blieb technisch blockiert.
 
 ### 2026-08-14 - Naechste 39 offene Xray-Tests ausfuehren
 

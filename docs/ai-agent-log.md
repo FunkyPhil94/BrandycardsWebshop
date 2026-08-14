@@ -1672,3 +1672,28 @@ Die Einzelergebnisse sind 24 `PASSED` und 15 `FAILED`. Nach dem Reload zeigt
 KAN-899 konsistent `68 PASSED`, `40 FAILED`, `225 TO DO`, `333` Tests gesamt.
 Die lokale Evidenzprüfung bestätigt für jeden der 39 Tests mindestens elf
 Beweisdateien; fehlende Screenshot-Anhänge wurden nicht festgestellt.
+
+## 2026-08-14 - Naechste 50 Xray-Tests ausgefuehrt
+
+Der naechste offene 50er-Block der Xray-Testausfuehrung KAN-899 wurde in der
+Reihenfolge KAN-789 bis KAN-740 bearbeitet. Alle 50 Tests standen zu Beginn
+auf `TO DO`; bereits erledigte Vorgaenge wurden nicht erneut ausgefuehrt.
+
+Alle Tests wurden mit vier nativen Xray-Schritten ausgefuehrt. Je Test wurden
+vier Schritt-Screenshots und sieben Viewport-Screenshots als Jira-Anhaenge
+hochgeladen: Desktop 1440 x 900, Full HD 1920 x 1080, WQHD 2560 x 1440,
+Ultrawide 3440 x 1440, 4K 3840 x 2160, Tablet 768 x 1024 und Smartphone
+390 x 844 CSS-Pixel. Die CSS-Metrikpruefung zeigte keinen horizontalen
+Ueberlauf. Fehlerfaelle erhielten zusaetzlich den Referenznachweis fuer den
+offenen Layoutfehler KAN-1355.
+
+Die Einzelresultate sind 33 `PASSED` und 17 `FAILED`. Nach dem Reload bestaetigt
+die Xray-Ausfuehrungsuebersicht KAN-899 konsistent `101 PASSED`, `57 FAILED`,
+`175 TO DO`, `333` Tests gesamt. Fuer alle 50 Tests wurden lokal mindestens
+elf Evidenzdateien gefunden; fehlende Screenshot-Anhaenge wurden nicht
+festgestellt.
+
+Bei KAN-787, KAN-775, KAN-779 und KAN-768 war die Testdefinition im Xray-Lauf
+zunaechst noch nicht synchronisiert. Die nativen Schritte wurden gezielt
+zusammengefuehrt und die Tests anschliessend erfolgreich ausgefuehrt; kein
+Test blieb technisch blockiert.
