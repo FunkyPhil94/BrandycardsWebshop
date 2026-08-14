@@ -39,6 +39,14 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 <!-- Fuer den naechsten Auftrag freihalten. -->
 
+### 2026-08-14 - Naechste 39 offene Xray-Tests ausfuehren
+
+- Status: LÄUFT.
+- Ziel: Die naechsten 39 noch offenen Tests der Xray-Testausfuehrung KAN-899 mit nativen Xray-Schritten ausfuehren.
+- Rahmen: Bereits abgeschlossene Tests ueberspringen; jeden neuen Test mit vier Schrittresultaten, Screenshot je Schritt und den sieben vereinbarten CSS-Viewports dokumentieren: 1440 x 900, 1920 x 1080, 2560 x 1440, 3440 x 1440, 3840 x 2160, 768 x 1024 und 390 x 844.
+- Geplant: Die tatsaechlich offenen Testschluessel aus KAN-899 ermitteln, ausfuehren, Nachweise anhaengen, Status und KAN-899 abschliessend verifizieren und die Browseransicht zuruecksetzen.
+- Offen: Der konkrete 39er-Block wird vor dem Start aus der aktuellen Xray-Statusliste bestaetigt.
+
 ### 2026-08-14 - Xray-Schritt 5: Testplan und Testausführung anlegen
 
 - Status: ABGESCHLOSSEN.
