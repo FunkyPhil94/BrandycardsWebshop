@@ -5622,3 +5622,11 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 - Sicherheitspruefung: Alle sieben Produkte hatten keine Bestellungen, Reservierungen, Preisangebote oder offenen Outbox-Jobs; die zugehoerigen eBay-Listings waren ENDED.
 - Kaskadenpruefung: Nach der Loeschung verblieben zu diesen sieben IDs 0 Produkte, 0 Bilder, 0 eBay-Listings, 0 Inventory-Eintraege, 0 Preisangebote, 0 Reservierungen und 0 Bestellverknuepfungen.
 - Status: ABGESCHLOSSEN.
+
+## Auftrag 2026-08-14: Screenshot-Nachweise fuer alle Xray-Testfaelle
+- Status: ABGESCHLOSSEN.
+- Ziel: Fuer jeden der 333 vorhandenen Xray-Testfaelle einen verpflichtenden Screenshot-Nachweis je Testschritt und fuer jeden positiven, negativen oder blockierten Fall dokumentieren.
+- Rahmen: Keine Testergebnisse erfinden und keine realen Passwoerter oder sonstigen Geheimnisse in Screenshots speichern; vorhandene Stories, Tasks und Tests nicht loeschen.
+- Umsetzung: Alle 333 Xray-Testbeschreibungen per Issue-Key-CSV-Update um die Pflicht "Screenshot je Testschritt" erweitert. Testplan KAN-898 und Testausfuehrung KAN-899 enthalten die gleichen Regeln fuer PASS, FAIL und BLOCKED.
+- Verifikation: JQL mit dem Screenshot-Marker liefert 333 Testvorgaenge; KAN-565, KAN-600, KAN-700, KAN-800 und KAN-897 stichprobenartig geprueft. Keine Testergebnisse vorweggenommen.
+- Sicherheitsregel: Passwoerter, Tokens, Zahlungsdaten und sonstige Geheimnisse muessen vor dem Screenshot maskiert oder geschwaerzt werden.

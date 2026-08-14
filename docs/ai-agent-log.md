@@ -1353,3 +1353,30 @@ Browser/Gerät, Testdaten und Rolle dokumentiert werden. PASS bedeutet, dass das
 tatsächliche Ergebnis dem erwarteten entspricht; FAIL verlangt Abweichung,
 Reproduktionsschritte und Nachweis; BLOCKED verlangt die dokumentierte Ursache.
 Ein negativer Test ist PASS, wenn das erwartete Fehlverhalten korrekt eintritt.
+
+## 2026-08-14 — Screenshot-Nachweise für alle Xray-Testfälle
+
+Die Anforderung wurde auf alle 333 vorhandenen Xray-Testfälle angewendet. Die
+Beschreibungen enthalten jetzt verbindlich: unmittelbar nach jedem einzelnen
+Testschritt einen eigenen Screenshot am jeweiligen Testlauf zu hinterlegen,
+Eingabe und sichtbares Ergebnis nachvollziehbar zu zeigen, PASS erst nach
+vollständiger Evidenz zu vergeben und auch FAIL/BLOCKED mit Nachweis,
+Testergebnis, Tester, Datum und Umgebung zu dokumentieren. Für Login-Tests ist
+der Nachweis damit mindestens in die drei relevanten Momente Loginseite,
+maskierte Eingabe und Ergebnis nach dem Login aufgeteilt.
+
+Sensible Daten dürfen nicht im Klartext in Screenshots erscheinen; Passwörter,
+Tokens und Zahlungsdaten müssen maskiert oder geschwärzt werden. Als konkrete
+Ablagekonvention dient beispielsweise `KAN-565_S01_Loginseite_PASS.png`.
+
+Der Testplan `KAN-898` und die Testausführung `KAN-899` wurden ebenfalls um die
+Screenshotpflicht sowie die Regeln für PASS, FAIL und BLOCKED ergänzt. Die
+Verifikation über JQL mit dem Screenshot-Marker liefert 333 Testvorgänge;
+KAN-565, KAN-600, KAN-700, KAN-800 und KAN-897 wurden zusätzlich einzeln
+stichprobenartig geprüft. Es wurden keine Testergebnisse vorweggenommen.
+
+Die Regel ist außerdem im reproduzierbaren Builder
+`docs/jira/artifact_work/build-expansion.mjs` und im erzeugten Artefakt
+`docs/jira/generated/brandycards-xray-tests.csv` hinterlegt. Das separate
+Update-Artefakt liegt unter
+`docs/jira/generated/brandycards-xray-screenshot-policy-update.csv`.

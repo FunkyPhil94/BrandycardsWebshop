@@ -312,8 +312,12 @@ for (let index = 0; index < storyRows.length; index += 1) {
       expected,
       "",
       "Beleg und Nachbereitung",
-      "- Ergebnis pro Schritt dokumentieren; bei Fehlern Screenshot, Request-/Correlation-ID und relevante Daten sichern.",
-      "- Bei Fehlschlag einen Bug mit Reproduktionsschritten und Verweis auf diesen Test anlegen.",
+      "- Fuer jeden einzelnen Testschritt unmittelbar nach der Ausfuehrung einen Screenshot als Anhang am Testlauf hinterlegen.",
+      "- Der Screenshot muss die relevante Ausgangslage bzw. Eingabe und das sichtbare Ergebnis des jeweiligen Schrittes nachvollziehbar zeigen.",
+      "- Alle Schritte des Tests muessen einen eigenen Nachweis besitzen; bei Eingabeschritten sind Eingabe und anschliessende Reaktion zu dokumentieren.",
+      "- PASS nur vergeben, wenn alle Schritte erfolgreich abgeschlossen und fuer alle Schritte Screenshots hinterlegt sind.",
+      "- FAIL oder BLOCKED ebenfalls mit Screenshot(s), tatsaechlichem Ergebnis, Datum, Tester und Umgebung dokumentieren; bei FAIL einen Bug mit Reproduktionsschritten und Verweis auf diesen Test anlegen.",
+      "- Passwoerter, Tokens, Zahlungsdaten und sonstige Geheimnisse niemals im Klartext speichern; vor dem Anhang maskieren oder schwaerzen.",
     ].join("\n");
     testRows.push(["Test", testSummary, testDescription, testId, issueKey, storyPriority]);
     testId += 1;
