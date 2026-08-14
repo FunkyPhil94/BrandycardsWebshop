@@ -39,11 +39,13 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ### 2026-08-14 - Xray-Testausfuehrung mit Screenshot-Nachweisen
 
-- Status: LAEUFT.
+- Status: WARTET AUF NUTZER.
 - Ziel: Die in `KAN-899` enthaltenen Xray-Testfaelle gegen eine verfuegbare BrandyCards-Testumgebung ausfuehren und je Testschritt Screenshot, Ergebnis und Befund dokumentieren.
 - Rahmen: Keine echten Bestellungen, Zahlungen, Produktionsdaten- oder Admin-Schreibvorgaenge ohne sichere Testdaten und ausdrueckliche Freigabe; Passwoerter, Tokens und Zahlungsdaten niemals in Screenshots speichern.
 - Startpunkt: KAN-899 enthaelt 333 Tests im Status `TO DO`; bisher existieren keine Ausfuehrungsnachweise.
-- Naechster Schritt: Verfuegbarkeit der dokumentierten Shop-URL und vorhandener lokaler Testmoeglichkeiten pruefen, danach mit nicht-destruktiven Tests beginnen.
+- Ergebnis: `https://shop.brandycards.de` ist erreichbar; der oeffentliche Kartenbestand laedt. `/account` zeigt die Login-Maske ohne angemeldete Testsitzung, `/admin` meldet `Nicht authentifiziert`.
+- Ergebnis: Keine Screenshots, Testergebnisse oder Statusaenderungen in KAN-899 erfunden; alle 333 Tests bleiben `TO DO`, und es wurden keine kaufenden, zahlenden oder administrativen Schreibvorgaenge ausgefuehrt.
+- Offen: Isolierte Testumgebung oder ausdruecklich freigegebene Test-URL, Admin- und Kunden-Testkonto, vorbereitete Testdaten sowie fuer Zahlungsfaelle ein Sandbox-Testzugang bereitstellen. Danach die Tests schrittweise mit Screenshot je Schritt in KAN-899 ausfuehren.
 
 ### 2026-08-14 - Xray-Schritt 5: Testplan und Testausführung anlegen
 

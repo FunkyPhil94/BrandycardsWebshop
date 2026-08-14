@@ -1380,3 +1380,16 @@ Die Regel ist außerdem im reproduzierbaren Builder
 `docs/jira/generated/brandycards-xray-tests.csv` hinterlegt. Das separate
 Update-Artefakt liegt unter
 `docs/jira/generated/brandycards-xray-screenshot-policy-update.csv`.
+
+## 2026-08-14 — Xray-Ausfuehrung: Umgebungspruefung vor Start
+
+Vor einer Ergebnisbuchung in KAN-899 wurde die dokumentierte Produktions-URL
+`https://shop.brandycards.de` geprueft. Die Startseite und der oeffentliche
+Kartenbestand laden. Der Kontobereich zeigt die Login-Maske; der Adminbereich
+meldet ohne Sitzung `Nicht authentifiziert`.
+
+Damit fehlen fuer die 333 generischen Testfaelle noch eine isolierte Umgebung,
+Testkonten und vorbereitete Testdaten. Insbesondere duerfen Kauf-, Zahlungs- und
+Adminfaelle nicht gegen Produktion oder mit privaten Zugangsdaten ausgefuehrt
+werden. Deshalb wurden keine Xray-Ergebnisse oder Screenshots als Testergebnis
+eingetragen; KAN-899 bleibt vollstaendig auf `TO DO` und wartet auf Testzugang.
