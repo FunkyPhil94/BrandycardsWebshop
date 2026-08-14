@@ -1332,3 +1332,24 @@ Die wiederverwendbaren Importdateien liegen unter `docs/jira/generated/`:
 `brandycards-xray-tests.csv` sowie die Prüfübersicht
 `brandycards-jira-expansion-review.xlsx`. Der Builder liegt unter
 `docs/jira/artifact_work/build-expansion.mjs`.
+
+## 2026-08-14 — Xray-Schritt 5: Testplan und erste Testausführung
+
+Schritt 5 wurde als Einrichtung der organisatorischen Xray-Struktur vor der
+eigentlichen Testausführung umgesetzt. Im Projekt KAN entstand der Testplan
+`KAN-898` „BrandyCards MVP – Gesamttestplan“. Die 333 vorhandenen Xray-Tests
+wurden über die Xray-JQL-Auswahl `project = KAN AND issuetype = Test` vollständig
+hinzugefügt; der Testplan zeigt `TOTAL TESTS: 333` und `TO DO: 333 (100 %)`.
+
+Anschließend wurde die Testausführung `KAN-899` „BrandyCards MVP –
+Testausführung 01 – Basisabnahme“ erstellt. Sie wurde dem Testplan hinzugefügt
+und ebenfalls mit allen 333 Tests bestückt. Die Stichprobe der Ausführung zeigt
+`TOTAL TESTS: 333` und `TO DO: 333 (100 %)`. Damit ist die Ausführung vorbereitet,
+aber noch nicht durchgeführt: Es wurden bewusst keine Ergebnisse auf PASS, FAIL
+oder BLOCKED gesetzt.
+
+Die Ausführungsbeschreibung legt fest, dass vor dem Start Umgebung, Build,
+Browser/Gerät, Testdaten und Rolle dokumentiert werden. PASS bedeutet, dass das
+tatsächliche Ergebnis dem erwarteten entspricht; FAIL verlangt Abweichung,
+Reproduktionsschritte und Nachweis; BLOCKED verlangt die dokumentierte Ursache.
+Ein negativer Test ist PASS, wenn das erwartete Fehlverhalten korrekt eintritt.
