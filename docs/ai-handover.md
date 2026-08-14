@@ -37,8 +37,13 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-Der aktuelle Auftrag ist leer. Neue Auftraege werden vor der ersten Ausfuehrung
-hier eingetragen.
+### 2026-08-14 - Xray-Nachweise KAN-820 reparieren
+
+- Status: LAEUFT.
+- Ziel: Die gemeldete Inkonsistenz zwischen KAN-820 ohne sichtbare Bilder/Screenshots und KAN-823 mit Nachweisen untersuchen, fehlende Nachweise fuer KAN-820 ergaenzen und beide Xray-Testvorgaenge verifizieren.
+- Rahmen: Nur die betroffenen Xray-Testvorgaenge und ihre Anhange bearbeiten; keine Bestellungen, Zahlungen, Admin-Schreibvorgaenge oder sensiblen Daten in Screenshots.
+- Startpunkt: Nutzer meldet, dass KAN-820 keine Bilder/Screenshots zeigt, waehrend KAN-823 Nachweise zeigt.
+- Offen: Ursache im Jira/Xray-Anhangzustand feststellen, KAN-820 korrigieren und den Testlauf anschliessend erneut pruefen.
 
 ### 2026-08-14 - Xray-Schritt 5: Testplan und Testausführung anlegen
 
