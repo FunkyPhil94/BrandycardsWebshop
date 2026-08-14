@@ -37,13 +37,8 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-### 2026-08-14 - Fehlende Xray-Screenshot-Anhaenge ergaenzen
-
-- Status: LAEUFT.
-- Ziel: Die fehlenden Screenshot-Nachweise an KAN-817, KAN-826, KAN-829, KAN-832, KAN-835 und KAN-838 anhaengen und jeden Vorgang anschliessend in Jira/Xray verifizieren.
-- Rahmen: Nur vorhandene, nicht-sensible Screenshot-Dateien an die sechs bereits ausgefuehrten Testvorgaenge uebertragen; keine Testergebnisse oder Shopdaten veraendern.
-- Startpunkt: Jeder der sechs Vorgange besitzt sechs lokale Nachweisdateien, aber aktuell keinen gespeicherten Jira-Anhang.
-- Offen: Upload der 36 Dateien, Verifikation je Vorgang sowie Pruefung des unveraenderten Testlaufstatus.
+Der aktuelle Auftrag ist leer. Neue Auftraege werden vor der ersten Ausfuehrung
+hier eingetragen.
 
 ### 2026-08-14 - Xray-Schritt 5: Testplan und Testausführung anlegen
 
@@ -106,6 +101,13 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 - Offen: Fachliche Struktur und erste Epics, Tasks, User Stories und Tests gemeinsam festlegen.
 
 ## Historie
+
+### 2026-08-14 - Fehlende Xray-Screenshot-Anhaenge ergaenzen
+
+- Status: ABGESCHLOSSEN.
+- Ergebnis: Die jeweils sechs Screenshots fuer KAN-817, KAN-826, KAN-829, KAN-832, KAN-835 und KAN-838 wurden als Jira-Anhaenge hochgeladen; insgesamt wurden 36 fehlende Nachweise ergaenzt.
+- Verifikation: Jeder der sechs Vorgange zeigt jetzt sechs Dateianhaenge. KAN-899 wurde erneut geprueft und zeigt weiterhin `10 PASS`, `323 TO DO`, `333 Tests gesamt`.
+- Sicherheit: Es wurden nur die bereits vorhandenen, nicht-sensiblen Screenshot-Dateien angehaengt; Testergebnisse und Shopdaten blieben unveraendert.
 
 ### 2026-08-14 - Xray-Nachweise KAN-820 reparieren
 

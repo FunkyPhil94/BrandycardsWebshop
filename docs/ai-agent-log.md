@@ -1412,6 +1412,19 @@ war; der Detailinhalt wurde anschliessend geprueft. Kauf, Zahlung und
 Admin-Schreibvorgaenge wurden nicht ausgefuehrt. Die restlichen 323 Tests bleiben
 bewusst offen.
 
+## 2026-08-14 - Fehlende Xray-Screenshot-Anhaenge ergaenzt
+
+Die sechs bei der Vollstaendigkeitspruefung festgestellten Vorgänge KAN-817,
+KAN-826, KAN-829, KAN-832, KAN-835 und KAN-838 hatten keine gespeicherten
+Jira-Anhaenge, obwohl ihre jeweils sechs lokalen Nachweisdateien noch vorhanden
+waren. Die 36 Dateien wurden deshalb ueber den Standard-Jira-Anhang an die
+jeweiligen Testvorgaenge uebertragen.
+
+Die anschliessende Jira-Pruefung zeigt bei jedem dieser sechs Vorgänge genau
+sechs Screenshot-Anhaenge. KAN-899 wurde erneut geladen und zeigt unveraendert
+`10 PASS`, `323 TO DO` und `333 Tests gesamt`. Es wurden keine fachlichen
+Teststatuswerte oder Shopdaten veraendert.
+
 ## 2026-08-14 - Xray-Nachweise KAN-820 repariert
 
 Die gemeldete Inkonsistenz wurde direkt in Jira geprüft: KAN-820 hatte im
