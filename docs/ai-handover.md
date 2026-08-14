@@ -39,6 +39,14 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 <!-- Fuer den naechsten Auftrag freihalten. -->
 
+### 2026-08-14 - Die zehn abgeschlossenen Xray-Tests erneut ausfuehren
+
+- Status: LAEUFT.
+- Ziel: KAN-814, KAN-817, KAN-820, KAN-823, KAN-826, KAN-829, KAN-832, KAN-835, KAN-838 und KAN-841 erneut bei Full HD, WQHD, Ultrawide und 4K pruefen.
+- Nachweis: Pro Test und Zielviewport die relevante Seite kritisch pruefen, Screenshots sichern und nur bei sauberer Darstellung PASS bestaetigen. Reproduzierbare Layoutfehler als FAIL/Todo dokumentieren.
+- Rahmen: Nur nicht-destruktive oeffentliche Shopaktionen; keine echten Bestellungen, Zahlungen oder produktiven Admin-Schreibvorgaenge. Bestehende historische Ergebnisse nicht loeschen.
+- Bekannter Kontext: KAN-1355 dokumentiert bereits den kollabierenden Angebotsabschnitt ab 2560 CSS-Pixeln; dieser Befund muss in den zehn Tests gegen die jeweilige Abdeckung bewertet werden.
+
 ### 2026-08-14 - Xray-Schritt 5: Testplan und Testausführung anlegen
 
 - Status: ABGESCHLOSSEN.
