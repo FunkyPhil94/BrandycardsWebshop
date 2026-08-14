@@ -37,6 +37,14 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
+### 2026-08-14 - Xray-Tests mit erweiterten Viewports erneut ausfuehren
+
+- Status: LAEUFT.
+- Ziel: Die bestehenden Xray-Testfaelle mit Full HD, WQHD, Ultrawide und 4K erneut ausfuehren, je Fall die Darstellung kritisch per Screenshot bewerten und bei unsauberer Responsive-Darstellung ein nachvollziehbares Todo ableiten.
+- Rahmen: Nicht-destruktive Shoppruefungen und Jira/Xray-Dokumentation sind erlaubt. Keine echten Bestellungen, Zahlungen, produktiven Admin-Schreibvorgaenge oder sonstige irreversible Live-Aktionen ausfuehren. Solche Faelle als BLOCKED mit Begruendung und Todo dokumentieren.
+- Nachweis: Pro ausgefuehrtem Test und Viewport einen Screenshot mit sichtbarer Aufloesung bzw. dokumentierter Umgebung sichern; PASS nur bei sauberer Darstellung und erwarteter Funktion vergeben.
+- Offen: Testdaten, Berechtigungen und eine sichere Testumgebung fuer kauf-, zahlungs- und adminnahe Faelle vor Beginn der jeweiligen Ausfuehrung pruefen.
+
 ### 2026-08-14 - Xray-Schritt 5: Testplan und Testausführung anlegen
 
 - Status: ABGESCHLOSSEN.
