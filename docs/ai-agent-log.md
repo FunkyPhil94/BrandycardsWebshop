@@ -1624,3 +1624,26 @@ fehlenden Zuordnungen konnten dort nicht dauerhaft hinzugefuegt werden.
 Die Jira-Anhaenge wurden stichprobenartig nach dem Upload und ueber die
 Anhangspaginierung verifiziert. Es wurden keine Bestellungen, Zahlungen oder
 produktiven Admin-Schreibvorgaenge ausgefuehrt.
+
+## 2026-08-14 - Naechste 30 Xray-Tests ausgefuehrt
+
+Der tatsaechlich naechste offene 30er-Block der Testausfuehrung KAN-899 bestand
+aus KAN-867 bis KAN-839 sowie KAN-837. KAN-838 war bereits vor diesem Block
+PASSED und wurde zusaetzlich erneut geprueft, aber nicht als neuer offener Fall
+gezaehlt. Alle 30 offenen Tests wurden mit vier nativen Xray-Schritten
+ausgefuehrt.
+
+Fuer jeden der 30 offenen Tests wurden vier Schritt-Screenshots und sieben
+Viewport-Screenshots als Jira-Anhaenge erzeugt: 1440 x 900, 1920 x 1080,
+2560 x 1440, 3440 x 1440, 3840 x 2160, 768 x 1024 und 390 x 844 CSS-Pixel.
+In der CSS-Metrikpruefung wurde fuer keinen der bearbeiteten Tests ein
+horizontaler Ueberlauf festgestellt. Die sichtbare Xray-Listenansicht
+bestaetigt 19 PASSED und 11 FAILED; die elf FAILED-Faelle sind
+Fehler-/Regressionstests mit dem offenen bekannten Layoutfehler KAN-1355.
+
+KAN-849 blieb nach einem fehlgeschlagenen Statuswechsel kurz auf EXECUTING und
+wurde manuell auf FAILED gesetzt und um die sieben Viewport-Nachweise ergaenzt.
+KAN-848 wurde nach einem unterbrochenen Lauf vollstaendig nachgeholt. KAN-837
+wurde nach verzogerter nativer Schrittanzeige in einem Wiederholungsversuch
+erfolgreich ausgefuehrt. Der Kopfzaehler von KAN-899 zeigt danach konsistent
+`44 PASSED`, `25 FAILED`, `264 TO DO`, `333` gesamt.

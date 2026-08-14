@@ -39,14 +39,6 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 <!-- Fuer den naechsten Auftrag freihalten. -->
 
-### 2026-08-14 - Naechste 30 Xray-Tests ausfuehren
-
-- Status: LÄUFT.
-- Ziel: Die naechsten 30 offenen Tests der Xray-Testausfuehrung KAN-899, voraussichtlich KAN-867 bis KAN-838, mit nativen Schritten ausfuehren.
-- Rahmen: Jeden Test mit vier Schrittresultaten, Screenshot je Schritt und den sieben vereinbarten CSS-Viewports dokumentieren: 1440 x 900, 1920 x 1080, 2560 x 1440, 3440 x 1440, 3840 x 2160, 768 x 1024 und 390 x 844.
-- Geplant: Reihenfolge und Status vorab pruefen, Testschritte ausfuehren, Nachweise an die Jira-Testfaelle anhaengen, KAN-899 abschliessend verifizieren und die Browseransicht zuruecksetzen.
-- Offen: Der konkrete Block wird vor dem Start aus der aktuellen Reihenfolge und dem Status von KAN-899 bestaetigt.
-
 ### 2026-08-14 - Xray-Schritt 5: Testplan und Testausführung anlegen
 
 - Status: ABGESCHLOSSEN.
@@ -108,6 +100,16 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 - Offen: Fachliche Struktur und erste Epics, Tasks, User Stories und Tests gemeinsam festlegen.
 
 ## Historie
+
+### 2026-08-14 - Naechste 30 Xray-Tests ausfuehren
+
+- Status: ABGESCHLOSSEN.
+- Betroffene Tests: KAN-867 bis KAN-839 sowie KAN-837; KAN-838 war bereits vorher PASSED und wurde zusaetzlich erneut geprueft.
+- Ergebnis: Die 30 offenen Testlaeufe wurden mit vier nativen Xray-Schritten ausgefuehrt. Die Einzelstatus der offenen 30 Tests sind 19 `PASSED` und 11 `FAILED`; die elf FAILED-Faelle sind die Fehler-/Regressionstests mit dem bekannten KAN-1355-Befund.
+- Screenshots: Jeder Test besitzt vier Schritt-Screenshots und sieben Viewport-Screenshots fuer 1440 x 900, 1920 x 1080, 2560 x 1440, 3440 x 1440, 3840 x 2160, 768 x 1024 und 390 x 844 CSS-Pixel. Kein horizontaler Ueberlauf wurde in der CSS-Metrikpruefung festgestellt.
+- Verifikation: Die Xray-Listenansicht bestaetigt fuer KAN-867 bis KAN-839 sowie KAN-837 die 19 Einzelstatus `PASSED` und 11 `FAILED`. Der Kopfzaehler von KAN-899 zeigt nach Reload konsistent `44 PASSED`, `25 FAILED`, `264 TO DO`, `333` gesamt.
+- Nachbereitung: KAN-849 musste nach einem temporaeren `EXECUTING`-Status manuell beendet und mit Viewport-Nachweisen vervollstaendigt werden. KAN-848 wurde nach einem unterbrochenen Statuswechsel nachgeholt; beide Tests besitzen nun vollstaendige Nachweise.
+- Ergebnis ergaenzt: KAN-838 war bereits einer der frueheren PASSED-Tests. Deshalb wurde fuer den tatsaechlich naechsten offenen 30er-Block KAN-837 zusaetzlich ausgefuehrt. Der Kopfzaehler ist danach konsistent.
 
 ### 2026-08-14 - Erste 30 Xray-Tests ausfuehren
 
