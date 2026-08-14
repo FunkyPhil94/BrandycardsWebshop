@@ -1494,3 +1494,33 @@ Responsive-Pruefung ist damit abgedeckt; die restlichen 323 Tests bleiben
 `TO DO`, weil Kauf-, Zahlungs-, Login-, Bestell- und Adminnahe Szenarien eine
 isolierte Umgebung, Testkonten und Testdaten benoetigen. Es wurden keine
 produktiven Bestellungen, Zahlungen oder Admin-Schreibvorgaenge ausgefuehrt.
+
+## 2026-08-14 - Zehn abgeschlossene Xray-Tests erneut geprueft
+
+Die zehn bisher als PASS abgeschlossenen visuellen Standardtests KAN-814,
+KAN-817, KAN-820, KAN-823, KAN-826, KAN-829, KAN-832, KAN-835, KAN-838 und
+KAN-841 wurden erneut gegen den oeffentlichen Shop bewertet. Die exakten CSS-
+Viewports waren Full HD 1920 x 1080, WQHD 2560 x 1440, Ultrawide 3440 x 1440
+und 4K 3840 x 2160. Zusaetzlich wurden Produktliste, ein echter Produktdetail-
+pfad, Anfrage-/Verkaufsformulare, Konto-/Leerzustand und die oeffentliche
+Navigation gezielt aufgesucht.
+
+Die Ergebnisse wurden in einer konsolidierten Auswertung an KAN-899 sowie in
+den betroffenen Testfall-Kommentaren dokumentiert. KAN-814 und KAN-817 zeigen
+keinen Ueberlauf in den Navigationsflaechen. KAN-823, KAN-826, KAN-832 und
+KAN-838 zeigen die erwarteten sichtbaren Inhalte ohne Ueberlauf. KAN-835 zeigt
+stabile geladene Zielansichten; ein echter asynchroner Ladezustand war in der
+oeffentlichen Sitzung nicht reproduzierbar.
+
+KAN-820 und KAN-829 sind ab WQHD fachlich als FAIL zu bewerten: Der Abschnitt
+`Mach uns ein Angebot.` kollabiert bei 2560, 3440 und 3840 CSS-Pixeln; die
+Bounding-Box der Ueberschrift wird 0 Pixel breit. Bei Full HD ist die Spalte
+bereits auffaellig schmal. Der Fehler ist in KAN-1355 beschrieben und mit
+`responsive-home-3840-offer-section.jpg` belegt.
+
+KAN-841 konnte in dieser Browsersteuerung nicht belastbar wiederholt werden:
+Die Tab-Taste liess den Fokus trotz vorhandener Fokusziele nicht verlaesslich
+vom BODY auf die Links wechseln. Deshalb wurde dieser Test nicht kuenstlich als
+PASS oder FAIL gebucht. Ebenso wurden die historischen Xray-Ergebniswerte nicht
+umgebucht; KAN-899 bleibt bei 10 PASS, 323 TO DO und 333 Tests gesamt. Es wurden
+keine Bestellungen, Zahlungen oder produktiven Admin-Schreibvorgaenge ausgefuehrt.

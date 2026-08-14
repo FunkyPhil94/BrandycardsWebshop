@@ -39,14 +39,6 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 <!-- Fuer den naechsten Auftrag freihalten. -->
 
-### 2026-08-14 - Die zehn abgeschlossenen Xray-Tests erneut ausfuehren
-
-- Status: LAEUFT.
-- Ziel: KAN-814, KAN-817, KAN-820, KAN-823, KAN-826, KAN-829, KAN-832, KAN-835, KAN-838 und KAN-841 erneut bei Full HD, WQHD, Ultrawide und 4K pruefen.
-- Nachweis: Pro Test und Zielviewport die relevante Seite kritisch pruefen, Screenshots sichern und nur bei sauberer Darstellung PASS bestaetigen. Reproduzierbare Layoutfehler als FAIL/Todo dokumentieren.
-- Rahmen: Nur nicht-destruktive oeffentliche Shopaktionen; keine echten Bestellungen, Zahlungen oder produktiven Admin-Schreibvorgaenge. Bestehende historische Ergebnisse nicht loeschen.
-- Bekannter Kontext: KAN-1355 dokumentiert bereits den kollabierenden Angebotsabschnitt ab 2560 CSS-Pixeln; dieser Befund muss in den zehn Tests gegen die jeweilige Abdeckung bewertet werden.
-
 ### 2026-08-14 - Xray-Schritt 5: Testplan und Testausführung anlegen
 
 - Status: ABGESCHLOSSEN.
@@ -108,6 +100,16 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 - Offen: Fachliche Struktur und erste Epics, Tasks, User Stories und Tests gemeinsam festlegen.
 
 ## Historie
+
+### 2026-08-14 - Die zehn abgeschlossenen Xray-Tests erneut ausfuehren
+
+- Status: TEILWEISE ABGESCHLOSSEN.
+- Ergebnis: KAN-814, KAN-817, KAN-823, KAN-826, KAN-832 und KAN-838 wurden auf den oeffentlichen Testflaechen bei 1920 x 1080, 2560 x 1440, 3440 x 1440 und 3840 x 2160 CSS-Pixeln ohne horizontalen Ueberlauf erneut geprueft. Produktliste, Produktdetail, Formulare, Navigation und Leer-/Kontozustand waren erreichbar.
+- Fehler: KAN-820 und KAN-829 fallen ab WQHD durch, weil `Mach uns ein Angebot.` kollabiert und die Ueberschrift/Begleittext nicht sauber lesbar sind. KAN-1355 ist der zugeordnete Fehler/Todo; KAN-820 und KAN-829 enthalten den Befund als Kommentar, KAN-1355/KAN-820/KAN-829 den Screenshotnachweis.
+- KAN-835: Die stabil geladenen Zielansichten wurden geprueft; kein fehlerhafter Ladezustand war sichtbar. Ein echter asynchroner Ladevorgang war in der oeffentlichen Sitzung nicht reproduzierbar.
+- KAN-841: Layout und Fokusziele wurden geprueft, aber die Browsersteuerung konnte den Tab-Fokus nicht verlaesslich weiterreichen. Deshalb wurde kein kuenstlicher PASS oder FAIL vergeben.
+- Dokumentation: Die konsolidierte Zehn-Test-Auswertung wurde an der Testausfuehrung KAN-899 kommentiert. Die historischen Xray-Ergebniswerte wurden nicht kuenstlich umgebucht; die bestehende Anzeige `10 PASS`, `323 TO DO`, `333 Tests gesamt` bleibt unveraendert.
+- Einschraenkung: Die Browser-Screenshotdarstellung kann bei grossen CSS-Viewports gekachelt erscheinen; das wurde nicht als Shopfehler gewertet. Der Angebotsfehler ist unabhaengig davon ueber DOM-Metriken reproduziert.
 
 ### 2026-08-14 - Xray-Tests mit erweiterten Viewports erneut ausfuehren
 
