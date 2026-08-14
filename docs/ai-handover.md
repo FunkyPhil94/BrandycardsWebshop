@@ -39,12 +39,12 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 <!-- Fuer den naechsten Auftrag freihalten. -->
 
-### 2026-08-14 - Xray-Statuswerte der zehn Wiederholungstests anpassen
+### 2026-08-14 - Die naechsten 20 offenen Xray-Tests ausfuehren
 
 - Status: LAEUFT.
-- Ziel: Die Ergebnisstatus der zehn bereits erneut geprueften UI-Tests in der Testausfuehrung KAN-899 an die dokumentierte Wiederholung anpassen.
-- Sollwerte: KAN-814, KAN-817, KAN-823, KAN-826, KAN-832, KAN-835 und KAN-838 = PASS; KAN-820 und KAN-829 = FAIL; KAN-841 = BLOCKED wegen der nicht verlaesslich simulierbaren Tab-Tastatursteuerung.
-- Rahmen: Nur Xray-Ergebniswerte aendern, keine Testbeschreibungen, Anhaenge oder Shopdaten loeschen. Vorher-/Nachher-Zaehler verifizieren.
+- Ziel: Die naechsten 20 noch offenen Testlaeufe der Testausfuehrung KAN-899 in der bestehenden Xray-Reihenfolge gegen den oeffentlichen Shop ausfuehren.
+- Umfang: Pro Test die definierten Responsive-Viewports pruefen, je Testschritt nachvollziehbare Screenshots hinterlegen, Ergebnis und tatsaechlichen Befund dokumentieren sowie reproduzierte Fehler als Jira-Todo verknuepfen.
+- Rahmen: Nur die 20 ausgewaehlten Xray-Ergebniswerte, Kommentare und Screenshot-Anhaenge aendern; keine Testbeschreibungen, Stories, Tasks, Shopdaten, Bestellungen oder Zahlungen loeschen bzw. schreiben. PASS nur bei vollstaendiger Evidenz; unvollstaendige Faelle bleiben TO DO bzw. werden als FAIL mit Nachweis dokumentiert.
 
 ### 2026-08-14 - Xray-Schritt 5: Testplan und Testausführung anlegen
 
