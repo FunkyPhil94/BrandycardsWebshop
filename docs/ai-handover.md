@@ -39,13 +39,6 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 <!-- Fuer den naechsten Auftrag freihalten. -->
 
-### 2026-08-14 - Die naechsten 30 offenen Xray-Tests pruefen
-
-- Status: LAEUFT.
-- Ziel: Die naechsten 30 offenen Testlaeufe der Testausfuehrung KAN-899 in der bestehenden Xray-Reihenfolge pruefen und nur mit vollstaendiger Evidenz bewerten.
-- Umfang: KAN-877 bis KAN-848; pro Test den nativen Xray-Schrittstatus und Ausfuehrungsstatus verifizieren, bei Ausfuehrbarkeit Nachweise anhaengen und reproduzierte Blocker als Jira-Todo dokumentieren.
-- Rahmen: Keine PASS- oder FAIL-Werte ohne tatsaechliche Ausfuehrung und vollstaendige Screenshot-Evidenz; keine Stories, Testbeschreibungen, Shopdaten, Bestellungen, Zahlungen oder Admin-Schreibvorgaenge veraendern.
-
 ### 2026-08-14 - Xray-Schritt 5: Testplan und Testausführung anlegen
 
 - Status: ABGESCHLOSSEN.
@@ -107,6 +100,18 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 - Offen: Fachliche Struktur und erste Epics, Tasks, User Stories und Tests gemeinsam festlegen.
 
 ## Historie
+
+### 2026-08-14 - Die naechsten 30 offenen Xray-Tests pruefen
+
+- Status: TEILWEISE ABGESCHLOSSEN.
+- Ziel: Die naechsten 30 offenen Testlaeufe der Testausfuehrung KAN-899 in der bestehenden Xray-Reihenfolge pruefen und nur mit vollstaendiger Evidenz bewerten.
+- Betroffene Tests: KAN-877 bis KAN-848, also KAN-877, KAN-876, KAN-875, KAN-874, KAN-873, KAN-872, KAN-871, KAN-870, KAN-869, KAN-868, KAN-867, KAN-866, KAN-865, KAN-864, KAN-863, KAN-862, KAN-861, KAN-860, KAN-859, KAN-858, KAN-857, KAN-856, KAN-855, KAN-854, KAN-853, KAN-852, KAN-851, KAN-850, KAN-849 und KAN-848.
+- Befund: Jeder der 30 Xray-Testlaeufe steht auf `TO DO`; jeder zeigt in Xray `Schritte 0 / Keine`. Die fachlichen Schritte und Viewports existieren nur im Beschreibungstext und sind nicht als native Xray-Manual-Steps ausfuehrbar.
+- Konsequenz: Keine kuenstlichen PASS- oder FAIL-Werte. Die 30 Ergebniswerte blieben unveraendert auf `TO DO`; KAN-899 bleibt bei 7 PASSED, 2 FAILED, 324 TO DO und 333 Tests gesamt.
+- Nachweise: Fuer jeden der 30 Testvorgaenge wurde ein eigener Xray-Screenshot `S01_Xray-Blocker.png` erzeugt und als Jira-Anhang am passenden Test hinterlegt. Die lokalen Nachweise liegen unter `docs/jira/generated/e9-next-30/`.
+- Todo: Jira-Todo `KAN-1357` `Xray-Testfaelle KAN-848–KAN-877 als native Manual Steps anlegen` erstellt. Es beschreibt die Anlage, fachliche Pruefung und anschliessende erneute Ausfuehrung mit Schritt-, Viewport- und Screenshotnachweisen.
+- Rahmen: Keine Testbeschreibungen, Stories, Shopdaten, Bestellungen, Zahlungen oder Admin-Schreibvorgaenge veraendert.
+- Offen: Nach Umsetzung von KAN-1357 die nativen Schritte in Xray anlegen und diese 30 Testlaeufe tatsaechlich ausfuehren. Der bereits vorhandene KAN-1356 deckt den vorherigen Blocker KAN-878 bis KAN-897 ab.
 
 ### 2026-08-14 - Die naechsten 20 offenen Xray-Tests pruefen
 

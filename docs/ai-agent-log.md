@@ -1555,3 +1555,22 @@ Die naechsten 20 offenen Tests der Ausfuehrung KAN-899 wurden in der Xray-Reihen
 Es wurden keine PASS- oder FAIL-Werte erfunden. Alle 20 Testlaeufe bleiben `TO DO`; KAN-899 bleibt bei 7 PASSED, 2 FAILED, 324 TO DO und 333 Tests gesamt. Fuer jeden betroffenen Vorgang wurde ein eigener Screenshot des konkreten Xray-Testlaufs mit Titel, Status und Umgebung als Jira-Anhang gespeichert. Die lokalen Nachweise liegen unter `docs/jira/generated/e9-next-20/`.
 
 Waehrend der Diagnose wurden bei KAN-878 kurzzeitig vier unvollstaendige native Schritte angelegt. Sie wurden vollstaendig geloescht und KAN-878 anschliessend wieder mit `Schritte 0 / Keine` verifiziert; die Testbeschreibung wurde nicht veraendert. Als umsetzbarer Folgepunkt wurde Jira-Todo KAN-1356 erstellt. Es fordert die Anlage der nativen Schritte, deren fachliche Pruefung sowie die anschliessende erneute Ausfuehrung mit Schritt-, Viewport- und Screenshot-Nachweisen. Shopdaten, Bestellungen, Zahlungen und Admin-Schreibvorgaenge blieben unberuehrt.
+
+## 2026-08-14 - Weitere 30 Xray-Tests wegen fehlender nativer Schritte blockiert
+
+Die naechsten 30 offenen Tests der Ausfuehrung KAN-899 wurden in der Reihenfolge
+KAN-877 bis KAN-848 einzeln geprueft. Jeder Testlauf stand auf `TO DO` und zeigte
+im Xray-Testlauf `Schritte 0 / Keine`. Damit sind die Schritte weiterhin nur als
+Beschreibungstext importiert und nicht als native Xray-Manual-Steps ausfuehrbar.
+
+Es wurden keine Ergebniswerte vorweggenommen oder umgebucht. Die 30 Testlaeufe
+bleiben `TO DO`; die Ausfuehrung KAN-899 bleibt bei 7 PASSED, 2 FAILED, 324 TO
+DO und 333 Tests gesamt. Fuer jeden Test wurde ein eigener Screenshot des
+konkreten Xray-Laufs als Blocker-Nachweis erzeugt und am Jira-Test angehaengt.
+Die lokalen Dateien liegen unter `docs/jira/generated/e9-next-30/`.
+
+Als Folgepunkt wurde Jira-Todo KAN-1357 erstellt. Es fordert die Umwandlung der
+Beschreibungen in native Manual Steps, deren fachliche Pruefung und danach die
+erneute Ausfuehrung mit Schritt-, Responsive-Viewport- und Screenshotnachweisen.
+Es wurden keine Stories, Testbeschreibungen, Shopdaten, Bestellungen, Zahlungen
+oder Admin-Schreibvorgaenge veraendert.
