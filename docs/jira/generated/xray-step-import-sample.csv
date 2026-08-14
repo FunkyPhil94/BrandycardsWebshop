@@ -1,0 +1,5 @@
+Action,Data,Expected Result
+Test mit Story verknüpfen.,KAN-114; KAN-878,Die verknüpfte Story und der Test werden angezeigt.
+In Test Set und Plan aufnehmen.,Test Set E9-Nachweise; Test Plan KAN-898,Der Test ist dem Test Set und Test Plan zugeordnet.
+Execution starten.,Test Execution KAN-899,Der Testlauf wird gestartet und der Test ist in der Ausführung sichtbar.
+Coverage und Status prüfen.,Keine,Abdeckung und Status sind sichtbar und nachvollziehbar.

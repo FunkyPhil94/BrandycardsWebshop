@@ -41,11 +41,14 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ### 2026-08-14 - Native Xray-Manual-Steps fuer schrittlose Tests anlegen
 
-- Status: LAEUFT.
+- Status: ABGESCHLOSSEN.
 - Ziel: Fuer die 30 blockierten Tests KAN-848 bis KAN-877 sowie fuer alle weiteren Xray-Tests ohne native Schritte die vorhandenen Beschreibungsschritte als echte Xray-Manual-Steps anlegen.
 - Quelle: Die fachlichen vierstufigen Vorlagen aus `docs/jira/artifact_work/build-expansion.mjs` und den erzeugten Xray-Testbeschreibungen; Testtyp und Epic-spezifische Schritte muessen erhalten bleiben.
 - Umfang: Nur native Testschritte, ihre Aktion/Testdaten/Erwartetes Ergebnis und erforderliche lokale Importartefakte aendern; keine Teststatuswerte, Testbeschreibungen, Stories, Tasks, Screenshots, Shopdaten, Bestellungen, Zahlungen oder Admin-Schreibvorgaenge veraendern.
 - Abnahme: Jeder betroffene Test zeigt in Xray die erwartete Anzahl nativer Schritte, die Schritte entsprechen seinem Testtyp, und die Ausfuehrungswerte bleiben unveraendert auf ihrem bisherigen Stand.
+- Ergebnis: Alle 333 Xray-Tests KAN-565 bis KAN-897 wurden auf native Manual Steps umgestellt; jeder Test besitzt vier Schritte mit Aktion, Testdaten und erwartetem Ergebnis. Der zuvor festgelegte Block KAN-848 bis KAN-877 ist vollstaendig enthalten.
+- Verifikation: KAN-565, KAN-620, KAN-820, KAN-849, KAN-878 und KAN-897 nach Speicherung und Reload geprueft; alle vier Aktionen je Test sichtbar. Die Xray-Ausfuehrungswerte wurden nicht geaendert.
+- Artefakte: `docs/jira/artifact_work/build-xray-native-steps.mjs`, `docs/jira/generated/brandycards-xray-native-steps.json` und `docs/jira/generated/xray-step-import-sample.csv` dokumentieren die Vorlagen und den Importweg.
 
 ### 2026-08-14 - Xray-Schritt 5: Testplan und Testausführung anlegen
 

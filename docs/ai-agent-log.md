@@ -1574,3 +1574,27 @@ Beschreibungen in native Manual Steps, deren fachliche Pruefung und danach die
 erneute Ausfuehrung mit Schritt-, Responsive-Viewport- und Screenshotnachweisen.
 Es wurden keine Stories, Testbeschreibungen, Shopdaten, Bestellungen, Zahlungen
 oder Admin-Schreibvorgaenge veraendert.
+
+## 2026-08-14 - Native Manual Steps fuer alle Xray-Tests angelegt
+
+Die vorherigen Blocker `KAN-1356` und `KAN-1357` zeigten, dass die vier
+fachlichen Schritte nur als Beschreibungstext vorlagen. Deshalb wurden die
+Vorlagen aus `build-expansion.mjs` nach Testtyp aufgeloest und als native
+Xray-Manual-Steps importiert. Jeder der 333 Tests KAN-565 bis KAN-897 besitzt
+jetzt vier Schritte mit den Feldern Aktion, Daten und Erwartetes Resultat; die
+Daten enthalten den konkreten Story- und Testbezug sowie die Testart.
+
+Der belastbare Importweg war Xrays Zwischenablage-Import: tab-getrennte Werte
+mit Kopfzeile `Action`, `Data`, `Expected Result`, anschliessende Zuordnung auf
+`Aktion*`, `Daten` und `Erwartetes Resultat`, danach Speichern ueber `Erstellen`.
+Ein direkter Datei-Upload war in der eingebetteten Xray-Modalansicht nicht
+zuverlaessig ausloesbar; die Zwischenablage wurde deshalb bewusst verwendet.
+Nach jedem Import wurde der native Schrittbereich geprueft; einzelne
+transiente UI-Fehler wurden durch einen sicheren Wiederholungsversuch behandelt,
+der bei bereits vorhandenen Schritten nichts doppelt anlegt.
+
+Stichproben nach Reload: KAN-565, KAN-620, KAN-820, KAN-849, KAN-878 und
+KAN-897 zeigen jeweils alle vier erwarteten Aktionen. Die Xray-Ergebniswerte
+blieben unveraendert bei 7 PASSED, 2 FAILED und 324 TO DO. Es wurden keine
+Screenshots, Testbeschreibungen, Stories, Tasks, Shopdaten, Bestellungen,
+Zahlungen oder Admin-Schreibvorgaenge veraendert.
