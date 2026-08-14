@@ -39,6 +39,13 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 <!-- Fuer den naechsten Auftrag freihalten. -->
 
+### 2026-08-14 - Die naechsten 30 offenen Xray-Tests pruefen
+
+- Status: LAEUFT.
+- Ziel: Die naechsten 30 offenen Testlaeufe der Testausfuehrung KAN-899 in der bestehenden Xray-Reihenfolge pruefen und nur mit vollstaendiger Evidenz bewerten.
+- Umfang: KAN-877 bis KAN-848; pro Test den nativen Xray-Schrittstatus und Ausfuehrungsstatus verifizieren, bei Ausfuehrbarkeit Nachweise anhaengen und reproduzierte Blocker als Jira-Todo dokumentieren.
+- Rahmen: Keine PASS- oder FAIL-Werte ohne tatsaechliche Ausfuehrung und vollstaendige Screenshot-Evidenz; keine Stories, Testbeschreibungen, Shopdaten, Bestellungen, Zahlungen oder Admin-Schreibvorgaenge veraendern.
+
 ### 2026-08-14 - Xray-Schritt 5: Testplan und Testausführung anlegen
 
 - Status: ABGESCHLOSSEN.
