@@ -39,6 +39,14 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 <!-- Fuer den naechsten Auftrag freihalten. -->
 
+### 2026-08-14 - Naechste 30 Xray-Tests ausfuehren
+
+- Status: LÄUFT.
+- Ziel: Die naechsten 30 offenen Tests der Xray-Testausfuehrung KAN-899, voraussichtlich KAN-867 bis KAN-838, mit nativen Schritten ausfuehren.
+- Rahmen: Jeden Test mit vier Schrittresultaten, Screenshot je Schritt und den sieben vereinbarten CSS-Viewports dokumentieren: 1440 x 900, 1920 x 1080, 2560 x 1440, 3440 x 1440, 3840 x 2160, 768 x 1024 und 390 x 844.
+- Geplant: Reihenfolge und Status vorab pruefen, Testschritte ausfuehren, Nachweise an die Jira-Testfaelle anhaengen, KAN-899 abschliessend verifizieren und die Browseransicht zuruecksetzen.
+- Offen: Der konkrete Block wird vor dem Start aus der aktuellen Reihenfolge und dem Status von KAN-899 bestaetigt.
+
 ### 2026-08-14 - Xray-Schritt 5: Testplan und Testausführung anlegen
 
 - Status: ABGESCHLOSSEN.
