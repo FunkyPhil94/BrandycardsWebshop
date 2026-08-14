@@ -1464,3 +1464,33 @@ eine Prüfung des Xray-Testlaufs KAN-899 zeigt sie zusätzlich unter
 „Vorgangs-Anhänge zum Test“. Der Teststatus blieb unverändert: 10 PASS, 323 TO
 DO, 333 Tests gesamt. Es wurden keine weiteren fachlichen Änderungen oder
 schreibenden Shop-Aktionen ausgeführt.
+
+## 2026-08-14 - Responsive-Xray-Pruefung fuer hohe Aufloesungen
+
+Die neuen Zielbreiten 1920 x 1080, 2560 x 1440, 3440 x 1440 und 3840 x 2160
+wurden auf den oeffentlichen Shop-Routen `/`, `/karten`, `/vorverkauf`,
+`/anfragen`, `/verkaufen`, `/ueber-uns`, `/account` und `/checkout` geprueft.
+Die CSS-Viewportwerte wurden im Browser verifiziert; auf keiner Route wurde ein
+horizontaler Ueberlauf ueber `document.documentElement.scrollWidth` oder
+`body.scrollWidth` festgestellt.
+
+Die kritische Sichtpruefung fand einen reproduzierbaren Layoutfehler auf der
+Startseite: Im Abschnitt `Mach uns ein Angebot.` wird die Angebots-Spalte ab
+2560 CSS-Pixeln kollabiert. Die Ueberschrift und der Begleittext haben dort eine
+Bounding-Box-Breite von 0 Pixeln und sind nicht sauber lesbar. Der Befund ist
+kein Artefakt der Screenshot-Kachelung, sondern durch die DOM-Metriken bestaetigt.
+Bei 1920 Pixeln ist die Spalte bereits auffaellig schmal.
+
+Dafuer wurde KAN-1355 mit Reproduktionsschritten, Sollverhalten, betroffenen
+Viewports und dem Nachweis `responsive-home-3840-offer-section.jpg` angelegt.
+Der Nachweis wurde an KAN-1355, KAN-829 und KAN-820 angehaengt. KAN-829 erhielt
+ausserdem einen Kommentar, dass der bisherige PASS den neuen Responsive-Befund
+nicht abdeckt. Der alte KAN-899-Testlauf wurde nicht nachtraeglich umgebucht,
+weil die Statusauswahl in der sichtbaren Xray-Ausfuehrungsansicht nicht
+reagierte; dadurch blieb der historische KAN-829-PASS unveraendert.
+
+Die gesamte Suite umfasst 333 Tests. Die nicht-destruktive oeffentliche
+Responsive-Pruefung ist damit abgedeckt; die restlichen 323 Tests bleiben
+`TO DO`, weil Kauf-, Zahlungs-, Login-, Bestell- und Adminnahe Szenarien eine
+isolierte Umgebung, Testkonten und Testdaten benoetigen. Es wurden keine
+produktiven Bestellungen, Zahlungen oder Admin-Schreibvorgaenge ausgefuehrt.

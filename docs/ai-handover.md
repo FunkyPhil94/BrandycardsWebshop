@@ -37,13 +37,7 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-### 2026-08-14 - Xray-Tests mit erweiterten Viewports erneut ausfuehren
-
-- Status: LAEUFT.
-- Ziel: Die bestehenden Xray-Testfaelle mit Full HD, WQHD, Ultrawide und 4K erneut ausfuehren, je Fall die Darstellung kritisch per Screenshot bewerten und bei unsauberer Responsive-Darstellung ein nachvollziehbares Todo ableiten.
-- Rahmen: Nicht-destruktive Shoppruefungen und Jira/Xray-Dokumentation sind erlaubt. Keine echten Bestellungen, Zahlungen, produktiven Admin-Schreibvorgaenge oder sonstige irreversible Live-Aktionen ausfuehren. Solche Faelle als BLOCKED mit Begruendung und Todo dokumentieren.
-- Nachweis: Pro ausgefuehrtem Test und Viewport einen Screenshot mit sichtbarer Aufloesung bzw. dokumentierter Umgebung sichern; PASS nur bei sauberer Darstellung und erwarteter Funktion vergeben.
-- Offen: Testdaten, Berechtigungen und eine sichere Testumgebung fuer kauf-, zahlungs- und adminnahe Faelle vor Beginn der jeweiligen Ausfuehrung pruefen.
+<!-- Fuer den naechsten Auftrag freihalten. -->
 
 ### 2026-08-14 - Xray-Schritt 5: Testplan und Testausführung anlegen
 
@@ -106,6 +100,16 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 - Offen: Fachliche Struktur und erste Epics, Tasks, User Stories und Tests gemeinsam festlegen.
 
 ## Historie
+
+### 2026-08-14 - Xray-Tests mit erweiterten Viewports erneut ausfuehren
+
+- Status: TEILWEISE ABGESCHLOSSEN.
+- Ziel: Die bestehenden Xray-Testfaelle mit Full HD, WQHD, Ultrawide und 4K erneut ausfuehren, je Fall die Darstellung kritisch per Screenshot bewerten und bei unsauberer Responsive-Darstellung ein nachvollziehbares Todo ableiten.
+- Ergebnis: Die nicht-destruktive Responsive-Pruefung wurde fuer die oeffentlichen Shop-Routen `/`, `/karten`, `/vorverkauf`, `/anfragen`, `/verkaufen`, `/ueber-uns`, `/account` und `/checkout` bei 1920 x 1080, 2560 x 1440, 3440 x 1440 und 3840 x 2160 CSS-Pixeln durchgefuehrt. Es wurde kein horizontaler Seitenueberlauf festgestellt.
+- Befund: Auf der Startseite kollabiert der Abschnitt `Mach uns ein Angebot.` ab 2560 CSS-Pixeln. Die Bounding-Box der Ueberschrift misst dort 0 Pixel Breite; der Inhalt ist dadurch nicht sauber lesbar. Bei 1920 Pixeln ist der Inhalt bereits unnoetig schmal.
+- Jira/Xray: Todo `KAN-1355` `[Responsive] Angebotsspalte kollabiert ab 2560 CSS-Pixeln` mit Reproduktion, Sollverhalten und Screenshot angelegt. Der Nachweis `responsive-home-3840-offer-section.jpg` wurde an KAN-1355, KAN-829 und KAN-820 angehaengt; KAN-829 erhielt zusaetzlich einen Kommentar, dass der bisherige PASS fuer den neuen Durchlauf nicht gilt.
+- Einschraenkung: Die bestehende KAN-899-Ausfuehrung wurde nicht kuenstlich auf PASS/FAIL umgebucht; der alte KAN-829-PASS bleibt als historisches Ergebnis sichtbar. Die in-App-Browser-Screenshotdarstellung kann bei sehr grossen CSS-Viewports gekachelt erscheinen; diese Werkzeugbegrenzung wurde nicht als Shopfehler gewertet. Der echte Layoutfehler ist unabhaengig davon ueber DOM-Metriken und den angehaengten visuellen Nachweis bestaetigt.
+- Offen: Die restlichen 323 von 333 Tests sind weiterhin `TO DO`. Kauf-, Zahlungs-, Login-, Bestell- und Adminnahe Faelle wurden nicht gegen Produktion ausgefuehrt; dafuer fehlen eine isolierte Testumgebung, Testkonten und vorbereitete Testdaten.
 
 ### 2026-08-14 - Xray-Tests um hohe Viewport-Aufloesungen erweitern
 
