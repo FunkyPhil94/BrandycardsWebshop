@@ -39,14 +39,6 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 <!-- Fuer den naechsten Auftrag freihalten. -->
 
-### 2026-08-14 - Naechste 39 offene Xray-Tests ausfuehren
-
-- Status: LÄUFT.
-- Ziel: Die naechsten 39 noch offenen Tests der Xray-Testausfuehrung KAN-899 mit nativen Xray-Schritten ausfuehren.
-- Rahmen: Bereits abgeschlossene Tests ueberspringen; jeden neuen Test mit vier Schrittresultaten, Screenshot je Schritt und den sieben vereinbarten CSS-Viewports dokumentieren: 1440 x 900, 1920 x 1080, 2560 x 1440, 3440 x 1440, 3840 x 2160, 768 x 1024 und 390 x 844.
-- Geplant: Die tatsaechlich offenen Testschluessel aus KAN-899 ermitteln, ausfuehren, Nachweise anhaengen, Status und KAN-899 abschliessend verifizieren und die Browseransicht zuruecksetzen.
-- Offen: Der konkrete 39er-Block wird vor dem Start aus der aktuellen Xray-Statusliste bestaetigt.
-
 ### 2026-08-14 - Xray-Schritt 5: Testplan und Testausführung anlegen
 
 - Status: ABGESCHLOSSEN.
@@ -108,6 +100,14 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 - Offen: Fachliche Struktur und erste Epics, Tasks, User Stories und Tests gemeinsam festlegen.
 
 ## Historie
+
+### 2026-08-14 - Naechste 39 offene Xray-Tests ausfuehren
+
+- Status: ABGESCHLOSSEN.
+- Betroffene Tests: KAN-836, KAN-834, KAN-833, KAN-831, KAN-830, KAN-828, KAN-827, KAN-825, KAN-824, KAN-822, KAN-821, KAN-819, KAN-818, KAN-816, KAN-815, KAN-813, KAN-812, KAN-811, KAN-810, KAN-809, KAN-808, KAN-807, KAN-806, KAN-805, KAN-804, KAN-803, KAN-802, KAN-801, KAN-800, KAN-799, KAN-798, KAN-797, KAN-796, KAN-795, KAN-794, KAN-793, KAN-792, KAN-791 und KAN-790. Die bereits abgeschlossenen KAN-835, KAN-832, KAN-829, KAN-826, KAN-823, KAN-820, KAN-817 und KAN-814 wurden uebersprungen.
+- Ergebnis: 24 Tests stehen auf `PASSED`, 15 auf `FAILED`. Die FAILED-Faelle sind die Fehler-/Regressionstests mit dem bekannten offenen Layoutfehler KAN-1355.
+- Nachweise: Jeder Test wurde mit vier nativen Xray-Schritten ausgefuehrt. Pro Test wurden vier Schritt-Screenshots und sieben Viewport-Screenshots fuer 1440 x 900, 1920 x 1080, 2560 x 1440, 3440 x 1440, 3840 x 2160, 768 x 1024 und 390 x 844 CSS-Pixel angehaengt; Fehlerfaelle erhielten zusaetzlich den KAN-1355-Referenznachweis. Kein horizontaler Ueberlauf wurde festgestellt.
+- Verifikation: Die lokale Evidenzpruefung bestaetigt fuer alle 39 Tests mindestens elf Dateien; die Xray-Ausfuehrung KAN-899 zeigt nach Reload `68 PASSED`, `40 FAILED`, `225 TO DO`, `333` gesamt. Die Browseransicht wurde anschliessend auf KAN-899 zurueckgesetzt.
 
 ### 2026-08-14 - Naechste 30 Xray-Tests ausfuehren
 

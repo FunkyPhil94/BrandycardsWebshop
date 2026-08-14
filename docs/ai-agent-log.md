@@ -1647,3 +1647,28 @@ KAN-848 wurde nach einem unterbrochenen Lauf vollstaendig nachgeholt. KAN-837
 wurde nach verzogerter nativer Schrittanzeige in einem Wiederholungsversuch
 erfolgreich ausgefuehrt. Der Kopfzaehler von KAN-899 zeigt danach konsistent
 `44 PASSED`, `25 FAILED`, `264 TO DO`, `333` gesamt.
+
+## 2026-08-14 - Naechste 39 Xray-Tests ausgefuehrt
+
+Der naechste offene Block in der Xray-Testausfuehrung KAN-899 wurde nach
+Ueberspringen bereits abgeschlossener Tests ausgefuehrt: KAN-836, KAN-834,
+KAN-833, KAN-831, KAN-830, KAN-828, KAN-827, KAN-825, KAN-824, KAN-822,
+KAN-821, KAN-819, KAN-818, KAN-816, KAN-815, KAN-813, KAN-812, KAN-811,
+KAN-810, KAN-809, KAN-808, KAN-807, KAN-806, KAN-805, KAN-804, KAN-803,
+KAN-802, KAN-801, KAN-800, KAN-799, KAN-798, KAN-797, KAN-796, KAN-795,
+KAN-794, KAN-793, KAN-792, KAN-791 und KAN-790. KAN-835, KAN-832, KAN-829,
+KAN-826, KAN-823, KAN-820, KAN-817 und KAN-814 waren bereits abgeschlossen
+und wurden deshalb nicht erneut als offene Tests gezählt.
+
+Alle 39 Tests wurden mit vier nativen Xray-Schritten ausgeführt. Je Test
+wurden vier Schritt-Screenshots und sieben Viewport-Screenshots als Jira-
+Anhänge hochgeladen: Desktop 1440 x 900, Full HD 1920 x 1080, WQHD 2560 x
+1440, Ultrawide 3440 x 1440, 4K 3840 x 2160, Tablet 768 x 1024 und
+Smartphone 390 x 844 CSS-Pixel. Die CSS-Metrikprüfung ergab in allen Fällen
+keinen horizontalen Überlauf. Fehlerfälle erhielten zusätzlich den
+KAN-1355-Referenznachweis.
+
+Die Einzelergebnisse sind 24 `PASSED` und 15 `FAILED`. Nach dem Reload zeigt
+KAN-899 konsistent `68 PASSED`, `40 FAILED`, `225 TO DO`, `333` Tests gesamt.
+Die lokale Evidenzprüfung bestätigt für jeden der 39 Tests mindestens elf
+Beweisdateien; fehlende Screenshot-Anhänge wurden nicht festgestellt.
