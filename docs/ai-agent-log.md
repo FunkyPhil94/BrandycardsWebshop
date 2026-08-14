@@ -1697,3 +1697,14 @@ Bei KAN-787, KAN-775, KAN-779 und KAN-768 war die Testdefinition im Xray-Lauf
 zunaechst noch nicht synchronisiert. Die nativen Schritte wurden gezielt
 zusammengefuehrt und die Tests anschliessend erfolgreich ausgefuehrt; kein
 Test blieb technisch blockiert.
+
+## 2026-08-14 - Restliche 175 Xray-Tests pausiert
+
+Auf Wunsch des Nutzers wurde der laufende Block nach dem zuletzt bearbeiteten
+Test KAN-691 angehalten. Von KAN-739 bis KAN-691 sind 49 Tests vollständig
+ausgeführt und mit vier nativen Schrittresultaten, vier Schritt-Screenshots
+und sieben Viewport-Screenshots dokumentiert; Fehlerfälle erhielten den
+KAN-1355-Referenznachweis. Bis zur Pause ergeben sich 33 `PASSED` und 16
+`FAILED`. Die Fortsetzung beginnt mit KAN-690. Eine technische Besonderheit
+des Browserlaufs war, dass einzelne Xray-Editoren bereits vorbefüllte
+Ergebnistexte zeigten; der Bearbeitungsablauf wurde dafür stabilisiert.
