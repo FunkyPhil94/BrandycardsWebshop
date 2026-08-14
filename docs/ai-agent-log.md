@@ -1598,3 +1598,29 @@ KAN-897 zeigen jeweils alle vier erwarteten Aktionen. Die Xray-Ergebniswerte
 blieben unveraendert bei 7 PASSED, 2 FAILED und 324 TO DO. Es wurden keine
 Screenshots, Testbeschreibungen, Stories, Tasks, Shopdaten, Bestellungen,
 Zahlungen oder Admin-Schreibvorgaenge veraendert.
+
+## 2026-08-14 - Erste 30 Xray-Tests ausgefuehrt
+
+Die ersten 30 Testfaelle der Xray-Testausfuehrung KAN-899 wurden in ihrer
+Reihenfolge KAN-897 bis KAN-868 bearbeitet. Die zuvor nur im Beschreibungstext
+vorhandenen fachlichen Schritte wurden in der nativen Xray-Testlaufansicht
+zusammengefuehrt und je Test mit vier Schrittresultaten dokumentiert.
+
+Fuer jeden Test wurden vier Schritt-Screenshots sowie sieben Viewport-Screenshots
+angehaengt: Desktop 1440 x 900, Full HD 1920 x 1080, WQHD 2560 x 1440,
+Ultrawide 3440 x 1440, 4K 3840 x 2160, Tablet 768 x 1024 und Smartphone
+390 x 844 CSS-Pixel. Die CSS-Metrikpruefung zeigte in allen bearbeiteten
+Viewporten keinen horizontalen Ueberlauf. Die Ansicht wurde danach auf die
+Standardgroesse zurueckgesetzt.
+
+Die Ausfuehrungsuebersicht KAN-899 bestaetigt `25 PASSED`, `14 FAILED`,
+`294 TO DO`, `333` Tests gesamt. Die zehn Fehler-/Regressionstests wurden
+wegen des reproduzierten und als KAN-1355 dokumentierten Layoutfehlers auf
+`FAILED` gesetzt; KAN-872 und KAN-869 wurden wegen der nicht vollstaendig
+persistierten Test-Set-Zuordnung ebenfalls als Traceability-Fehler dokumentiert.
+Die Test-Set-Oberflaeche speicherte 25 von 30 Zuordnungen in KAN-1358; die fuenf
+fehlenden Zuordnungen konnten dort nicht dauerhaft hinzugefuegt werden.
+
+Die Jira-Anhaenge wurden stichprobenartig nach dem Upload und ueber die
+Anhangspaginierung verifiziert. Es wurden keine Bestellungen, Zahlungen oder
+produktiven Admin-Schreibvorgaenge ausgefuehrt.

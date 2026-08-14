@@ -39,14 +39,6 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 <!-- Fuer den naechsten Auftrag freihalten. -->
 
-### 2026-08-14 - Erste 30 offenen Xray-Tests ausfuehren
-
-- Status: LÄUFT.
-- Ziel: Die ersten 30 noch nicht ausgefuehrten Tests der Xray-Testausfuehrung KAN-899 gegen den oeffentlichen Shop pruefen.
-- Rahmen: Nur bestehende Testschritte ausfuehren; keine kuenstlichen PASS-/FAIL-Werte setzen. Jede relevante Aktion mit Screenshot dokumentieren und die vereinbarten Viewports einschliesslich Desktop, Tablet, Smartphone, WQHD und Widescreen beruecksichtigen.
-- Geplant: Testliste und Reihenfolge aus KAN-899 verifizieren, je Test die nativen Xray-Schritte ausfuehren, Screenshots als Evidenz anhaengen, Ergebnis und Befunde dokumentieren und die Vollstaendigkeit anschliessend pruefen.
-- Offen: Der konkrete erste 30er-Block wird aus den aktuell noch offenen Tests nach der Reihenfolge von KAN-899 bestimmt.
-
 ### 2026-08-14 - Xray-Schritt 5: Testplan und Testausführung anlegen
 
 - Status: ABGESCHLOSSEN.
@@ -108,6 +100,16 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 - Offen: Fachliche Struktur und erste Epics, Tasks, User Stories und Tests gemeinsam festlegen.
 
 ## Historie
+
+### 2026-08-14 - Erste 30 Xray-Tests ausfuehren
+
+- Status: TEILWEISE ABGESCHLOSSEN.
+- Betroffene Tests: KAN-897 bis KAN-868 in der Reihenfolge der Testausfuehrung KAN-899.
+- Ergebnis: Alle 30 Testlaeufe wurden mit vier nativen Xray-Schritten ausgefuehrt und mit Ergebnisstatus dokumentiert. Die Ausfuehrungsuebersicht bestaetigt danach `25 PASSED`, `14 FAILED`, `294 TO DO`, `333` gesamt.
+- Screenshots: Je Test wurden vier Schritt-Screenshots sowie Nachweise fuer Desktop 1440 x 900, Full HD 1920 x 1080, WQHD 2560 x 1440, Ultrawide 3440 x 1440, 4K 3840 x 2160, Tablet 768 x 1024 und Smartphone 390 x 844 CSS-Pixel angehaengt. In den geprueften Viewports wurde kein horizontaler Ueberlauf festgestellt.
+- Befunde: Die zehn Fehler-/Regressionstests stehen auf `FAILED`, weil der bekannte Layoutfehler KAN-1355 reproduziert und mit Referenz-Screenshot dokumentiert wurde. KAN-872 und KAN-869 stehen wegen der fehlenden vollstaendigen Test-Set-Zuordnung auf `FAILED`; die Abweichung ist in den Schrittresultaten festgehalten.
+- Xray-Struktur: Test Set `KAN-1358` `E9-Nachweise` wurde angelegt. Xray persistierte 25 der 30 Zuordnungen; KAN-872 bis KAN-868 konnten ueber die sichtbare Test-Set-Oberflaeche nicht dauerhaft hinzugefuegt werden. Die Testausfuehrung selbst ist davon nicht unvollstaendig.
+- Offen: Die fuenf fehlenden Test-Set-Zuordnungen in Xray nacharbeiten, falls die vollstaendige Traceability im Test Set benoetigt wird.
 
 ### 2026-08-14 - Die naechsten 30 offenen Xray-Tests pruefen
 
