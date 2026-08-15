@@ -5872,3 +5872,12 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 - Zwischenstand: Der Abgleich ist entartet, weil es keinen Ausführungsstatus gibt. Alle 333 Testvorgänge stehen in der Statuskategorie „To Do"; im gesamten Projekt (904 Vorgänge) ist genau einer „Done" und keiner „In Arbeit". Xray ist nicht installiert: Test, Test Plan, Test Execution und Precondition sind projekteigene Vorgangstypen ohne Ausführungsfelder.
 - Umsetzung: Befund dokumentieren, den Ist-Status einmalig im Kopf der Kaskadenliste ausweisen statt 333-mal denselben Wert je Test, und Punkt X in docs/ai-todo.md auf die tatsächliche Lage umschreiben.
 - Rahmen: Nur lesend in Jira. Keine Status, Vorgänge oder Ausführungen verändert.
+
+## Auftrag 2026-08-15: Ist-Status der 333 Testvorgänge aus Jira — abgeschlossen
+- Ergebnis: Alle 333 Testvorgänge stehen in der Statuskategorie „To Do"; im Projekt (904 Vorgänge) ist genau einer „Fertig", keiner „In Arbeit". 331 tragen Anhänge, ohne sind KAN-724 und KAN-835.
+- Kernbefund: Xray ist nicht installiert. Test, Precondition, Test Set, Test Plan und Test Execution sind projekteigene Vorgangstypen ohne Ausführungsfelder; es gibt kein Feld für PASS, FAIL oder BLOCKED. Vorhandene Ergebnisse stecken in Anhang-Dateinamen (Muster KAN-565_S04_FAILED.png) und sind nicht auswertbar.
+- Nicht gebaut: Die geplante Kreuztabelle Testergebnis × Umsetzungsstand. Sie hätte nur eine Achse gehabt und einen Erkenntnisgewinn vorgetäuscht.
+- Umgesetzt: Momentaufnahme mit Stichtag im Kopf der Kaskadenliste (einmal statt 333-mal); Punkt X in docs/ai-todo.md auf die eigentliche offene Aufgabe umgeschrieben — Testergebnisse brauchen einen auswertbaren Ort, drei Optionen zur Entscheidung durch den Betreiber.
+- Falle für die nächste Sitzung: `status = "Zu erledigen"` liefert in JQL 0 Treffer, obwohl alle Vorgänge diesen Status tragen. Über `statusCategory = "To Do"` abfragen.
+- Rahmen eingehalten: In Jira ausschließlich gelesen.
+- Status: ABGESCHLOSSEN.
