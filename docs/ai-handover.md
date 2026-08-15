@@ -39,7 +39,13 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 <!-- Fuer den naechsten Auftrag freihalten. -->
 
-Keine laufenden Aufträge.
+### 2026-08-15 - Kaskadierende Liste aller Jira-Tasks und Xray-Tests erstellen
+
+- Status: LÄUFT.
+- Ziel: Alle vorhandenen Jira-Tasks und Xray-Tests vollständig erfassen, nach fachlichen und technischen Abhängigkeiten kaskadierend sowie innerhalb der Ebenen aufsteigend ordnen und als nachvollziehbare `.txt`-Datei ausgeben.
+- Rahmen: Bestehende Jira-Vorgänge und Testdaten nur lesen; keine Jira-Statuswerte, Beschreibungen oder Beziehungen verändern. Die Liste soll Epics, Stories, Tasks, Tests, Abhängigkeiten, Reihenfolge und offene Voraussetzungen erklären.
+- Geplant: Lokale Exporte und Projektstruktur prüfen, Beziehungen und Referenzen normalisieren, die Reihenfolge aus fachlichen Vorbedingungen ableiten, Vollständigkeit gegen die erwarteten Mengen prüfen, `.txt`-Artefakt schreiben und Übergabeprotokoll aktualisieren.
+- Offen: Ob für einzelne Tasks oder Tests keine explizite Jira-Beziehung vorhanden ist, wird in der Liste als abgeleitete bzw. zu bestätigende Abhängigkeit gekennzeichnet.
 
 ## Historie
 
