@@ -2161,3 +2161,41 @@ Ein Fall ist absichtlich zum Scheitern bestimmt: E4-06 „Shop-Verkauf beendet
 das zugehörige eBay-Angebot". Diese Richtung ist offen. BLOCKED ist dort das
 ehrliche Ergebnis und macht die bekannte Lücke in der Abnahme sichtbar, statt
 sie zu verschweigen.
+
+
+## 2026-08-15 — Wiederaufbau des Boards als wiederholbarer Vorgang
+
+Das alte Board ließ sich nicht wieder aufbauen, obwohl alle Inhalte im
+Repository lagen. Der Grund war die Verknüpfung: Stories verwiesen auf interne
+Vorgangs-IDs der Epics, Tasks und Tests auf Jira-Schlüssel. Beides entsteht erst
+beim Anlegen. Die CSVs waren damit Momentaufnahmen eines Zustands, nicht
+Baupläne.
+
+`docs/jira/artifact_work/import-board.mjs` dreht das um. Es legt in Runden an —
+Epics, Stories, Tasks, Tests — und löst die Verknüpfung jeder Runde gegen die
+tatsächlich vergebenen Schlüssel der Vorrunde auf. Die Zuordnung landet in
+`docs/jira/board-key-map.csv` und ist damit das erste Mal überhaupt
+festgehalten, statt aus einer Formel abgeleitet zu werden.
+
+Drei Eigenschaften, die aus den Fehlern der letzten Stunden stammen:
+
+**Der Lauf ist wiederholbar.** Vor jedem Anlegen wird die Referenz gegen die
+bestehende Zuordnung geprüft, und die Zuordnung wird nach jedem einzelnen
+Vorgang geschrieben. Bricht Runde drei bei Task 300 ab, legt der zweite Lauf die
+299 vorherigen nicht noch einmal an. Ohne das wäre ein Abbruch gleichbedeutend
+mit 444 Dubletten.
+
+**Die Parent-Spalten der alten CSVs werden ignoriert.** Sie zeigen auf das
+gelöschte Board. Verwendet wird stattdessen der Story-Code aus dem Titel
+(E1-01 und so fort), der in den Daten selbst steht und keinen Bezug zu einer
+Jira-Instanz hat.
+
+**Ein Trockenlauf zeigt das Ergebnis, bevor etwas entsteht.** `--trocken`
+durchläuft alle Runden einschließlich Parent-Auflösung, ohne zu schreiben.
+Geprüft: 9 Epics, 111 Stories, 444 Tasks, 35 Testfälle, keine ungelöste
+Verknüpfung.
+
+Tests bekommen bewusst keinen Parent. Ein Test ist kein Unterpunkt seiner Story,
+er deckt sie ab; die Beziehung gehört als Verknüpfung modelliert, nicht als
+Hierarchie. Sie entsteht, sobald der Vorgangstyp im neuen Projekt existiert —
+derzeit fehlen dort sämtliche Xray-Typen.
