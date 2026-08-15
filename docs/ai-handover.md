@@ -39,15 +39,18 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 <!-- Fuer den naechsten Auftrag freihalten. -->
 
-### 2026-08-15 - KAN-841 nachtesten und KAN-1355 beheben
-
-- Status: LÄUFT.
-- Ziel: Den bisher nicht belastbar bewertbaren Fokus-/Tastaturtest KAN-841 mit einer robusteren Browsersteuerung erneut ausführen und den dokumentierten Responsive-Fehler KAN-1355 im Shop-Code beheben.
-- Rahmen: Keine Pass-/Fail-Buchung ohne sichtbare Prüfung; betroffene Tests mit vier nativen Xray-Schritten, sieben CSS-Viewports und Screenshot-Nachweisen erneut dokumentieren.
-- Geplant: Zuerst den bestehenden Layoutfehler im Code und den Fokusfall im Browser reproduzieren, anschließend den kleinsten sicheren Codefix umsetzen, lokale Prüfungen ausführen, deploy-/browserseitig verifizieren und Xray-Nachweise aktualisieren.
-- Offen: Ob KAN-841 ein echter Shopfehler oder weiterhin nur ein Werkzeug-/Fokusproblem ist, wird erst nach der erneuten Prüfung entschieden.
+Keine laufenden Aufträge.
 
 ## Historie
+
+### 2026-08-15 - KAN-841 und KAN-1355 Nachprüfung abgeschlossen
+
+- Status: ABGESCHLOSSEN.
+- KAN-1355: Die Ursache des Wide-Screen-Fehlers lag in `.split-copy`: Die wachsende rechte Desktop-Padding-Berechnung konnte die border-box auf 0 px Inhalt verengen. Der minimale Fix setzt `max-width: none` und `min-width: 0`; die Landingpage wurde mit Version `0bd8f09e-40b3-45cc-aae1-8cb073904fe8` produktiv deployed.
+- Verifikation: Lokaler Lint, TypeScript und Testlauf bestanden; `npm test` meldete 356 von 356 Tests erfolgreich. Produktiv wurden 1440x900, 1920x1080, 2560x1440, 3440x1440, 3840x2160, 768x1024 und 390x844 CSS-Pixel geprüft. Die Angebotsüberschrift blieb sichtbar und ohne horizontalen Überlauf. KAN-1355 wurde in Jira auf `Fertig` gesetzt.
+- Xray: KAN-820 und KAN-829 wurden mit vier nativen Schritten, den sieben Responsive-Belegen und zusätzlichen Shop-/Schritt-Screenshots erneut ausgeführt und stehen auf `PASSED`.
+- KAN-841: Der Shop selbst zeigt keinen belegten Defekt. Der In-App-Browser reicht den Tab-Key nicht zuverlässig an die Seite weiter; `document.activeElement` bleibt nach dem Keypress `BODY`. Schritt 3 wurde deshalb ehrlich auf `TODO` belassen, mit Screenshot und Begründung dokumentiert. Für den Abschluss ist eine Ausführung in einem vollwertigen Browser erforderlich.
+- Browser: Viewport auf 1440x900 zurückgesetzt; Xray-Testlauf bleibt zur Prüfung offen.
 
 ### 2026-08-15 - Xray-Tests KAN-590 bis KAN-565 abgeschlossen
 

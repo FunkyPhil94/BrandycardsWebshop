@@ -1,5 +1,37 @@
 # BrandyCards Agentenprotokoll
 
+## 2026-08-15 - KAN-1355 behoben und betroffene Xray-Tests nachgeprüft
+
+Der zuvor dokumentierte Wide-Screen-Fehler in KAN-1355 wurde reproduziert und im
+Shop-Code behoben. Ursache war `.split-copy`: Bei sehr breiten Viewports konnte
+das wachsende rechte Padding zusammen mit `max-width: 510px` die verfügbare
+Inhaltsbreite auf 0 px reduzieren. Der Fix ist bewusst klein und setzt für das
+Grid-Item `max-width: none` und `min-width: 0`. Die Änderung wurde als Commit
+`25f3257 fix: keep offer section readable on wide screens` deployed; Cloudflare
+meldete die produktive Version `0bd8f09e-40b3-45cc-aae1-8cb073904fe8` für
+`shop.brandycards.de`.
+
+Die lokale Prüfung war erfolgreich: `npm run lint` (nur die bekannte Warnung in
+`app/account/page.tsx`), `npx tsc --noEmit` und `npm test` mit 356 von 356 Tests
+bestanden. Produktiv wurden 1440 x 900, 1920 x 1080, 2560 x 1440, 3440 x 1440,
+3840 x 2160, 768 x 1024 und 390 x 844 CSS-Pixel geprüft. Die Angebotsüberschrift
+hat in allen Viewports eine positive Breite; horizontaler Dokumentüberlauf wurde
+nicht festgestellt. Je Viewport wurde ein Screenshot als Jira-Nachweis an KAN-820,
+KAN-829 und KAN-1355 angehängt. KAN-1355 wurde danach auf `Fertig` gesetzt.
+
+KAN-820 und KAN-829 wurden in Xray KAN-899 erneut mit vier nativen Schritten
+ausgeführt und auf `PASSED` gesetzt. Neben den sieben Responsive-Screenshots
+wurden je Test zusätzliche Shop-Belege für Ausgangslage, Navigation und Ergebnis
+sowie die vier Xray-Schritt-Screenshots angehängt.
+
+KAN-841 wurde ebenfalls erneut geprüft. Der Shop zeigt dabei keinen belegten
+Tastaturfehler. Der In-App-Browser verarbeitet den Tab-Key jedoch nicht als
+zuverlässigen Fokuswechsel: Nach `cua.keypress({keys:["TAB"]})` bleibt
+`document.activeElement` auf `BODY`, obwohl fokussierbare Links vorhanden sind.
+Deshalb wurde Schritt 3 mit Screenshot und tatsächlichem Ergebnis auf `TODO`
+belassen, statt einen PASS zu erfinden. Eine abschließende Bewertung benötigt
+einen vollwertigen Browser mit verifizierbarem Fokuswechsel.
+
 ## 2026-08-15 - Xray-Tests KAN-590 bis KAN-565 abgeschlossen
 
 Der letzte in der bestehenden 333er-Xray-Ausführung vorhandene Restblock wurde
