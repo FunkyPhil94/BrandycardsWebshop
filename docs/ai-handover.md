@@ -5833,3 +5833,10 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 - Ursache: docs/jira/artifact_work/build-cascade-list.ps1 liegt als UTF-8 ohne BOM vor; Windows PowerShell 5.1 parst die Datei dadurch als ANSI, sodass alle Umlaute in den Skript-Literalen bereits vor der Ausgabe zerstört sind. Der aus den CSVs übernommene Text ist korrekt, weil die CSVs eine BOM tragen.
 - Umsetzung: Skript mit UTF-8-BOM neu schreiben, Liste neu erzeugen und die Ausgabe auf Mojibake sowie unveränderte Zeilenzahl prüfen.
 - Rahmen: Keine Anwendungscodes, keine Produktionsdaten, keine inhaltlichen Änderungen an Tasks oder Tests.
+
+## Auftrag 2026-08-15: Encoding der Kaskadenliste korrigieren — abgeschlossen
+- Ergebnis: UTF-8-BOM an docs/jira/artifact_work/build-cascade-list.ps1 gesetzt und die Liste neu erzeugt. Die Ausgabe enthält 0 Mojibake-Stellen (vorher 8676) bei unveränderter Zeilenzahl 23123.
+- Nebenwirkung: 56 Tasks trugen wegen der zerstörten Umlaut-Regexe in Get-TaskPhaseLabel den Platzhalter „projektspezifischer Abschluss" und haben jetzt ihr korrektes Kaskadenlabel. Alle 56 Änderungen gehen generisch -> spezifisch; sonst ist die Datei inhaltlich identisch.
+- Verbleibend: 37 Zeilen tragen den Platzhalter weiterhin zu Recht, weil ihre Task-Bezeichnung von keinem Muster erfasst wird.
+- Begründung ausführlich in docs/ai-agent-log.md.
+- Status: ABGESCHLOSSEN.
