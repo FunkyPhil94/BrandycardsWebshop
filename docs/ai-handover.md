@@ -40,12 +40,11 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 <!-- Fuer den naechsten Auftrag freihalten. -->
 
 ### 2026-08-15 - Xray-Verbindung und Vorgänge im neuen Jira-Projekt BWS prüfen
-
-- Status: LÄUFT.
-- Ziel: Im neuen Jira-Projekt BWS prüfen, ob Xray installiert bzw. nutzbar ist, ob das Board mit Xray-Testplanung und Testausführung verbunden werden kann und welche zusätzlich angelegten Vorgänge dafür tatsächlich notwendig sind.
-- Rahmen: Bestehende Vorgänge zuerst vollständig inventarisieren; nichts ohne eindeutige Prüfung löschen. Nur klar überflüssige, neu angelegte Vorgänge nach Abgleich mit Xray-Anforderungen entfernen. Xray muss im Board erreichbar und für Testvorgänge nutzbar sein.
-- Geplant: Board-/Projektstruktur und Vorgangstypen prüfen, Xray-Navigation und Berechtigungen verifizieren, zusätzliche Vorgänge nach Zweck klassifizieren, notwendige Verbindung konfigurieren und nur ausdrücklich gedeckte Bereinigungen in Jira durchführen.
-- Offen: Welche Vorgänge im neuen Projekt vorhanden sind und ob Xray für BWS bereits installiert bzw. freigeschaltet ist.
+- Status: ABGESCHLOSSEN.
+- Ergebnis: Das neue Projekt BWS und Board 34 wurden geprüft und wieder geöffnet. Xray ist auf der Site aktiv und im Projekt verfügbar; der Erstellungsdialog bietet `Test`, `Precondition`, `Test Set`, `Test Plan` und `Test Execution` an.
+- Vorgangsinventar: JQL `project = BWS` sowie eine siteweite Prüfung mit `ORDER BY created DESC` liefern keine Vorgänge. Es gab daher keine zusätzlichen Vorgänge zu löschen.
+- Konfiguration: Keine weitere Verbindungskonfiguration war erforderlich; die Xray-Vorgangstypen sind bereits in BWS eingebunden. Das Board bleibt mit leerem Vorgangsvorrat geöffnet.
+- Browser: Das neue Board ist unter `/jira/software/projects/BWS/boards/34` zur Prüfung geöffnet.
 
 ## Historie
 

@@ -1,5 +1,21 @@
 # BrandyCards Agentenprotokoll
 
+## 2026-08-15 - Xray-Integration im neuen BWS-Board geprüft
+
+Das neu angelegte Jira-Projekt `BWS` mit Board 34 wurde geprüft. Xray ist auf
+der Jira-Site aktiv: Im Erstellungsdialog des Projekts stehen neben `Epic`,
+`Task`, `Story`, `Feature` und `Bug` auch die Xray-Vorgangstypen `Test`,
+`Precondition`, `Test Set`, `Test Plan` und `Test Execution` zur Verfügung.
+Damit ist Xray im neuen Projekt eingebunden und kann von diesem Board aus für
+Testvorgänge, Testpläne und Testausführungen genutzt werden. Eine zusätzliche
+Site- oder Board-Verbindung musste nicht eingerichtet werden.
+
+Die Vorgangsinventur mit `project = BWS` und eine siteweite Prüfung mit
+`ORDER BY created DESC` ergaben keine Vorgänge. Es existieren somit keine
+zusätzlich angelegten Vorgänge, die für Xray bereinigt oder gelöscht werden
+müssten. Das Board wurde anschließend wieder geöffnet und zur Prüfung
+offen gelassen; es enthält aktuell noch keine Vorgänge.
+
 ## 2026-08-15 - KAN-897 nach Responsive-Fix erneut ausgeführt und Maßnahmenplan ergänzt
 
 KAN-897 war der erste nicht bestandene Test in der absteigenden Prüfung der
