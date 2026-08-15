@@ -1855,3 +1855,32 @@ KAN-1355-Referenznachweis. Bis zur Pause ergeben sich 33 `PASSED` und 16
 `FAILED`. Die Fortsetzung beginnt mit KAN-690. Eine technische Besonderheit
 des Browserlaufs war, dass einzelne Xray-Editoren bereits vorbefüllte
 Ergebnistexte zeigten; der Bearbeitungsablauf wurde dafür stabilisiert.
+
+
+## 2026-08-15 — Kaskadenliste: Encoding-Ursache und Nebenwirkung
+
+`docs/jira/generated/brandycards-kaskadische-task-test-liste.txt` enthielt 8676
+doppelt kodierte Stellen. Auffällig war die Verteilung: der aus den CSVs
+übernommene Text war korrekt („Fußball", „Bestände"), zerstört war nur, was das
+Generator-Skript selbst schreibt („PrioritÃ¤t", „SchlÃ¼ssel").
+
+Das schließt die Ausgabe als Ursache aus. `Set-Content -Encoding utf8` war
+richtig — die Literale waren schon vorher kaputt. Ursache ist der Parser:
+`build-cascade-list.ps1` lag als UTF-8 **ohne BOM** vor, und Windows PowerShell
+5.1 liest eine BOM-lose `.ps1` als ANSI (cp1252). Jedes Umlaut-Byte im Quelltext
+wurde damit als zwei Zeichen interpretiert, bevor überhaupt etwas geschrieben
+wurde. Die CSVs tragen eine BOM und blieben deshalb heil.
+
+Behoben durch Setzen der UTF-8-BOM am Skript; der Skriptinhalt ist unverändert.
+
+Nebenwirkung, die den eigentlichen Wert der Korrektur ausmacht: `Get-TaskPhaseLabel`
+ordnet ein Kaskadenlabel über Regexe zu, die Umlaute enthalten
+(`Geschäftslogik`, `Qualitätssicherung`, `Ausführung`). Diese Muster konnten mit
+zerstörten Literalen nie greifen, sodass 56 Tasks still auf den Platzhalter
+„projektspezifischer Abschluss" zurückfielen. Sie tragen jetzt ihr korrektes
+Label. Der Fehler war also nicht kosmetisch: er hat die inhaltliche Zuordnung
+verfälscht, ohne dass die Datei fehlerhaft aussah.
+
+Verifikation: Ausgabe 0 Mojibake-Treffer, Zeilenzahl unverändert 23123; ein
+Vergleich der ASCII-Gerüste von alter und neuer Datei zeigt genau diese 56
+Abweichungen, alle in Richtung generisch → spezifisch.

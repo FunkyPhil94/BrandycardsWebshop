@@ -1,4 +1,4 @@
-$ErrorActionPreference = 'Stop'
+﻿$ErrorActionPreference = 'Stop'
 
 $jiraRoot = Split-Path -Parent $PSScriptRoot
 $generatedDir = Join-Path $jiraRoot 'generated'
