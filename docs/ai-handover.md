@@ -5890,3 +5890,10 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 - Gültig bleibt: Der Jira-Vorgangsstatus aller 333 Testvorgänge lautet „Zu erledigen". Das ist eine andere Größe als das Xray-Testergebnis und sagt nichts über ausgeführte Tests.
 - Bereinigt: Falschaussagen aus der Kaskadenliste und aus Punkt X in docs/ai-todo.md entfernt; beide Stellen weisen jetzt ausdrücklich aus, was über die Jira-API nicht sichtbar ist. Korrekturbegründung in docs/ai-agent-log.md.
 - Weiterhin offen: Der Xray-Stand selbst. Er braucht einen Export aus Xray oder die Xray-Cloud-API mit eigenem Schlüsselpaar; der Atlassian-MCP-Server reicht dafür grundsätzlich nicht.
+
+
+## Auftrag 2026-08-15: Abfrageskript für die Xray-Cloud-API
+- Status: LÄUFT.
+- Ziel: Ein Skript, das die Testergebnisse aller 333 Xray-Tests über die Xray-GraphQL-API liest und als CSV neben den Umsetzungsstand legt.
+- Umsetzung: docs/jira/artifact_work/fetch-xray-status.mjs; Zugangsdaten ausschließlich aus den Umgebungsvariablen XRAY_CLIENT_ID und XRAY_CLIENT_SECRET, niemals im Repository und niemals in der Ausgabe.
+- Rahmen: Nur lesende Abfragen. Keine Testergebnisse erfinden; fehlende oder unbekannte Schlüssel werden gemeldet statt stillschweigend übergangen.
