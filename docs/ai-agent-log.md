@@ -1991,3 +1991,39 @@ Ergebnis liefert („es gibt gar keine Testergebnisse"), ist der wahrscheinliche
 Grund ein blinder Fleck des Messverfahrens und nicht ein außergewöhnlicher
 Zustand des Messobjekts. Die Reichweite des eigenen Zugangs gehört geprüft,
 bevor aus einem Nichtfund ein Befund wird.
+
+
+## 2026-08-15 — Abfrageskript für die Xray-API
+
+`docs/jira/artifact_work/fetch-xray-status.mjs` liest die Testergebnisse über
+Xrays GraphQL-API, weil der Atlassian-MCP-Server sie prinzipiell nicht sehen
+kann: Xray Cloud führt sie im eigenen Speicher, nicht in Jira-Feldern.
+
+Drei Entscheidungen, die im Skript nicht selbsterklärend sind:
+
+**Zugangsdaten nur aus der Umgebung.** Das Schlüsselpaar aus Xrays Global
+Settings ist ein Geheimnis wie jedes andere im Projekt. Es wird gelesen, nie
+ausgegeben, und selbst bei einem Fehlschlag geht nur der HTTP-Statuscode in die
+Meldung, nicht der Antworttext.
+
+**Mehrfachläufe werden nicht stillschweigend zusammengefasst.** Ein Test kann
+mehrfach ausgeführt worden sein. Das Skript weist den jüngsten Lauf aus, nennt
+aber zusätzlich die Anzahl der Läufe und alle vorkommenden Ergebnisse in einer
+eigenen Spalte. Wer eine Bilanz zieht, sieht damit sofort, ob sie auf einem
+eindeutigen Stand beruht oder auf einer Auswahl. Ein einzelner Statuswert hätte
+denselben Platz gebraucht und mehr behauptet, als die Daten hergeben.
+
+**Der Abgleich gegen die Importliste läuft mit und meldet Lücken.** Fehlende
+und unbekannte Schlüssel werden benannt, statt in einer runden Gesamtzahl zu
+verschwinden. Eine unvollständige Bilanz, die vollständig aussieht, ist
+schlechter als gar keine.
+
+Ein Detail aus der Erprobung: `process.exit()` in einer laufenden fetch-Kette
+reißt Node unter Windows in eine libuv-Assertion und liefert Exitcode 127 statt
+1 — der Aufrufer könnte den Fehlschlag dann nicht mehr sauber erkennen. Der
+Abbruch läuft deshalb über eine Ausnahme und setzt `process.exitCode`.
+
+Geprüft ohne echte Zugangsdaten: Die Schutzabfrage greift, der
+Authentifizierungsendpunkt ist erreichbar (HTTP 401 bei Wegwerf-Werten), beide
+Fehlerpfade enden mit Exitcode 1, ESLint ist sauber. Der eigentliche Datenlauf
+steht noch aus, weil er das Schlüsselpaar des Betreibers braucht.
