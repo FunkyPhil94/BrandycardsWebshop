@@ -39,7 +39,13 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 <!-- Fuer den naechsten Auftrag freihalten. -->
 
-Keine laufenden Aufträge.
+### 2026-08-15 - KAN-841 nachtesten und KAN-1355 beheben
+
+- Status: LÄUFT.
+- Ziel: Den bisher nicht belastbar bewertbaren Fokus-/Tastaturtest KAN-841 mit einer robusteren Browsersteuerung erneut ausführen und den dokumentierten Responsive-Fehler KAN-1355 im Shop-Code beheben.
+- Rahmen: Keine Pass-/Fail-Buchung ohne sichtbare Prüfung; betroffene Tests mit vier nativen Xray-Schritten, sieben CSS-Viewports und Screenshot-Nachweisen erneut dokumentieren.
+- Geplant: Zuerst den bestehenden Layoutfehler im Code und den Fokusfall im Browser reproduzieren, anschließend den kleinsten sicheren Codefix umsetzen, lokale Prüfungen ausführen, deploy-/browserseitig verifizieren und Xray-Nachweise aktualisieren.
+- Offen: Ob KAN-841 ein echter Shopfehler oder weiterhin nur ein Werkzeug-/Fokusproblem ist, wird erst nach der erneuten Prüfung entschieden.
 
 ## Historie
 
