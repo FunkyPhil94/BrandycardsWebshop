@@ -1,0 +1,125 @@
+BRANDYCARDS WEBSHOP – BWS-CSV-IMPORTDOKUMENTATION
+==================================================
+
+Erstellt: 15.08.2026
+Projekt: BWS
+Board: https://brandycards.atlassian.net/jira/software/projects/BWS/boards/34
+Status: abgeschlossen und in Jira geprüft
+
+
+1. IMPORTUMFANG
+---------------
+
+Die vier bereitgestellten CSV-Dateien wurden in das neue Jira-Projekt BWS
+importiert. Die Originaldateien im Repository wurden dabei nicht verändert.
+
+Quelle                                                       Anzahl  Ergebnis
+-------------------------------------------------------------------------------
+docs/jira/brandycards-epics.csv                                  9  BWS-1 bis BWS-9
+docs/jira/generated/brandycards-story-acceptance-criteria.csv  111  BWS-10 bis BWS-120
+docs/jira/generated/brandycards-detailed-tasks.csv              444  BWS-121 bis BWS-564
+docs/jira/new-test-cases.csv                                     35  BWS-565 bis BWS-599
+-------------------------------------------------------------------------------
+Gesamt                                                         599  Vorgänge
+
+Die Jira-Abfragen nach Vorgangstyp bestätigen:
+- Epic: 9
+- Story: 111
+- Task: 444
+- Test: 35
+
+
+2. IMPORTREIHENFOLGE UND BEZIEHUNGEN
+-------------------------------------
+
+Die Reihenfolge war erforderlich, damit neu erzeugte Jira-Schlüssel für die
+nachfolgenden Importe bekannt waren:
+
+1. Epics
+   Die 9 Epics wurden zuerst angelegt und erhielten die Schlüssel BWS-1 bis
+   BWS-9.
+
+2. User Stories
+   Die Story-CSV enthielt ursprünglich Verweise auf die alten KAN-Epic-Schlüssel.
+   Für den BWS-Import wurden diese Verweise in einer temporären Importdatei auf
+   BWS-1 bis BWS-9 abgebildet. Die Stories wurden dadurch ihren neuen Epics
+   zugeordnet. Beispiel: BWS-10 gehört zu BWS-1.
+
+3. Tasks
+   Die Task-CSV enthielt ursprünglich Parent-Verweise auf KAN-Stories. Die
+   Tasks wurden nach dem Jira-kompatiblen Import ohne Jira-Parent-Feld angelegt.
+   Jeder Task enthält stattdessen in der Beschreibung eine eindeutige
+   Textreferenz auf seine zugehörige BWS-Story, zum Beispiel:
+
+   Zugehörige Story: BWS-10: E1-01 Karte anlegen
+
+4. Xray-Tests
+   Die 35 Testfälle wurden als Xray-Vorgangstyp Test importiert. Die Story-Codes
+   aus der CSV wurden den neuen BWS-Stories zugeordnet. Das Feld Tests wurde im
+   Jira-Importer auf Link "Test" (link-10006) abgebildet. Dadurch sind die Tests
+   mit den Stories verknüpft. Beispiel: BWS-565 testet BWS-21.
+
+
+3. WICHTIGE JIRA-EINSCHRÄNKUNGEN UND KORREKTUREN
+-------------------------------------------------
+
+3.1 Task-Parent-Beziehung
+
+Der erste Task-Importversuch verwendete das Parent-Feld mit BWS-Story-Schlüsseln.
+Jira lehnte den gesamten Import mit der Meldung ab, dass der übergeordnete
+Vorgang nicht zur entsprechenden Hierarchie gehört. Ursache ist die
+Vorgangshierarchie des teamverwalteten BWS-Projekts: Ein normaler Task kann dort
+nicht als Untervorgang einer Story importiert werden.
+
+Der Versuch erzeugte 0 Vorgänge und keine Duplikate. Anschließend wurde der
+Import ohne ungültiges Parent-Feld wiederholt. Die fachliche Zuordnung blieb
+durch die Story-Referenz in der Beschreibung erhalten. Das ist eine
+nachvollziehbare Referenz, aber keine Jira-Hierarchie.
+
+3.2 CSV-Grenze
+
+Jira akzeptiert höchstens 250 Vorgänge pro CSV-Import. Die 444 Tasks wurden
+deshalb in zwei erfolgreiche Importe geteilt:
+- erster Task-Import: 251 Vorgänge (BWS-121 bis BWS-371)
+- zweiter Task-Import: 193 Vorgänge (BWS-372 bis BWS-564)
+
+Die Anzeige der Importseite war beim ersten Batch missverständlich, weil Jira
+gleichzeitig auf die Grenze von 250 hinwies. Die anschließende Jira-Abfrage
+bestätigte jedoch 251 angelegte Tasks; der zweite Batch ergänzte die fehlenden
+193 Tasks.
+
+
+4. PRÜFUNGEN UND STICHPROBEN
+----------------------------
+
+- Jira-Abfrage project = BWS ORDER BY key ASC: insgesamt 599 Vorgänge.
+- BWS-10 zeigt als übergeordnetes Epic BWS-1.
+- BWS-121 enthält in der Beschreibung die Referenz auf BWS-10 und hat kein
+  Jira-Parent-Feld.
+- BWS-565 ist über den Linktyp Test mit BWS-21 verbunden.
+- BWS-10 zeigt den Gegenlink "is tested by" auf einen Xray-Test.
+- Das BWS-Board 34 zeigt 590 Karten in "Zu erledigen"; die 9 Epics werden in
+  dieser Boardansicht nicht als Karten angezeigt. Die Zahl entspricht daher
+  111 Stories + 444 Tasks + 35 Tests.
+- Es wurden keine alten KAN-Vorgänge verändert und keine Import-Duplikate aus
+  dem fehlgeschlagenen Task-Versuch festgestellt.
+
+
+5. ABGRENZUNG: IMPORT IST NICHT TESTAUSFÜHRUNG
+-----------------------------------------------
+
+Die 35 Xray-Tests wurden als Testdefinitionen importiert und mit den Stories
+verknüpft. Der CSV-Import führt die Tests nicht aus, erzeugt keine echten
+Laufdaten und setzt keinen Passed-/Failed-Nachweis. Für eine Testausführung
+müssen in Xray Testschritte, erwartete Ergebnisse, Testdaten und gegebenenfalls
+Screenshots ergänzt werden. Erst danach werden die Tests in einer Test
+Execution ausgeführt und mit dem Ergebnis Passed, Failed oder Todo dokumentiert.
+
+
+6. AKTUELLER STAND
+------------------
+
+Der Import ist abgeschlossen. Die vier Vorgangsmengen und die Story-Test-
+Verknüpfungen sind in BWS vorhanden. Offen für die weitere Arbeit sind vor
+allem die fachliche Prüfung der Task-Referenzen sowie die Ausarbeitung und
+Ausführung der Xray-Testschritte inklusive Nachweisen.

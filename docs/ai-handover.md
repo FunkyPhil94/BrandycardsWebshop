@@ -39,14 +39,16 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 <!-- Fuer den naechsten Auftrag freihalten. -->
 
-### 2026-08-15 - BWS-CSV-Import schriftlich dokumentieren
-
-- Status: LÄUFT.
-- Ziel: Eine eigenständige Dokumentation zum Import der vier CSV-Dateien in BWS erstellen, damit Mengen, Schlüsselbereiche, Beziehungen, Importgrenzen und die Task-Hierarchie nachvollziehbar bleiben.
-- Geplant: `docs/jira/bws-importdokumentation.txt` mit Importumfang, Reihenfolge, Xray-Verknüpfung, Stichproben und Jira-Einschränkungen anlegen.
-- Rahmen: Nur den bereits ausgeführten Zustand dokumentieren; keine Jira-Vorgänge oder Projektkonfiguration verändern.
+Keine laufenden Aufträge.
 
 ## Historie
+
+### 2026-08-15 - BWS-CSV-Import schriftlich dokumentieren
+
+- Status: ABGESCHLOSSEN.
+- Ergebnis: Eine eigenständige Dokumentation mit Importumfang, Reihenfolge, Schlüsselbereichen, Xray-Verknüpfungen, Stichproben und Jira-Einschränkungen wurde erstellt.
+- Datei: `docs/jira/bws-importdokumentation.txt`.
+- Rahmen eingehalten: Es wurden keine Jira-Vorgänge oder Projektkonfigurationen verändert.
 
 ### 2026-08-15 - Vier CSV-Dateien in das neue BWS-Projekt importieren
 

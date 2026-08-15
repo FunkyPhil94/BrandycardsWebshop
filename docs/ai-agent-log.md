@@ -1,5 +1,15 @@
 # BrandyCards Agentenprotokoll
 
+## 2026-08-15 - Eigenständige Dokumentation des BWS-CSV-Imports
+
+Die abgeschlossene Importarbeit wurde zusätzlich in
+`docs/jira/bws-importdokumentation.txt` dokumentiert. Die Datei enthält die
+vier Quelldateien mit Mengen und BWS-Schlüsselbereichen, die Importreihenfolge,
+Story- und Xray-Test-Verknüpfungen, die Einschränkung der Task-Parent-
+Hierarchie, die 250er-CSV-Grenze, die durchgeführten Stichproben sowie die
+Abgrenzung zwischen importierten Testdefinitionen und tatsächlicher
+Testausführung.
+
 ## 2026-08-15 - Vier CSV-Dateien in BWS importiert
 
 Die vier angeforderten CSV-Dateien wurden in das neue Jira-Projekt `BWS`
