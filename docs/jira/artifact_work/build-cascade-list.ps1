@@ -10,6 +10,12 @@ $taskRows = @(Import-Csv (Join-Path $generatedDir 'brandycards-detailed-tasks.cs
 $testRows = @(Import-Csv (Join-Path $generatedDir 'brandycards-xray-tests.csv'))
 $statusRows = @(Import-Csv (Join-Path $jiraRoot 'story-implementation-status.csv'))
 
+# Xray-Ergebnisse sind optional: Die Liste muss sich auch ohne einen frischen
+# Export erzeugen lassen. Fehlt die Datei, entfallen die Ergebniszeilen, statt
+# dass der Lauf scheitert.
+$xrayPath = Join-Path $jiraRoot 'xray-status-export.csv'
+$xrayRows = if (Test-Path $xrayPath) { @(Import-Csv $xrayPath) } else { @() }
+
 $lines = [System.Collections.Generic.List[string]]::new()
 
 function Add-Line([string]$value = '') {
@@ -373,6 +379,11 @@ $statusByStory = @{}
 foreach ($statusRow in $statusRows) {
     $statusByStory[$statusRow.'Issue Key'] = $statusRow
 }
+$xrayByTest = @{}
+foreach ($xrayRow in $xrayRows) {
+    $xrayByTest[$xrayRow.'Issue Key'] = $xrayRow
+}
+
 $missingStatus = @($stories | Where-Object { -not $statusByStory.ContainsKey($_.Key) })
 if ($missingStatus.Count -gt 0) {
     throw ('Kein Umsetzungsstand hinterlegt für: {0}. Bitte story-implementation-status.csv ergänzen.' -f (($missingStatus | ForEach-Object { $_.Key }) -join ', '))
@@ -432,8 +443,28 @@ Add-Line 'Über die Jira-REST-API aus brandycards.atlassian.net gelesen. Anders 
 Add-Line '- Der Jira-Vorgangsstatus aller 333 Testvorgänge lautet „Zu erledigen" (Statuskategorie „To Do"). Keiner ist „In Arbeit" oder „Fertig".'
 Add-Line '- 331 der 333 Testvorgänge tragen Anhänge; ohne Anhang sind KAN-724 (E5-06) und KAN-835 (E8-08).'
 Add-Line '- Testplan KAN-898, Testausführung KAN-899 und Test Set KAN-1358 sind vorhanden.'
-Add-Line 'WICHTIG — was hier NICHT steht: Das Xray-Testergebnis (PASS, FAIL, TODO) ist etwas anderes als der Jira-Vorgangsstatus und in dieser Aufstellung nicht enthalten. Xray Cloud führt Ergebnisse in seinem eigenen Speicher, nicht in Jira-Feldern; über die Jira-REST-API sind sie grundsätzlich nicht lesbar. Aus dem durchgängigen „Zu erledigen" darf deshalb NICHT geschlossen werden, dass nichts ausgeführt wurde — die beiden Werte sind voneinander unabhängig.'
-Add-Line 'Der Xray-Stand ist damit weiterhin offen. Er lässt sich nur über die Xray-eigene API oder einen Export aus Xray beschaffen; siehe Punkt X in docs/ai-todo.md.'
+Add-Line 'Der Jira-Vorgangsstatus ist NICHT das Testergebnis. Xray Cloud führt Ergebnisse in seinem eigenen Speicher; sie wurden separat über die Xray-GraphQL-API geholt und stehen im folgenden Abschnitt.'
+if ($xrayRows.Count -gt 0) {
+    Add-Line ''
+    Add-Line 'XRAY-TESTERGEBNISSE — MOMENTAUFNAHME VOM 2026-08-15'
+    Add-Line 'Quelle: xray-status-export.csv, erzeugt von artifact_work/fetch-xray-status.mjs über die Xray-GraphQL-API. Je Test ist das Ergebnis zusätzlich unten am Testeintrag vermerkt.'
+    $ergebnisGruppen = $xrayRows | Group-Object 'Xray Status' | Sort-Object Count -Descending
+    Add-Line ('Gesamt: ' + $xrayRows.Count + ' Tests — ' + (($ergebnisGruppen | ForEach-Object { '{0}: {1}' -f $_.Name, $_.Count }) -join '; ') + '.')
+    Add-Line ''
+    Add-Line 'Kreuztabelle Umsetzungsstand (Zeile) gegen Xray-Ergebnis (Spalte):'
+    Add-Line '                     PASSED   FAILED  EXECUTING    Summe'
+    Add-Line '  VORHANDEN             127       62          0      189'
+    Add-Line '  TEILWEISE              37       19          1       57'
+    Add-Line '  OFFEN                  31       17          0       48'
+    Add-Line '  AUSSERHALB_CODE        25       14          0       39'
+    Add-Line '  Summe                 220      112          1      333'
+    Add-Line ''
+    Add-Line 'DIESE ZAHLEN SIND MIT VORBEHALT ZU LESEN. Zwei Beobachtungen sprechen dagegen, sie als Messung der Anwendung zu verwenden:'
+    Add-Line '1. Die Bestehensquote ist in allen vier Zeilen praktisch gleich (rund zwei Drittel). Ob eine Funktion im Code existiert oder nachweislich fehlt, hat auf das Testergebnis also keinen erkennbaren Einfluss. Bei einer echten Messung müsste die Zeile OFFEN deutlich schlechter abschneiden als VORHANDEN.'
+    Add-Line '2. 31 Tests stehen auf PASSED, obwohl die zugehörige Story keinen Codebeleg hat. Darunter E2-02 „Suchvorschläge erhalten" (es gibt kein Vorschlagsfeld und keinen Autocomplete-Endpunkt) sowie E2-03 bis E2-05 (die Filterdimensionen fehlen im Datenmodell). Ein solcher Test kann nicht bestehen, wenn die Funktion nicht existiert.'
+    Add-Line 'Hinzu kommt: Die Fehler verteilen sich fast vollständig nach Testart statt nach Funktion. Ganze Kategorien stehen geschlossen auf FAILED (Accessibility und Auflösung 14 von 14, Responsive und Accessibility 13 von 13, Synchronisation und Fehler 13 von 13, Datenschutz und Berechtigung 10 von 10), andere geschlossen auf PASSED. 106 der 111 Stories haben genau einen Fehler.'
+    Add-Line 'Möglich ist beides: Entweder ist der Umsetzungsstand für die betroffenen Stories falsch, oder die Testergebnisse bilden die Anwendung nicht ab. Vor jeder Entscheidung auf Grundlage dieser Zahlen ist zu klären, welche der beiden Quellen zutrifft — der schnellste Weg dahin steht als Punkt X in docs/ai-todo.md.'
+}
 Add-Line ''
 Add-Line 'MASSNAHMENPLAN FÜR EIN POSITIVES TESTERGEBNIS'
 Add-Line '0. Zuerst den Umsetzungsstand der Story lesen. Ist er VORHANDEN, wird geprüft statt gebaut; ist er TEILWEISE, wird nur die genannte Lücke bearbeitet. Das verhindert, dass fertige Funktionen erneut umgesetzt werden.'
@@ -548,6 +579,10 @@ foreach ($story in $orderedStories) {
         $testType = Get-TestType $test.Description
         Add-Line ('  TEST {0} | {1} | {2}' -f $test.Key, $testType, $test.Summary)
         Add-Line ('    Abgedeckte Story: ' + $test.Covers + ' (' + $test.StoryCode + ')')
+        if ($xrayByTest.ContainsKey($test.Key)) {
+            $lauf = $xrayByTest[$test.Key]
+            Add-Line ('    Letztes Xray-Ergebnis: {0} (Ausführung {1}, {2}; Läufe: {3})' -f $lauf.'Xray Status', $lauf.'Letzte Ausfuehrung', $lauf.'Letztes Datum', $lauf.Laeufe)
+        }
         Add-Line ('    Testvoraussetzung: ' + (Get-TestPrerequisiteText $testType))
         Add-Line '    Ziel:'
         Add-IndentedBlock (Get-Paragraph $test.Description 'Ziel') '      '

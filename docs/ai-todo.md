@@ -60,41 +60,64 @@ eBay-Schreibpfad, dann bewerben.**
 
 ---
 
-## X. Xray-Testergebnisse ziehen — BRAUCHT XRAY-ZUGANG, Jira-API reicht nicht
+## X. Klären, ob die Xray-Ergebnisse die Anwendung abbilden — ZUERST
 
-**Stand 2026-08-15.** Über den Atlassian-MCP-Server wurde gelesen, was die
-Jira-REST-API hergibt:
+**Die Ergebnisse liegen vor** (Stand 2026-08-15, Ausführung KAN-899):
+220 PASSED, 112 FAILED, 1 EXECUTING. Sie stehen in
+[docs/jira/xray-status-export.csv](jira/xray-status-export.csv) und je Test in
+der Kaskadenliste. **Sie sind aber noch nicht verwendbar.**
 
-- Der **Jira-Vorgangsstatus** aller 333 Testvorgänge lautet „Zu erledigen".
-- 331 der 333 tragen Anhänge; ohne Anhang sind KAN-724 und KAN-835.
-- Testplan KAN-898, Testausführung KAN-899 und Test Set KAN-1358 sind vorhanden.
+Drei Beobachtungen sprechen dagegen, sie für bare Münze zu nehmen:
 
-**Das ist nicht der gesuchte Wert.** Xray Cloud führt Testergebnisse (PASS,
-FAIL, TODO) in seinem eigenen Speicher, nicht in Jira-Feldern. Über die
-Jira-REST-API sind sie grundsätzlich nicht lesbar — der Atlassian-MCP-Server
-kann sie also nicht liefern, egal wie die Abfrage lautet. Aus dem durchgängigen
-„Zu erledigen" darf **nicht** geschlossen werden, dass nichts ausgeführt wurde;
-Vorgangsstatus und Testergebnis sind voneinander unabhängig.
+1. **Die Bestehensquote ist unabhängig vom Umsetzungsstand.** VORHANDEN 127/189,
+   TEILWEISE 37/57, OFFEN 31/48, AUSSERHALB_CODE 25/39 — überall rund zwei
+   Drittel. Bei einer echten Messung müsste OFFEN deutlich schlechter liegen.
+2. **31 Tests bestehen für Funktionen ohne jeden Codebeleg.** Darunter E2-02
+   „Suchvorschläge erhalten": Es gibt kein Vorschlagsfeld und keinen
+   Autocomplete-Endpunkt. Ein solcher Test kann nicht bestehen.
+3. **Die Fehler verteilen sich nach Testart, nicht nach Funktion.** Ganze
+   Kategorien stehen geschlossen auf FAILED (Accessibility 14/14, Responsive
+   13/13, Synchronisation 13/13, Datenschutz 10/10). 106 der 111 Stories haben
+   exakt einen Fehler.
 
-**Zwei Wege, den Xray-Stand tatsächlich zu bekommen:**
+**Was zu tun ist — und es ist billig:** Drei Tests aus der Gruppe „PASSED trotz
+OFFEN" heraussuchen und ihre Screenshot-Nachweise in Jira ansehen. Geeignet sind
+KAN-601 und KAN-602 (E2-02 Suchvorschläge) sowie KAN-604 (E2-03 Filter nach
+Sportart). Die Frage an jeden Screenshot lautet: **Zeigt er die Funktion, um die
+es geht?**
 
-1. **Export aus Xray.** In der Testausführung KAN-899 beziehungsweise über die
-   Xray-Ansicht die Ergebnisliste als CSV exportieren und als
-   `docs/jira/xray-status-export.csv` ablegen. Kein Zugang nötig, rein manuell.
-2. **Xray-Cloud-API.** Braucht ein API-Schlüsselpaar (Client ID und Secret) aus
-   den Xray-Einstellungen. Das sind Geheimnisse: Sie gehören in
-   Umgebungsvariablen und niemals ins Repository. Ein Abfrageskript kann die
-   Werte aus der Umgebung lesen, ohne dass sie jemand anders zu Gesicht bekommt.
+- Zeigt er sie → der Umsetzungsstand in `story-implementation-status.csv` ist
+  für diese Stories falsch und gehört korrigiert.
+- Zeigt er sie nicht → die Testergebnisse bilden die Anwendung nicht ab. Dann
+  ist zu klären, wie sie zustande kamen, bevor irgendeine Zahl daraus in eine
+  Abnahme eingeht.
 
-**Erledigt wenn:** Für alle 333 Tests liegt das Xray-Ergebnis vor, ist gegen
-`brandycards-xray-tests.csv` auf Vollständigkeit geprüft und als Kreuztabelle
-gegen [story-implementation-status.csv](jira/story-implementation-status.csv)
-ausgewertet — die Antwort auf die Frage, welche Tests an fehlender Funktion
-scheitern und welche an etwas anderem. In der Kaskadenliste wird das Ergebnis
-mit Abrufdatum als Momentaufnahme ausgewiesen.
+**Erledigt wenn:** Für die drei Stichproben ist entschieden, welche Quelle
+zutrifft, und das Ergebnis ist in
+[docs/ai-agent-log.md](ai-agent-log.md) begründet. Erst danach ist die
+Kreuztabelle eine Entscheidungsgrundlage.
 
-**Grenze:** In Jira wurde nur gelesen. Kein Status, kein Vorgang und keine
-Ausführung wurde verändert.
+**Warum das vor allem anderen steht:** Solange offen ist, ob die Ergebnisse die
+Anwendung messen, führt jede daraus abgeleitete Priorisierung in die Irre — und
+zwar in beide Richtungen: fertige Funktionen würden nachgebaut, fehlende für
+erledigt gehalten.
+
+---
+
+## X-alt. Wie die Xray-Ergebnisse beschafft werden — ERLEDIGT, Verfahren dokumentiert
+
+Der Atlassian-MCP-Server kann Xray-Ergebnisse grundsaetzlich nicht sehen: Xray
+Cloud fuehrt sie im eigenen Speicher, nicht in Jira-Feldern. Ueber die
+Jira-REST-API ist nur der Vorgangsstatus lesbar, und der lautet bei allen 333
+Tests "Zu erledigen" — unabhaengig vom Testergebnis.
+
+Der Weg dorthin steht als Skript bereit:
+`node docs/jira/artifact_work/fetch-xray-status.mjs`, mit `XRAY_CLIENT_ID` und
+`XRAY_CLIENT_SECRET` aus der Umgebung (Xray -> Global Settings -> API Keys).
+Es schreibt `docs/jira/xray-status-export.csv` und gleicht gegen die
+Importliste ab. Zum Aktualisieren einfach erneut ausfuehren; danach
+`build-cascade-list.ps1` laufen lassen, damit die Ergebnisse in der
+Kaskadenliste stehen.
 
 ---
 

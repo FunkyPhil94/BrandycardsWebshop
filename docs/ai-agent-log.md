@@ -2027,3 +2027,50 @@ Geprüft ohne echte Zugangsdaten: Die Schutzabfrage greift, der
 Authentifizierungsendpunkt ist erreichbar (HTTP 401 bei Wegwerf-Werten), beide
 Fehlerpfade enden mit Exitcode 1, ESLint ist sauber. Der eigentliche Datenlauf
 steht noch aus, weil er das Schlüsselpaar des Betreibers braucht.
+
+
+## 2026-08-15 — Die Xray-Ergebnisse liegen vor, und sie passen nicht zum Code
+
+Der erste echte Lauf über die Xray-GraphQL-API lieferte für alle 333 Tests ein
+Ergebnis: 220 PASSED, 112 FAILED, 1 EXECUTING, sämtlich aus der Ausführung
+KAN-899 vom 2026-08-15. Damit war die Kreuztabelle endlich baubar — und sie
+zeigt etwas anderes als erhofft.
+
+**Die Bestehensquote hängt nicht vom Umsetzungsstand ab.** VORHANDEN 127 von
+189, TEILWEISE 37 von 57, OFFEN 31 von 48, AUSSERHALB_CODE 25 von 39. In jeder
+Zeile rund zwei Drittel. Genau das darf nicht sein: Ob eine Funktion im Code
+existiert oder nachweislich fehlt, müsste den größten Einfluss auf das
+Testergebnis haben. Hier hat es keinen erkennbaren.
+
+**Einzelfälle machen es konkret.** 31 Tests stehen auf PASSED, obwohl ihre Story
+keinen Codebeleg hat. Darunter KAN-601 und KAN-602 zu E2-02 „Suchvorschläge
+erhalten". Im Katalog gibt es ein einfaches Eingabefeld und keinen
+Autocomplete-Endpunkt; eine Vorschlagsliste existiert nicht. Ein Test darauf kann
+nicht bestehen. Dasselbe gilt für E2-03 bis E2-05: Ohne Sportart-, Set- und
+Zustandsfelder am Produkt ist der Filter nicht baubar, geschweige denn prüfbar.
+
+**Die Fehler folgen der Testart, nicht der Funktion.** Ganze Kategorien stehen
+geschlossen auf FAILED — Accessibility und Auflösung 14 von 14, Responsive und
+Accessibility 13 von 13, Synchronisation und Fehler 13 von 13, Datenschutz und
+Berechtigung 10 von 10 — andere geschlossen auf PASSED. 106 der 111 Stories
+haben exakt einen Fehler, zwei haben keinen, drei haben zwei. Eine echte
+Ausführung gegen eine gewachsene Anwendung streut anders.
+
+Für sich genommen wäre jede dieser Beobachtungen erklärbar. Kategorienweite
+Fehler können echte, kategorienweite Mängel abbilden — bei Accessibility ist das
+sogar plausibel, der Shop hat weder Sprunglink noch Fokusfalle. In der Summe mit
+den 31 unmöglichen PASSED ergibt sich aber ein Bild, das man nicht ungeprüft zur
+Entscheidungsgrundlage machen darf.
+
+Deshalb steht die Kreuztabelle zwar in der Kaskadenliste, aber mit dem Vorbehalt
+daneben und nicht als Bilanz. Möglich ist beides: Der Umsetzungsstand kann für
+die betroffenen Stories falsch sein, oder die Testergebnisse bilden die
+Anwendung nicht ab. Welche Quelle zutrifft, entscheidet keine weitere Rechnung,
+sondern ein Blick auf drei Screenshot-Nachweise — das steht als Punkt X in
+docs/ai-todo.md.
+
+Nebenbei repariert: Der Vollständigkeitsabgleich im Abfrageskript zählte Zeilen
+statt CSV-Datensätze und meldete deshalb 10323 erwartete Schlüssel statt 333.
+Die Testbeschreibungen enthalten Zeilenumbrüche in gequoteten Feldern. Der
+Zähler respektiert jetzt Anführungszeichen; geprüft gegen beide CSVs, beide
+liefern 334 Datensätze inklusive Kopfzeile.

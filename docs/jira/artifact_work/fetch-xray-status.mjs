@@ -149,12 +149,46 @@ function csvFeld(wert) {
   return /[",\r\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
 }
 
+/**
+ * Zählt die Datensätze einer CSV, nicht ihre Zeilen. Der Unterschied ist hier
+ * kein Detail: Die Testbeschreibungen enthalten Zeilenumbrüche innerhalb
+ * gequoteter Felder, weshalb ein naives Zählen der Zeilen 10323 statt 333
+ * ergibt — und damit einen Abgleich, der reihenweise Lücken meldet, die es
+ * nicht gibt.
+ */
+function csvDatensaetze(text) {
+  let anzahl = 0;
+  let inFeld = false;
+  let zeileHatInhalt = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const zeichen = text[i];
+    if (inFeld) {
+      if (zeichen === '"') {
+        if (text[i + 1] === '"') i++;
+        else inFeld = false;
+      }
+      continue;
+    }
+    if (zeichen === '"') { inFeld = true; zeileHatInhalt = true; continue; }
+    if (zeichen === "\r") continue;
+    if (zeichen === "\n") {
+      if (zeileHatInhalt) anzahl++;
+      zeileHatInhalt = false;
+      continue;
+    }
+    zeileHatInhalt = true;
+  }
+  if (zeileHatInhalt) anzahl++;
+  return anzahl;
+}
+
 function erwarteteSchluessel() {
   try {
-    const zeilen = readFileSync(erwarteteTestsPfad, "utf8").replace(/^﻿/, "").split(/\r?\n/);
+    const text = readFileSync(erwarteteTestsPfad, "utf8").replace(/^﻿/, "");
     // Die Datei führt keine Jira-Schlüssel, sondern Import-IDs. Die bestätigte
     // Zuordnung ist KAN-565..KAN-897 in Dateireihenfolge (siehe Kaskadenliste).
-    const anzahl = zeilen.slice(1).filter((zeile) => zeile.trim()).length;
+    const anzahl = csvDatensaetze(text) - 1; // ohne Kopfzeile
     return new Set(Array.from({ length: anzahl }, (_, i) => `KAN-${565 + i}`));
   } catch {
     return null;
