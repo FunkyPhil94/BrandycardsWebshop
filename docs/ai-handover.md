@@ -39,17 +39,18 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 <!-- Fuer den naechsten Auftrag freihalten. -->
 
-### 2026-08-15 - Die naechsten 50 offenen Xray-Tests ausfuehren
-
-- Status: LÄUFT.
-- Ziel: Die naechsten 50 offenen Tests der Xray-Testausfuehrung KAN-899 mit nativen Xray-Schritten vollstaendig ausfuehren und dokumentieren.
-- Betroffene Tests: KAN-640 bis KAN-591 in absteigender Reihenfolge.
-- Rahmen: Je Test vier Schrittresultate und vier Schritt-Screenshots sowie sieben vereinbarte CSS-Viewport-Screenshots fuer 1440 x 900, 1920 x 1080, 2560 x 1440, 3440 x 1440, 3840 x 2160, 768 x 1024 und 390 x 844 erstellen; PASS/FAIL nur mit vollstaendiger Evidenz buchen.
-- Browser-Handoff: Die letzte abgeschlossene Ausfuehrung steht auf KAN-641; nach jedem Test den naechsten offenen Vorgang bearbeiten.
-- Geplant: Xray-Lazyload bei Bedarf durch Scrollen im eingebetteten Testfenster anstossen, alle Belege hochladen, die Viewport-Einstellung zuruecksetzen und am Ende den naechsten offenen Test als Handoff belassen.
-- Offen: Die tatsaechliche Statusverteilung und eventuelle technische Blocker werden waehrend des Durchlaufs protokolliert.
+Keine laufenden Aufträge.
 
 ## Historie
+
+### 2026-08-15 - Xray-Tests KAN-640 bis KAN-591 abgeschlossen
+
+- Status: ABGESCHLOSSEN.
+- Ergebnis: Alle 50 Tests KAN-640 bis KAN-591 wurden in Xray KAN-899 mit vier nativen Schritten ausgeführt. 33 Tests stehen auf `PASSED`, 17 auf `FAILED`.
+- Nachweise: Pro Test wurden vier Schritt-Screenshots und sieben Viewport-Screenshots für 1440 x 900, 1920 x 1080, 2560 x 1440, 3440 x 1440, 3840 x 2160, 768 x 1024 und 390 x 844 CSS-Pixel erstellt und hochgeladen. Jeder Test hat elf lokale Screenshot-Nachweise; Fehlerfälle erhielten zusätzlich den Verweis auf KAN-1355.
+- Besonderheit: KAN-626 hatte zunächst keine nativen Schritte. Die vier Schritte wurden aus der vorhandenen Xray-Testbeschreibung zusammengeführt und KAN-626 danach vollständig als PASSED ausgeführt. Kein Test blieb technisch blockiert.
+- Browser: Die Viewport-Einstellung wurde zurückgesetzt. Der Handoff zeigt den zuletzt bearbeiteten Test KAN-591.
+- Offen: Der nächste offene Test in der absteigenden Reihenfolge ist KAN-590.
 
 ### 2026-08-15 - Xray-Tests KAN-690 bis KAN-641 abgeschlossen
 
@@ -63,8 +64,8 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 ### 2026-08-14 - Restliche 175 offene Xray-Tests ausfuehren
 
 - Status: TEILWEISE ABGESCHLOSSEN.
-- Ergebnis: KAN-739 bis KAN-691 (49 Tests) und KAN-690 bis KAN-641 (50 weitere Tests) sind vollständig ausgeführt. Insgesamt sind damit 99 der 175 ursprünglich offenen Tests aus diesem Auftrag bearbeitet.
-- Offen: Die verbleibenden offenen Tests beginnen bei KAN-640 und reichen in der geplanten Reihenfolge bis KAN-565.
+- Ergebnis: KAN-739 bis KAN-691 (49 Tests), KAN-690 bis KAN-641 (50 weitere Tests) und KAN-640 bis KAN-591 (50 weitere Tests) sind vollständig ausgeführt. Insgesamt sind damit 149 der 175 ursprünglich offenen Tests aus diesem Auftrag bearbeitet.
+- Offen: Die verbleibenden offenen Tests beginnen bei KAN-590 und reichen in der geplanten Reihenfolge bis KAN-565.
 
 ### 2026-08-14 - Xray-Schritt 5: Testplan und Testausführung anlegen
 

@@ -1,5 +1,25 @@
 # BrandyCards Agentenprotokoll
 
+## 2026-08-15 - Xray-Tests KAN-640 bis KAN-591 abgeschlossen
+
+Der nächste 50er-Block der Xray-Testausführung KAN-899 wurde in absteigender
+Reihenfolge vollständig bearbeitet: KAN-640 bis KAN-591. Alle 50 Tests wurden
+mit vier nativen Xray-Schritten ausgeführt und anschließend mit `PASSED` oder
+`FAILED` bewertet. Die Einzelverteilung lautet 33 `PASSED` und 17 `FAILED`;
+die Fehlfälle enthalten den Verweis auf den bekannten Fehler KAN-1355.
+
+Je Test wurden vier Schritt-Screenshots sowie sieben Screenshots für die
+vereinbarten CSS-Viewports 1440 x 900, 1920 x 1080, 2560 x 1440, 3440 x 1440,
+3840 x 2160, 768 x 1024 und 390 x 844 erstellt. Damit liegen je Test elf
+lokale Screenshot-Nachweise vor; die Upload-Routine bestätigte die Anhänge an
+den jeweiligen Jira-Vorgängen. Die Viewport-Einstellung wurde zurückgesetzt
+und der Browser auf KAN-591 als Handoff belassen.
+
+KAN-626 zeigte zunächst keine nativen Schritte. Die vier Schritte wurden aus
+der vorhandenen Xray-Testbeschreibung zusammengeführt und der Test danach
+vollständig als PASSED ausgeführt. Nach dieser Korrektur blieb kein Test
+technisch blockiert. Der nächste offene Test ist KAN-590.
+
 ## 2026-08-15 - Xray-Tests KAN-690 bis KAN-641 abgeschlossen
 
 Der nächste 50er-Block der Xray-Testausführung KAN-899 wurde in absteigender
