@@ -5935,3 +5935,10 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 - Umgesetzt: Kaskadenliste und Punkt X in docs/ai-todo.md tragen den Befund; Punkt X ist auf die anstehende Entscheidung über den Testumfang umgeschrieben, mit Empfehlung.
 - Geltende Regel bis zur Entscheidung: Kein Ergebnis aus Ausführung KAN-899 darf als Abnahme der benannten Story verwendet werden.
 - Status: ABGESCHLOSSEN.
+
+
+## Auftrag 2026-08-15: Neue Testfälle für den Board-Wiederaufbau
+- Status: LÄUFT.
+- Ziel: 35 story-spezifische Testfälle für die Wege, an denen Geld hängt, als docs/jira/new-test-cases.csv. Ersetzt die 333 Schablonen mit 27 Abläufen.
+- Rahmen: Nur Vorbereitung im Repository. Nichts nach Jira schreiben, solange das neue Projekt nicht existiert; der Betreiber löscht und legt es selbst an.
+- Hinweis: Die bestehenden Import-CSVs verweisen auf Schlüssel und interne IDs des alten Boards und sind ohne Nacharbeit nicht wiederverwendbar. Der Import läuft deshalb in Runden mit Neuschreiben der Verknüpfungen dazwischen.
