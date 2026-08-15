@@ -1,5 +1,23 @@
 # BrandyCards Agentenprotokoll
 
+## 2026-08-15 - BWS-Vorgangstypen auf Xray-Notwendigkeit geprüft
+
+Die Klarstellung bezog sich auf Jira-Vorgangstypen, nicht auf einzelne
+Vorgänge. Im neuen BWS-Projekt sind `Epic`, `Task`, `Story`, `Feature`, `Bug`
+und die fünf Xray-Typen `Test`, `Precondition`, `Test Set`, `Test Plan` sowie
+`Test Execution` verfügbar.
+
+Für Xray sind `Test` und `Test Execution` der Kernumfang für Testfälle und
+Testausführungen. `Test Plan`, `Test Set` und `Precondition` sind keine harte
+Minimalpflicht, unterstützen aber die gewünschte vollständige Organisation,
+Gruppierung und Wiederverwendung. Sie wurden deshalb nicht entfernt.
+
+Die Standardtypen `Epic`, `Story`, `Task` und `Bug` bleiben für die fachliche
+und technische Produktarbeit erforderlich. `Feature` ist kein Xray-Typ, aber
+ohne einen eindeutigen Hinweis, dass er versehentlich angelegt wurde, kein
+sicherer Löschkandidat. Es wurden daher keine Vorgangstypen gelöscht; die
+Xray-Typen sind im BWS-Projekt verfügbar und boardfähig.
+
 ## 2026-08-15 - Xray-Integration im neuen BWS-Board geprüft
 
 Das neu angelegte Jira-Projekt `BWS` mit Board 34 wurde geprüft. Xray ist auf

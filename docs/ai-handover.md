@@ -39,15 +39,16 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 <!-- Fuer den naechsten Auftrag freihalten. -->
 
-### 2026-08-15 - BWS-Xray-Vorgangstypen prüfen und bereinigen
-
-- Status: LÄUFT.
-- Ziel: Die im neuen Projekt BWS angelegten Jira-Vorgangstypen prüfen, ihre Notwendigkeit für Xray bewerten und nur eindeutig überflüssige Typen nach Bestätigung aus dem Projekt entfernen.
-- Rahmen: Die Xray-Kernkette `Test`, `Precondition`, `Test Set`, `Test Plan` und `Test Execution` muss erhalten bleiben. Epics, Stories, Tasks und Bugs dürfen nicht entfernt werden. Vor jeder Löschung werden Namen, Verwendungen und Xray-Abhängigkeiten sichtbar geprüft.
-- Geplant: Projekt-Vorgangstypenkonfiguration und Board-Zuordnung auslesen, Xray-Minimalumfang bestimmen, überflüssige zusätzliche Typen identifizieren und die BWS-Konfiguration entsprechend bereinigen.
-- Offen: Welche Vorgangstypen im Projekt aktiv sind und welche davon vom Nutzer zusätzlich angelegt wurden.
+Keine laufenden Aufträge.
 
 ## Historie
+
+### 2026-08-15 - BWS-Xray-Vorgangstypen prüfen und bereinigen
+- Status: ABGESCHLOSSEN.
+- Ergebnis: BWS bietet `Epic`, `Task`, `Story`, `Feature`, `Bug` sowie die Xray-Typen `Test`, `Precondition`, `Test Set`, `Test Plan` und `Test Execution` an.
+- Xray-Bewertung: `Test` und `Test Execution` sind für Testfälle und deren Ausführung erforderlich. `Test Plan`, `Test Set` und `Precondition` sind für die vollständige Xray-Organisation und wiederverwendbare Testvorbedingungen sinnvoll und bleiben erhalten.
+- Bereinigung: Kein Vorgangstyp wurde gelöscht. Die normalen Typen werden für die Produktarbeit benötigt; `Feature` ist zwar kein Xray-Pflichttyp, aber ohne sicheren Nachweis einer Fehlkonfiguration kein eindeutig überflüssiger Löschkandidat.
+- Board: Die BWS-Board-Konfiguration bleibt unverändert; die Xray-Typen sind im Projekt verfügbar und können auf dem Board angelegt werden.
 
 ### 2026-08-15 - Xray-Verbindung und Vorgänge im neuen Jira-Projekt BWS prüfen
 - Status: ABGESCHLOSSEN.
