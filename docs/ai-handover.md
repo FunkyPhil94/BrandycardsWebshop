@@ -39,17 +39,24 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 <!-- Fuer den naechsten Auftrag freihalten. -->
 
+Keine laufenden Aufträge.
+
+## Historie
+
+### 2026-08-15 - Xray-Tests KAN-690 bis KAN-641 abgeschlossen
+
+- Status: ABGESCHLOSSEN.
+- Ergebnis: Alle 50 Tests KAN-690 bis KAN-641 wurden in Xray KAN-899 mit vier nativen Schritten ausgeführt. 33 Tests stehen auf `PASSED`, 17 auf `FAILED`.
+- Nachweise: Pro Test wurden vier Schritt-Screenshots und sieben Viewport-Screenshots für 1440 x 900, 1920 x 1080, 2560 x 1440, 3440 x 1440, 3840 x 2160, 768 x 1024 und 390 x 844 CSS-Pixel erstellt und hochgeladen. Jeder Test hat damit elf lokale Screenshot-Nachweise; Fehlerfälle erhielten zusätzlich den Verweis auf KAN-1355.
+- Besonderheit: Die Xray-Schritte wurden erst nach einem echten Scrollen im eingebetteten Xray-Fenster sichtbar (Lazyload). Dieser Ablauf wurde stabilisiert; danach blieben keine Tests technisch blockiert.
+- Browser: Die Viewport-Einstellung wurde zurückgesetzt. Der Handoff zeigt den zuletzt bearbeiteten Test KAN-641.
+- Offen: Der nächste offene Test in der absteigenden Reihenfolge ist KAN-640.
+
 ### 2026-08-14 - Restliche 175 offene Xray-Tests ausfuehren
 
-- Zwischenstand: KAN-739 bis KAN-691 (49 von 175) sind vollständig ausgeführt; je Test liegen vier Schrittbelege und sieben Viewport-Belege vor.
-- Aktueller Block: Die nächsten 50 Tests KAN-690 bis KAN-641 werden absteigend bearbeitet.
-- Browser-Handoff: Die Testausführung steht auf KAN-691.
-
-- Status: LÄUFT.
-- Ziel: Die verbleibenden 175 offenen Tests der Xray-Testausfuehrung KAN-899 mit nativen Xray-Schritten vollstaendig ausfuehren und dokumentieren.
-- Rahmen: Die Tests KAN-739 bis KAN-565 in Xray-Reihenfolge bearbeiten; je Test vier Schrittresultate, vier Schritt-Screenshots sowie sieben vereinbarte CSS-Viewports dokumentieren: 1440 x 900, 1920 x 1080, 2560 x 1440, 3440 x 1440, 3840 x 2160, 768 x 1024 und 390 x 844.
-- Geplant: Jeden offenen Test ausfuehren, Nachweise anhaengen, PASS/FAIL sauber setzen, KAN-899 auf 333 abgeschlossene Tests verifizieren und die Browseransicht zuruecksetzen.
-- Offen: Die tatsaechliche Statusverteilung und eventuelle verzögerte Xray-Testdefinitionsübernahmen werden während des Durchlaufs protokolliert.
+- Status: TEILWEISE ABGESCHLOSSEN.
+- Ergebnis: KAN-739 bis KAN-691 (49 Tests) und KAN-690 bis KAN-641 (50 weitere Tests) sind vollständig ausgeführt. Insgesamt sind damit 99 der 175 ursprünglich offenen Tests aus diesem Auftrag bearbeitet.
+- Offen: Die verbleibenden offenen Tests beginnen bei KAN-640 und reichen in der geplanten Reihenfolge bis KAN-565.
 
 ### 2026-08-14 - Xray-Schritt 5: Testplan und Testausführung anlegen
 

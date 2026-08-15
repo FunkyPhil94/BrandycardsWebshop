@@ -1,5 +1,26 @@
 # BrandyCards Agentenprotokoll
 
+## 2026-08-15 - Xray-Tests KAN-690 bis KAN-641 abgeschlossen
+
+Der nächste 50er-Block der Xray-Testausführung KAN-899 wurde in absteigender
+Reihenfolge vollständig bearbeitet: KAN-690 bis KAN-641. Alle 50 Tests wurden
+mit vier nativen Xray-Schritten ausgeführt und anschließend mit `PASSED` oder
+`FAILED` bewertet. Die Einzelverteilung lautet 33 `PASSED` und 17 `FAILED`;
+die Fehlfälle enthalten den Verweis auf den bekannten Fehler KAN-1355.
+
+Je Test wurden vier Schritt-Screenshots sowie sieben Screenshots für die
+vereinbarten CSS-Viewports 1440 x 900, 1920 x 1080, 2560 x 1440, 3440 x 1440,
+3840 x 2160, 768 x 1024 und 390 x 844 erstellt. Das ergibt elf lokale
+Screenshot-Nachweise je Test; die Upload-Routine bestätigte die Anhänge an
+den jeweiligen Jira-Vorgängen. Die Viewport-Einstellung wurde nach dem Lauf
+zurückgesetzt und der Browser auf KAN-641 als Handoff belassen.
+
+Eine technische Besonderheit war Xrays Lazyload im eingebetteten Testfenster:
+Die nativen Schritte wurden erst nach einem echten Scrollen des iframe geladen.
+Der Vorbereitungsschritt wurde dafür stabilisiert. Danach waren alle 50 Tests
+ausführbar; kein Test blieb technisch blockiert. Der nächste offene Test ist
+KAN-640.
+
 ## 2026-08-14 - Xray-Tests um hohe Viewport-Aufloesungen erweitert
 
 Die Responsive-Testvorgabe wurde auf alle 333 bestehenden Xray-Testvorgaenge
