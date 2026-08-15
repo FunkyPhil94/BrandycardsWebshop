@@ -5920,3 +5920,10 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 - Nächster Schritt: Punkt X in docs/ai-todo.md — drei Screenshot-Nachweise aus der Gruppe „PASSED trotz OFFEN" ansehen (KAN-601, KAN-602, KAN-604) und entscheiden, welche Quelle zutrifft.
 - Rahmen eingehalten: In Jira und Xray ausschließlich gelesen; kein Testergebnis verändert.
 - Status: ABGESCHLOSSEN.
+
+
+## Auftrag 2026-08-15: Stichprobe KAN-601 — Widerspruch aufgelöst
+- Status: LÄUFT.
+- Befund: Die Testschritte von KAN-601 („E2-02 Suchvorschläge erhalten") prüfen keine Suchvorschläge, sondern Suche, Sortierung, Pagination und Detailnavigation. Die 333 Tests teilen sich insgesamt nur 27 verschiedene Schritt-/Ergebnistexte, einen je Testart; story-spezifisch ist allein der Titel.
+- Folge: Weder der Umsetzungsstand noch die Testergebnisse sind falsch. Die Tests messen nur nicht das, was ihr Titel behauptet. Das erklärt alle drei Auffälligkeiten der Kreuztabelle.
+- Zu tun: Befund in Kaskadenliste, Agent-Log und Punkt X festhalten; Punkt X auf die echte Konsequenz umschreiben.
