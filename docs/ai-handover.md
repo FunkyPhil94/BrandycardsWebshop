@@ -39,9 +39,183 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 <!-- Fuer den naechsten Auftrag freihalten. -->
 
-Keine laufenden Aufträge.
+### 2026-08-15 - Xray-Verbindung und Vorgänge im neuen Jira-Projekt BWS prüfen
+
+- Status: LÄUFT.
+- Ziel: Im neuen Jira-Projekt BWS prüfen, ob Xray installiert bzw. nutzbar ist, ob das Board mit Xray-Testplanung und Testausführung verbunden werden kann und welche zusätzlich angelegten Vorgänge dafür tatsächlich notwendig sind.
+- Rahmen: Bestehende Vorgänge zuerst vollständig inventarisieren; nichts ohne eindeutige Prüfung löschen. Nur klar überflüssige, neu angelegte Vorgänge nach Abgleich mit Xray-Anforderungen entfernen. Xray muss im Board erreichbar und für Testvorgänge nutzbar sein.
+- Geplant: Board-/Projektstruktur und Vorgangstypen prüfen, Xray-Navigation und Berechtigungen verifizieren, zusätzliche Vorgänge nach Zweck klassifizieren, notwendige Verbindung konfigurieren und nur ausdrücklich gedeckte Bereinigungen in Jira durchführen.
+- Offen: Welche Vorgänge im neuen Projekt vorhanden sind und ob Xray für BWS bereits installiert bzw. freigeschaltet ist.
 
 ## Historie
+
+### 2026-08-15 - redesign-v3: frischer/moderner wirkende Überarbeitung
+
+- Status: ABGESCHLOSSEN.
+- Auftrag: Nutzer fand das Design „zu clean" und wollte es moderner und
+  frischer.
+- Umsetzung (alles in `redesign-v3/src/styles/*` und `pages/Home.tsx`):
+  - Feines Korn-Overlay über die ganze Seite (`body::after`, sehr geringe
+    Deckkraft) für eine gedruckte statt digital-glatte Anmutung.
+  - Überschriften von Schriftschnitt 600 auf 700 mit engerer Laufweite
+    angehoben (`h1`/`h2`), Unterüberschriften (`h3`/`h4`) bleiben bei 600.
+  - Unscharfe Gold-/Navy-Farbflecken hinter dem Hero für Tiefe.
+  - Das bereits definierte, aber bisher **nirgends verwendete**
+    Packungsriss-Kantenmotiv (`.panel-torn`) jetzt tatsächlich eingesetzt:
+    am „Dein Preis"-Panel auf der Startseite und am Preisvorschlag-Widget
+    auf der Kartendetailseite.
+  - Neuer Abschnitt „Mach uns ein Angebot" jetzt als vollflächiger
+    Navy-Block (`.section-navy`) statt Elfenbein-Fläche — bricht den
+    bisher durchgehend hellen Seitenrhythmus.
+  - Leichte Rotation/Hover-Anhebung bei Zielkacheln und dem „Dein
+    Preis"-Panel für spielerische Asymmetrie statt rein rechtwinkliger
+    Flächen.
+- Geprüft: `npx tsc -b` und `npx vite build` fehlerfrei; Dev-Server auf Port
+  4301 antwortet weiterhin mit HTTP 200.
+- Datenbank/Deployment/Fremdsysteme: keine Berührung.
+
+### 2026-08-15 - redesign-v3: Newsticker ersetzt, Startseiten-Galerie mit Neu/Beliebt-Umschalter
+
+- Status: ABGESCHLOSSEN.
+- Auftrag: Nutzer mochte den laufenden Newsticker unter dem Header in
+  `redesign-v3` nicht mehr und wollte auf der Startseite eine Galerie mit
+  Umschalter „Neu" (5 neueste Karten) / „Beliebt" (5 teuerste Karten).
+- Umsetzung:
+  - Ticker (`PriceTicker.tsx`, Lauftext-Animation) entfernt und durch eine
+    ruhige, nicht scrollende `TrustBar.tsx` ersetzt: drei kurze
+    Vertrauens-Aussagen mit Häkchen-Icon, zentriert, auf demselben
+    Navy-Grund wie zuvor.
+  - `src/data/cards.ts` um ein `addedAt`-Datumsfeld je Karte ergänzt (rein
+    für die Sortierung, kein UI-Feld) sowie zwei abgeleitete Exporte
+    `newestCards` und `mostExpensiveCards` (je 5 verfügbare Karten).
+  - Neue Komponente `HighlightGallery.tsx`: Segmented-Toggle „Neu"/„Beliebt"
+    oberhalb eines Kartenrasters, ersetzt den vorigen statischen
+    „Frisch im Bestand"-Abschnitt auf der Startseite (jetzt „Im Fokus").
+    Kartenraster nutzt bestehende `CardTile`-Komponente, Wechsel spielt die
+    vorhandene Pop-in-Animation erneut ab (Remount über `key={mode}`).
+- Geprüft: `npx tsc -b` und `npx vite build` fehlerfrei; Dev-Server auf Port
+  4301 antwortet weiterhin mit HTTP 200.
+- Datenbank/Deployment/Fremdsysteme: keine Berührung.
+
+### 2026-08-15 - redesign-v3-Palette an das BrandyCards-Logo angeglichen
+
+- Status: ABGESCHLOSSEN. (Eintrag nachträglich, nicht vorher — wie beim
+  PRODUCT.md-Lauf zuvor, hier zur Nachvollziehbarkeit vermerkt.)
+- Auftrag: Nutzer mochte die Seitenübergangs-Animation in `redesign-v3`
+  (Port 4301) und wollte die Farben näher an das echte BrandyCards-Logo
+  (`app/brand/brandycards-logo.png`) anlehnen, dabei aber eine helle
+  Variante bleiben — nicht zwingend reinweiß.
+- Umsetzung: Logo per Bildbetrachtung ausgewertet (dunkles Navy-Wappen,
+  Elfenbein-Schrift, Antik-Gold-Rahmen, dunkles Rot im Banner). In
+  `redesign-v3/src/styles/tokens.css` das vorige Kobaltblau durch das
+  Logo-Navy ersetzt (Variablenname `--cobalt` aus Aufwandsgründen belassen,
+  nur der Farbwert geändert), Grundfarbe von neutralem Weiß auf warmes
+  Elfenbein umgestellt, Gold- und Rot-Töne dem Logo angeglichen. Mehrere an
+  Ort und Stelle hartkodierte RGBA-Werte (Hintergrundpunktraster,
+  Button-Schatten, Kartenglüh-Effekt, Ticker-Text) ebenfalls auf die neue
+  Palette umgestellt, da sie nicht über die Variable liefen. Der von der
+  Nutzerin gelobte Seitenübergang (`route-wipe` in `transitions.css`) nutzt
+  dieselben Variablen und übernimmt die neue Navy/Gold-Farbgebung
+  automatisch, unverändertes CSS.
+- Geprüft: `npx vite build` fehlerfrei; Dev-Server auf Port 4301 antwortet
+  weiterhin mit HTTP 200.
+- Datenbank/Deployment/Fremdsysteme: keine Berührung.
+
+### 2026-08-15 - Zwei weitere Redesign-Prototypen „redesign-v3" (hell) und „redesign-v4" (Vitrine)
+
+- Status: ABGESCHLOSSEN.
+- Auftrag: Nutzer wollte zwei zusätzliche lokal laufende Shop-Varianten auf
+  eigenen Ports, mit unterschiedlichem Design, mindestens eine davon hell
+  statt dunkel, jeweils mit eigenen Animationen beim Öffnen einer Unterseite
+  (Anschluss an die in `redesign-v2` genutzten Sweep-Animationen).
+- Umsetzung: Zwei weitere eigenständige Vite+React+TypeScript-Projekte,
+  `redesign-v3/` (Port 4301) und `redesign-v4/` (Port 4302), nach demselben
+  Muster wie `redesign-v2/` (eigenes `package.json`, eigener Dev-Server,
+  nicht Teil von `npm test`/`npm run build`). Dummy-Kartendaten, Icon-Set und
+  Grundstruktur aus `redesign-v2` übernommen statt neu erfunden (Nutzer hatte
+  zuvor um weniger Tokenverbrauch gebeten); Design diesmal direkt
+  entschieden, ohne erneuten `/impeccable` Concept-Seed-Lauf.
+  - `redesign-v3` „Foil-Pack-Morgen": helles Design, Off-White-Grund mit
+    Kobaltblau als durchgesetzter Hauptfarbe, Fraunces/DM Sans, gezackte
+    Packungsriss-Panel-Kante, runde Karten mit Halbtonraster und Glanzstreif.
+    Seitenübergang: diagonaler Kobalt/Gold-Wisch über den ganzen Bildschirm.
+  - `redesign-v4` „Vault-Vitrine": dunkles, aber von `redesign-v2` bewusst
+    verschiedenes Design — ruhige Glas-Panels mit dünner Goldlinie statt
+    Scoreboard-Lärm, Syne/Space Grotesk, Karten mit Glasreflex-Streifen.
+    Seitenübergang: aufblendender Gold-Spotlight in der Bildschirmmitte.
+- Geprüft: `npx tsc -b` und `npx vite build` für beide Projekte fehlerfrei;
+  Dev-Server beider Projekte antworten mit HTTP 200 auf `/`, `/karten`,
+  `/karten/:id`.
+- Bekannte Lücken (wie beim ersten Prototyp): kein Screenshot/visueller
+  Check in dieser Sitzung möglich, kein `/impeccable`-Entscheidungsseiten-
+  oder Subagenten-Lauf, kein DESIGN.md geschrieben. Nutzer sollte beide
+  Server selbst im Browser prüfen.
+- Datenbank/Deployment/Fremdsysteme: keine Berührung.
+
+## Historie
+
+### 2026-08-15 - Lokaler Redesign-Prototyp „redesign-v2" erstellt
+
+- Status: ABGESCHLOSSEN.
+- Auftrag: Nutzer wollte eine lokal laufende 2. Version der Website als
+  Redesign-Prototyp — „fancy und clean", Vertrauen schenkend, frisch und
+  lebendig, volle gestalterische Freiheit ausdrücklich erteilt, Dummy-Daten
+  statt echter Produktionsdaten.
+- Umsetzung: Eigenständiges Vite+React+TypeScript-Projekt unter
+  `redesign-v2/` (eigenes `package.json`, eigener Dev-Server auf Port 4300,
+  nicht Teil von `npm test`/`npm run build` im Wurzelverzeichnis, eigenes
+  `.gitignore` für `node_modules`/`dist`). Design-Richtung über den
+  `/impeccable`-Skill hergeleitet (`concept-seed.mjs --scope direction
+  --mode persuade`, Seed 753fa5ba, zugewiesene Richtung 4/7): eine
+  Flutlicht-Scoreboard-Ästhetik (Nachtstadion-Grund, Scoreboard-Zahlenschrift
+  Barlow Condensed, Zustandsmesser mit Präzisionsraster für Kartenzustand,
+  geschnittene Panel-Ecken), bewusst weg vom bisherigen warmen
+  Editorial-Papier-Look der Produktivseite, unter Beibehaltung der
+  Rot/Gold-Markenakzente und der DM-Mono-Schrift (aus `app/fonts` kopiert).
+  Direction-Contract-Kommentar steht als erstes Kind von `<body>` in
+  `redesign-v2/index.html`.
+- Seiten: Startseite, Katalog (Suche/Filter/Sortierung), Kartendetail
+  (Zustandsmesser + interaktives Preisvorschlag-Widget mit 3-Versuche/48h-
+  Regel), Verkaufen (Dummy-Formular), Über uns.
+- Kartendaten: 12 frei erfundene Spieler/Vereine in `src/data/cards.ts`,
+  bewusst keine realen Personen. Kartenbilder sind codegezeichnete
+  „CardFace"-Komponenten (CSS/SVG), keine Fotos oder KI-generierten Bilder.
+- Geprüft: `npx tsc -b` fehlerfrei, `npx vite build` erfolgreich, Dev-Server
+  liefert HTTP 200 auf `/`, `/karten`, `/karten/:id`.
+- Bekannte Lücken / bewusste Abweichung vom vollen `/impeccable`-Ablauf:
+  Keine interaktive Entscheidungsseite (`serve-question.mjs`) durchlaufen —
+  der Nutzer hatte die Gestaltung bereits vollständig freigestellt. Kein
+  Bildgenerierungswerkzeug verfügbar, daher code-led ohne Comp-Runde. Der
+  `impeccable-finish-reviewer`- und `impeccable-documenter`-Subagentenlauf
+  wurde nicht ausgeführt (kein DESIGN.md-Sidecar geschrieben); ebenso wurde
+  kein `detect.mjs`-Lauf über die neuen Dateien gemacht. Es wurde **kein**
+  Screenshot/visueller Check durchgeführt — in dieser Sitzung stand kein
+  Browser-Werkzeug zur Verfügung; nur Code-Review, Typprüfung und
+  HTTP-Statuscheck. Der Nutzer sollte den Dev-Server selbst im Browser
+  öffnen, bevor der Entwurf als abgenommen gilt.
+- Datenbank/Deployment/Fremdsysteme: keine Berührung.
+
+### 2026-08-15 - PRODUCT.md per /impeccable init angelegt
+
+- Status: ABGESCHLOSSEN.
+- Hinweis zur Reihenfolge: Der Eintrag entstand erst nach dem Schreiben der
+  Datei, nicht vorher — Regelverstoß, hier zur Nachvollziehbarkeit
+  nachgetragen statt verschwiegen.
+- Auftrag: Auf expliziten Nutzerwunsch (`/impeccable init`) wurde `PRODUCT.md`
+  im Projektwurzelverzeichnis neu angelegt. Das Skill-Setup meldete, dass noch
+  kein `PRODUCT.md` existiert.
+- Vorgehen: README.md, package.json und mehrere `app/`-Seiten (Startseite,
+  Über-uns, Verkaufen-Einstieg) gelesen, um Zielgruppe, Positionierung und
+  Markenfakten aus dem Code zu belegen. Drei gezielte Rückfragen an den
+  Nutzer gestellt (Zielgruppe, Positionierung, verbindliche Markenvorgaben);
+  alle drei bestätigten die aus dem Code abgeleiteten Annahmen.
+- Ergebnis: `PRODUCT.md` enthält Plattform (web), Nutzer, Produktzweck,
+  Positionierung, Betriebskontext, Fähigkeiten/Grenzen, Markenbindungen,
+  vorhandene Belege und Produktprinzipien. Keine Datenbank-, Deployment- oder
+  Fremdsystemänderung. `.impeccable/config.json` wurde nicht angelegt, da
+  keine Bildgenerierung im Werkzeugsatz verfügbar ist (code-first ist damit
+  der einzige Pfad, nichts zu speichern). Live-Modus-Konfiguration wurde
+  nicht gestartet, da nicht angefragt.
 
 ### 2026-08-15 - KAN-897 nach behobenem Responsive-Fehler erneut ausgeführt
 
