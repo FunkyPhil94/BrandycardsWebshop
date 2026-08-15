@@ -1918,3 +1918,40 @@ Das steht bei den betroffenen Stories jeweils als Abhängigkeit dabei.
 Fehlt eine Story in der Statusdatei, bricht der Generator ab, statt den Vermerk
 leer zu lassen. Ein leeres Feld läse sich wie „nichts bekannt", obwohl es nur
 vergessen wurde.
+
+
+## 2026-08-15 — Der Ist-Status aus Jira, und warum es ihn nicht gibt
+
+Der Auftrag lautete, den Ausführungsstatus der 333 Testvorgänge zu ziehen und
+gegen den Umsetzungsstand zu stellen. Die Abfrage lief, das Ergebnis war ein
+anderes als erwartet: Es gibt keinen Ausführungsstatus.
+
+Alle 333 Tests stehen in der Statuskategorie „To Do". Im gesamten Projekt mit
+904 Vorgängen ist genau einer „Fertig". Der Grund steht in den Vorgangstypen:
+`Test`, `Precondition`, `Test Set`, `Test Plan` und `Test Execution` tragen
+`scope: PROJECT` — sie wurden im Projekt von Hand angelegt und bilden Xray nach.
+Xray selbst ist nicht installiert. Damit fehlt jedes Feld, das PASS, FAIL oder
+BLOCKED aufnehmen könnte, und es fehlt der Mechanismus, der einen Test über eine
+Ausführung mit einem Ergebnis verbindet. Von den drei Ausführungstypen existieren
+zusammen drei Vorgänge, denen 333 Tests gegenüberstehen.
+
+Ein Detail hat den Befund zuerst verdeckt: `status = "Zu erledigen"` liefert in
+JQL 0 Treffer, obwohl jeder Vorgang genau diesen Status trägt. Die Abfrage muss
+über `statusCategory = "To Do"` laufen. Wer der ersten Zahl geglaubt hätte, wäre
+zum gegenteiligen Schluss gekommen — deshalb wurde sie gegengeprüft, bevor sie
+verwendet wurde.
+
+Die Ergebnisse früherer Testläufe sind nicht verloren, aber sie liegen an der
+falschen Stelle: in Dateinamen von Anhängen, Muster `KAN-565_S04_FAILED.png`.
+Das ist dokumentiert, aber nicht auswertbar — man kann nicht filtern, nicht
+zählen und keinen Testplan daraus ableiten.
+
+Die geplante Kreuztabelle Testergebnis × Umsetzungsstand wurde deshalb **nicht**
+gebaut. Sie hätte eine Achse mit einem einzigen Wert gehabt und einen
+Erkenntnisgewinn vorgetäuscht, den es nicht gibt. Stattdessen steht der Befund
+als Momentaufnahme mit Stichtag im Kopf der Kaskadenliste — einmal, nicht 333-mal
+derselbe Wert je Test.
+
+Die eigentliche Konsequenz steht als Punkt X in docs/ai-todo.md: Bevor 333 Tests
+ausgeführt werden, braucht das Ergebnis einen auswertbaren Ort. Sonst ist danach
+genauso wenig bekannt wie vorher, nur mit einigen tausend Screenshots mehr.

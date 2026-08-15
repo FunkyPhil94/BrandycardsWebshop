@@ -60,36 +60,47 @@ eBay-Schreibpfad, dann bewerben.**
 
 ---
 
-## X. Ist-Status der 333 Xray-Tests aus Jira ziehen — VORBEREITET, wartet auf MCP-Sitzung
+## X. Testergebnisse brauchen einen auswertbaren Ort — ERGEBNIS DER JIRA-PRÜFUNG vom 2026-08-15
 
-**Was zu tun ist:** Den aktuellen Ausführungsstatus aller 333 Xray-Testvorgänge
-(KAN-565 bis KAN-897) aus Jira lesen und gegen den Umsetzungsstand in
-[docs/jira/story-implementation-status.csv](jira/story-implementation-status.csv)
-stellen.
+**Der ursprüngliche Auftrag ist erledigt und hat sich dabei selbst widerlegt.**
+Der Ist-Status wurde am 2026-08-15 über den Atlassian-MCP-Server aus
+`brandycards.atlassian.net` gelesen. Ergebnis:
 
-**Voraussetzung, die bereits geschaffen ist:** Am 2026-08-15 wurde der offizielle
-Atlassian-MCP-Server in die Benutzerkonfiguration eingetragen
-(`https://mcp.atlassian.com/v1/mcp/authv2`, HTTP-Transport, Scope `user`). Seine
-Werkzeuge stehen ab der nächsten Sitzung zur Verfügung; beim ersten Zugriff ist
-der OAuth-Ablauf im Browser zu bestätigen. Der abgekündigte `/v1/sse`-Endpunkt
-darf nicht verwendet werden.
+- Alle 333 Testvorgänge stehen in der Statuskategorie „To Do".
+- Im ganzen Projekt (904 Vorgänge) ist genau einer „Fertig", keiner „In Arbeit".
+- 331 der 333 tragen Anhänge; ohne Anhang sind KAN-724 und KAN-835.
+- **Xray ist in dieser Instanz nicht installiert.** `Test`, `Precondition`,
+  `Test Set`, `Test Plan` und `Test Execution` sind projekteigene Vorgangstypen
+  (`scope: PROJECT`) ohne Ausführungsfelder. Es gibt kein Feld, das PASS, FAIL
+  oder BLOCKED trägt. Von den drei letztgenannten Typen existieren zusammen
+  drei Vorgänge — für 333 Tests.
 
-**Abfrage:** `project = KAN AND issuetype = Test ORDER BY key ASC`. Gebraucht
-werden Vorgangsschlüssel, Vorgangsstatus und — getrennt davon — das letzte
-Xray-Ausführungsergebnis (PASS/FAIL/BLOCKED). Beides ist nicht dasselbe: ein
-Vorgang kann auf „Done" stehen, während die letzte Ausführung FAIL war.
+Die geplante Kreuztabelle Testergebnis × Umsetzungsstand ist damit nicht
+baubar: es gibt nur eine Achse. Wo Ergebnisse dokumentiert wurden, stecken sie
+in **Dateinamen von Anhängen** (Muster `KAN-565_S04_FAILED.png`) und nicht in
+einem Feld, das sich filtern, zählen oder über einen Testplan auswerten lässt.
 
-**Erledigt wenn:**
-- Alle 333 Schlüssel sind zugeordnet; fehlende oder unbekannte Schlüssel sind benannt statt stillschweigend übergangen.
-- Es gibt eine Kreuztabelle Testergebnis × Umsetzungsstand. Sie beantwortet die eigentliche Frage: welche Tests scheitern an fehlender Funktion und welche an etwas anderem.
-- Der Ist-Status ist in der Kaskadenliste ausgewiesen, **mit Abrufdatum und als Momentaufnahme gekennzeichnet** — er veraltet, sobald jemand in Jira einen Test ausführt, anders als der Umsetzungsstand aus dem Repository.
+**Was daraus folgt — die eigentliche offene Aufgabe:** Bevor 333 Tests
+ausgeführt werden, braucht das Ergebnis einen Ort, an dem es maschinell
+auswertbar ist. Sonst ist nach dem Durchlauf genauso wenig bekannt wie vorher,
+nur mit mehreren tausend Screenshots mehr. Drei Wege stehen offen, die
+Entscheidung liegt beim Betreiber:
 
-**Grenze:** Nur lesen. Status, Ausführungen oder Vorgänge in Jira werden ohne
-ausdrückliche Ansage des Betreibers nicht verändert.
+1. **Xray oder ein vergleichbares Test-Management installieren.** Löst das
+   Problem an der Wurzel, kostet Lizenz und Einrichtung.
+2. **Mit Bordmitteln arbeiten:** ein eigenes Statusfeld oder ein Workflow mit
+   den Zuständen PASS/FAIL/BLOCKED am Vorgangstyp `Test`. Kostenlos, aber die
+   Historie mehrerer Läufe geht verloren — ein Vorgang trägt nur einen Zustand.
+3. **Ergebnisse im Repository führen**, etwa als CSV neben
+   `story-implementation-status.csv`, und Jira nur als Beschreibungsablage
+   nutzen. Passt zur bisherigen Arbeitsweise, verlässt aber das Board.
 
-**Warum das vor der Umsetzung steht:** Ohne diesen Abgleich werden alle 333 Tests
-als offen behandelt. 189 davon hängen an Stories, deren Funktion nachweislich
-existiert — dort ist zu prüfen, nicht zu bauen.
+**Erledigt wenn:** Der Ort für Testergebnisse ist entschieden und eingerichtet;
+ein Probelauf mit mindestens einem Test zeigt, dass sich das Ergebnis danach
+abfragen lässt, ohne Dateinamen zu lesen.
+
+**Grenze:** In Jira wurde nur gelesen. Kein Status, kein Vorgang und keine
+Ausführung wurde verändert.
 
 ---
 

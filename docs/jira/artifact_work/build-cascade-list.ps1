@@ -427,6 +427,14 @@ Add-Line 'Wichtig: Der Vermerk ist eine Einschätzung aus Codebelegen, keine Abn
 $statusCounts = $statusRows | Group-Object Status | Sort-Object Name
 Add-Line ('Verteilung über alle 111 Stories: ' + (($statusCounts | ForEach-Object { '{0}: {1}' -f (Get-StatusLabel $_.Name), $_.Count }) -join '; ') + '.')
 Add-Line ''
+Add-Line 'IST-STATUS IN JIRA — MOMENTAUFNAHME VOM 2026-08-15'
+Add-Line 'Direkt aus brandycards.atlassian.net gelesen. Anders als der Umsetzungsstand, der aus dem Repository stammt und mit ihm mitwandert, ist dieser Abschnitt ein Stichtagswert und veraltet, sobald jemand in Jira etwas bewegt.'
+Add-Line '- Alle 333 Testvorgänge stehen in der Statuskategorie „To Do". Kein einziger ist „In Arbeit" oder „Fertig".'
+Add-Line '- Im gesamten Projekt (904 Vorgänge) steht genau ein Vorgang auf „Fertig", keiner auf „In Arbeit".'
+Add-Line '- 331 der 333 Testvorgänge tragen Anhänge; ohne Anhang sind KAN-724 (E5-06) und KAN-835 (E8-08).'
+Add-Line '- Es gibt keinen Ausführungsstatus im Sinne von PASS, FAIL oder BLOCKED. Xray ist in dieser Instanz nicht installiert: Test, Precondition, Test Set, Test Plan und Test Execution sind projekteigene Vorgangstypen ohne Ausführungsfelder. Den drei vorhandenen Vorgängen dieser Typen stehen 333 Tests gegenüber.'
+Add-Line '- Folge: Ein Vergleich „Testergebnis gegen Umsetzungsstand" ist derzeit nicht möglich. Es gibt nur eine Achse. Wo Ergebnisse dokumentiert wurden, stecken sie in Dateinamen von Anhängen und nicht in einem auswertbaren Feld.'
+Add-Line ''
 Add-Line 'MASSNAHMENPLAN FÜR EIN POSITIVES TESTERGEBNIS'
 Add-Line '0. Zuerst den Umsetzungsstand der Story lesen. Ist er VORHANDEN, wird geprüft statt gebaut; ist er TEILWEISE, wird nur die genannte Lücke bearbeitet. Das verhindert, dass fertige Funktionen erneut umgesetzt werden.'
 Add-Line '1. Mensch oder KI setzt die noch offenen der vier Tasks der abgedeckten Story in der angegebenen Reihenfolge um; die konkreten Änderungen stehen je Story unter „Umsetzungs- und Remediationauftrag“.'
