@@ -2115,3 +2115,49 @@ Technik: 333 Testfälle mit 27 Abläufen ergeben keine Story-Abnahme. Ob man sie
 story-spezifisch ausbaut, den Umfang ehrlich zusammenstreicht oder sie richtig
 beschriftet, steht als Entscheidung in docs/ai-todo.md, Punkt X. Empfohlen ist
 das Zusammenstreichen auf die Wege, an denen Geld hängt.
+
+
+## 2026-08-15 — 35 Testfälle statt 333, und warum genau diese
+
+Die abgelöste Testebene hatte einen Konstruktionsfehler: Ihr Umfang kam aus
+einer Rechnung (111 Stories mal drei) statt aus einer Überlegung. Deshalb
+existierte ein Test „Suchvorschläge erhalten" für eine Funktion, die es nicht
+gibt — und prüfte ersatzweise die Katalogsuche.
+
+Der neue Umfang bemisst sich daran, was schiefgehen kann und Geld kostet. Das
+ergibt 35 Fälle in `docs/jira/new-test-cases.csv`, erzeugt von
+`artifact_work/build-new-test-cases.py`.
+
+Die Auswahl folgt drei Regeln:
+
+**Erstens: Was Geld kostet, wird geprüft.** Der Kaufweg vom Katalog bis zur
+bezahlten Bestellung, beide Checkout-Varianten, Reservierung gegen
+Doppelverkauf, Idempotenz der Zahlungsbestätigung, beide Richtungen des
+eBay-Abgleichs. 296 Einzelstücke, die gleichzeitig hier und auf eBay stehen,
+machen den Doppelverkauf zum teuersten Fehler des Shops.
+
+**Zweitens: Was Automatisierung nicht kann.** Im Repository liegen 32
+Testdateien, die Bestandslogik, Webhook-Idempotenz, Reservierungen und
+Sync-Diff bei jedem `npm test` prüfen. Die manuellen Fälle zielen deshalb auf
+das, was dort nicht hinkommt: die echte Oberfläche in echten Auflösungen, eine
+echte PayPal-Zahlung, ein echter eBay-Schreibvorgang, eine echt zugestellte
+Mail.
+
+**Drittens: Was schon einmal weh getan hat.** Der Bestätigungslink, der auf
+localhost zeigte und den Shop verkaufsunfähig machte. Die Sperre, die den
+Import über eine Stunde stilllegte. Der Abschnitt, der auf Ultrawide
+auseinanderlief. Jeder dieser Fälle hat jetzt einen Test, und in jedem steht
+unter „Warum dieser Test existiert", woher er kommt.
+
+Zwei Entscheidungen im Aufbau sind bewusst anders als vorher. Die Viewports
+sind auf zwei reduziert (1440x900 und 390x844), außer bei den vier Fällen des
+Bereichs Oberfläche — sieben Auflösungen mal 333 Tests waren der Grund, warum
+die alte Abnahme nie stattfand. Und der Generator bricht ab, wenn zwei Tests
+denselben Ablauf hätten: genau die Eigenschaft, an der die alte Liste
+gescheitert ist, ist jetzt eine Zusicherung. Aktuell 35 von 35 Abläufen
+einzigartig.
+
+Ein Fall ist absichtlich zum Scheitern bestimmt: E4-06 „Shop-Verkauf beendet
+das zugehörige eBay-Angebot". Diese Richtung ist offen. BLOCKED ist dort das
+ehrliche Ergebnis und macht die bekannte Lücke in der Abnahme sichtbar, statt
+sie zu verschweigen.

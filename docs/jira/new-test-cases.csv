@@ -1,0 +1,634 @@
+﻿Nr,Work type,Summary,Story Code,Bereich,Description
+1,Test,E2-01 Katalogsuche findet eine bekannte Karte,E2-01,Katalog,"Abgedeckte Story: E2-01
+Bereich: Katalog
+
+Warum dieser Test existiert
+Findet ein Kunde seine Karte nicht, kauft er sie nicht.
+
+Schritte
+1. Shop öffnen und /karten aufrufen.
+2. Im Suchfeld den Namen eines Spielers eingeben, der im Bestand ist.
+3. Trefferzahl über dem Raster ablesen.
+4. Suchbegriff auf eine Zeichenfolge ändern, die nicht vorkommt.
+
+Erwartetes Ergebnis
+Die Trefferliste enthält die gesuchte Karte, die Trefferzahl passt zur Anzahl der Kacheln, und der unsinnige Begriff führt zu einer verständlichen Leermeldung statt zu einer leeren Seite.
+
+Oberflächenprüfung: Dieser Test wird zusätzlich in 1440x900 und 390x844 CSS-Pixel durchgeführt. Weitere Auflösungen nur, wenn der Test dem Bereich Oberfläche zugeordnet ist.
+
+Nachweis: Ein Screenshot je Schritt, der Eingabe und sichtbares Ergebnis zeigt. PASS nur bei vollständig erfüllten Erwartungen. FAIL mit Reproduktionsschritten und verknüpftem Fehler, BLOCKED mit Ursache und fehlender Abhängigkeit. Passwörter, Tokens und Zahlungsdaten vor dem Anhang maskieren."
+2,Test,E2-06 Preisfilter grenzt den Bestand korrekt ein,E2-06,Katalog,"Abgedeckte Story: E2-06
+Bereich: Katalog
+
+Warum dieser Test existiert
+Ein falsch filternder Katalog versteckt verkäufliche Ware.
+
+Schritte
+1. /karten aufrufen und die Gesamttrefferzahl notieren.
+2. „Preis ab“ auf einen Wert oberhalb der günstigsten Karte setzen.
+3. „Preis bis“ zusätzlich auf einen Wert unterhalb der teuersten Karte setzen.
+4. Beide Felder leeren.
+
+Erwartetes Ergebnis
+Die Trefferzahl sinkt bei jeder Eingrenzung, keine angezeigte Karte liegt außerhalb der Spanne, und nach dem Leeren steht wieder die Ausgangszahl da.
+
+Oberflächenprüfung: Dieser Test wird zusätzlich in 1440x900 und 390x844 CSS-Pixel durchgeführt. Weitere Auflösungen nur, wenn der Test dem Bereich Oberfläche zugeordnet ist.
+
+Nachweis: Ein Screenshot je Schritt, der Eingabe und sichtbares Ergebnis zeigt. PASS nur bei vollständig erfüllten Erwartungen. FAIL mit Reproduktionsschritten und verknüpftem Fehler, BLOCKED mit Ursache und fehlender Abhängigkeit. Passwörter, Tokens und Zahlungsdaten vor dem Anhang maskieren."
+3,Test,E2-09 Blättern behält Filter und springt an den Rasteranfang,E2-09,Katalog,"Abgedeckte Story: E2-09
+Bereich: Katalog
+
+Warum dieser Test existiert
+Verliert das Blättern den Filter, ist der Katalog ab 296 Karten unbenutzbar.
+
+Schritte
+1. /karten aufrufen und einen Suchbegriff mit mehr als einer Seite Treffer eingeben.
+2. Seitengröße auf den kleinsten Wert stellen.
+3. Auf „Weiter“ klicken.
+4. Auf „Zurück“ klicken.
+
+Erwartetes Ergebnis
+Der Suchbegriff bleibt über beide Klicks erhalten, die Ergebnisanzeige nennt den passenden Bereich, und die Ansicht steht jeweils am Anfang des Rasters statt am Seitenfuß.
+
+Oberflächenprüfung: Dieser Test wird zusätzlich in 1440x900 und 390x844 CSS-Pixel durchgeführt. Weitere Auflösungen nur, wenn der Test dem Bereich Oberfläche zugeordnet ist.
+
+Nachweis: Ein Screenshot je Schritt, der Eingabe und sichtbares Ergebnis zeigt. PASS nur bei vollständig erfüllten Erwartungen. FAIL mit Reproduktionsschritten und verknüpftem Fehler, BLOCKED mit Ursache und fehlender Abhängigkeit. Passwörter, Tokens und Zahlungsdaten vor dem Anhang maskieren."
+4,Test,"E2-10 Produktdetail zeigt Preis, Zustand und Verfügbarkeit",E2-10,Katalog,"Abgedeckte Story: E2-10
+Bereich: Katalog
+
+Warum dieser Test existiert
+Die Detailseite ist der letzte Schritt vor dem Warenkorb.
+
+Schritte
+1. Aus dem Raster eine verfügbare Karte öffnen.
+2. Titel, Preis, Beschreibung und Bilder mit der Kachel vergleichen.
+3. Das Hauptbild anklicken und die Vergrößerung mit Escape schließen.
+4. Über den Zurück-Weg des Browsers ins Raster zurückkehren.
+
+Erwartetes Ergebnis
+Detailseite und Kachel zeigen denselben Preis und Titel, die Vergrößerung öffnet und schließt sauber, und das Raster steht nach dem Zurück an der vorherigen Stelle.
+
+Oberflächenprüfung: Dieser Test wird zusätzlich in 1440x900 und 390x844 CSS-Pixel durchgeführt. Weitere Auflösungen nur, wenn der Test dem Bereich Oberfläche zugeordnet ist.
+
+Nachweis: Ein Screenshot je Schritt, der Eingabe und sichtbares Ergebnis zeigt. PASS nur bei vollständig erfüllten Erwartungen. FAIL mit Reproduktionsschritten und verknüpftem Fehler, BLOCKED mit Ursache und fehlender Abhängigkeit. Passwörter, Tokens und Zahlungsdaten vor dem Anhang maskieren."
+5,Test,E3-01 Einzelstück lässt sich nur einmal in den Warenkorb legen,E3-01,Warenkorb,"Abgedeckte Story: E3-01
+Bereich: Warenkorb
+
+Warum dieser Test existiert
+Jede Karte ist ein Unikat. Eine Menge größer eins wäre ein Versprechen, das der Bestand nicht hält.
+
+Schritte
+1. Eine verfügbare Karte öffnen und in den Warenkorb legen.
+2. Die Beschriftung der Schaltfläche prüfen.
+3. Erneut auf die Schaltfläche klicken.
+4. Zum Warenkorb wechseln und die Menge prüfen.
+
+Erwartetes Ergebnis
+Nach dem ersten Klick wechselt die Schaltfläche in den Zustand „im Warenkorb“, ein zweiter Klick erzeugt keine zweite Position, und der Warenkorb führt die Karte genau einmal.
+
+Oberflächenprüfung: Dieser Test wird zusätzlich in 1440x900 und 390x844 CSS-Pixel durchgeführt. Weitere Auflösungen nur, wenn der Test dem Bereich Oberfläche zugeordnet ist.
+
+Nachweis: Ein Screenshot je Schritt, der Eingabe und sichtbares Ergebnis zeigt. PASS nur bei vollständig erfüllten Erwartungen. FAIL mit Reproduktionsschritten und verknüpftem Fehler, BLOCKED mit Ursache und fehlender Abhängigkeit. Passwörter, Tokens und Zahlungsdaten vor dem Anhang maskieren."
+6,Test,E3-05 Nicht mehr verfügbare Karte wird vor der Zahlung erkannt,E3-05,Warenkorb,"Abgedeckte Story: E3-05
+Bereich: Warenkorb
+
+Warum dieser Test existiert
+Das ist die Bremse gegen den Doppelverkauf. Sie muss vor dem Geld greifen, nicht danach.
+
+Schritte
+1. Eine verfügbare Karte in den Warenkorb legen.
+2. Die Karte im Adminbereich auf INACTIVE setzen oder ihren Bestand auf null bringen.
+3. Im Shop den Checkout aufrufen.
+4. Den Kauf fortsetzen wollen.
+
+Erwartetes Ergebnis
+Der Checkout weist die Karte als nicht mehr verfügbar aus und lässt die Zahlung nicht zu; es entsteht keine Bestellung.
+
+Oberflächenprüfung: Dieser Test wird zusätzlich in 1440x900 und 390x844 CSS-Pixel durchgeführt. Weitere Auflösungen nur, wenn der Test dem Bereich Oberfläche zugeordnet ist.
+
+Nachweis: Ein Screenshot je Schritt, der Eingabe und sichtbares Ergebnis zeigt. PASS nur bei vollständig erfüllten Erwartungen. FAIL mit Reproduktionsschritten und verknüpftem Fehler, BLOCKED mit Ursache und fehlender Abhängigkeit. Passwörter, Tokens und Zahlungsdaten vor dem Anhang maskieren."
+7,Test,"E3-04 Zwischensumme, Versand und Gesamtsumme stimmen überein",E3-04,Warenkorb,"Abgedeckte Story: E3-04
+Bereich: Warenkorb
+
+Warum dieser Test existiert
+Eine falsche Summe ist entweder Verlust oder ein Rechtsproblem.
+
+Schritte
+1. Zwei Karten unterschiedlichen Preises in den Warenkorb legen.
+2. Checkout aufrufen und die Zwischensumme nachrechnen.
+3. Versandkosten und Gesamtsumme ablesen.
+4. Eine Karte entfernen und erneut nachrechnen.
+
+Erwartetes Ergebnis
+Die Zwischensumme entspricht der Summe der Einzelpreise, die Gesamtsumme entspricht Zwischensumme plus Versand, und beide Werte aktualisieren sich nach dem Entfernen korrekt.
+
+Oberflächenprüfung: Dieser Test wird zusätzlich in 1440x900 und 390x844 CSS-Pixel durchgeführt. Weitere Auflösungen nur, wenn der Test dem Bereich Oberfläche zugeordnet ist.
+
+Nachweis: Ein Screenshot je Schritt, der Eingabe und sichtbares Ergebnis zeigt. PASS nur bei vollständig erfüllten Erwartungen. FAIL mit Reproduktionsschritten und verknüpftem Fehler, BLOCKED mit Ursache und fehlender Abhängigkeit. Passwörter, Tokens und Zahlungsdaten vor dem Anhang maskieren."
+8,Test,E3-07 Gastbestellung läuft ohne Konto bis zur Zahlung durch,E3-07,Checkout,"Abgedeckte Story: E3-07
+Bereich: Checkout
+
+Warum dieser Test existiert
+Der Kaufzwang zum Konto hat den Shop schon einmal blockiert.
+
+Schritte
+1. Abgemeldet eine Karte in den Warenkorb legen.
+2. Checkout aufrufen und die vollständige Lieferadresse eingeben.
+3. Die Bestellübersicht mit dem Warenkorb vergleichen.
+4. Auf „Mit PayPal fortfahren“ klicken.
+
+Erwartetes Ergebnis
+Der Checkout verlangt zu keinem Zeitpunkt ein Konto, die Übersicht stimmt mit dem Warenkorb überein, und die Weiterleitung zu PayPal erfolgt mit dem angezeigten Betrag.
+
+Oberflächenprüfung: Dieser Test wird zusätzlich in 1440x900 und 390x844 CSS-Pixel durchgeführt. Weitere Auflösungen nur, wenn der Test dem Bereich Oberfläche zugeordnet ist.
+
+Nachweis: Ein Screenshot je Schritt, der Eingabe und sichtbares Ergebnis zeigt. PASS nur bei vollständig erfüllten Erwartungen. FAIL mit Reproduktionsschritten und verknüpftem Fehler, BLOCKED mit Ursache und fehlender Abhängigkeit. Passwörter, Tokens und Zahlungsdaten vor dem Anhang maskieren."
+9,Test,E3-12 Unvollständige Adresse wird am Feld erklärt,E3-12,Checkout,"Abgedeckte Story: E3-12
+Bereich: Checkout
+
+Warum dieser Test existiert
+Formularfehler ohne Erklärung sind ein häufiger Abbruchgrund.
+
+Schritte
+1. Checkout mit gefülltem Warenkorb aufrufen.
+2. Pflichtfelder der Adresse leer lassen und absenden.
+3. Eine offensichtlich ungültige Postleitzahl eintragen und erneut absenden.
+4. Die Adresse korrekt vervollständigen.
+
+Erwartetes Ergebnis
+Jeder Fehler wird an seinem Feld benannt, es entsteht keine halbfertige Bestellung, und nach der Korrektur geht es ohne Neuladen weiter.
+
+Oberflächenprüfung: Dieser Test wird zusätzlich in 1440x900 und 390x844 CSS-Pixel durchgeführt. Weitere Auflösungen nur, wenn der Test dem Bereich Oberfläche zugeordnet ist.
+
+Nachweis: Ein Screenshot je Schritt, der Eingabe und sichtbares Ergebnis zeigt. PASS nur bei vollständig erfüllten Erwartungen. FAIL mit Reproduktionsschritten und verknüpftem Fehler, BLOCKED mit Ursache und fehlender Abhängigkeit. Passwörter, Tokens und Zahlungsdaten vor dem Anhang maskieren."
+10,Test,E4-01 Echte PayPal-Zahlung führt zu bezahlter Bestellung,E4-01,Zahlung,"Abgedeckte Story: E4-01
+Bereich: Zahlung
+
+Warum dieser Test existiert
+Der vollständige Geldweg. Nur ein echter Durchlauf belegt ihn.
+
+Schritte
+1. Gastbestellung bis zur Weiterleitung zu PayPal durchführen.
+2. Bei PayPal mit einem echten Konto bezahlen.
+3. Die Rückkehr in den Shop abwarten.
+4. Bestellnummer notieren und im Adminbereich nachsehen.
+5. Das Postfach der angegebenen Adresse prüfen.
+
+Erwartetes Ergebnis
+Der Shop zeigt die Bestellbestätigung mit Bestellnummer, die Bestellung steht im Adminbereich auf PAID, und die Bestätigungsmail ist zugestellt.
+
+Oberflächenprüfung: Dieser Test wird zusätzlich in 1440x900 und 390x844 CSS-Pixel durchgeführt. Weitere Auflösungen nur, wenn der Test dem Bereich Oberfläche zugeordnet ist.
+
+Nachweis: Ein Screenshot je Schritt, der Eingabe und sichtbares Ergebnis zeigt. PASS nur bei vollständig erfüllten Erwartungen. FAIL mit Reproduktionsschritten und verknüpftem Fehler, BLOCKED mit Ursache und fehlender Abhängigkeit. Passwörter, Tokens und Zahlungsdaten vor dem Anhang maskieren."
+11,Test,E4-03 Abbruch bei PayPal hinterlässt keine Bestellung,E4-03,Zahlung,"Abgedeckte Story: E4-03
+Bereich: Zahlung
+
+Warum dieser Test existiert
+Ein Abbruch, der die Karte blockiert, kostet den nächsten Verkauf.
+
+Schritte
+1. Bestellung bis zur PayPal-Seite führen.
+2. Dort abbrechen statt zu bezahlen.
+3. Die Rückkehrseite im Shop lesen.
+4. Adminbereich auf neue Bestellungen prüfen und die Karte erneut aufrufen.
+
+Erwartetes Ergebnis
+Der Shop erklärt den Abbruch verständlich, es entsteht keine Bestellung, und die Karte ist wieder frei kaufbar.
+
+Oberflächenprüfung: Dieser Test wird zusätzlich in 1440x900 und 390x844 CSS-Pixel durchgeführt. Weitere Auflösungen nur, wenn der Test dem Bereich Oberfläche zugeordnet ist.
+
+Nachweis: Ein Screenshot je Schritt, der Eingabe und sichtbares Ergebnis zeigt. PASS nur bei vollständig erfüllten Erwartungen. FAIL mit Reproduktionsschritten und verknüpftem Fehler, BLOCKED mit Ursache und fehlender Abhängigkeit. Passwörter, Tokens und Zahlungsdaten vor dem Anhang maskieren."
+12,Test,E4-08 Doppelte Zahlungsbestätigung erzeugt keine zweite Bestellung,E4-08,Zahlung,"Abgedeckte Story: E4-08
+Bereich: Zahlung
+
+Warum dieser Test existiert
+Zahlungsdienste stellen mehrfach zu. Ohne Idempotenz entstehen Geisterbestellungen.
+
+Schritte
+1. Eine Bestellung erfolgreich bezahlen.
+2. Die Zahlungsbestätigung von PayPal ein zweites Mal an den Shop zustellen lassen.
+3. Bestellliste im Adminbereich prüfen.
+4. Bestand der gekauften Karte prüfen.
+
+Erwartetes Ergebnis
+Es existiert genau eine Bestellung, der Bestand wurde genau einmal verringert, und die zweite Zustellung bleibt folgenlos.
+
+Oberflächenprüfung: Dieser Test wird zusätzlich in 1440x900 und 390x844 CSS-Pixel durchgeführt. Weitere Auflösungen nur, wenn der Test dem Bereich Oberfläche zugeordnet ist.
+
+Nachweis: Ein Screenshot je Schritt, der Eingabe und sichtbares Ergebnis zeigt. PASS nur bei vollständig erfüllten Erwartungen. FAIL mit Reproduktionsschritten und verknüpftem Fehler, BLOCKED mit Ursache und fehlender Abhängigkeit. Passwörter, Tokens und Zahlungsdaten vor dem Anhang maskieren."
+13,Test,E4-04 Reservierung hält die Karte während des Checkouts,E4-04,Bestand,"Abgedeckte Story: E4-04
+Bereich: Bestand
+
+Warum dieser Test existiert
+Zwei Kunden, eine Karte — das ist der teuerste Fehler im Shop.
+
+Schritte
+1. Karte in den Warenkorb legen und den Checkout beginnen.
+2. In einem zweiten Browser dieselbe Karte aufrufen.
+3. Dort versuchen, sie in den Warenkorb zu legen.
+4. Den ersten Checkout abbrechen und die Freigabefrist abwarten.
+5. Im zweiten Browser erneut versuchen.
+
+Erwartetes Ergebnis
+Während der Reservierung ist die Karte im zweiten Browser nicht kaufbar; nach Abbruch und Ablauf der Frist ist sie es wieder.
+
+Oberflächenprüfung: Dieser Test wird zusätzlich in 1440x900 und 390x844 CSS-Pixel durchgeführt. Weitere Auflösungen nur, wenn der Test dem Bereich Oberfläche zugeordnet ist.
+
+Nachweis: Ein Screenshot je Schritt, der Eingabe und sichtbares Ergebnis zeigt. PASS nur bei vollständig erfüllten Erwartungen. FAIL mit Reproduktionsschritten und verknüpftem Fehler, BLOCKED mit Ursache und fehlender Abhängigkeit. Passwörter, Tokens und Zahlungsdaten vor dem Anhang maskieren."
+14,Test,E1-11 eBay-Abgleich aktualisiert Bestand und isoliert Fehler,E1-11,eBay,"Abgedeckte Story: E1-11
+Bereich: eBay
+
+Warum dieser Test existiert
+Ein stillschweigend veralteter Bestand ist gefährlicher als ein langsamer.
+
+Schritte
+1. Im Adminbereich einen Abgleich starten.
+2. Laufstatus und Ergebnis abwarten.
+3. Eine auf eBay beendete Karte im Shop nachschlagen.
+4. Die Ereignisliste des Laufs auf gemeldete Fehler durchsehen.
+
+Erwartetes Ergebnis
+Der Lauf endet mit einem Ergebnis statt hängen zu bleiben, beendete Karten sind im Shop nicht mehr kaufbar, und einzelne fehlerhafte Datensätze haben den restlichen Lauf nicht gestoppt.
+
+Oberflächenprüfung: Dieser Test wird zusätzlich in 1440x900 und 390x844 CSS-Pixel durchgeführt. Weitere Auflösungen nur, wenn der Test dem Bereich Oberfläche zugeordnet ist.
+
+Nachweis: Ein Screenshot je Schritt, der Eingabe und sichtbares Ergebnis zeigt. PASS nur bei vollständig erfüllten Erwartungen. FAIL mit Reproduktionsschritten und verknüpftem Fehler, BLOCKED mit Ursache und fehlender Abhängigkeit. Passwörter, Tokens und Zahlungsdaten vor dem Anhang maskieren."
+15,Test,E7-12 Fehlgeschlagener eBay-Auftrag ist sichtbar und wiederholbar,E7-12,eBay,"Abgedeckte Story: E7-12
+Bereich: eBay
+
+Warum dieser Test existiert
+Ohne diese Ansicht bleibt nur der Datenbankzugriff von Hand.
+
+Schritte
+1. Adminbereich öffnen und die Auftragsliste (Outbox) aufrufen.
+2. Einen fehlgeschlagenen oder wartenden Auftrag heraussuchen.
+3. Fehlerursache und Zeitpunkt lesen.
+4. Den Auftrag erneut ausführen lassen.
+
+Erwartetes Ergebnis
+Fehlgeschlagene Aufträge sind mit Ursache sichtbar, der erneute Lauf ist ohne Datenbankzugriff auslösbar, und das Ergebnis wird zurückgemeldet.
+
+Oberflächenprüfung: Dieser Test wird zusätzlich in 1440x900 und 390x844 CSS-Pixel durchgeführt. Weitere Auflösungen nur, wenn der Test dem Bereich Oberfläche zugeordnet ist.
+
+Nachweis: Ein Screenshot je Schritt, der Eingabe und sichtbares Ergebnis zeigt. PASS nur bei vollständig erfüllten Erwartungen. FAIL mit Reproduktionsschritten und verknüpftem Fehler, BLOCKED mit Ursache und fehlender Abhängigkeit. Passwörter, Tokens und Zahlungsdaten vor dem Anhang maskieren."
+16,Test,E7-09 Preisvorschlag: drei Versuche je Karte,E7-09,Verhandlung,"Abgedeckte Story: E7-09
+Bereich: Verhandlung
+
+Warum dieser Test existiert
+Die Verhandlung ist das Alleinstellungsmerkmal des Shops und nirgends automatisiert geprüft.
+
+Schritte
+1. Als angemeldeter Kunde eine Karte öffnen und einen Preis vorschlagen.
+2. Den Vorschlag zweimal wiederholen.
+3. Einen vierten Vorschlag versuchen.
+4. Eine andere Karte öffnen und dort vorschlagen.
+
+Erwartetes Ergebnis
+Drei Vorschläge werden angenommen, der vierte wird mit Begründung abgewiesen, und bei einer anderen Karte beginnt die Zählung von vorn.
+
+Oberflächenprüfung: Dieser Test wird zusätzlich in 1440x900 und 390x844 CSS-Pixel durchgeführt. Weitere Auflösungen nur, wenn der Test dem Bereich Oberfläche zugeordnet ist.
+
+Nachweis: Ein Screenshot je Schritt, der Eingabe und sichtbares Ergebnis zeigt. PASS nur bei vollständig erfüllten Erwartungen. FAIL mit Reproduktionsschritten und verknüpftem Fehler, BLOCKED mit Ursache und fehlender Abhängigkeit. Passwörter, Tokens und Zahlungsdaten vor dem Anhang maskieren."
+17,Test,E7-09 Angenommener Preis gilt 48 Stunden und erscheint im Checkout,E7-09,Verhandlung,"Abgedeckte Story: E7-09
+Bereich: Verhandlung
+
+Warum dieser Test existiert
+Ein angenommener Preis, der im Checkout nicht ankommt, ist ein gebrochenes Versprechen.
+
+Schritte
+1. Als Admin einen offenen Preisvorschlag annehmen.
+2. Als betroffener Kunde die Karte öffnen.
+3. Die Karte in den Warenkorb legen und den Checkout aufrufen.
+4. Betrag im Checkout mit dem angenommenen Preis vergleichen.
+
+Erwartetes Ergebnis
+Der Checkout rechnet mit dem angenommenen Preis statt mit dem Listenpreis, weist die Ersparnis aus, und der Hinweis auf den ausgehandelten Preis ist sichtbar.
+
+Oberflächenprüfung: Dieser Test wird zusätzlich in 1440x900 und 390x844 CSS-Pixel durchgeführt. Weitere Auflösungen nur, wenn der Test dem Bereich Oberfläche zugeordnet ist.
+
+Nachweis: Ein Screenshot je Schritt, der Eingabe und sichtbares Ergebnis zeigt. PASS nur bei vollständig erfüllten Erwartungen. FAIL mit Reproduktionsschritten und verknüpftem Fehler, BLOCKED mit Ursache und fehlender Abhängigkeit. Passwörter, Tokens und Zahlungsdaten vor dem Anhang maskieren."
+18,Test,E7-01 Adminbereich verlangt Anmeldung mit zweitem Faktor,E7-01,Admin,"Abgedeckte Story: E7-01
+Bereich: Admin
+
+Warum dieser Test existiert
+Der Adminbereich sieht Bestellungen, Kundendaten und den ganzen Bestand.
+
+Schritte
+1. Adminbereich mit einem Konto ohne Adminrechte aufrufen.
+2. Adminbereich abgemeldet aufrufen.
+3. Mit Adminkonto ohne zweiten Faktor anmelden.
+4. Zweiten Faktor abschließen und erneut aufrufen.
+
+Erwartetes Ergebnis
+Alle drei ersten Wege werden abgewiesen, ohne Daten preiszugeben; erst nach dem zweiten Faktor erscheint der Adminbereich.
+
+Oberflächenprüfung: Dieser Test wird zusätzlich in 1440x900 und 390x844 CSS-Pixel durchgeführt. Weitere Auflösungen nur, wenn der Test dem Bereich Oberfläche zugeordnet ist.
+
+Nachweis: Ein Screenshot je Schritt, der Eingabe und sichtbares Ergebnis zeigt. PASS nur bei vollständig erfüllten Erwartungen. FAIL mit Reproduktionsschritten und verknüpftem Fehler, BLOCKED mit Ursache und fehlender Abhängigkeit. Passwörter, Tokens und Zahlungsdaten vor dem Anhang maskieren."
+19,Test,E1-01 Karte von Hand einstellen erscheint im Shop,E1-01,Admin,"Abgedeckte Story: E1-01
+Bereich: Admin
+
+Warum dieser Test existiert
+Der Weg für Vorverkaufs- und Lagerkarten außerhalb von eBay.
+
+Schritte
+1. Im Adminbereich „Karte von Hand einstellen“ öffnen.
+2. Titel, Beschreibung und mindestens ein Bild angeben und speichern.
+3. Den Shop-Katalog aufrufen und nach der Karte suchen.
+4. Die Detailseite der neuen Karte öffnen.
+
+Erwartetes Ergebnis
+Die Karte ist nach dem Speichern im Katalog auffindbar, das hochgeladene Bild wird angezeigt, und die Detailseite zeigt die eingegebenen Daten.
+
+Oberflächenprüfung: Dieser Test wird zusätzlich in 1440x900 und 390x844 CSS-Pixel durchgeführt. Weitere Auflösungen nur, wenn der Test dem Bereich Oberfläche zugeordnet ist.
+
+Nachweis: Ein Screenshot je Schritt, der Eingabe und sichtbares Ergebnis zeigt. PASS nur bei vollständig erfüllten Erwartungen. FAIL mit Reproduktionsschritten und verknüpftem Fehler, BLOCKED mit Ursache und fehlender Abhängigkeit. Passwörter, Tokens und Zahlungsdaten vor dem Anhang maskieren."
+20,Test,E1-10 Sichtbarkeit umschalten wirkt sofort im Shop,E1-10,Admin,"Abgedeckte Story: E1-10
+Bereich: Admin
+
+Warum dieser Test existiert
+Eine Karte muss sich sofort aus dem Verkauf nehmen lassen.
+
+Schritte
+1. Eine im Shop sichtbare Karte im Adminbereich auf INACTIVE setzen.
+2. Den Katalog neu laden und nach der Karte suchen.
+3. Die Detailseite der Karte direkt über ihre Adresse aufrufen.
+4. Die Karte wieder auf ACTIVE setzen und erneut suchen.
+
+Erwartetes Ergebnis
+Die inaktive Karte verschwindet aus Suche und Raster und ist auch über den direkten Aufruf nicht kaufbar; nach dem Zurückschalten ist sie wieder da.
+
+Oberflächenprüfung: Dieser Test wird zusätzlich in 1440x900 und 390x844 CSS-Pixel durchgeführt. Weitere Auflösungen nur, wenn der Test dem Bereich Oberfläche zugeordnet ist.
+
+Nachweis: Ein Screenshot je Schritt, der Eingabe und sichtbares Ergebnis zeigt. PASS nur bei vollständig erfüllten Erwartungen. FAIL mit Reproduktionsschritten und verknüpftem Fehler, BLOCKED mit Ursache und fehlender Abhängigkeit. Passwörter, Tokens und Zahlungsdaten vor dem Anhang maskieren."
+21,Test,E4-10 Bestellung auf Versendet setzen zeigt die Sendungsnummer,E4-10,Admin,"Abgedeckte Story: E4-10
+Bereich: Admin
+
+Warum dieser Test existiert
+Ohne Sendungsnummer kommen die Nachfragen per Mail.
+
+Schritte
+1. Eine bezahlte Bestellung im Adminbereich öffnen.
+2. Versanddienst und Sendungsnummer eintragen und auf Versendet setzen.
+3. Die Bestellliste neu laden.
+4. Als betroffener Kunde die Bestellhistorie im Konto aufrufen.
+
+Erwartetes Ergebnis
+Der Status steht im Adminbereich und im Kundenkonto auf versendet, die Sendungsnummer ist beim Kunden sichtbar und der Sendungsverfolgungslink führt zum richtigen Dienst.
+
+Oberflächenprüfung: Dieser Test wird zusätzlich in 1440x900 und 390x844 CSS-Pixel durchgeführt. Weitere Auflösungen nur, wenn der Test dem Bereich Oberfläche zugeordnet ist.
+
+Nachweis: Ein Screenshot je Schritt, der Eingabe und sichtbares Ergebnis zeigt. PASS nur bei vollständig erfüllten Erwartungen. FAIL mit Reproduktionsschritten und verknüpftem Fehler, BLOCKED mit Ursache und fehlender Abhängigkeit. Passwörter, Tokens und Zahlungsdaten vor dem Anhang maskieren."
+22,Test,E4-12 Storno und Erstattung setzen Bestellung und Bestand zurück,E4-12,Admin,"Abgedeckte Story: E4-12
+Bereich: Admin
+
+Warum dieser Test existiert
+Erstattungen passieren unter Zeitdruck und müssen auf Anhieb stimmen.
+
+Schritte
+1. Eine bezahlte Bestellung im Adminbereich öffnen.
+2. Die Erstattung auslösen.
+3. Bestellstatus und PayPal-Vorgang prüfen.
+4. Bestand und Kaufbarkeit der betroffenen Karte prüfen.
+
+Erwartetes Ergebnis
+Die Bestellung ist als erstattet gekennzeichnet, die Rückzahlung ist bei PayPal sichtbar, und die Karte ist entweder wieder kaufbar oder bewusst gesperrt — in jedem Fall nachvollziehbar.
+
+Oberflächenprüfung: Dieser Test wird zusätzlich in 1440x900 und 390x844 CSS-Pixel durchgeführt. Weitere Auflösungen nur, wenn der Test dem Bereich Oberfläche zugeordnet ist.
+
+Nachweis: Ein Screenshot je Schritt, der Eingabe und sichtbares Ergebnis zeigt. PASS nur bei vollständig erfüllten Erwartungen. FAIL mit Reproduktionsschritten und verknüpftem Fehler, BLOCKED mit Ursache und fehlender Abhängigkeit. Passwörter, Tokens und Zahlungsdaten vor dem Anhang maskieren."
+23,Test,E5-01 Registrierung mit Bestätigungsmail führt zum nutzbaren Konto,E5-01,Konto,"Abgedeckte Story: E5-01
+Bereich: Konto
+
+Warum dieser Test existiert
+Genau dieser Link zeigte einmal auf localhost und hat den Shop verkaufsunfähig gemacht.
+
+Schritte
+1. Konto mit einer echten, noch nicht verwendeten Adresse registrieren.
+2. Das Postfach öffnen und den Bestätigungslink prüfen.
+3. Den Link aufrufen.
+4. Anmelden und das Profil öffnen.
+
+Erwartetes Ergebnis
+Die Bestätigungsmail kommt an, ihr Link zeigt auf die Produktionsadresse und nicht auf localhost, und nach der Bestätigung ist die Anmeldung möglich.
+
+Oberflächenprüfung: Dieser Test wird zusätzlich in 1440x900 und 390x844 CSS-Pixel durchgeführt. Weitere Auflösungen nur, wenn der Test dem Bereich Oberfläche zugeordnet ist.
+
+Nachweis: Ein Screenshot je Schritt, der Eingabe und sichtbares Ergebnis zeigt. PASS nur bei vollständig erfüllten Erwartungen. FAIL mit Reproduktionsschritten und verknüpftem Fehler, BLOCKED mit Ursache und fehlender Abhängigkeit. Passwörter, Tokens und Zahlungsdaten vor dem Anhang maskieren."
+24,Test,E5-04 Passwort zurücksetzen funktioniert über den echten Link,E5-04,Konto,"Abgedeckte Story: E5-04
+Bereich: Konto
+
+Warum dieser Test existiert
+Ein kaputter Reset sperrt Kunden dauerhaft aus.
+
+Schritte
+1. Auf der Kontoseite „Passwort vergessen?“ wählen und die Adresse angeben.
+2. Die Mail abwarten und den Link aufrufen.
+3. Ein neues Passwort setzen.
+4. Mit dem neuen Passwort anmelden, mit dem alten einen Versuch machen.
+
+Erwartetes Ergebnis
+Der Link führt in den Shop und nicht auf localhost, das neue Passwort funktioniert, und das alte wird abgewiesen.
+
+Oberflächenprüfung: Dieser Test wird zusätzlich in 1440x900 und 390x844 CSS-Pixel durchgeführt. Weitere Auflösungen nur, wenn der Test dem Bereich Oberfläche zugeordnet ist.
+
+Nachweis: Ein Screenshot je Schritt, der Eingabe und sichtbares Ergebnis zeigt. PASS nur bei vollständig erfüllten Erwartungen. FAIL mit Reproduktionsschritten und verknüpftem Fehler, BLOCKED mit Ursache und fehlender Abhängigkeit. Passwörter, Tokens und Zahlungsdaten vor dem Anhang maskieren."
+25,Test,E5-07 Bestellhistorie zeigt Status und Sendungsnummer,E5-07,Konto,"Abgedeckte Story: E5-07
+Bereich: Konto
+
+Warum dieser Test existiert
+Falsche oder fremde Bestellungen im Konto sind ein Datenschutzvorfall.
+
+Schritte
+1. Mit einem Konto anmelden, das mindestens eine Bestellung hat.
+2. Die Bestellhistorie öffnen.
+3. Bestellnummer, Betrag und Status mit dem Adminbereich vergleichen.
+4. Eine versendete Bestellung auf die Sendungsnummer prüfen.
+
+Erwartetes Ergebnis
+Alle Bestellungen des Kontos sind aufgeführt, Beträge und Status stimmen mit dem Adminbereich überein, und Fremdbestellungen erscheinen nicht.
+
+Oberflächenprüfung: Dieser Test wird zusätzlich in 1440x900 und 390x844 CSS-Pixel durchgeführt. Weitere Auflösungen nur, wenn der Test dem Bereich Oberfläche zugeordnet ist.
+
+Nachweis: Ein Screenshot je Schritt, der Eingabe und sichtbares Ergebnis zeigt. PASS nur bei vollständig erfüllten Erwartungen. FAIL mit Reproduktionsschritten und verknüpftem Fehler, BLOCKED mit Ursache und fehlender Abhängigkeit. Passwörter, Tokens und Zahlungsdaten vor dem Anhang maskieren."
+26,Test,E5-10 Datenauskunft und Kontolöschung funktionieren,E5-10,Konto,"Abgedeckte Story: E5-10
+Bereich: Konto
+
+Warum dieser Test existiert
+Beides ist gesetzlich geschuldet und wird bei einer Beschwerde geprüft.
+
+Schritte
+1. Angemeldet die Datenauskunft herunterladen.
+2. Die Datei öffnen und auf Vollständigkeit und Klartext-Geheimnisse prüfen.
+3. Die Kontolöschung mit dem geforderten Bestätigungswort auslösen.
+4. Anmeldung mit den alten Zugangsdaten versuchen.
+5. Im Adminbereich prüfen, was von den Bestellungen bleibt.
+
+Erwartetes Ergebnis
+Die Auskunft enthält die Kontodaten ohne Passwörter oder Tokens, die Anmeldung ist danach nicht mehr möglich, und Bestellungen bleiben als Rechnungsbelege erhalten.
+
+Oberflächenprüfung: Dieser Test wird zusätzlich in 1440x900 und 390x844 CSS-Pixel durchgeführt. Weitere Auflösungen nur, wenn der Test dem Bereich Oberfläche zugeordnet ist.
+
+Nachweis: Ein Screenshot je Schritt, der Eingabe und sichtbares Ergebnis zeigt. PASS nur bei vollständig erfüllten Erwartungen. FAIL mit Reproduktionsschritten und verknüpftem Fehler, BLOCKED mit Ursache und fehlender Abhängigkeit. Passwörter, Tokens und Zahlungsdaten vor dem Anhang maskieren."
+27,Test,E6-01 Eingereichte Verkaufskarte erreicht den Adminbereich,E6-01,Anbieter,"Abgedeckte Story: E6-01
+Bereich: Anbieter
+
+Warum dieser Test existiert
+Der Ankauf ist die Nachschubquelle des Shops.
+
+Schritte
+1. Die Seite /verkaufen öffnen.
+2. Titel, Preiswunsch, Nachricht und E-Mail ausfüllen und Bilder anhängen.
+3. Absenden und die Bestätigung auf der Seite lesen.
+4. Im Adminbereich die Einreichungen öffnen und die Bilder anzeigen.
+
+Erwartetes Ergebnis
+Die Einreichung erscheint im Adminbereich mit allen Angaben, die Bilder sind dort ansehbar, und die einreichende Person erhält eine Rückmeldung.
+
+Oberflächenprüfung: Dieser Test wird zusätzlich in 1440x900 und 390x844 CSS-Pixel durchgeführt. Weitere Auflösungen nur, wenn der Test dem Bereich Oberfläche zugeordnet ist.
+
+Nachweis: Ein Screenshot je Schritt, der Eingabe und sichtbares Ergebnis zeigt. PASS nur bei vollständig erfüllten Erwartungen. FAIL mit Reproduktionsschritten und verknüpftem Fehler, BLOCKED mit Ursache und fehlender Abhängigkeit. Passwörter, Tokens und Zahlungsdaten vor dem Anhang maskieren."
+28,Test,E8-06 Kaufweg funktioniert auf dem Smartphone,E8-06,Oberfläche,"Abgedeckte Story: E8-06
+Bereich: Oberfläche
+
+Warum dieser Test existiert
+Der größere Teil der Käufer kommt vom Telefon.
+
+Schritte
+1. Browserfenster auf 390 x 844 CSS-Pixel stellen.
+2. Katalog öffnen, suchen und eine Karte öffnen.
+3. Karte in den Warenkorb legen und den Checkout aufrufen.
+4. Adressformular ausfüllen bis zur PayPal-Schaltfläche.
+
+Erwartetes Ergebnis
+Kein Element läuft über den Rand, alle Schaltflächen sind ohne Zoom bedienbar, und der Weg bis zur Zahlung ist vollständig durchführbar.
+
+Oberflächenprüfung: Dieser Test wird zusätzlich in 1440x900 und 390x844 CSS-Pixel durchgeführt. Weitere Auflösungen nur, wenn der Test dem Bereich Oberfläche zugeordnet ist.
+
+Nachweis: Ein Screenshot je Schritt, der Eingabe und sichtbares Ergebnis zeigt. PASS nur bei vollständig erfüllten Erwartungen. FAIL mit Reproduktionsschritten und verknüpftem Fehler, BLOCKED mit Ursache und fehlender Abhängigkeit. Passwörter, Tokens und Zahlungsdaten vor dem Anhang maskieren."
+29,Test,E8-06 Kaufweg funktioniert auf sehr breiten Bildschirmen,E8-06,Oberfläche,"Abgedeckte Story: E8-06
+Bereich: Oberfläche
+
+Warum dieser Test existiert
+Auf Ultrawide ist genau hier schon einmal ein Abschnitt auseinandergelaufen.
+
+Schritte
+1. Browserfenster auf 3440 x 1440 CSS-Pixel stellen.
+2. Startseite, Katalog und eine Detailseite ansehen.
+3. Checkout mit gefülltem Warenkorb aufrufen.
+4. Den Verhandlungsabschnitt der Startseite ansehen.
+
+Erwartetes Ergebnis
+Textspalten bleiben lesbar breit statt über den Schirm zu laufen, Raster und Abschnitte behalten ihre Ausrichtung, und keine Fläche wirkt leer gedehnt.
+
+Oberflächenprüfung: Dieser Test wird zusätzlich in 1440x900 und 390x844 CSS-Pixel durchgeführt. Weitere Auflösungen nur, wenn der Test dem Bereich Oberfläche zugeordnet ist.
+
+Nachweis: Ein Screenshot je Schritt, der Eingabe und sichtbares Ergebnis zeigt. PASS nur bei vollständig erfüllten Erwartungen. FAIL mit Reproduktionsschritten und verknüpftem Fehler, BLOCKED mit Ursache und fehlender Abhängigkeit. Passwörter, Tokens und Zahlungsdaten vor dem Anhang maskieren."
+30,Test,E8-10 Katalog und Checkout sind per Tastatur bedienbar,E8-10,Oberfläche,"Abgedeckte Story: E8-10
+Bereich: Oberfläche
+
+Warum dieser Test existiert
+Tastaturbedienbarkeit ist die Grundlage jeder weiteren Barrierefreiheit.
+
+Schritte
+1. Katalog öffnen und nur mit Tabulator durch die Seite gehen.
+2. Eine Karte allein mit der Tastatur öffnen und in den Warenkorb legen.
+3. Im Checkout alle Adressfelder per Tastatur ausfüllen.
+4. Die Bildvergrößerung öffnen und mit Escape schließen.
+
+Erwartetes Ergebnis
+Der Fokus ist an jeder Stelle sichtbar, die Reihenfolge folgt der Leserichtung, jede Aktion ist ohne Maus erreichbar, und die Vergrößerung gibt den Fokus zurück.
+
+Oberflächenprüfung: Dieser Test wird zusätzlich in 1440x900 und 390x844 CSS-Pixel durchgeführt. Weitere Auflösungen nur, wenn der Test dem Bereich Oberfläche zugeordnet ist.
+
+Nachweis: Ein Screenshot je Schritt, der Eingabe und sichtbares Ergebnis zeigt. PASS nur bei vollständig erfüllten Erwartungen. FAIL mit Reproduktionsschritten und verknüpftem Fehler, BLOCKED mit Ursache und fehlender Abhängigkeit. Passwörter, Tokens und Zahlungsdaten vor dem Anhang maskieren."
+31,Test,E2-13 Katalog erklärt Lade- und Fehlerzustände,E2-13,Oberfläche,"Abgedeckte Story: E2-13
+Bereich: Oberfläche
+
+Warum dieser Test existiert
+Eine leere Seite liest der Kunde als „ausverkauft“.
+
+Schritte
+1. Katalog bei gedrosselter Verbindung aufrufen.
+2. Den Zustand während des Ladens beobachten.
+3. Die Produktabfrage blockieren und die Seite neu laden.
+4. Blockade aufheben und neu laden.
+
+Erwartetes Ergebnis
+Während des Ladens erscheint ein Ladehinweis statt einer leeren Fläche, im Fehlerfall eine verständliche Meldung mit Handlungsempfehlung, und nach Aufheben lädt der Katalog normal.
+
+Oberflächenprüfung: Dieser Test wird zusätzlich in 1440x900 und 390x844 CSS-Pixel durchgeführt. Weitere Auflösungen nur, wenn der Test dem Bereich Oberfläche zugeordnet ist.
+
+Nachweis: Ein Screenshot je Schritt, der Eingabe und sichtbares Ergebnis zeigt. PASS nur bei vollständig erfüllten Erwartungen. FAIL mit Reproduktionsschritten und verknüpftem Fehler, BLOCKED mit Ursache und fehlender Abhängigkeit. Passwörter, Tokens und Zahlungsdaten vor dem Anhang maskieren."
+32,Test,E7-11 Zwei gleichzeitige Abgleiche verklemmen sich nicht,E7-11,eBay,"Abgedeckte Story: E7-11
+Bereich: eBay
+
+Warum dieser Test existiert
+Eine hängende Sperre hat den Import schon einmal über eine Stunde stillgelegt.
+
+Schritte
+1. Im Adminbereich einen Abgleich starten.
+2. Während er läuft, einen zweiten Abgleich auslösen.
+3. Rückmeldung des zweiten Versuchs lesen.
+4. Ende des ersten Laufs abwarten und einen neuen starten.
+
+Erwartetes Ergebnis
+Der zweite Versuch wird mit Hinweis abgewiesen statt parallel zu laufen, und nach Ende des ersten Laufs ist ein neuer Start sofort möglich.
+
+Oberflächenprüfung: Dieser Test wird zusätzlich in 1440x900 und 390x844 CSS-Pixel durchgeführt. Weitere Auflösungen nur, wenn der Test dem Bereich Oberfläche zugeordnet ist.
+
+Nachweis: Ein Screenshot je Schritt, der Eingabe und sichtbares Ergebnis zeigt. PASS nur bei vollständig erfüllten Erwartungen. FAIL mit Reproduktionsschritten und verknüpftem Fehler, BLOCKED mit Ursache und fehlender Abhängigkeit. Passwörter, Tokens und Zahlungsdaten vor dem Anhang maskieren."
+33,Test,E3-08 Bestellung mit Konto übernimmt die Kontodaten,E3-08,Checkout,"Abgedeckte Story: E3-08
+Bereich: Checkout
+
+Warum dieser Test existiert
+Die Kontobestellung ist ein anderer Weg als die Gastbestellung und scheitert an anderen Stellen.
+
+Schritte
+1. Angemeldet eine Karte in den Warenkorb legen.
+2. Checkout aufrufen und die vorbelegten Felder prüfen.
+3. Bestellung bis zur PayPal-Weiterleitung führen.
+4. Nach Abschluss die Bestellhistorie im Konto prüfen.
+
+Erwartetes Ergebnis
+Die Kontodaten sind sinnvoll vorbelegt, die Bestellung wird dem Konto zugeordnet und erscheint anschließend in der Historie.
+
+Oberflächenprüfung: Dieser Test wird zusätzlich in 1440x900 und 390x844 CSS-Pixel durchgeführt. Weitere Auflösungen nur, wenn der Test dem Bereich Oberfläche zugeordnet ist.
+
+Nachweis: Ein Screenshot je Schritt, der Eingabe und sichtbares Ergebnis zeigt. PASS nur bei vollständig erfüllten Erwartungen. FAIL mit Reproduktionsschritten und verknüpftem Fehler, BLOCKED mit Ursache und fehlender Abhängigkeit. Passwörter, Tokens und Zahlungsdaten vor dem Anhang maskieren."
+34,Test,E1-06 Kartenbilder werden in passender Größe ausgeliefert,E1-06,Katalog,"Abgedeckte Story: E1-06
+Bereich: Katalog
+
+Warum dieser Test existiert
+Bei 296 Karten entscheidet das über Ladezeit und Kosten.
+
+Schritte
+1. Katalog aufrufen und die Netzwerkanalyse des Browsers öffnen.
+2. Größe der geladenen Rasterbilder ablesen.
+3. Eine Detailseite öffnen und dort die Bildgröße ablesen.
+4. Die Vergrößerung öffnen und erneut ablesen.
+
+Erwartetes Ergebnis
+Im Raster werden verkleinerte Varianten geladen und nicht die Originale; erst die Vergrößerung holt die volle Auflösung.
+
+Oberflächenprüfung: Dieser Test wird zusätzlich in 1440x900 und 390x844 CSS-Pixel durchgeführt. Weitere Auflösungen nur, wenn der Test dem Bereich Oberfläche zugeordnet ist.
+
+Nachweis: Ein Screenshot je Schritt, der Eingabe und sichtbares Ergebnis zeigt. PASS nur bei vollständig erfüllten Erwartungen. FAIL mit Reproduktionsschritten und verknüpftem Fehler, BLOCKED mit Ursache und fehlender Abhängigkeit. Passwörter, Tokens und Zahlungsdaten vor dem Anhang maskieren."
+35,Test,E4-06 Shop-Verkauf beendet das zugehörige eBay-Angebot,E4-06,eBay,"Abgedeckte Story: E4-06
+Bereich: eBay
+
+Warum dieser Test existiert
+Diese Richtung ist offen und wird mit jedem Verkauf wahrscheinlicher. Solange sie fehlt, ist BLOCKED das ehrliche Ergebnis.
+
+Schritte
+1. Eine Karte auswählen, die zugleich auf eBay aktiv ist.
+2. Die Karte im Shop vollständig kaufen und bezahlen.
+3. Die eBay-Auftragsliste im Adminbereich prüfen.
+4. Den Zustand des Angebots bei eBay nachsehen.
+
+Erwartetes Ergebnis
+Nach der Zahlung entsteht ein Auftrag zum Beenden des eBay-Angebots, er wird erfolgreich ausgeführt, und das Angebot ist bei eBay nicht mehr aktiv.
+
+Oberflächenprüfung: Dieser Test wird zusätzlich in 1440x900 und 390x844 CSS-Pixel durchgeführt. Weitere Auflösungen nur, wenn der Test dem Bereich Oberfläche zugeordnet ist.
+
+Nachweis: Ein Screenshot je Schritt, der Eingabe und sichtbares Ergebnis zeigt. PASS nur bei vollständig erfüllten Erwartungen. FAIL mit Reproduktionsschritten und verknüpftem Fehler, BLOCKED mit Ursache und fehlender Abhängigkeit. Passwörter, Tokens und Zahlungsdaten vor dem Anhang maskieren."
