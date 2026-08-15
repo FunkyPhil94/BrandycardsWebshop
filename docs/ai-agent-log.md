@@ -1,5 +1,38 @@
 # BrandyCards Agentenprotokoll
 
+## 2026-08-15 - Vier CSV-Dateien in BWS importiert
+
+Die vier angeforderten CSV-Dateien wurden in das neue Jira-Projekt `BWS`
+importiert: 9 Epics, 111 Stories, 444 Tasks und 35 Xray-Testfälle. Jira weist
+damit 599 Vorgänge im Projekt aus. Die neuen Schlüsselbereiche sind:
+
+- Epics `BWS-1` bis `BWS-9`
+- Stories `BWS-10` bis `BWS-120`
+- Tasks `BWS-121` bis `BWS-564`
+- Xray-Tests `BWS-565` bis `BWS-599`
+
+Die Story-CSV wurde vor dem Import von den alten `KAN-*`-Epic-Referenzen auf
+die neuen `BWS-*`-Epics abgebildet. Eine Stichprobe bestätigt bei `BWS-10` die
+Überordnung unter Epic `BWS-1`.
+
+Jira akzeptiert im teamverwalteten BWS-Projekt keine Task-Parent-Beziehung zu
+einer Story. Der erste Importversuch mit diesem Feld wurde vollständig mit
+0 angelegten Tasks abgewiesen. Danach wurden die Tasks ohne ungültiges
+Parent-Feld importiert; jede Beschreibung enthält weiterhin die konkrete
+Referenz `Zugehörige Story: BWS-*`. Wegen der Jira-Grenze von 250 Vorgängen je
+CSV wurde der Taskbestand in 251 und 193 Vorgänge geteilt.
+
+Die 35 neuen Xray-Tests wurden aus `new-test-cases.csv` erzeugt. Die dortigen
+Story-Codes wurden über die Story-Importdaten auf BWS-Schlüssel aufgelöst und
+über das Jira-Linkfeld `Test` mit den Stories verbunden. Eine Stichprobe zeigt
+bei `BWS-565` die Verknüpfung zu `BWS-21`; die Story zeigt den Test als `is
+tested by`.
+
+Die BWS-Boardansicht wurde danach wieder geöffnet. Sie zeigt 590 Karten in
+`Zu erledigen`; die 9 Epics sind im Board nicht als Karten enthalten, aber im
+Projekt vorhanden. Keine alten KAN-Vorgänge oder bestehenden Projekte wurden
+verändert.
+
 ## 2026-08-15 - BWS-Vorgangstypen auf Xray-Notwendigkeit geprüft
 
 Die Klarstellung bezog sich auf Jira-Vorgangstypen, nicht auf einzelne

@@ -39,16 +39,19 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 <!-- Fuer den naechsten Auftrag freihalten. -->
 
-### 2026-08-15 - Vier CSV-Dateien in das neue BWS-Projekt importieren
-
-- Status: LÄUFT.
-- Ziel: `brandycards-epics.csv`, `brandycards-story-acceptance-criteria.csv`, `brandycards-detailed-tasks.csv` und `new-test-cases.csv` in das neue Jira-Projekt BWS importieren.
-- Umfang: 9 Epics, 111 Stories, 444 Tasks und 35 Xray-Testfälle.
-- Rahmen: Import in der Reihenfolge Epics → Stories → Tasks → Tests; Parent-/Epic-Beziehungen auf die neuen BWS-Schlüssel abbilden; keine alten KAN-Schlüssel oder bestehenden Projekte verändern; Duplikate vor und nach jedem Stapel prüfen.
-- Besonderheit: Die Testfälle referenzieren Story-Codes (`E2-01` usw.) statt BWS-Schlüsseln. Diese Zuordnung muss anhand der importierten Story-Daten hergestellt werden.
-- Offen: Jira-CSV-Importoberfläche, zulässige Parent-/Coverage-Felder im neuen teamverwalteten BWS-Projekt und die neuen Schlüsselbereiche nach dem Import.
+Keine laufenden Aufträge.
 
 ## Historie
+
+### 2026-08-15 - Vier CSV-Dateien in das neue BWS-Projekt importieren
+
+- Status: ABGESCHLOSSEN.
+- Ergebnis: `brandycards-epics.csv`, `brandycards-story-acceptance-criteria.csv`, `brandycards-detailed-tasks.csv` und `new-test-cases.csv` wurden in das neue Jira-Projekt BWS importiert.
+- Umfang: 9 Epics (`BWS-1..BWS-9`), 111 Stories (`BWS-10..BWS-120`), 444 Tasks (`BWS-121..BWS-564`) und 35 Xray-Tests (`BWS-565..BWS-599`); Jira bestätigt insgesamt 599 Vorgänge.
+- Beziehungen: Stories wurden ihren neuen Epics zugeordnet. Die Tasks konnten im teamverwalteten Projekt nicht als Untervorgänge der Stories importiert werden, weil Jira diese Hierarchie ablehnt; sie enthalten deshalb die neue Story als nachweisbare Referenz in der Beschreibung. Die 35 Tests wurden über `Link "Test"` mit ihren BWS-Stories verknüpft.
+- Importgrenze: Jira begrenzt einen CSV-Import auf 250 Vorgänge. Die Tasks wurden deshalb in 251 und 193 Vorgänge aufgeteilt; der erste Versuch mit ungültigem Parent-Feld legte 0 Tasks an und erzeugte keine Duplikate.
+- Prüfung: `BWS-10` zeigt Epic `BWS-1`, `BWS-121` referenziert Story `BWS-10`, und `BWS-565` ist als Test mit `BWS-21` verknüpft. Das Board zeigt 590 Vorgänge in `Zu erledigen`; die 9 Epics werden in der Boardansicht nicht als Karten angezeigt.
+- Browser: Das neue Board ist unter `/jira/software/projects/BWS/boards/34` zur Prüfung geöffnet.
 
 ### 2026-08-15 - BWS-Xray-Vorgangstypen prüfen und bereinigen
 - Status: ABGESCHLOSSEN.
