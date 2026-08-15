@@ -191,7 +191,12 @@ async function main() {
 
   let keyMap = keyMapLaden();
   const epicRows = csvLesen(join(jiraRoot, "brandycards-epics.csv"));
-  const storyRows = csvLesen(join(jiraRoot, "brandycards-user-stories.csv"));
+  // Bewusst die Akzeptanzkriterien-Datei und nicht brandycards-user-stories.csv:
+  // Beide führen dieselben 111 Stories, aber nur diese trägt unter dem
+  // „Als …"-Satz auch die nummerierten Akzeptanzkriterien. Ohne sie käme jede
+  // Story als Einzeiler im Board an, und die eigentliche Abnahmegrundlage
+  // bliebe im Repository liegen.
+  const storyRows = csvLesen(join(generatedDir, "brandycards-story-acceptance-criteria.csv"));
   const taskRows = csvLesen(join(generatedDir, "brandycards-detailed-tasks.csv"));
 
   const tun = (n) => RUNDE === "alle" || RUNDE === n;
