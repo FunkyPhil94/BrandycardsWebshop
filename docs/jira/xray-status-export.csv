@@ -1,0 +1,334 @@
+﻿Issue Key,Summary,Xray Status,Laeufe,Alle Ergebnisse,Letzte Ausfuehrung,Letztes Datum
+KAN-565,E1-01 Karte anlegen - Happy Path,FAILED,1,FAILED,KAN-899,2026-08-15T08:17:45.367Z
+KAN-566,E1-01 Karte anlegen - Negative und Grenzwerte,PASSED,1,PASSED,KAN-899,2026-08-15T08:16:42.554Z
+KAN-567,E1-01 Karte anlegen - Berechtigung und Betrieb,PASSED,1,PASSED,KAN-899,2026-08-15T08:15:47.984Z
+KAN-568,E1-02 Kartendaten bearbeiten - Happy Path,FAILED,1,FAILED,KAN-899,2026-08-15T08:14:45.323Z
+KAN-569,E1-02 Kartendaten bearbeiten - Negative und Grenzwerte,PASSED,1,PASSED,KAN-899,2026-08-15T08:13:47.837Z
+KAN-570,E1-02 Kartendaten bearbeiten - Berechtigung und Betrieb,PASSED,1,PASSED,KAN-899,2026-08-15T08:12:45.884Z
+KAN-571,E1-03 Karten klassifizieren - Happy Path,FAILED,1,FAILED,KAN-899,2026-08-15T08:11:45.940Z
+KAN-572,E1-03 Karten klassifizieren - Negative und Grenzwerte,PASSED,1,PASSED,KAN-899,2026-08-15T08:10:46.569Z
+KAN-573,E1-03 Karten klassifizieren - Berechtigung und Betrieb,PASSED,1,PASSED,KAN-899,2026-08-15T08:09:51.135Z
+KAN-574,E1-04 Serien und Sets verwalten - Happy Path,FAILED,1,FAILED,KAN-899,2026-08-15T08:08:43.583Z
+KAN-575,E1-04 Serien und Sets verwalten - Negative und Grenzwerte,PASSED,1,PASSED,KAN-899,2026-08-15T08:07:35.981Z
+KAN-576,E1-04 Serien und Sets verwalten - Berechtigung und Betrieb,PASSED,1,PASSED,KAN-899,2026-08-15T08:06:33.490Z
+KAN-577,E1-05 Zustand und Grading erfassen - Happy Path,FAILED,1,FAILED,KAN-899,2026-08-15T08:05:37.953Z
+KAN-578,E1-05 Zustand und Grading erfassen - Negative und Grenzwerte,PASSED,1,PASSED,KAN-899,2026-08-15T08:04:33.451Z
+KAN-579,E1-05 Zustand und Grading erfassen - Berechtigung und Betrieb,PASSED,1,PASSED,KAN-899,2026-08-15T08:03:26.259Z
+KAN-580,E1-06 Kartenbilder verwalten - Happy Path,FAILED,1,FAILED,KAN-899,2026-08-15T08:02:30.049Z
+KAN-581,E1-06 Kartenbilder verwalten - Negative und Grenzwerte,PASSED,1,PASSED,KAN-899,2026-08-15T08:00:20.581Z
+KAN-582,E1-06 Kartenbilder verwalten - Berechtigung und Betrieb,PASSED,1,PASSED,KAN-899,2026-08-15T07:59:17.667Z
+KAN-583,E1-07 Kartenpreise verwalten - Happy Path,FAILED,1,FAILED,KAN-899,2026-08-15T07:58:22.563Z
+KAN-584,E1-07 Kartenpreise verwalten - Negative und Grenzwerte,PASSED,1,PASSED,KAN-899,2026-08-15T07:57:22.078Z
+KAN-585,E1-07 Kartenpreise verwalten - Berechtigung und Betrieb,PASSED,1,PASSED,KAN-899,2026-08-15T07:56:16.125Z
+KAN-586,E1-08 Kartenbestand verwalten - Happy Path,FAILED,1,FAILED,KAN-899,2026-08-15T07:55:16.991Z
+KAN-587,E1-08 Kartenbestand verwalten - Negative und Grenzwerte,PASSED,1,PASSED,KAN-899,2026-08-15T07:54:10.513Z
+KAN-588,E1-08 Kartenbestand verwalten - Berechtigung und Betrieb,PASSED,1,PASSED,KAN-899,2026-08-15T07:53:09.429Z
+KAN-589,E1-09 Bundles und Sammlungen verwalten - Happy Path,FAILED,1,FAILED,KAN-899,2026-08-15T07:52:14.126Z
+KAN-590,E1-09 Bundles und Sammlungen verwalten - Negative und Grenzwerte,PASSED,1,PASSED,KAN-899,2026-08-15T07:51:11.404Z
+KAN-591,E1-09 Bundles und Sammlungen verwalten - Berechtigung und Betrieb,FAILED,1,FAILED,KAN-899,2026-08-15T07:45:26.196Z
+KAN-592,E1-10 Kartenstatus verwalten - Happy Path,PASSED,1,PASSED,KAN-899,2026-08-15T07:44:25.783Z
+KAN-593,E1-10 Kartenstatus verwalten - Negative und Grenzwerte,PASSED,1,PASSED,KAN-899,2026-08-15T07:43:30.485Z
+KAN-594,E1-10 Kartenstatus verwalten - Berechtigung und Betrieb,FAILED,1,FAILED,KAN-899,2026-08-15T07:42:31.482Z
+KAN-595,E1-11 Karten importieren und synchronisieren - Happy Path,PASSED,1,PASSED,KAN-899,2026-08-15T07:41:36.498Z
+KAN-596,E1-11 Karten importieren und synchronisieren - Negative und Grenzwerte,PASSED,1,PASSED,KAN-899,2026-08-15T07:40:35.291Z
+KAN-597,E1-11 Karten importieren und synchronisieren - Berechtigung und Betrieb,FAILED,1,FAILED,KAN-899,2026-08-15T07:39:30.053Z
+KAN-598,E2-01 Karten suchen - Treffer und Navigation,PASSED,1,PASSED,KAN-899,2026-08-15T07:38:30.939Z
+KAN-599,E2-01 Karten suchen - Keine Treffer und Fehler,PASSED,1,PASSED,KAN-899,2026-08-15T07:37:35.939Z
+KAN-600,E2-01 Karten suchen - Responsive und Accessibility,FAILED,1,FAILED,KAN-899,2026-08-15T07:36:34.067Z
+KAN-601,E2-02 Suchvorschläge erhalten - Treffer und Navigation,PASSED,1,PASSED,KAN-899,2026-08-15T07:35:39.130Z
+KAN-602,E2-02 Suchvorschläge erhalten - Keine Treffer und Fehler,PASSED,1,PASSED,KAN-899,2026-08-15T07:34:40.267Z
+KAN-603,E2-02 Suchvorschläge erhalten - Responsive und Accessibility,FAILED,1,FAILED,KAN-899,2026-08-15T07:33:34.658Z
+KAN-604,E2-03 Nach Sportart und Saison filtern - Treffer und Navigation,PASSED,1,PASSED,KAN-899,2026-08-15T07:32:35.479Z
+KAN-605,E2-03 Nach Sportart und Saison filtern - Keine Treffer und Fehler,PASSED,1,PASSED,KAN-899,2026-08-15T07:31:40.350Z
+KAN-606,E2-03 Nach Sportart und Saison filtern - Responsive und Accessibility,FAILED,1,FAILED,KAN-899,2026-08-15T07:30:43.190Z
+KAN-607,E2-04 Nach Kartentyp und Set filtern - Treffer und Navigation,PASSED,1,PASSED,KAN-899,2026-08-15T07:29:46.966Z
+KAN-608,E2-04 Nach Kartentyp und Set filtern - Keine Treffer und Fehler,PASSED,1,PASSED,KAN-899,2026-08-15T07:28:46.981Z
+KAN-609,E2-04 Nach Kartentyp und Set filtern - Responsive und Accessibility,FAILED,1,FAILED,KAN-899,2026-08-15T07:27:51.166Z
+KAN-610,E2-05 Nach Zustand filtern - Treffer und Navigation,PASSED,1,PASSED,KAN-899,2026-08-15T07:26:52.276Z
+KAN-611,E2-05 Nach Zustand filtern - Keine Treffer und Fehler,PASSED,1,PASSED,KAN-899,2026-08-15T07:25:46.939Z
+KAN-612,E2-05 Nach Zustand filtern - Responsive und Accessibility,FAILED,1,FAILED,KAN-899,2026-08-15T07:24:36.978Z
+KAN-613,E2-06 Nach Preis und Verfügbarkeit filtern - Treffer und Navigation,PASSED,1,PASSED,KAN-899,2026-08-15T07:23:41.389Z
+KAN-614,E2-06 Nach Preis und Verfügbarkeit filtern - Keine Treffer und Fehler,PASSED,1,PASSED,KAN-899,2026-08-15T07:22:39.524Z
+KAN-615,E2-06 Nach Preis und Verfügbarkeit filtern - Responsive und Accessibility,FAILED,1,FAILED,KAN-899,2026-08-15T07:21:33.926Z
+KAN-616,E2-07 Filter kombinieren - Treffer und Navigation,PASSED,1,PASSED,KAN-899,2026-08-15T07:20:35.846Z
+KAN-617,E2-07 Filter kombinieren - Keine Treffer und Fehler,PASSED,1,PASSED,KAN-899,2026-08-15T07:19:40.454Z
+KAN-618,E2-07 Filter kombinieren - Responsive und Accessibility,FAILED,1,FAILED,KAN-899,2026-08-15T07:18:41.047Z
+KAN-619,E2-08 Ergebnisse sortieren - Treffer und Navigation,PASSED,1,PASSED,KAN-899,2026-08-15T07:17:46.153Z
+KAN-620,E2-08 Ergebnisse sortieren - Keine Treffer und Fehler,PASSED,1,PASSED,KAN-899,2026-08-15T07:16:46.857Z
+KAN-621,E2-08 Ergebnisse sortieren - Responsive und Accessibility,FAILED,1,FAILED,KAN-899,2026-08-15T07:15:51.886Z
+KAN-622,E2-09 Ergebnisse paginieren - Treffer und Navigation,PASSED,1,PASSED,KAN-899,2026-08-15T07:14:10.813Z
+KAN-623,E2-09 Ergebnisse paginieren - Keine Treffer und Fehler,PASSED,1,PASSED,KAN-899,2026-08-15T07:13:15.901Z
+KAN-624,E2-09 Ergebnisse paginieren - Responsive und Accessibility,FAILED,1,FAILED,KAN-899,2026-08-15T07:12:14.972Z
+KAN-625,E2-10 Produktdetailseite anzeigen - Treffer und Navigation,PASSED,1,PASSED,KAN-899,2026-08-15T07:11:19.525Z
+KAN-626,E2-10 Produktdetailseite anzeigen - Keine Treffer und Fehler,PASSED,1,PASSED,KAN-899,2026-08-15T07:10:18.992Z
+KAN-627,E2-10 Produktdetailseite anzeigen - Responsive und Accessibility,FAILED,1,FAILED,KAN-899,2026-08-15T07:08:07.420Z
+KAN-628,E2-11 Produktbilder vergrößern - Treffer und Navigation,PASSED,1,PASSED,KAN-899,2026-08-15T07:06:53.661Z
+KAN-629,E2-11 Produktbilder vergrößern - Keine Treffer und Fehler,PASSED,1,PASSED,KAN-899,2026-08-15T07:05:47.984Z
+KAN-630,E2-11 Produktbilder vergrößern - Responsive und Accessibility,FAILED,1,FAILED,KAN-899,2026-08-15T07:04:48.349Z
+KAN-631,E2-12 Ähnliche Karten anzeigen - Treffer und Navigation,PASSED,1,PASSED,KAN-899,2026-08-15T07:03:42.772Z
+KAN-632,E2-12 Ähnliche Karten anzeigen - Keine Treffer und Fehler,PASSED,1,PASSED,KAN-899,2026-08-15T07:02:44.824Z
+KAN-633,E2-12 Ähnliche Karten anzeigen - Responsive und Accessibility,FAILED,1,FAILED,KAN-899,2026-08-15T07:01:37.897Z
+KAN-634,E2-13 Leere und fehlerhafte Ergebnisse verstehen - Treffer und Navigation,PASSED,1,PASSED,KAN-899,2026-08-15T07:00:31.105Z
+KAN-635,E2-13 Leere und fehlerhafte Ergebnisse verstehen - Keine Treffer und Fehler,PASSED,1,PASSED,KAN-899,2026-08-15T06:59:35.722Z
+KAN-636,E2-13 Leere und fehlerhafte Ergebnisse verstehen - Responsive und Accessibility,FAILED,1,FAILED,KAN-899,2026-08-15T06:58:36.491Z
+KAN-637,E3-01 Karte in den Warenkorb legen - Kauf erfolgreich,PASSED,1,PASSED,KAN-899,2026-08-15T06:57:41.566Z
+KAN-638,E3-01 Karte in den Warenkorb legen - Abbruch und Nichtverfügbarkeit,PASSED,1,PASSED,KAN-899,2026-08-15T06:56:43.178Z
+KAN-639,E3-01 Karte in den Warenkorb legen - Doppelte Aktion und Kontoflow,FAILED,1,FAILED,KAN-899,2026-08-15T06:55:47.887Z
+KAN-640,E3-02 Warenkorbmenge ändern - Kauf erfolgreich,PASSED,1,PASSED,KAN-899,2026-08-15T06:50:59.752Z
+KAN-641,E3-02 Warenkorbmenge ändern - Abbruch und Nichtverfügbarkeit,PASSED,1,PASSED,KAN-899,2026-08-15T06:44:56.203Z
+KAN-642,E3-02 Warenkorbmenge ändern - Doppelte Aktion und Kontoflow,FAILED,1,FAILED,KAN-899,2026-08-15T06:43:35.260Z
+KAN-643,E3-03 Warenkorbartikel entfernen - Kauf erfolgreich,PASSED,1,PASSED,KAN-899,2026-08-15T06:42:09.196Z
+KAN-644,E3-03 Warenkorbartikel entfernen - Abbruch und Nichtverfügbarkeit,PASSED,1,PASSED,KAN-899,2026-08-15T06:40:48.654Z
+KAN-645,E3-03 Warenkorbartikel entfernen - Doppelte Aktion und Kontoflow,FAILED,1,FAILED,KAN-899,2026-08-15T06:39:24.895Z
+KAN-646,E3-04 Gesamtpreis anzeigen - Kauf erfolgreich,PASSED,1,PASSED,KAN-899,2026-08-15T06:38:04.527Z
+KAN-647,E3-04 Gesamtpreis anzeigen - Abbruch und Nichtverfügbarkeit,PASSED,1,PASSED,KAN-899,2026-08-15T06:36:40.522Z
+KAN-648,E3-04 Gesamtpreis anzeigen - Doppelte Aktion und Kontoflow,FAILED,1,FAILED,KAN-899,2026-08-15T06:35:19.923Z
+KAN-649,E3-05 Nichtverfügbarkeit erkennen - Kauf erfolgreich,PASSED,1,PASSED,KAN-899,2026-08-15T06:33:54.709Z
+KAN-650,E3-05 Nichtverfügbarkeit erkennen - Abbruch und Nichtverfügbarkeit,PASSED,1,PASSED,KAN-899,2026-08-15T06:32:33.366Z
+KAN-651,E3-05 Nichtverfügbarkeit erkennen - Doppelte Aktion und Kontoflow,FAILED,1,FAILED,KAN-899,2026-08-15T06:31:04.506Z
+KAN-652,E3-06 Warenkorb persistent halten - Kauf erfolgreich,PASSED,1,PASSED,KAN-899,2026-08-15T06:29:43.206Z
+KAN-653,E3-06 Warenkorb persistent halten - Abbruch und Nichtverfügbarkeit,PASSED,1,PASSED,KAN-899,2026-08-15T06:28:18.090Z
+KAN-654,E3-06 Warenkorb persistent halten - Doppelte Aktion und Kontoflow,FAILED,1,FAILED,KAN-899,2026-08-15T06:26:56.720Z
+KAN-655,E3-07 Als Gast bestellen - Kauf erfolgreich,PASSED,1,PASSED,KAN-899,2026-08-15T06:25:32.673Z
+KAN-656,E3-07 Als Gast bestellen - Abbruch und Nichtverfügbarkeit,PASSED,1,PASSED,KAN-899,2026-08-15T06:24:12.076Z
+KAN-657,E3-07 Als Gast bestellen - Doppelte Aktion und Kontoflow,FAILED,1,FAILED,KAN-899,2026-08-15T06:22:48.167Z
+KAN-658,E3-08 Mit Kundenkonto bestellen - Kauf erfolgreich,PASSED,1,PASSED,KAN-899,2026-08-15T06:21:26.665Z
+KAN-659,E3-08 Mit Kundenkonto bestellen - Abbruch und Nichtverfügbarkeit,PASSED,1,PASSED,KAN-899,2026-08-15T06:20:02.123Z
+KAN-660,E3-08 Mit Kundenkonto bestellen - Doppelte Aktion und Kontoflow,FAILED,1,FAILED,KAN-899,2026-08-15T06:18:40.255Z
+KAN-661,E3-09 Lieferadresse verwalten - Kauf erfolgreich,PASSED,1,PASSED,KAN-899,2026-08-15T06:17:16.044Z
+KAN-662,E3-09 Lieferadresse verwalten - Abbruch und Nichtverfügbarkeit,PASSED,1,PASSED,KAN-899,2026-08-15T06:15:54.223Z
+KAN-663,E3-09 Lieferadresse verwalten - Doppelte Aktion und Kontoflow,FAILED,1,FAILED,KAN-899,2026-08-15T06:14:25.339Z
+KAN-664,E3-10 Versandart auswählen - Kauf erfolgreich,PASSED,1,PASSED,KAN-899,2026-08-15T06:13:03.783Z
+KAN-665,E3-10 Versandart auswählen - Abbruch und Nichtverfügbarkeit,PASSED,1,PASSED,KAN-899,2026-08-15T06:11:38.166Z
+KAN-666,E3-10 Versandart auswählen - Doppelte Aktion und Kontoflow,FAILED,1,FAILED,KAN-899,2026-08-15T06:10:16.902Z
+KAN-667,E3-11 Bestellung vor dem Kauf prüfen - Kauf erfolgreich,PASSED,1,PASSED,KAN-899,2026-08-15T06:08:52.896Z
+KAN-668,E3-11 Bestellung vor dem Kauf prüfen - Abbruch und Nichtverfügbarkeit,PASSED,1,PASSED,KAN-899,2026-08-15T06:07:31.922Z
+KAN-669,E3-11 Bestellung vor dem Kauf prüfen - Doppelte Aktion und Kontoflow,FAILED,1,FAILED,KAN-899,2026-08-15T06:06:05.126Z
+KAN-670,E3-12 Formularfehler verstehen - Kauf erfolgreich,PASSED,1,PASSED,KAN-899,2026-08-15T06:04:44.318Z
+KAN-671,E3-12 Formularfehler verstehen - Abbruch und Nichtverfügbarkeit,PASSED,1,PASSED,KAN-899,2026-08-15T06:03:18.298Z
+KAN-672,E3-12 Formularfehler verstehen - Doppelte Aktion und Kontoflow,FAILED,1,FAILED,KAN-899,2026-08-15T06:01:56.254Z
+KAN-673,E4-01 Mit PayPal bezahlen - Zahlung erfolgreich,PASSED,1,PASSED,KAN-899,2026-08-15T06:00:30.702Z
+KAN-674,E4-01 Mit PayPal bezahlen - Fehlzahlung und Abbruch,PASSED,1,PASSED,KAN-899,2026-08-15T05:59:09.896Z
+KAN-675,E4-01 Mit PayPal bezahlen - Idempotenz und Adminbetrieb,FAILED,1,FAILED,KAN-899,2026-08-15T05:57:45.066Z
+KAN-676,E4-02 Zahlbetrag vor Zahlung prüfen - Zahlung erfolgreich,PASSED,1,PASSED,KAN-899,2026-08-15T05:56:22.429Z
+KAN-677,E4-02 Zahlbetrag vor Zahlung prüfen - Fehlzahlung und Abbruch,PASSED,1,PASSED,KAN-899,2026-08-15T05:54:52.611Z
+KAN-678,E4-02 Zahlbetrag vor Zahlung prüfen - Idempotenz und Adminbetrieb,FAILED,1,FAILED,KAN-899,2026-08-15T05:53:33.618Z
+KAN-679,E4-03 Fehlgeschlagene Zahlung verstehen - Zahlung erfolgreich,PASSED,1,PASSED,KAN-899,2026-08-15T05:52:09.825Z
+KAN-680,E4-03 Fehlgeschlagene Zahlung verstehen - Fehlzahlung und Abbruch,PASSED,1,PASSED,KAN-899,2026-08-15T05:50:50.682Z
+KAN-681,E4-03 Fehlgeschlagene Zahlung verstehen - Idempotenz und Adminbetrieb,PASSED,1,PASSED,KAN-899,2026-08-15T05:49:38.964Z
+KAN-682,E4-04 Bestand reservieren - Zahlung erfolgreich,PASSED,1,PASSED,KAN-899,2026-08-15T05:29:30.507Z
+KAN-683,E4-04 Bestand reservieren - Fehlzahlung und Abbruch,PASSED,1,PASSED,KAN-899,2026-08-15T05:28:35.549Z
+KAN-684,E4-04 Bestand reservieren - Idempotenz und Adminbetrieb,FAILED,1,FAILED,KAN-899,2026-08-15T05:27:41.009Z
+KAN-685,E4-05 Reservierungen freigeben - Zahlung erfolgreich,PASSED,1,PASSED,KAN-899,2026-08-15T05:26:45.813Z
+KAN-686,E4-05 Reservierungen freigeben - Fehlzahlung und Abbruch,PASSED,1,PASSED,KAN-899,2026-08-15T05:24:00.079Z
+KAN-687,E4-05 Reservierungen freigeben - Idempotenz und Adminbetrieb,FAILED,1,FAILED,KAN-899,2026-08-15T05:22:42.805Z
+KAN-688,E4-06 Zahlung verifizieren - Zahlung erfolgreich,PASSED,1,PASSED,KAN-899,2026-08-15T05:21:25.343Z
+KAN-689,E4-06 Zahlung verifizieren - Fehlzahlung und Abbruch,PASSED,1,PASSED,KAN-899,2026-08-15T05:20:07.978Z
+KAN-690,E4-06 Zahlung verifizieren - Idempotenz und Adminbetrieb,FAILED,1,FAILED,KAN-899,2026-08-15T05:18:46.956Z
+KAN-691,E4-07 Bestellstatus aktualisieren - Zahlung erfolgreich,PASSED,1,PASSED,KAN-899,2026-08-14T20:45:56.313Z
+KAN-692,E4-07 Bestellstatus aktualisieren - Fehlzahlung und Abbruch,PASSED,1,PASSED,KAN-899,2026-08-14T20:44:50.420Z
+KAN-693,E4-07 Bestellstatus aktualisieren - Idempotenz und Adminbetrieb,FAILED,1,FAILED,KAN-899,2026-08-14T20:43:54.536Z
+KAN-694,E4-08 Doppelte Zahlungsbestätigungen verhindern - Zahlung erfolgreich,PASSED,1,PASSED,KAN-899,2026-08-14T20:42:59.400Z
+KAN-695,E4-08 Doppelte Zahlungsbestätigungen verhindern - Fehlzahlung und Abbruch,PASSED,1,PASSED,KAN-899,2026-08-14T20:41:57.976Z
+KAN-696,E4-08 Doppelte Zahlungsbestätigungen verhindern - Idempotenz und Adminbetrieb,FAILED,1,FAILED,KAN-899,2026-08-14T20:41:02.457Z
+KAN-697,E4-09 Bestellungen administrieren - Zahlung erfolgreich,PASSED,1,PASSED,KAN-899,2026-08-14T20:40:01.816Z
+KAN-698,E4-09 Bestellungen administrieren - Fehlzahlung und Abbruch,PASSED,1,PASSED,KAN-899,2026-08-14T20:39:03.583Z
+KAN-699,E4-09 Bestellungen administrieren - Idempotenz und Adminbetrieb,FAILED,1,FAILED,KAN-899,2026-08-14T20:38:02.524Z
+KAN-700,E4-10 Bestellung für Versand vorbereiten - Zahlung erfolgreich,PASSED,1,PASSED,KAN-899,2026-08-14T20:37:02.473Z
+KAN-701,E4-10 Bestellung für Versand vorbereiten - Fehlzahlung und Abbruch,PASSED,1,PASSED,KAN-899,2026-08-14T20:36:05.207Z
+KAN-702,E4-10 Bestellung für Versand vorbereiten - Idempotenz und Adminbetrieb,FAILED,1,FAILED,KAN-899,2026-08-14T20:35:07.032Z
+KAN-703,E4-11 Sendungsnummer anzeigen - Zahlung erfolgreich,PASSED,1,PASSED,KAN-899,2026-08-14T20:34:02.381Z
+KAN-704,E4-11 Sendungsnummer anzeigen - Fehlzahlung und Abbruch,PASSED,1,PASSED,KAN-899,2026-08-14T20:33:04.286Z
+KAN-705,E4-11 Sendungsnummer anzeigen - Idempotenz und Adminbetrieb,FAILED,1,FAILED,KAN-899,2026-08-14T20:32:02.166Z
+KAN-706,E4-12 Bestellung stornieren oder erstatten - Zahlung erfolgreich,PASSED,1,PASSED,KAN-899,2026-08-14T20:31:04.163Z
+KAN-707,E4-12 Bestellung stornieren oder erstatten - Fehlzahlung und Abbruch,PASSED,1,PASSED,KAN-899,2026-08-14T20:29:55.783Z
+KAN-708,E4-12 Bestellung stornieren oder erstatten - Idempotenz und Adminbetrieb,FAILED,1,FAILED,KAN-899,2026-08-14T20:28:54.551Z
+KAN-709,E5-01 Kundenkonto registrieren - Konto-Lebenszyklus,PASSED,1,PASSED,KAN-899,2026-08-14T20:27:53.861Z
+KAN-710,E5-01 Kundenkonto registrieren - Eigene Daten und Historie,PASSED,1,PASSED,KAN-899,2026-08-14T20:26:53.882Z
+KAN-711,E5-01 Kundenkonto registrieren - Datenschutz und Berechtigung,FAILED,1,FAILED,KAN-899,2026-08-14T20:25:47.622Z
+KAN-712,E5-02 E-Mail-Adresse bestätigen - Konto-Lebenszyklus,PASSED,1,PASSED,KAN-899,2026-08-14T20:24:38.079Z
+KAN-713,E5-02 E-Mail-Adresse bestätigen - Eigene Daten und Historie,PASSED,1,PASSED,KAN-899,2026-08-14T20:23:38.164Z
+KAN-714,E5-02 E-Mail-Adresse bestätigen - Datenschutz und Berechtigung,FAILED,1,FAILED,KAN-899,2026-08-14T20:22:36.123Z
+KAN-715,E5-03 Ein- und ausloggen - Konto-Lebenszyklus,PASSED,1,PASSED,KAN-899,2026-08-14T20:21:37.735Z
+KAN-716,E5-03 Ein- und ausloggen - Eigene Daten und Historie,PASSED,1,PASSED,KAN-899,2026-08-14T20:20:36.448Z
+KAN-717,E5-03 Ein- und ausloggen - Datenschutz und Berechtigung,FAILED,1,FAILED,KAN-899,2026-08-14T20:19:23.366Z
+KAN-718,E5-04 Passwort zurücksetzen - Konto-Lebenszyklus,PASSED,1,PASSED,KAN-899,2026-08-14T20:14:38.790Z
+KAN-719,E5-04 Passwort zurücksetzen - Eigene Daten und Historie,PASSED,1,PASSED,KAN-899,2026-08-14T20:13:14.714Z
+KAN-720,E5-04 Passwort zurücksetzen - Datenschutz und Berechtigung,FAILED,1,FAILED,KAN-899,2026-08-14T20:11:53.023Z
+KAN-721,E5-05 Persönliche Daten bearbeiten - Konto-Lebenszyklus,PASSED,1,PASSED,KAN-899,2026-08-14T20:10:18.352Z
+KAN-722,E5-05 Persönliche Daten bearbeiten - Eigene Daten und Historie,PASSED,1,PASSED,KAN-899,2026-08-14T20:08:55.263Z
+KAN-723,E5-05 Persönliche Daten bearbeiten - Datenschutz und Berechtigung,FAILED,1,FAILED,KAN-899,2026-08-14T20:07:32.363Z
+KAN-724,E5-06 Lieferadressen verwalten - Konto-Lebenszyklus,PASSED,1,PASSED,KAN-899,2026-08-14T20:06:04.345Z
+KAN-725,E5-06 Lieferadressen verwalten - Eigene Daten und Historie,PASSED,1,PASSED,KAN-899,2026-08-14T20:04:37.859Z
+KAN-726,E5-06 Lieferadressen verwalten - Datenschutz und Berechtigung,FAILED,1,FAILED,KAN-899,2026-08-14T20:02:52.673Z
+KAN-727,E5-07 Bestellhistorie einsehen - Konto-Lebenszyklus,PASSED,1,PASSED,KAN-899,2026-08-14T20:01:31.085Z
+KAN-728,E5-07 Bestellhistorie einsehen - Eigene Daten und Historie,PASSED,1,PASSED,KAN-899,2026-08-14T20:00:04.103Z
+KAN-729,E5-07 Bestellhistorie einsehen - Datenschutz und Berechtigung,FAILED,1,FAILED,KAN-899,2026-08-14T19:58:24.519Z
+KAN-730,E5-08 Bestellstatus verfolgen - Konto-Lebenszyklus,PASSED,1,PASSED,KAN-899,2026-08-14T19:52:42.509Z
+KAN-731,E5-08 Bestellstatus verfolgen - Eigene Daten und Historie,PASSED,1,PASSED,KAN-899,2026-08-14T19:55:36.285Z
+KAN-732,E5-08 Bestellstatus verfolgen - Datenschutz und Berechtigung,FAILED,1,FAILED,KAN-899,2026-08-14T19:49:57.585Z
+KAN-733,E5-09 Bestellung erneut zusammenstellen - Konto-Lebenszyklus,PASSED,1,PASSED,KAN-899,2026-08-14T19:48:12.216Z
+KAN-734,E5-09 Bestellung erneut zusammenstellen - Eigene Daten und Historie,PASSED,1,PASSED,KAN-899,2026-08-14T19:46:54.382Z
+KAN-735,E5-09 Bestellung erneut zusammenstellen - Datenschutz und Berechtigung,FAILED,1,FAILED,KAN-899,2026-08-14T19:45:36.966Z
+KAN-736,E5-10 Konto löschen oder Daten exportieren - Konto-Lebenszyklus,PASSED,1,PASSED,KAN-899,2026-08-14T19:43:12.990Z
+KAN-737,E5-10 Konto löschen oder Daten exportieren - Eigene Daten und Historie,PASSED,1,PASSED,KAN-899,2026-08-14T19:37:35.816Z
+KAN-738,E5-10 Konto löschen oder Daten exportieren - Datenschutz und Berechtigung,FAILED,1,FAILED,KAN-899,2026-08-14T19:15:03.834Z
+KAN-739,E6-01 Einzelne Karte anbieten - Angebot einreichen,PASSED,1,PASSED,KAN-899,2026-08-14T19:14:16.699Z
+KAN-740,E6-01 Einzelne Karte anbieten - Ungültige und fremde Daten,PASSED,1,PASSED,KAN-899,2026-08-14T19:08:22.850Z
+KAN-741,E6-01 Einzelne Karte anbieten - Angebotsstatus und Auszahlung,FAILED,1,FAILED,KAN-899,2026-08-14T19:07:45.404Z
+KAN-742,E6-02 Sammlung anbieten - Angebot einreichen,PASSED,1,PASSED,KAN-899,2026-08-14T19:07:11.127Z
+KAN-743,E6-02 Sammlung anbieten - Ungültige und fremde Daten,PASSED,1,PASSED,KAN-899,2026-08-14T19:06:32.386Z
+KAN-744,E6-02 Sammlung anbieten - Angebotsstatus und Auszahlung,FAILED,1,FAILED,KAN-899,2026-08-14T19:05:58.325Z
+KAN-745,E6-03 Verkaufsbilder hochladen - Angebot einreichen,PASSED,1,PASSED,KAN-899,2026-08-14T19:05:17.860Z
+KAN-746,E6-03 Verkaufsbilder hochladen - Ungültige und fremde Daten,PASSED,1,PASSED,KAN-899,2026-08-14T19:04:43.458Z
+KAN-747,E6-03 Verkaufsbilder hochladen - Angebotsstatus und Auszahlung,FAILED,1,FAILED,KAN-899,2026-08-14T19:04:02.661Z
+KAN-748,E6-04 Verkaufsdaten erfassen - Angebot einreichen,PASSED,1,PASSED,KAN-899,2026-08-14T19:03:25.255Z
+KAN-749,E6-04 Verkaufsdaten erfassen - Ungültige und fremde Daten,PASSED,1,PASSED,KAN-899,2026-08-14T19:02:44.091Z
+KAN-750,E6-04 Verkaufsdaten erfassen - Angebotsstatus und Auszahlung,FAILED,1,FAILED,KAN-899,2026-08-14T19:02:09.709Z
+KAN-751,E6-05 Verkaufszustand angeben - Angebot einreichen,PASSED,1,PASSED,KAN-899,2026-08-14T19:01:28.905Z
+KAN-752,E6-05 Verkaufszustand angeben - Ungültige und fremde Daten,PASSED,1,PASSED,KAN-899,2026-08-14T19:00:55.065Z
+KAN-753,E6-05 Verkaufszustand angeben - Angebotsstatus und Auszahlung,FAILED,1,FAILED,KAN-899,2026-08-14T19:00:13.150Z
+KAN-754,E6-06 Preiswunsch angeben - Angebot einreichen,PASSED,1,PASSED,KAN-899,2026-08-14T18:59:35.876Z
+KAN-755,E6-06 Preiswunsch angeben - Ungültige und fremde Daten,PASSED,1,PASSED,KAN-899,2026-08-14T18:58:54.641Z
+KAN-756,E6-06 Preiswunsch angeben - Angebotsstatus und Auszahlung,FAILED,1,FAILED,KAN-899,2026-08-14T18:58:16.925Z
+KAN-757,E6-07 Verkaufsangebot speichern - Angebot einreichen,PASSED,1,PASSED,KAN-899,2026-08-14T18:57:35.769Z
+KAN-758,E6-07 Verkaufsangebot speichern - Ungültige und fremde Daten,PASSED,1,PASSED,KAN-899,2026-08-14T18:57:00.819Z
+KAN-759,E6-07 Verkaufsangebot speichern - Angebotsstatus und Auszahlung,FAILED,1,FAILED,KAN-899,2026-08-14T18:56:17.082Z
+KAN-760,E6-08 Angebotsstatus verfolgen - Angebot einreichen,PASSED,1,PASSED,KAN-899,2026-08-14T18:55:40.716Z
+KAN-761,E6-08 Angebotsstatus verfolgen - Ungültige und fremde Daten,PASSED,1,PASSED,KAN-899,2026-08-14T18:54:58.522Z
+KAN-762,E6-08 Angebotsstatus verfolgen - Angebotsstatus und Auszahlung,FAILED,1,FAILED,KAN-899,2026-08-14T18:54:21.146Z
+KAN-763,E6-09 Verkaufsangebote prüfen - Angebot einreichen,PASSED,1,PASSED,KAN-899,2026-08-14T18:53:41.088Z
+KAN-764,E6-09 Verkaufsangebote prüfen - Ungültige und fremde Daten,PASSED,1,PASSED,KAN-899,2026-08-14T18:53:04.151Z
+KAN-765,E6-09 Verkaufsangebote prüfen - Angebotsstatus und Auszahlung,FAILED,1,FAILED,KAN-899,2026-08-14T18:52:24.253Z
+KAN-766,E6-10 Angebot unterbreiten - Angebot einreichen,PASSED,1,PASSED,KAN-899,2026-08-14T18:51:47.312Z
+KAN-767,E6-10 Angebot unterbreiten - Ungültige und fremde Daten,PASSED,1,PASSED,KAN-899,2026-08-14T18:51:04.767Z
+KAN-768,E6-10 Angebot unterbreiten - Angebotsstatus und Auszahlung,FAILED,1,FAILED,KAN-899,2026-08-14T18:50:15.254Z
+KAN-769,E6-11 Angebot annehmen oder ablehnen - Angebot einreichen,PASSED,1,PASSED,KAN-899,2026-08-14T18:46:23.305Z
+KAN-770,E6-11 Angebot annehmen oder ablehnen - Ungültige und fremde Daten,PASSED,1,PASSED,KAN-899,2026-08-14T18:45:36.184Z
+KAN-771,E6-11 Angebot annehmen oder ablehnen - Angebotsstatus und Auszahlung,FAILED,1,FAILED,KAN-899,2026-08-14T18:44:13.386Z
+KAN-772,E6-12 Übergabe und Auszahlung verstehen - Angebot einreichen,PASSED,1,PASSED,KAN-899,2026-08-14T18:43:41.802Z
+KAN-773,E6-12 Übergabe und Auszahlung verstehen - Ungültige und fremde Daten,PASSED,1,PASSED,KAN-899,2026-08-14T18:43:02.685Z
+KAN-774,E6-12 Übergabe und Auszahlung verstehen - Angebotsstatus und Auszahlung,FAILED,1,FAILED,KAN-899,2026-08-14T18:41:45.234Z
+KAN-775,E7-01 Adminbereich sicher anmelden - Admin-Operation erfolgreich,PASSED,1,PASSED,KAN-899,2026-08-14T18:41:06.607Z
+KAN-776,E7-01 Adminbereich sicher anmelden - Rolle und Risikoaktion,PASSED,1,PASSED,KAN-899,2026-08-14T18:39:08.815Z
+KAN-777,E7-01 Adminbereich sicher anmelden - Synchronisation und Fehler,FAILED,1,FAILED,KAN-899,2026-08-14T18:37:39.912Z
+KAN-778,E7-02 Rollen und Berechtigungen verwalten - Admin-Operation erfolgreich,PASSED,1,PASSED,KAN-899,2026-08-14T18:37:04.666Z
+KAN-779,E7-02 Rollen und Berechtigungen verwalten - Rolle und Risikoaktion,PASSED,1,PASSED,KAN-899,2026-08-14T18:36:14.515Z
+KAN-780,E7-02 Rollen und Berechtigungen verwalten - Synchronisation und Fehler,FAILED,1,FAILED,KAN-899,2026-08-14T18:34:28.740Z
+KAN-781,E7-03 Admin-Dashboard anzeigen - Admin-Operation erfolgreich,PASSED,1,PASSED,KAN-899,2026-08-14T18:33:23.175Z
+KAN-782,E7-03 Admin-Dashboard anzeigen - Rolle und Risikoaktion,PASSED,1,PASSED,KAN-899,2026-08-14T18:32:22.099Z
+KAN-783,E7-03 Admin-Dashboard anzeigen - Synchronisation und Fehler,FAILED,1,FAILED,KAN-899,2026-08-14T18:31:33.608Z
+KAN-784,E7-04 Produkte administrieren - Admin-Operation erfolgreich,PASSED,1,PASSED,KAN-899,2026-08-14T18:31:01.846Z
+KAN-785,E7-04 Produkte administrieren - Rolle und Risikoaktion,PASSED,1,PASSED,KAN-899,2026-08-14T18:30:26.348Z
+KAN-786,E7-04 Produkte administrieren - Synchronisation und Fehler,FAILED,1,FAILED,KAN-899,2026-08-14T18:29:40.068Z
+KAN-787,E7-05 Produktbilder administrieren - Admin-Operation erfolgreich,PASSED,1,PASSED,KAN-899,2026-08-14T18:28:36.961Z
+KAN-788,E7-05 Produktbilder administrieren - Rolle und Risikoaktion,PASSED,1,PASSED,KAN-899,2026-08-14T18:26:17.426Z
+KAN-789,E7-05 Produktbilder administrieren - Synchronisation und Fehler,FAILED,1,FAILED,KAN-899,2026-08-14T18:25:13.645Z
+KAN-790,E7-06 Bestände korrigieren - Admin-Operation erfolgreich,PASSED,1,PASSED,KAN-899,2026-08-14T18:17:59.386Z
+KAN-791,E7-06 Bestände korrigieren - Rolle und Risikoaktion,PASSED,1,PASSED,KAN-899,2026-08-14T18:17:26.297Z
+KAN-792,E7-06 Bestände korrigieren - Synchronisation und Fehler,FAILED,1,FAILED,KAN-899,2026-08-14T18:16:55.230Z
+KAN-793,E7-07 Bestellungen administrieren - Admin-Operation erfolgreich,PASSED,1,PASSED,KAN-899,2026-08-14T18:16:21.833Z
+KAN-794,E7-07 Bestellungen administrieren - Rolle und Risikoaktion,PASSED,1,PASSED,KAN-899,2026-08-14T18:15:51.283Z
+KAN-795,E7-07 Bestellungen administrieren - Synchronisation und Fehler,FAILED,1,FAILED,KAN-899,2026-08-14T18:15:17.087Z
+KAN-796,E7-08 Kundenkonten administrieren - Admin-Operation erfolgreich,PASSED,1,PASSED,KAN-899,2026-08-14T18:14:48.590Z
+KAN-797,E7-08 Kundenkonten administrieren - Rolle und Risikoaktion,PASSED,1,PASSED,KAN-899,2026-08-14T18:14:15.485Z
+KAN-798,E7-08 Kundenkonten administrieren - Synchronisation und Fehler,FAILED,1,FAILED,KAN-899,2026-08-14T18:13:44.849Z
+KAN-799,E7-09 Verkaufsangebote administrieren - Admin-Operation erfolgreich,PASSED,1,PASSED,KAN-899,2026-08-14T18:13:11.052Z
+KAN-800,E7-09 Verkaufsangebote administrieren - Rolle und Risikoaktion,PASSED,1,PASSED,KAN-899,2026-08-14T18:12:40.382Z
+KAN-801,E7-09 Verkaufsangebote administrieren - Synchronisation und Fehler,FAILED,1,FAILED,KAN-899,2026-08-14T18:11:52.812Z
+KAN-802,E7-10 Katalogstammdaten verwalten - Admin-Operation erfolgreich,PASSED,1,PASSED,KAN-899,2026-08-14T18:11:15.854Z
+KAN-803,E7-10 Katalogstammdaten verwalten - Rolle und Risikoaktion,PASSED,1,PASSED,KAN-899,2026-08-14T18:10:42.163Z
+KAN-804,E7-10 Katalogstammdaten verwalten - Synchronisation und Fehler,FAILED,1,FAILED,KAN-899,2026-08-14T18:10:11.680Z
+KAN-805,E7-11 Datenquellen synchronisieren - Admin-Operation erfolgreich,PASSED,1,PASSED,KAN-899,2026-08-14T18:09:36.754Z
+KAN-806,E7-11 Datenquellen synchronisieren - Rolle und Risikoaktion,PASSED,1,PASSED,KAN-899,2026-08-14T18:08:51.312Z
+KAN-807,E7-11 Datenquellen synchronisieren - Synchronisation und Fehler,FAILED,1,FAILED,KAN-899,2026-08-14T18:08:01.975Z
+KAN-808,E7-12 Synchronisationsfehler beheben - Admin-Operation erfolgreich,PASSED,1,PASSED,KAN-899,2026-08-14T18:07:18.520Z
+KAN-809,E7-12 Synchronisationsfehler beheben - Rolle und Risikoaktion,PASSED,1,PASSED,KAN-899,2026-08-14T18:06:44.593Z
+KAN-810,E7-12 Synchronisationsfehler beheben - Synchronisation und Fehler,FAILED,1,FAILED,KAN-899,2026-08-14T18:06:07.230Z
+KAN-811,E7-13 Änderungen nachvollziehen - Admin-Operation erfolgreich,PASSED,1,PASSED,KAN-899,2026-08-14T18:05:27.080Z
+KAN-812,E7-13 Änderungen nachvollziehen - Rolle und Risikoaktion,PASSED,1,PASSED,KAN-899,2026-08-14T18:04:49.221Z
+KAN-813,E7-13 Änderungen nachvollziehen - Synchronisation und Fehler,FAILED,1,FAILED,KAN-899,2026-08-14T18:04:01.580Z
+KAN-814,E8-01 Hauptnavigation verstehen - Visueller Standardpfad,PASSED,1,PASSED,KAN-899,2026-08-14T06:52:22.088Z
+KAN-815,E8-01 Hauptnavigation verstehen - Zustände und Formulare,PASSED,1,PASSED,KAN-899,2026-08-14T18:03:23.780Z
+KAN-816,E8-01 Hauptnavigation verstehen - Accessibility und Auflösung,FAILED,1,FAILED,KAN-899,2026-08-14T18:02:43.638Z
+KAN-817,E8-02 Globale Shop-Navigation nutzen - Visueller Standardpfad,PASSED,1,PASSED,KAN-899,2026-08-14T07:02:43.073Z
+KAN-818,E8-02 Globale Shop-Navigation nutzen - Zustände und Formulare,PASSED,1,PASSED,KAN-899,2026-08-14T18:02:06.569Z
+KAN-819,E8-02 Globale Shop-Navigation nutzen - Accessibility und Auflösung,FAILED,1,FAILED,KAN-899,2026-08-14T18:01:32.848Z
+KAN-820,E8-03 Einheitliches Design erleben - Visueller Standardpfad,PASSED,1,PASSED,KAN-899,2026-08-15T08:35:52.009Z
+KAN-821,E8-03 Einheitliches Design erleben - Zustände und Formulare,PASSED,1,PASSED,KAN-899,2026-08-14T18:01:01.492Z
+KAN-822,E8-03 Einheitliches Design erleben - Accessibility und Auflösung,FAILED,1,FAILED,KAN-899,2026-08-14T18:00:18.756Z
+KAN-823,E8-04 Produktlisten übersichtlich sehen - Visueller Standardpfad,PASSED,1,PASSED,KAN-899,2026-08-14T07:03:10.683Z
+KAN-824,E8-04 Produktlisten übersichtlich sehen - Zustände und Formulare,PASSED,1,PASSED,KAN-899,2026-08-14T17:59:43.570Z
+KAN-825,E8-04 Produktlisten übersichtlich sehen - Accessibility und Auflösung,FAILED,1,FAILED,KAN-899,2026-08-14T17:59:08.720Z
+KAN-826,E8-05 Produktdetails übersichtlich sehen - Visueller Standardpfad,PASSED,1,PASSED,KAN-899,2026-08-14T06:55:55.881Z
+KAN-827,E8-05 Produktdetails übersichtlich sehen - Zustände und Formulare,PASSED,1,PASSED,KAN-899,2026-08-14T17:58:37.762Z
+KAN-828,E8-05 Produktdetails übersichtlich sehen - Accessibility und Auflösung,FAILED,1,FAILED,KAN-899,2026-08-14T17:58:02.970Z
+KAN-829,E8-06 Shop responsiv nutzen - Visueller Standardpfad,PASSED,1,PASSED,KAN-899,2026-08-15T08:36:43.277Z
+KAN-830,E8-06 Shop responsiv nutzen - Zustände und Formulare,PASSED,1,PASSED,KAN-899,2026-08-14T17:57:32.649Z
+KAN-831,E8-06 Shop responsiv nutzen - Accessibility und Auflösung,FAILED,1,FAILED,KAN-899,2026-08-14T17:56:57.451Z
+KAN-832,E8-07 Konsistente Formulare nutzen - Visueller Standardpfad,PASSED,1,PASSED,KAN-899,2026-08-14T06:56:35.173Z
+KAN-833,E8-07 Konsistente Formulare nutzen - Zustände und Formulare,PASSED,1,PASSED,KAN-899,2026-08-14T17:56:26.534Z
+KAN-834,E8-07 Konsistente Formulare nutzen - Accessibility und Auflösung,FAILED,1,FAILED,KAN-899,2026-08-14T17:54:47.243Z
+KAN-835,E8-08 Ladezustände erkennen - Visueller Standardpfad,PASSED,1,PASSED,KAN-899,2026-08-14T06:53:59.306Z
+KAN-836,E8-08 Ladezustände erkennen - Zustände und Formulare,PASSED,1,PASSED,KAN-899,2026-08-14T17:54:04.498Z
+KAN-837,E8-08 Ladezustände erkennen - Accessibility und Auflösung,FAILED,1,FAILED,KAN-899,2026-08-14T17:49:56.519Z
+KAN-838,E8-09 Fehler- und Leerzustände verstehen - Visueller Standardpfad,PASSED,1,PASSED,KAN-899,2026-08-14T17:39:49.143Z
+KAN-839,E8-09 Fehler- und Leerzustände verstehen - Zustände und Formulare,PASSED,1,PASSED,KAN-899,2026-08-14T17:39:18.087Z
+KAN-840,E8-09 Fehler- und Leerzustände verstehen - Accessibility und Auflösung,FAILED,1,FAILED,KAN-899,2026-08-14T17:38:43.508Z
+KAN-841,E8-10 Shop per Tastatur bedienen - Visueller Standardpfad,EXECUTING,1,EXECUTING,KAN-899,2026-08-14T06:54:15.868Z
+KAN-842,E8-10 Shop per Tastatur bedienen - Zustände und Formulare,PASSED,1,PASSED,KAN-899,2026-08-14T17:37:03.385Z
+KAN-843,E8-10 Shop per Tastatur bedienen - Accessibility und Auflösung,FAILED,1,FAILED,KAN-899,2026-08-14T17:36:31.856Z
+KAN-844,E8-11 Shop mit Screenreader nutzen - Visueller Standardpfad,PASSED,1,PASSED,KAN-899,2026-08-14T17:35:56.290Z
+KAN-845,E8-11 Shop mit Screenreader nutzen - Zustände und Formulare,PASSED,1,PASSED,KAN-899,2026-08-14T17:35:12.444Z
+KAN-846,E8-11 Shop mit Screenreader nutzen - Accessibility und Auflösung,FAILED,1,FAILED,KAN-899,2026-08-14T17:34:38.959Z
+KAN-847,E8-12 Fokus- und Aktivzustände sehen - Visueller Standardpfad,PASSED,1,PASSED,KAN-899,2026-08-14T17:34:01.399Z
+KAN-848,E8-12 Fokus- und Aktivzustände sehen - Zustände und Formulare,PASSED,1,PASSED,KAN-899,2026-08-14T17:48:31.610Z
+KAN-849,E8-12 Fokus- und Aktivzustände sehen - Accessibility und Auflösung,FAILED,1,FAILED,KAN-899,2026-08-14T17:33:02.339Z
+KAN-850,E8-13 Optimierte Produktbilder erhalten - Visueller Standardpfad,PASSED,1,PASSED,KAN-899,2026-08-14T17:30:40.055Z
+KAN-851,E8-13 Optimierte Produktbilder erhalten - Zustände und Formulare,PASSED,1,PASSED,KAN-899,2026-08-14T17:29:55.229Z
+KAN-852,E8-13 Optimierte Produktbilder erhalten - Accessibility und Auflösung,FAILED,1,FAILED,KAN-899,2026-08-14T17:29:15.024Z
+KAN-853,E8-14 Auflösungsunabhängiges Design erleben - Visueller Standardpfad,PASSED,1,PASSED,KAN-899,2026-08-14T17:28:37.796Z
+KAN-854,E8-14 Auflösungsunabhängiges Design erleben - Zustände und Formulare,PASSED,1,PASSED,KAN-899,2026-08-14T17:28:04.056Z
+KAN-855,E8-14 Auflösungsunabhängiges Design erleben - Accessibility und Auflösung,FAILED,1,FAILED,KAN-899,2026-08-14T17:27:33.048Z
+KAN-856,E9-01 Akzeptanzkriterien vereinheitlichen - Testfall ausführbar,PASSED,1,PASSED,KAN-899,2026-08-14T17:26:52.151Z
+KAN-857,E9-01 Akzeptanzkriterien vereinheitlichen - Traceability und Abdeckung,PASSED,1,PASSED,KAN-899,2026-08-14T17:26:14.913Z
+KAN-858,E9-01 Akzeptanzkriterien vereinheitlichen - Fehler und Regression,FAILED,1,FAILED,KAN-899,2026-08-14T17:25:40.957Z
+KAN-859,E9-02 Xray-Testrepository strukturieren - Testfall ausführbar,PASSED,1,PASSED,KAN-899,2026-08-14T17:25:09.496Z
+KAN-860,E9-02 Xray-Testrepository strukturieren - Traceability und Abdeckung,PASSED,1,PASSED,KAN-899,2026-08-14T17:24:35.270Z
+KAN-861,E9-02 Xray-Testrepository strukturieren - Fehler und Regression,FAILED,1,FAILED,KAN-899,2026-08-14T17:23:57.784Z
+KAN-862,E9-03 Testfall-Template verwenden - Testfall ausführbar,PASSED,1,PASSED,KAN-899,2026-08-14T17:23:19.310Z
+KAN-863,E9-03 Testfall-Template verwenden - Traceability und Abdeckung,PASSED,1,PASSED,KAN-899,2026-08-14T17:22:40.217Z
+KAN-864,E9-03 Testfall-Template verwenden - Fehler und Regression,FAILED,1,FAILED,KAN-899,2026-08-14T17:20:54.504Z
+KAN-865,E9-04 Testvorbedingungen definieren - Testfall ausführbar,PASSED,1,PASSED,KAN-899,2026-08-14T17:21:36.375Z
+KAN-866,E9-04 Testvorbedingungen definieren - Traceability und Abdeckung,PASSED,1,PASSED,KAN-899,2026-08-14T17:20:13.331Z
+KAN-867,E9-04 Testvorbedingungen definieren - Fehler und Regression,FAILED,1,FAILED,KAN-899,2026-08-14T17:19:41.132Z
+KAN-868,E9-05 Tests zu Test Sets bündeln - Testfall ausführbar,PASSED,1,PASSED,KAN-899,2026-08-14T17:10:01.129Z
+KAN-869,E9-05 Tests zu Test Sets bündeln - Traceability und Abdeckung,FAILED,1,FAILED,KAN-899,2026-08-14T17:09:31.072Z
+KAN-870,E9-05 Tests zu Test Sets bündeln - Fehler und Regression,FAILED,1,FAILED,KAN-899,2026-08-14T17:09:03.329Z
+KAN-871,E9-06 Testpläne für Releases erstellen - Testfall ausführbar,PASSED,1,PASSED,KAN-899,2026-08-14T17:08:33.755Z
+KAN-872,E9-06 Testpläne für Releases erstellen - Traceability und Abdeckung,FAILED,1,FAILED,KAN-899,2026-08-14T17:08:06.630Z
+KAN-873,E9-06 Testpläne für Releases erstellen - Fehler und Regression,FAILED,1,FAILED,KAN-899,2026-08-14T17:07:35.540Z
+KAN-874,E9-07 Testausführungen starten - Testfall ausführbar,PASSED,1,PASSED,KAN-899,2026-08-14T17:07:08.183Z
+KAN-875,E9-07 Testausführungen starten - Traceability und Abdeckung,PASSED,1,PASSED,KAN-899,2026-08-14T17:06:39.164Z
+KAN-876,E9-07 Testausführungen starten - Fehler und Regression,FAILED,1,FAILED,KAN-899,2026-08-14T17:06:13.370Z
+KAN-877,E9-08 Tests mit Stories verknüpfen - Testfall ausführbar,PASSED,1,PASSED,KAN-899,2026-08-14T17:05:42.824Z
+KAN-878,E9-08 Tests mit Stories verknüpfen - Traceability und Abdeckung,PASSED,1,PASSED,KAN-899,2026-08-14T17:05:16.771Z
+KAN-879,E9-08 Tests mit Stories verknüpfen - Fehler und Regression,FAILED,1,FAILED,KAN-899,2026-08-14T17:04:47.160Z
+KAN-880,E9-09 Regressionstestsuite pflegen - Testfall ausführbar,PASSED,1,PASSED,KAN-899,2026-08-14T17:04:21.084Z
+KAN-881,E9-09 Regressionstestsuite pflegen - Traceability und Abdeckung,PASSED,1,PASSED,KAN-899,2026-08-14T17:03:51.710Z
+KAN-882,E9-09 Regressionstestsuite pflegen - Fehler und Regression,FAILED,1,FAILED,KAN-899,2026-08-14T17:03:25.531Z
+KAN-883,E9-10 Browser- und Gerätetests durchführen - Testfall ausführbar,PASSED,1,PASSED,KAN-899,2026-08-14T17:02:57.116Z
+KAN-884,E9-10 Browser- und Gerätetests durchführen - Traceability und Abdeckung,PASSED,1,PASSED,KAN-899,2026-08-14T17:02:31.431Z
+KAN-885,E9-10 Browser- und Gerätetests durchführen - Fehler und Regression,FAILED,1,FAILED,KAN-899,2026-08-14T17:02:00.727Z
+KAN-886,E9-11 Testergebnisse dokumentieren - Testfall ausführbar,PASSED,1,PASSED,KAN-899,2026-08-14T17:01:34.132Z
+KAN-887,E9-11 Testergebnisse dokumentieren - Traceability und Abdeckung,PASSED,1,PASSED,KAN-899,2026-08-14T17:01:04.303Z
+KAN-888,E9-11 Testergebnisse dokumentieren - Fehler und Regression,FAILED,1,FAILED,KAN-899,2026-08-14T17:00:38.064Z
+KAN-889,E9-12 Fehler aus Tests erfassen - Testfall ausführbar,PASSED,1,PASSED,KAN-899,2026-08-14T16:58:37.608Z
+KAN-890,E9-12 Fehler aus Tests erfassen - Traceability und Abdeckung,PASSED,1,PASSED,KAN-899,2026-08-14T16:58:11.931Z
+KAN-891,E9-12 Fehler aus Tests erfassen - Fehler und Regression,FAILED,1,FAILED,KAN-899,2026-08-14T16:57:35.187Z
+KAN-892,E9-13 Testabdeckung sehen - Testfall ausführbar,PASSED,1,PASSED,KAN-899,2026-08-14T16:57:09.375Z
+KAN-893,E9-13 Testabdeckung sehen - Traceability und Abdeckung,PASSED,1,PASSED,KAN-899,2026-08-14T16:56:37.487Z
+KAN-894,E9-13 Testabdeckung sehen - Fehler und Regression,FAILED,1,FAILED,KAN-899,2026-08-14T16:56:11.587Z
+KAN-895,E9-14 Release-Abnahmekriterien definieren - Testfall ausführbar,PASSED,1,PASSED,KAN-899,2026-08-14T16:54:19.935Z
+KAN-896,E9-14 Release-Abnahmekriterien definieren - Traceability und Abdeckung,PASSED,1,PASSED,KAN-899,2026-08-14T16:55:41.149Z
+KAN-897,E9-14 Release-Abnahmekriterien definieren - Fehler und Regression,PASSED,1,PASSED,KAN-899,2026-08-15T16:32:45.096Z

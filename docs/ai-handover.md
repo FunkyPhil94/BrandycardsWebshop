@@ -5904,3 +5904,10 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 - Prüfung ohne echte Zugangsdaten: Schutzabfrage greift, Authentifizierungsendpunkt erreichbar (HTTP 401 bei Wegwerf-Werten), beide Fehlerpfade enden mit Exitcode 1, ESLint sauber.
 - Offen: Der eigentliche Datenlauf. Er braucht das Schlüsselpaar des Betreibers aus Xray -> Global Settings -> API Keys.
 - Status: ABGESCHLOSSEN.
+
+
+## Auftrag 2026-08-15: Xray-Ergebnisse auswerten
+- Status: LÄUFT.
+- Ausgangslage: Der erste echte Lauf von fetch-xray-status.mjs lieferte 333 Tests: 220 PASSED, 112 FAILED, 1 EXECUTING. Der mitlaufende Abgleich meldete fälschlich 10323 erwartete Schlüssel.
+- Zu tun: (1) Zählfehler im Skript beheben — es zählt Zeilen statt CSV-Datensätze, und die Beschreibungen enthalten Zeilenumbrüche. (2) Kreuztabelle Testergebnis gegen Umsetzungsstand bauen. (3) Ergebnis mit Stichtag in die Kaskadenliste aufnehmen.
+- Rahmen: Kein Testergebnis verändern; die Exportdatei ist Messwert und wird nicht von Hand angefasst.
