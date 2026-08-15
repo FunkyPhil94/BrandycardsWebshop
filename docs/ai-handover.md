@@ -5897,3 +5897,10 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 - Ziel: Ein Skript, das die Testergebnisse aller 333 Xray-Tests über die Xray-GraphQL-API liest und als CSV neben den Umsetzungsstand legt.
 - Umsetzung: docs/jira/artifact_work/fetch-xray-status.mjs; Zugangsdaten ausschließlich aus den Umgebungsvariablen XRAY_CLIENT_ID und XRAY_CLIENT_SECRET, niemals im Repository und niemals in der Ausgabe.
 - Rahmen: Nur lesende Abfragen. Keine Testergebnisse erfinden; fehlende oder unbekannte Schlüssel werden gemeldet statt stillschweigend übergangen.
+
+## Auftrag 2026-08-15: Abfrageskript für die Xray-Cloud-API — abgeschlossen
+- Ergebnis: docs/jira/artifact_work/fetch-xray-status.mjs erstellt. Liest per GraphQL alle Tests zu einer JQL, ermittelt je Test den jüngsten Lauf, die Anzahl der Läufe und alle vorkommenden Ergebnisse, und schreibt docs/jira/xray-status-export.csv. Der Abgleich gegen brandycards-xray-tests.csv läuft mit und meldet fehlende sowie unbekannte Schlüssel.
+- Zugangsdaten: ausschließlich XRAY_CLIENT_ID und XRAY_CLIENT_SECRET aus der Umgebung, optional XRAY_BASE_URL für regionale Instanzen. Nichts davon steht im Repository oder in einer Ausgabe; bei Fehlschlag wird nur der HTTP-Statuscode gemeldet.
+- Prüfung ohne echte Zugangsdaten: Schutzabfrage greift, Authentifizierungsendpunkt erreichbar (HTTP 401 bei Wegwerf-Werten), beide Fehlerpfade enden mit Exitcode 1, ESLint sauber.
+- Offen: Der eigentliche Datenlauf. Er braucht das Schlüsselpaar des Betreibers aus Xray -> Global Settings -> API Keys.
+- Status: ABGESCHLOSSEN.
