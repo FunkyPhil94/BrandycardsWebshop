@@ -60,47 +60,53 @@ eBay-Schreibpfad, dann bewerben.**
 
 ---
 
-## X. Klären, ob die Xray-Ergebnisse die Anwendung abbilden — ZUERST
+## X. Die 333 Testfälle prüfen nicht, was ihre Titel versprechen — ENTSCHEIDUNG NÖTIG
 
-**Die Ergebnisse liegen vor** (Stand 2026-08-15, Ausführung KAN-899):
-220 PASSED, 112 FAILED, 1 EXECUTING. Sie stehen in
-[docs/jira/xray-status-export.csv](jira/xray-status-export.csv) und je Test in
-der Kaskadenliste. **Sie sind aber noch nicht verwendbar.**
+**Geprüft am 2026-08-15 an der Stichprobe KAN-601.** Der Widerspruch zwischen
+Umsetzungsstand und Testergebnissen ist aufgelöst, und die Auflösung wiegt
+schwerer als der Widerspruch.
 
-Drei Beobachtungen sprechen dagegen, sie für bare Münze zu nehmen:
+KAN-601 heißt „E2-02 Suchvorschläge erhalten – Treffer und Navigation". Seine
+Schritte lauten: Produktdaten vorbereiten, Such- oder Filterkriterien eingeben,
+Sortierung und Pagination verwenden, Detailansicht öffnen und zurück
+navigieren. **Kein Schritt prüft eine Vorschlagsliste.**
 
-1. **Die Bestehensquote ist unabhängig vom Umsetzungsstand.** VORHANDEN 127/189,
-   TEILWEISE 37/57, OFFEN 31/48, AUSSERHALB_CODE 25/39 — überall rund zwei
-   Drittel. Bei einer echten Messung müsste OFFEN deutlich schlechter liegen.
-2. **31 Tests bestehen für Funktionen ohne jeden Codebeleg.** Darunter E2-02
-   „Suchvorschläge erhalten": Es gibt kein Vorschlagsfeld und keinen
-   Autocomplete-Endpunkt. Ein solcher Test kann nicht bestehen.
-3. **Die Fehler verteilen sich nach Testart, nicht nach Funktion.** Ganze
-   Kategorien stehen geschlossen auf FAILED (Accessibility 14/14, Responsive
-   13/13, Synchronisation 13/13, Datenschutz 10/10). 106 der 111 Stories haben
-   exakt einen Fehler.
+Das ist kein Einzelfall: Die 333 Testfälle teilen sich zusammen nur **27
+verschiedene Schritt- und Ergebnistexte**, exakt einen je Testart. Story-
+spezifisch ist allein der Titel. Jeder Test der Art „Treffer und Navigation"
+hat denselben Wortlaut, gleich über welcher Story er steht.
 
-**Was zu tun ist — und es ist billig:** Drei Tests aus der Gruppe „PASSED trotz
-OFFEN" heraussuchen und ihre Screenshot-Nachweise in Jira ansehen. Geeignet sind
-KAN-601 und KAN-602 (E2-02 Suchvorschläge) sowie KAN-604 (E2-03 Filter nach
-Sportart). Die Frage an jeden Screenshot lautet: **Zeigt er die Funktion, um die
-es geht?**
+**Damit ist nichts falsch und trotzdem wenig gewonnen.** Der Umsetzungsstand
+stimmt, die Testergebnisse stimmen — die Tests messen nur nicht die Story,
+deren Namen sie tragen. Ein PASS auf KAN-601 belegt, dass Suche, Blättern und
+Detailansicht funktionieren. Über Suchvorschläge sagt es nichts. Alle drei
+Auffälligkeiten der Kreuztabelle erklären sich daraus: identischer Test,
+identisches Ergebnis.
 
-- Zeigt er sie → der Umsetzungsstand in `story-implementation-status.csv` ist
-  für diese Stories falsch und gehört korrigiert.
-- Zeigt er sie nicht → die Testergebnisse bilden die Anwendung nicht ab. Dann
-  ist zu klären, wie sie zustande kamen, bevor irgendeine Zahl daraus in eine
-  Abnahme eingeht.
+**Die Entscheidung, die ansteht:**
 
-**Erledigt wenn:** Für die drei Stichproben ist entschieden, welche Quelle
-zutrifft, und das Ergebnis ist in
-[docs/ai-agent-log.md](ai-agent-log.md) begründet. Erst danach ist die
-Kreuztabelle eine Entscheidungsgrundlage.
+1. **Testfälle story-spezifisch machen.** Jeder der 333 Fälle bekommt Schritte,
+   die seine Story prüfen. Das ist die einzige Variante, die zu einer echten
+   Abnahme führt — und die mit Abstand teuerste. 333 Fälle mit je vier bis fünf
+   Schritten sind Wochen an Arbeit, bevor der erste Test überhaupt läuft.
+2. **Testumfang ehrlich zusammenstreichen.** Statt 111 Stories × 3 generischer
+   Fälle eine kleinere Menge echter Fälle für die Wege, an denen Geld hängt:
+   Katalog, Warenkorb, Checkout, Zahlung, Bestand, eBay-Sync. Der Rest entfällt
+   oder wird als Sichtprüfung geführt.
+3. **So belassen und richtig beschriften.** Die Fälle bleiben generisch, werden
+   aber als das ausgewiesen, was sie sind — Durchläufe je Testart, nicht
+   Abnahmen je Story. Kostet nichts, liefert aber auch keine Story-Abnahme.
 
-**Warum das vor allem anderen steht:** Solange offen ist, ob die Ergebnisse die
-Anwendung messen, führt jede daraus abgeleitete Priorisierung in die Irre — und
-zwar in beide Richtungen: fertige Funktionen würden nachgebaut, fehlende für
-erledigt gehalten.
+**Empfehlung:** Variante 2. Variante 1 bindet Wochen für eine Abdeckung, die
+dieser Shop nicht braucht; Variante 3 lässt eine Zahl im Raum stehen, die
+später jemand als Abnahme lesen wird.
+
+**Erledigt wenn:** Die Variante ist entschieden und in
+[docs/ai-agent-log.md](ai-agent-log.md) begründet. Bei Variante 2 zusätzlich:
+die Liste der tatsächlich zu prüfenden Wege steht fest.
+
+**Was bis dahin gilt:** Kein Testergebnis aus der Ausführung KAN-899 darf als
+Abnahme der benannten Story verwendet werden.
 
 ---
 

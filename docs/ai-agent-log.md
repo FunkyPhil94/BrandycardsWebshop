@@ -2074,3 +2074,44 @@ statt CSV-Datensätze und meldete deshalb 10323 erwartete Schlüssel statt 333.
 Die Testbeschreibungen enthalten Zeilenumbrüche in gequoteten Feldern. Der
 Zähler respektiert jetzt Anführungszeichen; geprüft gegen beide CSVs, beide
 liefern 334 Datensätze inklusive Kopfzeile.
+
+
+## 2026-08-15 — Warum die Testergebnisse nicht zum Code passen: die Tests sind Schablonen
+
+Die Stichprobe aus dem vorherigen Eintrag ist ausgewertet, und sie löst den
+Widerspruch vollständig auf — anders als erwartet.
+
+KAN-601 trägt den Titel „E2-02 Suchvorschläge erhalten – Treffer und
+Navigation". Seine vier Schritte lauten: Produktdaten vorbereiten, Such- oder
+Filterkriterien eingeben, Sortierung und Pagination verwenden, Detailansicht
+öffnen und zurück navigieren. Kein Schritt tippt einen Teilbegriff, keiner
+erwartet eine Vorschlagsliste, keiner wählt einen Vorschlag aus.
+
+Die Gegenprobe über alle 333 Testbeschreibungen zeigt, dass das System hat:
+Es gibt zusammen nur **27 verschiedene Schritt- und Ergebnistexte**, exakt einen
+je Testart. Story-spezifisch ist allein der Titel. Jeder Test der Art „Treffer
+und Navigation" hat wörtlich denselben Ablauf, gleich ob er über E2-01 Karten
+suchen, E2-02 Suchvorschläge erhalten oder E2-03 Nach Sportart filtern steht.
+
+Damit ist keine der beiden Quellen falsch. Der Umsetzungsstand stimmt: Es gibt
+kein Vorschlagsfeld. Das Testergebnis stimmt ebenfalls: Suche, Blättern und
+Detailansicht funktionieren, und genau das hat der Test geprüft. Falsch ist nur
+die Erwartung, ein PASS auf KAN-601 sage etwas über Suchvorschläge.
+
+Alle drei Auffälligkeiten der Kreuztabelle folgen daraus zwangsläufig. Die
+Bestehensquote ist überall gleich, weil das Ergebnis von der Testart abhängt und
+nicht von der Story. 31 Tests bestehen für Stories ohne Codebeleg, weil der Test
+die fehlende Funktion nie berührt. Ganze Kategorien stehen geschlossen auf
+FAILED, weil identische Tests identisch ausgehen.
+
+Der Screenshot-Nachweis hätte diese Frage übrigens nicht beantwortet. Er zeigt,
+was der Testschritt zeigt — und der Testschritt fragt das Falsche. Entschieden
+hat es die Testdefinition, nicht das Bild. Anhänge lassen sich über den
+Atlassian-MCP-Server ohnehin nicht herunterladen; nur ihre Namen sind sichtbar,
+und die tragen hier lediglich den Status.
+
+Die Konsequenz ist unbequem, weil sie den Umfang betrifft und nicht die
+Technik: 333 Testfälle mit 27 Abläufen ergeben keine Story-Abnahme. Ob man sie
+story-spezifisch ausbaut, den Umfang ehrlich zusammenstreicht oder sie richtig
+beschriftet, steht als Entscheidung in docs/ai-todo.md, Punkt X. Empfohlen ist
+das Zusammenstreichen auf die Wege, an denen Geld hängt.

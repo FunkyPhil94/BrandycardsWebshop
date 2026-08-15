@@ -5927,3 +5927,11 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 - Befund: Die Testschritte von KAN-601 („E2-02 Suchvorschläge erhalten") prüfen keine Suchvorschläge, sondern Suche, Sortierung, Pagination und Detailnavigation. Die 333 Tests teilen sich insgesamt nur 27 verschiedene Schritt-/Ergebnistexte, einen je Testart; story-spezifisch ist allein der Titel.
 - Folge: Weder der Umsetzungsstand noch die Testergebnisse sind falsch. Die Tests messen nur nicht das, was ihr Titel behauptet. Das erklärt alle drei Auffälligkeiten der Kreuztabelle.
 - Zu tun: Befund in Kaskadenliste, Agent-Log und Punkt X festhalten; Punkt X auf die echte Konsequenz umschreiben.
+
+## Auftrag 2026-08-15: Stichprobe KAN-601 — abgeschlossen
+- Ergebnis: Der Widerspruch ist aufgelöst. Die Testschritte von KAN-601 prüfen keine Suchvorschläge, sondern Suche, Sortierung, Pagination und Detailnavigation. Gegenprobe über alle 333 Beschreibungen: es gibt nur 27 verschiedene Schritt-/Ergebnistexte, exakt einen je Testart; story-spezifisch ist allein der Titel.
+- Folge: Weder Umsetzungsstand noch Testergebnisse sind falsch. Ein PASS gilt für den generischen Ablauf der Testart, nicht für die benannte Story. Alle drei Auffälligkeiten der Kreuztabelle erklären sich daraus zwangsläufig.
+- Hinweis zur Methode: Die Screenshots hätten die Frage nicht beantwortet — sie zeigen, was der Schritt zeigt, und der Schritt fragt das Falsche. Entschieden hat die Testdefinition. Anhänge sind über den Atlassian-MCP-Server ohnehin nicht herunterladbar, nur ihre Namen sind sichtbar.
+- Umgesetzt: Kaskadenliste und Punkt X in docs/ai-todo.md tragen den Befund; Punkt X ist auf die anstehende Entscheidung über den Testumfang umgeschrieben, mit Empfehlung.
+- Geltende Regel bis zur Entscheidung: Kein Ergebnis aus Ausführung KAN-899 darf als Abnahme der benannten Story verwendet werden.
+- Status: ABGESCHLOSSEN.
