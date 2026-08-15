@@ -5911,3 +5911,12 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 - Ausgangslage: Der erste echte Lauf von fetch-xray-status.mjs lieferte 333 Tests: 220 PASSED, 112 FAILED, 1 EXECUTING. Der mitlaufende Abgleich meldete fälschlich 10323 erwartete Schlüssel.
 - Zu tun: (1) Zählfehler im Skript beheben — es zählt Zeilen statt CSV-Datensätze, und die Beschreibungen enthalten Zeilenumbrüche. (2) Kreuztabelle Testergebnis gegen Umsetzungsstand bauen. (3) Ergebnis mit Stichtag in die Kaskadenliste aufnehmen.
 - Rahmen: Kein Testergebnis verändern; die Exportdatei ist Messwert und wird nicht von Hand angefasst.
+
+## Auftrag 2026-08-15: Xray-Ergebnisse auswerten — abgeschlossen
+- Ergebnis: 333 Testergebnisse aus Ausführung KAN-899 liegen als docs/jira/xray-status-export.csv vor: 220 PASSED, 112 FAILED, 1 EXECUTING. Sie stehen je Test in der Kaskadenliste sowie als Kreuztabelle gegen den Umsetzungsstand im Kopfteil.
+- Zählfehler behoben: Der Abgleich zählte Zeilen statt CSV-Datensätze (Beschreibungen enthalten Zeilenumbrüche) und meldete 10323 statt 333 erwartete Schlüssel. Geprüft: beide CSVs liefern jetzt 334 Datensätze inklusive Kopfzeile, unbekannte Schlüssel 0.
+- Zuordnung geprüft: Nach Normalisierung von Halbgeviertstrich zu Bindestrich stimmen alle 333 Titel zwischen Export und Importliste überein. Die Reihenfolge-Zuordnung KAN-565..KAN-897 ist damit bestätigt und nicht nur angenommen.
+- Kernbefund mit Vorbehalt: Die Bestehensquote ist in allen vier Umsetzungsklassen praktisch gleich (rund zwei Drittel), 31 Tests bestehen für Stories ohne jeden Codebeleg, und die Fehler folgen der Testart statt der Funktion. Die Zahlen sind deshalb ausdrücklich keine Entscheidungsgrundlage.
+- Nächster Schritt: Punkt X in docs/ai-todo.md — drei Screenshot-Nachweise aus der Gruppe „PASSED trotz OFFEN" ansehen (KAN-601, KAN-602, KAN-604) und entscheiden, welche Quelle zutrifft.
+- Rahmen eingehalten: In Jira und Xray ausschließlich gelesen; kein Testergebnis verändert.
+- Status: ABGESCHLOSSEN.
