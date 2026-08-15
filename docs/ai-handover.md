@@ -5825,3 +5825,11 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 - Umsetzung: Alle 333 Xray-Testbeschreibungen per Issue-Key-CSV-Update um die Pflicht "Screenshot je Testschritt" erweitert. Testplan KAN-898 und Testausfuehrung KAN-899 enthalten die gleichen Regeln fuer PASS, FAIL und BLOCKED.
 - Verifikation: JQL mit dem Screenshot-Marker liefert 333 Testvorgaenge; KAN-565, KAN-600, KAN-700, KAN-800 und KAN-897 stichprobenartig geprueft. Keine Testergebnisse vorweggenommen.
 - Sicherheitsregel: Passwoerter, Tokens, Zahlungsdaten und sonstige Geheimnisse muessen vor dem Screenshot maskiert oder geschwaerzt werden.
+
+
+## Auftrag 2026-08-15: Encoding der Kaskadenliste korrigieren
+- Status: LÄUFT.
+- Ziel: Die 8676 doppelt kodierten Stellen in docs/jira/generated/brandycards-kaskadische-task-test-liste.txt beseitigen.
+- Ursache: docs/jira/artifact_work/build-cascade-list.ps1 liegt als UTF-8 ohne BOM vor; Windows PowerShell 5.1 parst die Datei dadurch als ANSI, sodass alle Umlaute in den Skript-Literalen bereits vor der Ausgabe zerstört sind. Der aus den CSVs übernommene Text ist korrekt, weil die CSVs eine BOM tragen.
+- Umsetzung: Skript mit UTF-8-BOM neu schreiben, Liste neu erzeugen und die Ausgabe auf Mojibake sowie unveränderte Zeilenzahl prüfen.
+- Rahmen: Keine Anwendungscodes, keine Produktionsdaten, keine inhaltlichen Änderungen an Tasks oder Tests.
