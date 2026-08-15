@@ -60,6 +60,39 @@ eBay-Schreibpfad, dann bewerben.**
 
 ---
 
+## X. Ist-Status der 333 Xray-Tests aus Jira ziehen — VORBEREITET, wartet auf MCP-Sitzung
+
+**Was zu tun ist:** Den aktuellen Ausführungsstatus aller 333 Xray-Testvorgänge
+(KAN-565 bis KAN-897) aus Jira lesen und gegen den Umsetzungsstand in
+[docs/jira/story-implementation-status.csv](jira/story-implementation-status.csv)
+stellen.
+
+**Voraussetzung, die bereits geschaffen ist:** Am 2026-08-15 wurde der offizielle
+Atlassian-MCP-Server in die Benutzerkonfiguration eingetragen
+(`https://mcp.atlassian.com/v1/mcp/authv2`, HTTP-Transport, Scope `user`). Seine
+Werkzeuge stehen ab der nächsten Sitzung zur Verfügung; beim ersten Zugriff ist
+der OAuth-Ablauf im Browser zu bestätigen. Der abgekündigte `/v1/sse`-Endpunkt
+darf nicht verwendet werden.
+
+**Abfrage:** `project = KAN AND issuetype = Test ORDER BY key ASC`. Gebraucht
+werden Vorgangsschlüssel, Vorgangsstatus und — getrennt davon — das letzte
+Xray-Ausführungsergebnis (PASS/FAIL/BLOCKED). Beides ist nicht dasselbe: ein
+Vorgang kann auf „Done" stehen, während die letzte Ausführung FAIL war.
+
+**Erledigt wenn:**
+- Alle 333 Schlüssel sind zugeordnet; fehlende oder unbekannte Schlüssel sind benannt statt stillschweigend übergangen.
+- Es gibt eine Kreuztabelle Testergebnis × Umsetzungsstand. Sie beantwortet die eigentliche Frage: welche Tests scheitern an fehlender Funktion und welche an etwas anderem.
+- Der Ist-Status ist in der Kaskadenliste ausgewiesen, **mit Abrufdatum und als Momentaufnahme gekennzeichnet** — er veraltet, sobald jemand in Jira einen Test ausführt, anders als der Umsetzungsstand aus dem Repository.
+
+**Grenze:** Nur lesen. Status, Ausführungen oder Vorgänge in Jira werden ohne
+ausdrückliche Ansage des Betreibers nicht verändert.
+
+**Warum das vor der Umsetzung steht:** Ohne diesen Abgleich werden alle 333 Tests
+als offen behandelt. 189 davon hängen an Stories, deren Funktion nachweislich
+existiert — dort ist zu prüfen, nicht zu bauen.
+
+---
+
 ## Neue priorisierte Todo — Sicherheits- und Ausbauplan
 
 Die folgenden Punkte stammen aus der Funktions- und Sicherheitsbetrachtung vom

@@ -5856,3 +5856,11 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 - Grenze: Der Stand ist aus Codebelegen abgeleitet und ersetzt weder die fachliche Abnahme noch den Xray-Status. Kein Anwendungscode und keine Produktionsdaten berührt.
 - Begründung ausführlich in docs/ai-agent-log.md.
 - Status: ABGESCHLOSSEN.
+
+
+## Auftrag 2026-08-15: Jira-Zugang vorbereiten und nächsten Schritt hinterlegen
+- Status: ABGESCHLOSSEN.
+- Ausgangslage: Der Ist-Status der 333 Xray-Tests sollte aus Jira gezogen werden. In der Sitzung gab es dafür keinen Zugang: kein Atlassian-Connector installiert, keiner in der Registry, keine Zugangsdaten oder Abfrageskripte im Repository.
+- Ergebnis: Der Betreiber hat den offiziellen Atlassian-MCP-Server in die Benutzerkonfiguration eingetragen (https://mcp.atlassian.com/v1/mcp/authv2, HTTP-Transport, Scope user, Datei C:\Users\pbran\.claude.json). Der abgekündigte /v1/sse-Endpunkt wurde bewusst nicht verwendet.
+- Offen: Die Werkzeuge des Servers stehen erst ab der nächsten Sitzung zur Verfügung, weil MCP-Server beim Sitzungsstart geladen werden. Der OAuth-Ablauf ist beim ersten Zugriff im Browser zu bestätigen.
+- Nächster Schritt: Als Punkt X in docs/ai-todo.md hinterlegt, mit JQL, benötigten Feldern, Abnahmekriterien und der Lesegrenze. Die nächste Sitzung kann ihn ohne Gesprächskontext aufnehmen.
