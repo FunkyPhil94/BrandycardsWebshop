@@ -39,7 +39,14 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 <!-- Fuer den naechsten Auftrag freihalten. -->
 
-Keine laufenden Aufträge.
+### 2026-08-15 - Vier CSV-Dateien in das neue BWS-Projekt importieren
+
+- Status: LÄUFT.
+- Ziel: `brandycards-epics.csv`, `brandycards-story-acceptance-criteria.csv`, `brandycards-detailed-tasks.csv` und `new-test-cases.csv` in das neue Jira-Projekt BWS importieren.
+- Umfang: 9 Epics, 111 Stories, 444 Tasks und 35 Xray-Testfälle.
+- Rahmen: Import in der Reihenfolge Epics → Stories → Tasks → Tests; Parent-/Epic-Beziehungen auf die neuen BWS-Schlüssel abbilden; keine alten KAN-Schlüssel oder bestehenden Projekte verändern; Duplikate vor und nach jedem Stapel prüfen.
+- Besonderheit: Die Testfälle referenzieren Story-Codes (`E2-01` usw.) statt BWS-Schlüsseln. Diese Zuordnung muss anhand der importierten Story-Daten hergestellt werden.
+- Offen: Jira-CSV-Importoberfläche, zulässige Parent-/Coverage-Felder im neuen teamverwalteten BWS-Projekt und die neuen Schlüsselbereiche nach dem Import.
 
 ## Historie
 
