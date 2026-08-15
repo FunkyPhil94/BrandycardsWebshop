@@ -39,7 +39,15 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 <!-- Fuer den naechsten Auftrag freihalten. -->
 
-Keine laufenden Aufträge.
+### 2026-08-15 - Die naechsten 50 offenen Xray-Tests ausfuehren
+
+- Status: LÄUFT.
+- Ziel: Die naechsten 50 offenen Tests der Xray-Testausfuehrung KAN-899 mit nativen Xray-Schritten vollstaendig ausfuehren und dokumentieren.
+- Betroffene Tests: KAN-640 bis KAN-591 in absteigender Reihenfolge.
+- Rahmen: Je Test vier Schrittresultate und vier Schritt-Screenshots sowie sieben vereinbarte CSS-Viewport-Screenshots fuer 1440 x 900, 1920 x 1080, 2560 x 1440, 3440 x 1440, 3840 x 2160, 768 x 1024 und 390 x 844 erstellen; PASS/FAIL nur mit vollstaendiger Evidenz buchen.
+- Browser-Handoff: Die letzte abgeschlossene Ausfuehrung steht auf KAN-641; nach jedem Test den naechsten offenen Vorgang bearbeiten.
+- Geplant: Xray-Lazyload bei Bedarf durch Scrollen im eingebetteten Testfenster anstossen, alle Belege hochladen, die Viewport-Einstellung zuruecksetzen und am Ende den naechsten offenen Test als Handoff belassen.
+- Offen: Die tatsaechliche Statusverteilung und eventuelle technische Blocker werden waehrend des Durchlaufs protokolliert.
 
 ## Historie
 
