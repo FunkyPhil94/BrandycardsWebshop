@@ -1,5 +1,31 @@
 # BrandyCards Agentenprotokoll
 
+## 2026-08-15 - Kaskadierende Gesamtübersicht für Jira-Tasks und Xray-Tests
+
+Für die vorhandenen Jira-/Xray-Importdaten wurde eine vollständige, lesbare
+Textübersicht erzeugt: 9 Epics, 111 Stories, 444 Tasks und 333 Xray-Tests. Die
+Jira-Schlüssel der Tasks und Tests wurden anhand der bestätigten Importbereiche
+KAN-121 bis KAN-564 sowie KAN-565 bis KAN-897 zugeordnet. Die Prüfung bestätigt
+111 Stories mit jeweils vier Tasks und drei Tests; alle Schlüssel sind genau
+einmal vertreten.
+
+Die Kaskade trennt die technische Abhängigkeit von der tatsächlichen Jira-
+Beziehung. Ein Task verweist auf seine Parent-Story, ein Test auf die von ihm
+abgedeckte Story. Zusätzlich wurden fachliche Phasen abgeleitet: Vorbedingungen
+für Security/Navigation/Design/Xray, Katalogbasis, Suche und Details,
+Konto/Warenkorb, Transaktion, Anbieter, Betrieb, UX-Abnahme und abschließende
+Test-/Release-Governance. Diese Querabhängigkeiten sind im Artefakt ausdrücklich
+als empfohlene Reihenfolge markiert, weil der Export keine vollständige Blocks-
+Matrix enthält.
+
+Die Datei
+`docs/jira/generated/brandycards-kaskadische-task-test-liste.txt` enthält je
+Story die Fachbeschreibung, empfohlene Vorbedingungen, alle vier Tasks mit Ziel
+und Erledigt-Kriterien sowie alle drei Xray-Tests mit Testart, Voraussetzungen,
+Schritten, erwartetem Ergebnis, sieben Responsive-Viewports und
+Screenshot-/Nachweisregeln. Der Generator liegt unter
+`docs/jira/artifact_work/build-cascade-list.ps1`.
+
 ## 2026-08-15 - KAN-1355 behoben und betroffene Xray-Tests nachgeprüft
 
 Der zuvor dokumentierte Wide-Screen-Fehler in KAN-1355 wurde reproduziert und im

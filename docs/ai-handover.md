@@ -39,15 +39,18 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 <!-- Fuer den naechsten Auftrag freihalten. -->
 
-### 2026-08-15 - Kaskadierende Liste aller Jira-Tasks und Xray-Tests erstellen
-
-- Status: LÄUFT.
-- Ziel: Alle vorhandenen Jira-Tasks und Xray-Tests vollständig erfassen, nach fachlichen und technischen Abhängigkeiten kaskadierend sowie innerhalb der Ebenen aufsteigend ordnen und als nachvollziehbare `.txt`-Datei ausgeben.
-- Rahmen: Bestehende Jira-Vorgänge und Testdaten nur lesen; keine Jira-Statuswerte, Beschreibungen oder Beziehungen verändern. Die Liste soll Epics, Stories, Tasks, Tests, Abhängigkeiten, Reihenfolge und offene Voraussetzungen erklären.
-- Geplant: Lokale Exporte und Projektstruktur prüfen, Beziehungen und Referenzen normalisieren, die Reihenfolge aus fachlichen Vorbedingungen ableiten, Vollständigkeit gegen die erwarteten Mengen prüfen, `.txt`-Artefakt schreiben und Übergabeprotokoll aktualisieren.
-- Offen: Ob für einzelne Tasks oder Tests keine explizite Jira-Beziehung vorhanden ist, wird in der Liste als abgeleitete bzw. zu bestätigende Abhängigkeit gekennzeichnet.
+Keine laufenden Aufträge.
 
 ## Historie
+
+### 2026-08-15 - Kaskadierende Jira-Task-/Xray-Testliste erstellt
+
+- Status: ABGESCHLOSSEN.
+- Ergebnis: Die Textdatei `docs/jira/generated/brandycards-kaskadische-task-test-liste.txt` enthält alle 9 Epics, 111 Stories, 444 Tasks und 333 Xray-Tests. Tasks sind den Stories und Tests über ihre hinterlegten Jira-Beziehungen zugeordnet.
+- Reihenfolge: Die Liste ist in neun Ausführungsphasen gegliedert: Vorbedingungen, Katalog, Suche/Details, Konto/Warenkorb, Transaktion, Anbieter, Betrieb, UX und abschließende Xray-Abnahme. Innerhalb jeder Story sind die vier Tasks in Aufbaufolge und danach die drei fachlichen Testfälle aufgeführt.
+- Abgrenzung: Die CSV-Exporte enthalten Parent-/Coverage-Beziehungen, aber keine vollständige Blocks-Matrix und keine Live-Statuswerte. Querabhängigkeiten sind deshalb ausdrücklich als empfohlene Kaskade gekennzeichnet, nicht als neu angelegte Jira-Beziehungen.
+- Prüfung: 111 Stories mit jeweils vier Tasks und drei Tests; alle Task-Schlüssel KAN-121..KAN-564 und Testschlüssel KAN-565..KAN-897 genau einmal enthalten; keine fehlenden oder doppelten Einträge.
+- Artefakt: Der Generator `docs/jira/artifact_work/build-cascade-list.ps1` ist zur reproduzierbaren Neuerstellung mit den vorhandenen CSV-Exporten enthalten.
 
 ### 2026-08-15 - KAN-841 und KAN-1355 Nachprüfung abgeschlossen
 
