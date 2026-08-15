@@ -5864,3 +5864,11 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 - Ergebnis: Der Betreiber hat den offiziellen Atlassian-MCP-Server in die Benutzerkonfiguration eingetragen (https://mcp.atlassian.com/v1/mcp/authv2, HTTP-Transport, Scope user, Datei C:\Users\pbran\.claude.json). Der abgekündigte /v1/sse-Endpunkt wurde bewusst nicht verwendet.
 - Offen: Die Werkzeuge des Servers stehen erst ab der nächsten Sitzung zur Verfügung, weil MCP-Server beim Sitzungsstart geladen werden. Der OAuth-Ablauf ist beim ersten Zugriff im Browser zu bestätigen.
 - Nächster Schritt: Als Punkt X in docs/ai-todo.md hinterlegt, mit JQL, benötigten Feldern, Abnahmekriterien und der Lesegrenze. Die nächste Sitzung kann ihn ohne Gesprächskontext aufnehmen.
+
+
+## Auftrag 2026-08-15: Ist-Status der 333 Testvorgänge aus Jira
+- Status: LÄUFT.
+- Ziel: Den aktuellen Ausführungsstatus aller 333 Testvorgänge lesen und gegen den Umsetzungsstand stellen (Punkt X in docs/ai-todo.md).
+- Zwischenstand: Der Abgleich ist entartet, weil es keinen Ausführungsstatus gibt. Alle 333 Testvorgänge stehen in der Statuskategorie „To Do"; im gesamten Projekt (904 Vorgänge) ist genau einer „Done" und keiner „In Arbeit". Xray ist nicht installiert: Test, Test Plan, Test Execution und Precondition sind projekteigene Vorgangstypen ohne Ausführungsfelder.
+- Umsetzung: Befund dokumentieren, den Ist-Status einmalig im Kopf der Kaskadenliste ausweisen statt 333-mal denselben Wert je Test, und Punkt X in docs/ai-todo.md auf die tatsächliche Lage umschreiben.
+- Rahmen: Nur lesend in Jira. Keine Status, Vorgänge oder Ausführungen verändert.
