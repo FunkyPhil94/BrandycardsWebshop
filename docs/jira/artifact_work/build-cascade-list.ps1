@@ -8,6 +8,7 @@ $epicRows = @(Import-Csv (Join-Path $jiraRoot 'brandycards-epics.csv'))
 $storyRows = @(Import-Csv (Join-Path $generatedDir 'brandycards-story-acceptance-criteria.csv'))
 $taskRows = @(Import-Csv (Join-Path $generatedDir 'brandycards-detailed-tasks.csv'))
 $testRows = @(Import-Csv (Join-Path $generatedDir 'brandycards-xray-tests.csv'))
+$statusRows = @(Import-Csv (Join-Path $jiraRoot 'story-implementation-status.csv'))
 
 $lines = [System.Collections.Generic.List[string]]::new()
 
@@ -232,6 +233,36 @@ function Get-Dependencies([string]$code) {
     return ($deps -join ', ')
 }
 
+function Get-StatusLabel([string]$status) {
+    switch ($status) {
+        'VORHANDEN' { return 'VORHANDEN im Code' }
+        'TEILWEISE' { return 'TEILWEISE vorhanden' }
+        'OFFEN' { return 'OFFEN' }
+        'AUSSERHALB_CODE' { return 'AUSSERHALB DES CODES (Jira-/Xray-Governance)' }
+        default { return 'UNGEPRÜFT' }
+    }
+}
+
+function Get-RemediationLead([string]$status) {
+    switch ($status) {
+        'VORHANDEN' {
+            return 'Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.'
+        }
+        'TEILWEISE' {
+            return 'Ein Teil der Funktion ist im Code belegt. Umzusetzen ist nur die oben genannte Lücke; der belegte Teil wird geprüft statt neu gebaut.'
+        }
+        'OFFEN' {
+            return 'Für diese Story gibt es keinen Codebeleg. Die vier Tasks sind vollständig umzusetzen; vorher ist die oben genannte Abhängigkeit zu klären.'
+        }
+        'AUSSERHALB_CODE' {
+            return 'Diese Story wird nicht im Repository umgesetzt, sondern in Jira und Xray. Der tatsächliche Stand ist dort zu prüfen; die Tasks beschreiben die Governance-Arbeit.'
+        }
+        default {
+            return 'Der Umsetzungsstand dieser Story wurde nicht geprüft. Vor der Umsetzung ist er festzustellen.'
+        }
+    }
+}
+
 function Get-TestPrerequisiteText([string]$testType) {
     if ($testType -match 'Happy Path|Treffer|erfolgreich|Operation') {
         return 'Nach Abschluss der vier Story-Tasks; besonders Datenmodell, API/Geschäftslogik, UI und QS/Beobachtung.'
@@ -335,6 +366,18 @@ foreach ($story in $stories) {
     $storyByKey[$story.Key] = $story
 }
 
+# Der Umsetzungsstand ist eine gepflegte Datenquelle, keine Ableitung zur Laufzeit.
+# Fehlt eine Story darin, bricht der Lauf ab: ein stillschweigend leerer Status
+# würde als „nichts bekannt“ gelesen, obwohl er nur vergessen wurde.
+$statusByStory = @{}
+foreach ($statusRow in $statusRows) {
+    $statusByStory[$statusRow.'Issue Key'] = $statusRow
+}
+$missingStatus = @($stories | Where-Object { -not $statusByStory.ContainsKey($_.Key) })
+if ($missingStatus.Count -gt 0) {
+    throw ('Kein Umsetzungsstand hinterlegt für: {0}. Bitte story-implementation-status.csv ergänzen.' -f (($missingStatus | ForEach-Object { $_.Key }) -join ', '))
+}
+
 $taskByStory = @{}
 foreach ($task in $tasks) {
     if (-not $taskByStory.ContainsKey($task.Parent)) { $taskByStory[$task.Parent] = [System.Collections.Generic.List[object]]::new() }
@@ -374,8 +417,19 @@ Add-Line '4. Qualitätssicherung und Betriebsbeobachtung: Unit-/Integrations-/UI
 Add-Line '5. Xray-Testausführung: Happy Path, negative/Grenzwertfälle sowie Berechtigungs-, Betriebs-, Responsive- oder Accessibility-Fälle.'
 Add-Line 'Ein Test darf erst als vollständige Abnahme gelten, wenn seine vier Story-Tasks abgeschlossen, Testdaten vorbereitet und die geforderten Screenshots je Schritt hinterlegt sind.'
 Add-Line ''
+Add-Line 'UMSETZUNGSSTAND JE STORY'
+Add-Line 'Jede Story trägt einen Vermerk, ob die Funktion im Code dieses Repositorys nachweisbar ist. Er stammt aus story-implementation-status.csv und nennt je Story die Datei, aus der er abgeleitet ist.'
+Add-Line '- VORHANDEN im Code: Es gibt einen konkreten Codebeleg. Die Story ist damit umgesetzt, aber nicht fachlich abgenommen.'
+Add-Line '- TEILWEISE vorhanden: Ein Teil ist belegt; die fehlende Hälfte steht als „Lücke“ ausdrücklich dabei.'
+Add-Line '- OFFEN: Es gibt keinen Codebeleg. Wo der Grund eine fehlende Grundlage ist (z. B. nicht modellierte Kartenattribute), ist die Abhängigkeit genannt.'
+Add-Line '- AUSSERHALB DES CODES: Governance-Arbeit in Jira und Xray; der Stand steht dort und nicht im Repository.'
+Add-Line 'Wichtig: Der Vermerk ist eine Einschätzung aus Codebelegen, keine Abnahme. „VORHANDEN“ heißt, dass die Funktion existiert — nicht, dass ihr Xray-Test bestanden wurde.'
+$statusCounts = $statusRows | Group-Object Status | Sort-Object Name
+Add-Line ('Verteilung über alle 111 Stories: ' + (($statusCounts | ForEach-Object { '{0}: {1}' -f (Get-StatusLabel $_.Name), $_.Count }) -join '; ') + '.')
+Add-Line ''
 Add-Line 'MASSNAHMENPLAN FÜR EIN POSITIVES TESTERGEBNIS'
-Add-Line '1. Mensch oder KI setzt die vier Tasks der abgedeckten Story in der angegebenen Reihenfolge um; die konkreten Änderungen stehen je Story unter „Umsetzungs- und Remediationauftrag“.'
+Add-Line '0. Zuerst den Umsetzungsstand der Story lesen. Ist er VORHANDEN, wird geprüft statt gebaut; ist er TEILWEISE, wird nur die genannte Lücke bearbeitet. Das verhindert, dass fertige Funktionen erneut umgesetzt werden.'
+Add-Line '1. Mensch oder KI setzt die noch offenen der vier Tasks der abgedeckten Story in der angegebenen Reihenfolge um; die konkreten Änderungen stehen je Story unter „Umsetzungs- und Remediationauftrag“.'
 Add-Line '2. Nach jeder Task-Umsetzung werden Ziel und „Erledigt wenn“-Kriterien gegen Code, Konfiguration, Daten, Rollen und UI geprüft; offene Abweichungen werden als Bug oder Folge-Task dokumentiert.'
 Add-Line '3. Vor der Xray-Ausführung werden die genannten Testdaten, Benutzerrollen, Umgebungen und Integrationen reproduzierbar vorbereitet.'
 Add-Line '4. Der Test wird vollständig ausgeführt. Jeder Schritt erhält ein tatsächliches Ergebnis und einen eigenen Screenshot; UI-Tests werden zusätzlich in allen sieben definierten Viewports geprüft.'
@@ -433,10 +487,19 @@ foreach ($story in $orderedStories) {
         Add-IndentedBlock $story.Description
     }
 
+    $storyStatus = $statusByStory[$story.Key]
+    Add-Line ''
+    Add-Line ('UMSETZUNGSSTAND: ' + (Get-StatusLabel $storyStatus.Status))
+    Add-Line ('  Beleg: ' + $storyStatus.Beleg)
+    if (-not [string]::IsNullOrWhiteSpace($storyStatus.Luecke)) {
+        Add-Line ('  Lücke: ' + $storyStatus.Luecke)
+    }
+
     $storyTasks = @($taskByStory[$story.Key])
     $taskKeys = ($storyTasks | ForEach-Object { $_.Key }) -join ', '
     Add-Line ''
     Add-Line 'UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE'
+    Add-Line ('  Einordnung: ' + (Get-RemediationLead $storyStatus.Status))
     Add-Line ('  Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.')
     Add-Line ('  Umzusetzen in dieser Kaskade: ' + $taskKeys + '.')
     $remediationNumber = 0
@@ -512,6 +575,9 @@ Add-Line ('- Tasks mit auflösbarer Parent-Story: {0}/{1}.' -f $taskParentCount,
 Add-Line ('- Tests mit auflösbarer Coverage-Story: {0}/{1}.' -f $testStoryCount, $tests.Count)
 Add-Line ('- Stories mit genau vier Tasks: {0}/{1}.' -f $storiesWithFourTasks, $stories.Count)
 Add-Line ('- Stories mit genau drei Xray-Tests: {0}/{1}.' -f $storiesWithThreeTests, $stories.Count)
+Add-Line ('- Stories mit hinterlegtem Umsetzungsstand: {0}/{1}.' -f $statusRows.Count, $stories.Count)
+Add-Line '- Der Umsetzungsstand ist aus Dateien dieses Repositorys abgeleitet und je Story mit dem Beleg ausgewiesen. Er ersetzt keine fachliche Abnahme und keinen Xray-Status: eine vorhandene Funktion kann ihren Test dennoch nicht bestehen.'
+Add-Line '- Stories mit dem Vermerk AUSSERHALB DES CODES lassen sich im Repository grundsätzlich nicht belegen; ihr Stand ist ausschließlich in Jira und Xray zu prüfen.'
 Add-Line '- Die CSV-Work-Item-IDs sind Import-IDs; die Jira-Schlüssel wurden nach den bestätigten Bereichen KAN-121..KAN-564 für Tasks und KAN-565..KAN-897 für Tests zugeordnet.'
 Add-Line '- Die Datei ersetzt keine Jira-Blocks-Links. Wo der Export nur Parent oder Tests enthält, ist die Reihenfolge als fachliche Empfehlung gekennzeichnet und muss bei paralleler Umsetzung im Team bestätigt werden.'
 Add-Line '- Tests mit Responsive-/Accessibility-Anteil sind nach der UI-Implementierung eingeordnet und nicht automatisch als tatsächlich ausgeführt zu verstehen.'

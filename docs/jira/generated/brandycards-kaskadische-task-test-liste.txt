@@ -25,8 +25,18 @@ STANDARD-KASKADE INNERHALB JEDER STORY
 5. Xray-Testausführung: Happy Path, negative/Grenzwertfälle sowie Berechtigungs-, Betriebs-, Responsive- oder Accessibility-Fälle.
 Ein Test darf erst als vollständige Abnahme gelten, wenn seine vier Story-Tasks abgeschlossen, Testdaten vorbereitet und die geforderten Screenshots je Schritt hinterlegt sind.
 
+UMSETZUNGSSTAND JE STORY
+Jede Story trägt einen Vermerk, ob die Funktion im Code dieses Repositorys nachweisbar ist. Er stammt aus story-implementation-status.csv und nennt je Story die Datei, aus der er abgeleitet ist.
+- VORHANDEN im Code: Es gibt einen konkreten Codebeleg. Die Story ist damit umgesetzt, aber nicht fachlich abgenommen.
+- TEILWEISE vorhanden: Ein Teil ist belegt; die fehlende Hälfte steht als „Lücke“ ausdrücklich dabei.
+- OFFEN: Es gibt keinen Codebeleg. Wo der Grund eine fehlende Grundlage ist (z. B. nicht modellierte Kartenattribute), ist die Abhängigkeit genannt.
+- AUSSERHALB DES CODES: Governance-Arbeit in Jira und Xray; der Stand steht dort und nicht im Repository.
+Wichtig: Der Vermerk ist eine Einschätzung aus Codebelegen, keine Abnahme. „VORHANDEN“ heißt, dass die Funktion existiert — nicht, dass ihr Xray-Test bestanden wurde.
+Verteilung über alle 111 Stories: AUSSERHALB DES CODES (Jira-/Xray-Governance): 13; OFFEN: 16; TEILWEISE vorhanden: 19; VORHANDEN im Code: 63.
+
 MASSNAHMENPLAN FÜR EIN POSITIVES TESTERGEBNIS
-1. Mensch oder KI setzt die vier Tasks der abgedeckten Story in der angegebenen Reihenfolge um; die konkreten Änderungen stehen je Story unter „Umsetzungs- und Remediationauftrag“.
+0. Zuerst den Umsetzungsstand der Story lesen. Ist er VORHANDEN, wird geprüft statt gebaut; ist er TEILWEISE, wird nur die genannte Lücke bearbeitet. Das verhindert, dass fertige Funktionen erneut umgesetzt werden.
+1. Mensch oder KI setzt die noch offenen der vier Tasks der abgedeckten Story in der angegebenen Reihenfolge um; die konkreten Änderungen stehen je Story unter „Umsetzungs- und Remediationauftrag“.
 2. Nach jeder Task-Umsetzung werden Ziel und „Erledigt wenn“-Kriterien gegen Code, Konfiguration, Daten, Rollen und UI geprüft; offene Abweichungen werden als Bug oder Folge-Task dokumentiert.
 3. Vor der Xray-Ausführung werden die genannten Testdaten, Benutzerrollen, Umgebungen und Integrationen reproduzierbar vorbereitet.
 4. Der Test wird vollständig ausgeführt. Jeder Schritt erhält ein tatsächliches Ergebnis und einen eigenen Screenshot; UI-Tests werden zusätzlich in allen sieben definierten Viewports geprüft.
@@ -94,7 +104,11 @@ Akzeptanz-/Fachziel:
     5. Fehlerhafte Datensätze werden isoliert behandelt, ohne gültige Bestände oder Bestellungen zu beschädigen.
     6. Das Admin-Interface ist für die vorgesehenen Breakpoints bedienbar und schützt irreversible Aktionen vor Fehlbedienung.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: lib/admin-access.ts; app/admin/admin-auth.ts; app/admin/mfa-panel.tsx; app/api/admin/mfa/status/route.ts (Adminbereich erzwingt MFA-Stufe aal2)
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-401, KAN-402, KAN-403, KAN-404.
   1. TASK KAN-401: konkrete Änderung bzw. Anpassung
@@ -301,7 +315,12 @@ Akzeptanz-/Fachziel:
     5. Fehlerhafte Datensätze werden isoliert behandelt, ohne gültige Bestände oder Bestellungen zu beschädigen.
     6. Das Admin-Interface ist für die vorgesehenen Breakpoints bedienbar und schützt irreversible Aktionen vor Fehlbedienung.
 
+UMSETZUNGSSTAND: TEILWEISE vorhanden
+  Beleg: lib/admin-access.ts; db/schema.ts Zeile 51 (users.role); Cloudflare-Secret ADMIN_EMAILS
+  Lücke: Rollen kommen aus einer Allowlist und der Benutzertabelle. Eine Verwaltung von Rollen und Rechten in der Oberflaeche gibt es nicht.
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Ein Teil der Funktion ist im Code belegt. Umzusetzen ist nur die oben genannte Lücke; der belegte Teil wird geprüft statt neu gebaut.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-405, KAN-406, KAN-407, KAN-408.
   1. TASK KAN-405: konkrete Änderung bzw. Anpassung
@@ -509,7 +528,11 @@ Akzeptanz-/Fachziel:
     6. Kontraste, Beschriftungen, semantische Struktur und Alternativtexte unterstützen Screenreader und assistive Technologien.
     7. Bilder, Schriftgrößen und Inhalte bleiben bei unterschiedlichen Auflösungen scharf, lesbar und ohne Layoutsprünge.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: app/site-chrome.tsx (SiteHeader und SiteFooter auf allen Seiten)
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-453, KAN-454, KAN-455, KAN-456.
   1. TASK KAN-453: konkrete Änderung bzw. Anpassung
@@ -717,7 +740,11 @@ Akzeptanz-/Fachziel:
     6. Kontraste, Beschriftungen, semantische Struktur und Alternativtexte unterstützen Screenreader und assistive Technologien.
     7. Bilder, Schriftgrößen und Inhalte bleiben bei unterschiedlichen Auflösungen scharf, lesbar und ohne Layoutsprünge.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: app/site-chrome.tsx; app/checkout/page.tsx Zeile 207 (durchgaengige Rechtsnavigation)
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-457, KAN-458, KAN-459, KAN-460.
   1. TASK KAN-457: konkrete Änderung bzw. Anpassung
@@ -924,7 +951,12 @@ Akzeptanz-/Fachziel:
     5. Fehlgeschlagene Tests führen zu nachvollziehbaren Fehlern mit ausreichendem Kontext für die Analyse.
     6. Testabdeckung und Release-Abnahme lassen sich nach Epic, Priorität und Status auswerten.
 
+UMSETZUNGSSTAND: AUSSERHALB DES CODES (Jira-/Xray-Governance)
+  Beleg: docs/jira/generated/brandycards-story-acceptance-criteria.csv
+  Lücke: Governance-Arbeit in Jira und Xray. Der Stand steht dort, nicht im Repository.
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Diese Story wird nicht im Repository umgesetzt, sondern in Jira und Xray. Der tatsächliche Stand ist dort zu prüfen; die Tasks beschreiben die Governance-Arbeit.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-509, KAN-510, KAN-511, KAN-512.
   1. TASK KAN-509: konkrete Änderung bzw. Anpassung
@@ -1131,7 +1163,12 @@ Akzeptanz-/Fachziel:
     5. Fehlgeschlagene Tests führen zu nachvollziehbaren Fehlern mit ausreichendem Kontext für die Analyse.
     6. Testabdeckung und Release-Abnahme lassen sich nach Epic, Priorität und Status auswerten.
 
+UMSETZUNGSSTAND: AUSSERHALB DES CODES (Jira-/Xray-Governance)
+  Beleg: docs/jira/generated/brandycards-xray-tests.csv
+  Lücke: Governance-Arbeit in Jira und Xray. Der Stand steht dort, nicht im Repository.
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Diese Story wird nicht im Repository umgesetzt, sondern in Jira und Xray. Der tatsächliche Stand ist dort zu prüfen; die Tasks beschreiben die Governance-Arbeit.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-513, KAN-514, KAN-515, KAN-516.
   1. TASK KAN-513: konkrete Änderung bzw. Anpassung
@@ -1338,7 +1375,12 @@ Akzeptanz-/Fachziel:
     5. Fehlgeschlagene Tests führen zu nachvollziehbaren Fehlern mit ausreichendem Kontext für die Analyse.
     6. Testabdeckung und Release-Abnahme lassen sich nach Epic, Priorität und Status auswerten.
 
+UMSETZUNGSSTAND: AUSSERHALB DES CODES (Jira-/Xray-Governance)
+  Beleg: docs/jira/generated/brandycards-xray-native-steps.json
+  Lücke: Governance-Arbeit in Jira und Xray. Der Stand steht dort, nicht im Repository.
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Diese Story wird nicht im Repository umgesetzt, sondern in Jira und Xray. Der tatsächliche Stand ist dort zu prüfen; die Tasks beschreiben die Governance-Arbeit.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-517, KAN-518, KAN-519, KAN-520.
   1. TASK KAN-517: konkrete Änderung bzw. Anpassung
@@ -1545,7 +1587,12 @@ Akzeptanz-/Fachziel:
     5. Fehlgeschlagene Tests führen zu nachvollziehbaren Fehlern mit ausreichendem Kontext für die Analyse.
     6. Testabdeckung und Release-Abnahme lassen sich nach Epic, Priorität und Status auswerten.
 
+UMSETZUNGSSTAND: AUSSERHALB DES CODES (Jira-/Xray-Governance)
+  Beleg: docs/jira/generated/brandycards-xray-tests.csv
+  Lücke: Governance-Arbeit in Jira und Xray. Der Stand steht dort, nicht im Repository.
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Diese Story wird nicht im Repository umgesetzt, sondern in Jira und Xray. Der tatsächliche Stand ist dort zu prüfen; die Tasks beschreiben die Governance-Arbeit.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-521, KAN-522, KAN-523, KAN-524.
   1. TASK KAN-521: konkrete Änderung bzw. Anpassung
@@ -1757,7 +1804,11 @@ Akzeptanz-/Fachziel:
     5. Dubletten, verwaiste Datensätze und widersprüchliche Zustände werden erkannt und nachvollziehbar behandelt.
     6. Die Funktion ist für relevante Desktop- und Smartphone-Breakpoints bedienbar und erzeugt strukturierte Logs für Fehlerfälle.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: app/admin/products-panel.tsx (Formular „Karte von Hand einstellen“); app/api/admin/products/route.ts; tests/manual-cards.test.mjs
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-121, KAN-122, KAN-123, KAN-124.
   1. TASK KAN-121: konkrete Änderung bzw. Anpassung
@@ -1964,7 +2015,12 @@ Akzeptanz-/Fachziel:
     5. Dubletten, verwaiste Datensätze und widersprüchliche Zustände werden erkannt und nachvollziehbar behandelt.
     6. Die Funktion ist für relevante Desktop- und Smartphone-Breakpoints bedienbar und erzeugt strukturierte Logs für Fehlerfälle.
 
+UMSETZUNGSSTAND: TEILWEISE vorhanden
+  Beleg: app/api/admin/products/route.ts; app/admin/products-panel.tsx Zeile 22 (FELDNAMEN)
+  Lücke: Bearbeitbar sind nur Titel, Beschreibung und Sichtbarkeit. Preis, Bilder und Bestand lassen sich nach dem Anlegen nicht mehr aendern.
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Ein Teil der Funktion ist im Code belegt. Umzusetzen ist nur die oben genannte Lücke; der belegte Teil wird geprüft statt neu gebaut.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-125, KAN-126, KAN-127, KAN-128.
   1. TASK KAN-125: konkrete Änderung bzw. Anpassung
@@ -2171,7 +2227,12 @@ Akzeptanz-/Fachziel:
     5. Dubletten, verwaiste Datensätze und widersprüchliche Zustände werden erkannt und nachvollziehbar behandelt.
     6. Die Funktion ist für relevante Desktop- und Smartphone-Breakpoints bedienbar und erzeugt strukturierte Logs für Fehlerfälle.
 
+UMSETZUNGSSTAND: OFFEN
+  Beleg: db/schema.ts Zeile 72 (products)
+  Lücke: Es gibt keine Klassifikationsfelder. Der Katalog ist titelbasiert; Sportart, Spieler und Kartentyp stehen nur im Freitexttitel.
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Für diese Story gibt es keinen Codebeleg. Die vier Tasks sind vollständig umzusetzen; vorher ist die oben genannte Abhängigkeit zu klären.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-129, KAN-130, KAN-131, KAN-132.
   1. TASK KAN-129: konkrete Änderung bzw. Anpassung
@@ -2378,7 +2439,12 @@ Akzeptanz-/Fachziel:
     5. Dubletten, verwaiste Datensätze und widersprüchliche Zustände werden erkannt und nachvollziehbar behandelt.
     6. Die Funktion ist für relevante Desktop- und Smartphone-Breakpoints bedienbar und erzeugt strukturierte Logs für Fehlerfälle.
 
+UMSETZUNGSSTAND: OFFEN
+  Beleg: db/schema.ts Zeile 72 (products)
+  Lücke: Serien und Sets sind nicht modelliert; keine Tabelle, kein Feld, keine Verwaltung.
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Für diese Story gibt es keinen Codebeleg. Die vier Tasks sind vollständig umzusetzen; vorher ist die oben genannte Abhängigkeit zu klären.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-133, KAN-134, KAN-135, KAN-136.
   1. TASK KAN-133: konkrete Änderung bzw. Anpassung
@@ -2585,7 +2651,12 @@ Akzeptanz-/Fachziel:
     5. Dubletten, verwaiste Datensätze und widersprüchliche Zustände werden erkannt und nachvollziehbar behandelt.
     6. Die Funktion ist für relevante Desktop- und Smartphone-Breakpoints bedienbar und erzeugt strukturierte Logs für Fehlerfälle.
 
+UMSETZUNGSSTAND: OFFEN
+  Beleg: db/schema.ts Zeile 72 (products)
+  Lücke: Zustand und Grading sind nicht als Felder vorhanden; die Angabe steckt unstrukturiert in Titel und Beschreibung.
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Für diese Story gibt es keinen Codebeleg. Die vier Tasks sind vollständig umzusetzen; vorher ist die oben genannte Abhängigkeit zu klären.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-137, KAN-138, KAN-139, KAN-140.
   1. TASK KAN-137: konkrete Änderung bzw. Anpassung
@@ -2792,7 +2863,11 @@ Akzeptanz-/Fachziel:
     5. Dubletten, verwaiste Datensätze und widersprüchliche Zustände werden erkannt und nachvollziehbar behandelt.
     6. Die Funktion ist für relevante Desktop- und Smartphone-Breakpoints bedienbar und erzeugt strukturierte Logs für Fehlerfälle.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: db/schema.ts Zeile 134 (product_assets); lib/ebay-images.ts; app/api/products/[id]/assets/[assetId]/route.ts
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-141, KAN-142, KAN-143, KAN-144.
   1. TASK KAN-141: konkrete Änderung bzw. Anpassung
@@ -2999,7 +3074,12 @@ Akzeptanz-/Fachziel:
     5. Dubletten, verwaiste Datensätze und widersprüchliche Zustände werden erkannt und nachvollziehbar behandelt.
     6. Die Funktion ist für relevante Desktop- und Smartphone-Breakpoints bedienbar und erzeugt strukturierte Logs für Fehlerfälle.
 
+UMSETZUNGSSTAND: TEILWEISE vorhanden
+  Beleg: db/schema.ts Zeile 72 (price_amount_cents); lib/offer-price.ts; db/schema.ts Zeile 100 (ebay_listings)
+  Lücke: Preise kommen aus dem eBay-Listing oder werden beim Anlegen gesetzt. Eine Preispflege im Adminbereich fehlt.
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Ein Teil der Funktion ist im Code belegt. Umzusetzen ist nur die oben genannte Lücke; der belegte Teil wird geprüft statt neu gebaut.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-145, KAN-146, KAN-147, KAN-148.
   1. TASK KAN-145: konkrete Änderung bzw. Anpassung
@@ -3206,7 +3286,12 @@ Akzeptanz-/Fachziel:
     5. Dubletten, verwaiste Datensätze und widersprüchliche Zustände werden erkannt und nachvollziehbar behandelt.
     6. Die Funktion ist für relevante Desktop- und Smartphone-Breakpoints bedienbar und erzeugt strukturierte Logs für Fehlerfälle.
 
+UMSETZUNGSSTAND: TEILWEISE vorhanden
+  Beleg: db/schema.ts Zeile 149 (inventory); lib/ebay-stock-check.ts; lib/ebay-stock-guard.ts
+  Lücke: Bestand wird durch Sync und Bestellvorgang fortgeschrieben. Eine manuelle Korrektur durch Admins fehlt (siehe E7-06).
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Ein Teil der Funktion ist im Code belegt. Umzusetzen ist nur die oben genannte Lücke; der belegte Teil wird geprüft statt neu gebaut.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-149, KAN-150, KAN-151, KAN-152.
   1. TASK KAN-149: konkrete Änderung bzw. Anpassung
@@ -3413,7 +3498,12 @@ Akzeptanz-/Fachziel:
     5. Dubletten, verwaiste Datensätze und widersprüchliche Zustände werden erkannt und nachvollziehbar behandelt.
     6. Die Funktion ist für relevante Desktop- und Smartphone-Breakpoints bedienbar und erzeugt strukturierte Logs für Fehlerfälle.
 
+UMSETZUNGSSTAND: OFFEN
+  Beleg: db/schema.ts Zeile 72 (kind: EBAY_SYNCED, PRELISTED)
+  Lücke: Bundles und Sammlungen sind kein eigener Produkttyp. Ein Sammelangebot ist nur ein Produkt mit entsprechendem Titel.
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Für diese Story gibt es keinen Codebeleg. Die vier Tasks sind vollständig umzusetzen; vorher ist die oben genannte Abhängigkeit zu klären.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-153, KAN-154, KAN-155, KAN-156.
   1. TASK KAN-153: konkrete Änderung bzw. Anpassung
@@ -3620,7 +3710,11 @@ Akzeptanz-/Fachziel:
     5. Dubletten, verwaiste Datensätze und widersprüchliche Zustände werden erkannt und nachvollziehbar behandelt.
     6. Die Funktion ist für relevante Desktop- und Smartphone-Breakpoints bedienbar und erzeugt strukturierte Logs für Fehlerfälle.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: db/schema.ts Zeile 72 (status ACTIVE/INACTIVE/SOLD); app/api/admin/products/route.ts
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-157, KAN-158, KAN-159, KAN-160.
   1. TASK KAN-157: konkrete Änderung bzw. Anpassung
@@ -3827,7 +3921,11 @@ Akzeptanz-/Fachziel:
     5. Dubletten, verwaiste Datensätze und widersprüchliche Zustände werden erkannt und nachvollziehbar behandelt.
     6. Die Funktion ist für relevante Desktop- und Smartphone-Breakpoints bedienbar und erzeugt strukturierte Logs für Fehlerfälle.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: lib/ebay-sync.ts; lib/ebay-sync-diff.ts; app/api/admin/ebay-sync/route.ts; tests/ebay-sync-diff.test.mjs
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-161, KAN-162, KAN-163, KAN-164.
   1. TASK KAN-161: konkrete Änderung bzw. Anpassung
@@ -4039,7 +4137,11 @@ Akzeptanz-/Fachziel:
     5. Die Funktion ist tastaturbedienbar, responsiv und bleibt auch bei langen Ergebnismengen performant.
     6. Nicht verfügbare oder unvollständige Produktdaten werden nicht irreführend als kaufbar dargestellt.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: app/api/products/route.ts Zeile 93 und 109 (Freitextsuche ueber Titel, Beschreibung, SKU); app/karten/page.tsx Zeile 163
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-165, KAN-166, KAN-167, KAN-168.
   1. TASK KAN-165: konkrete Änderung bzw. Anpassung
@@ -4246,7 +4348,12 @@ Akzeptanz-/Fachziel:
     5. Die Funktion ist tastaturbedienbar, responsiv und bleibt auch bei langen Ergebnismengen performant.
     6. Nicht verfügbare oder unvollständige Produktdaten werden nicht irreführend als kaufbar dargestellt.
 
+UMSETZUNGSSTAND: OFFEN
+  Beleg: app/karten/page.tsx Zeile 163 (einfaches Eingabefeld)
+  Lücke: Es gibt keine Vorschlagsliste und keinen Autocomplete-Endpunkt.
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Für diese Story gibt es keinen Codebeleg. Die vier Tasks sind vollständig umzusetzen; vorher ist die oben genannte Abhängigkeit zu klären.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-169, KAN-170, KAN-171, KAN-172.
   1. TASK KAN-169: konkrete Änderung bzw. Anpassung
@@ -4453,7 +4560,12 @@ Akzeptanz-/Fachziel:
     5. Die Funktion ist tastaturbedienbar, responsiv und bleibt auch bei langen Ergebnismengen performant.
     6. Nicht verfügbare oder unvollständige Produktdaten werden nicht irreführend als kaufbar dargestellt.
 
+UMSETZUNGSSTAND: OFFEN
+  Beleg: app/api/products/route.ts Zeile 94 (nur category, origin, Preis)
+  Lücke: Ohne Sportart- und Saisonfelder im Datenmodell ist dieser Filter nicht baubar (haengt an E1-03).
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Für diese Story gibt es keinen Codebeleg. Die vier Tasks sind vollständig umzusetzen; vorher ist die oben genannte Abhängigkeit zu klären.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-173, KAN-174, KAN-175, KAN-176.
   1. TASK KAN-173: konkrete Änderung bzw. Anpassung
@@ -4660,7 +4772,12 @@ Akzeptanz-/Fachziel:
     5. Die Funktion ist tastaturbedienbar, responsiv und bleibt auch bei langen Ergebnismengen performant.
     6. Nicht verfügbare oder unvollständige Produktdaten werden nicht irreführend als kaufbar dargestellt.
 
+UMSETZUNGSSTAND: OFFEN
+  Beleg: app/api/products/route.ts Zeile 20 (CATEGORIES: fixed, manual, prelisted)
+  Lücke: Die vorhandene Kategorie ist die Verkaufsart, nicht Kartentyp oder Set (haengt an E1-03 und E1-04).
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Für diese Story gibt es keinen Codebeleg. Die vier Tasks sind vollständig umzusetzen; vorher ist die oben genannte Abhängigkeit zu klären.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-177, KAN-178, KAN-179, KAN-180.
   1. TASK KAN-177: konkrete Änderung bzw. Anpassung
@@ -4867,7 +4984,12 @@ Akzeptanz-/Fachziel:
     5. Die Funktion ist tastaturbedienbar, responsiv und bleibt auch bei langen Ergebnismengen performant.
     6. Nicht verfügbare oder unvollständige Produktdaten werden nicht irreführend als kaufbar dargestellt.
 
+UMSETZUNGSSTAND: OFFEN
+  Beleg: app/api/products/route.ts Zeile 103 (Filterliste)
+  Lücke: Kein Zustandsfilter, weil der Zustand nicht strukturiert erfasst ist (haengt an E1-05).
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Für diese Story gibt es keinen Codebeleg. Die vier Tasks sind vollständig umzusetzen; vorher ist die oben genannte Abhängigkeit zu klären.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-181, KAN-182, KAN-183, KAN-184.
   1. TASK KAN-181: konkrete Änderung bzw. Anpassung
@@ -5074,7 +5196,11 @@ Akzeptanz-/Fachziel:
     5. Die Funktion ist tastaturbedienbar, responsiv und bleibt auch bei langen Ergebnismengen performant.
     6. Nicht verfügbare oder unvollständige Produktdaten werden nicht irreführend als kaufbar dargestellt.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: app/api/products/route.ts Zeile 100 (min/max); app/karten/page.tsx Zeile 176 und 180; lib/catalog-availability.ts
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-185, KAN-186, KAN-187, KAN-188.
   1. TASK KAN-185: konkrete Änderung bzw. Anpassung
@@ -5281,7 +5407,12 @@ Akzeptanz-/Fachziel:
     5. Die Funktion ist tastaturbedienbar, responsiv und bleibt auch bei langen Ergebnismengen performant.
     6. Nicht verfügbare oder unvollständige Produktdaten werden nicht irreführend als kaufbar dargestellt.
 
+UMSETZUNGSSTAND: TEILWEISE vorhanden
+  Beleg: app/api/products/route.ts Zeile 103 und 124 (and-Verknuepfung aller Filter)
+  Lücke: Die vorhandenen Filter sind kombinierbar. Es fehlen die Filterdimensionen aus E2-03 bis E2-05.
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Ein Teil der Funktion ist im Code belegt. Umzusetzen ist nur die oben genannte Lücke; der belegte Teil wird geprüft statt neu gebaut.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-189, KAN-190, KAN-191, KAN-192.
   1. TASK KAN-189: konkrete Änderung bzw. Anpassung
@@ -5488,7 +5619,12 @@ Akzeptanz-/Fachziel:
     5. Die Funktion ist tastaturbedienbar, responsiv und bleibt auch bei langen Ergebnismengen performant.
     6. Nicht verfügbare oder unvollständige Produktdaten werden nicht irreführend als kaufbar dargestellt.
 
+UMSETZUNGSSTAND: OFFEN
+  Beleg: app/api/products/route.ts Zeile 139 (fest: orderBy createdAt desc)
+  Lücke: Es gibt keinen Sortierparameter und kein Bedienelement zur Sortierung.
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Für diese Story gibt es keinen Codebeleg. Die vier Tasks sind vollständig umzusetzen; vorher ist die oben genannte Abhängigkeit zu klären.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-193, KAN-194, KAN-195, KAN-196.
   1. TASK KAN-193: konkrete Änderung bzw. Anpassung
@@ -5695,7 +5831,11 @@ Akzeptanz-/Fachziel:
     5. Die Funktion ist tastaturbedienbar, responsiv und bleibt auch bei langen Ergebnismengen performant.
     6. Nicht verfügbare oder unvollständige Produktdaten werden nicht irreführend als kaufbar dargestellt.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: lib/pagination.ts; app/api/products/route.ts Zeile 91; app/karten/page.tsx Zeile 132; tests/cart-and-pagination.test.mjs
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-197, KAN-198, KAN-199, KAN-200.
   1. TASK KAN-197: konkrete Änderung bzw. Anpassung
@@ -5902,7 +6042,11 @@ Akzeptanz-/Fachziel:
     5. Die Funktion ist tastaturbedienbar, responsiv und bleibt auch bei langen Ergebnismengen performant.
     6. Nicht verfügbare oder unvollständige Produktdaten werden nicht irreführend als kaufbar dargestellt.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: app/karten/[id]/page.tsx; app/api/products/[id]/route.ts
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-201, KAN-202, KAN-203, KAN-204.
   1. TASK KAN-201: konkrete Änderung bzw. Anpassung
@@ -6109,7 +6253,11 @@ Akzeptanz-/Fachziel:
     5. Die Funktion ist tastaturbedienbar, responsiv und bleibt auch bei langen Ergebnismengen performant.
     6. Nicht verfügbare oder unvollständige Produktdaten werden nicht irreführend als kaufbar dargestellt.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: app/karten/[id]/page.tsx Zeile 34 und 191 (Lightbox, Schliessen per Escape)
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-205, KAN-206, KAN-207, KAN-208.
   1. TASK KAN-205: konkrete Änderung bzw. Anpassung
@@ -6316,7 +6464,12 @@ Akzeptanz-/Fachziel:
     5. Die Funktion ist tastaturbedienbar, responsiv und bleibt auch bei langen Ergebnismengen performant.
     6. Nicht verfügbare oder unvollständige Produktdaten werden nicht irreführend als kaufbar dargestellt.
 
+UMSETZUNGSSTAND: OFFEN
+  Beleg: app/karten/[id]/page.tsx
+  Lücke: Keine Empfehlungs- oder Aehnlichkeitslogik auf der Detailseite.
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Für diese Story gibt es keinen Codebeleg. Die vier Tasks sind vollständig umzusetzen; vorher ist die oben genannte Abhängigkeit zu klären.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-209, KAN-210, KAN-211, KAN-212.
   1. TASK KAN-209: konkrete Änderung bzw. Anpassung
@@ -6523,7 +6676,11 @@ Akzeptanz-/Fachziel:
     5. Die Funktion ist tastaturbedienbar, responsiv und bleibt auch bei langen Ergebnismengen performant.
     6. Nicht verfügbare oder unvollständige Produktdaten werden nicht irreführend als kaufbar dargestellt.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: app/karten/page.tsx Zeile 185 und 186 (Lade-, Fehler- und Ergebniszustand); lib/catalog-availability.ts
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-213, KAN-214, KAN-215, KAN-216.
   1. TASK KAN-213: konkrete Änderung bzw. Anpassung
@@ -6735,7 +6892,11 @@ Akzeptanz-/Fachziel:
     5. Datenschutzrelevante Aktionen wie Löschung oder Export sind nachvollziehbar, vollständig und gegen Fehlbedienung geschützt.
     6. Die Oberfläche ist responsiv, tastaturbedienbar und liefert klare Zustände für Laden, Erfolg und Fehler.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: app/account/page.tsx Zeile 254; app/api/account/validate-registration/route.ts
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-313, KAN-314, KAN-315, KAN-316.
   1. TASK KAN-313: konkrete Änderung bzw. Anpassung
@@ -6942,7 +7103,11 @@ Akzeptanz-/Fachziel:
     5. Datenschutzrelevante Aktionen wie Löschung oder Export sind nachvollziehbar, vollständig und gegen Fehlbedienung geschützt.
     6. Die Oberfläche ist responsiv, tastaturbedienbar und liefert klare Zustände für Laden, Erfolg und Fehler.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: app/account/page.tsx Zeile 270; lib/supabase-server.ts (Bestaetigungsmail ueber Supabase)
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-317, KAN-318, KAN-319, KAN-320.
   1. TASK KAN-317: konkrete Änderung bzw. Anpassung
@@ -7149,7 +7314,11 @@ Akzeptanz-/Fachziel:
     5. Datenschutzrelevante Aktionen wie Löschung oder Export sind nachvollziehbar, vollständig und gegen Fehlbedienung geschützt.
     6. Die Oberfläche ist responsiv, tastaturbedienbar und liefert klare Zustände für Laden, Erfolg und Fehler.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: app/account/page.tsx Zeile 210 und 278; lib/supabase-browser.ts
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-321, KAN-322, KAN-323, KAN-324.
   1. TASK KAN-321: konkrete Änderung bzw. Anpassung
@@ -7356,7 +7525,11 @@ Akzeptanz-/Fachziel:
     5. Adress-, Versand- und Formulareingaben werden feldgenau validiert und verständlich erklärt.
     6. Vor dem Absenden kann der Nutzer alle kaufrelevanten Daten prüfen; ein erneutes Absenden erzeugt keine Doppelbestellung.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: lib/cart.ts (cartButtonState); app/karten/[id]/page.tsx; tests/cart-and-pagination.test.mjs
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-217, KAN-218, KAN-219, KAN-220.
   1. TASK KAN-217: konkrete Änderung bzw. Anpassung
@@ -7563,7 +7736,12 @@ Akzeptanz-/Fachziel:
     5. Adress-, Versand- und Formulareingaben werden feldgenau validiert und verständlich erklärt.
     6. Vor dem Absenden kann der Nutzer alle kaufrelevanten Daten prüfen; ein erneutes Absenden erzeugt keine Doppelbestellung.
 
+UMSETZUNGSSTAND: TEILWEISE vorhanden
+  Beleg: lib/cart.ts Zeile 28; app/checkout/page.tsx Zeile 203 (updateQuantity)
+  Lücke: Alle Karten sind Einzelstuecke, die Menge ist damit faktisch 0 oder 1. Eine echte Mengenaenderung ist fachlich nicht vorgesehen.
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Ein Teil der Funktion ist im Code belegt. Umzusetzen ist nur die oben genannte Lücke; der belegte Teil wird geprüft statt neu gebaut.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-221, KAN-222, KAN-223, KAN-224.
   1. TASK KAN-221: konkrete Änderung bzw. Anpassung
@@ -7770,7 +7948,11 @@ Akzeptanz-/Fachziel:
     5. Adress-, Versand- und Formulareingaben werden feldgenau validiert und verständlich erklärt.
     6. Vor dem Absenden kann der Nutzer alle kaufrelevanten Daten prüfen; ein erneutes Absenden erzeugt keine Doppelbestellung.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: app/checkout/page.tsx Zeile 203 (Entfernen); lib/cart.ts
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-225, KAN-226, KAN-227, KAN-228.
   1. TASK KAN-225: konkrete Änderung bzw. Anpassung
@@ -7977,7 +8159,11 @@ Akzeptanz-/Fachziel:
     5. Adress-, Versand- und Formulareingaben werden feldgenau validiert und verständlich erklärt.
     6. Vor dem Absenden kann der Nutzer alle kaufrelevanten Daten prüfen; ein erneutes Absenden erzeugt keine Doppelbestellung.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: app/checkout/page.tsx Zeile 203 (Zwischensumme, Versand, Gesamt, Ersparnis); lib/shipping.ts
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-229, KAN-230, KAN-231, KAN-232.
   1. TASK KAN-229: konkrete Änderung bzw. Anpassung
@@ -8184,7 +8370,11 @@ Akzeptanz-/Fachziel:
     5. Adress-, Versand- und Formulareingaben werden feldgenau validiert und verständlich erklärt.
     6. Vor dem Absenden kann der Nutzer alle kaufrelevanten Daten prüfen; ein erneutes Absenden erzeugt keine Doppelbestellung.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: lib/catalog-availability.ts; lib/ebay-stock-guard.ts; lib/order-guard.ts; tests/catalog-availability.test.mjs
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-233, KAN-234, KAN-235, KAN-236.
   1. TASK KAN-233: konkrete Änderung bzw. Anpassung
@@ -8391,7 +8581,11 @@ Akzeptanz-/Fachziel:
     5. Adress-, Versand- und Formulareingaben werden feldgenau validiert und verständlich erklärt.
     6. Vor dem Absenden kann der Nutzer alle kaufrelevanten Daten prüfen; ein erneutes Absenden erzeugt keine Doppelbestellung.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: lib/cart.ts; app/checkout/page.tsx (Warenkorb im Browserspeicher)
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-237, KAN-238, KAN-239, KAN-240.
   1. TASK KAN-237: konkrete Änderung bzw. Anpassung
@@ -8603,7 +8797,11 @@ Akzeptanz-/Fachziel:
     5. Adress-, Versand- und Formulareingaben werden feldgenau validiert und verständlich erklärt.
     6. Vor dem Absenden kann der Nutzer alle kaufrelevanten Daten prüfen; ein erneutes Absenden erzeugt keine Doppelbestellung.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: app/checkout/page.tsx Zeile 189 („Kein Kundenkonto noetig“); app/api/orders/route.ts; tests/guest-checkout.test.mjs
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-241, KAN-242, KAN-243, KAN-244.
   1. TASK KAN-241: konkrete Änderung bzw. Anpassung
@@ -8810,7 +9008,11 @@ Akzeptanz-/Fachziel:
     5. Adress-, Versand- und Formulareingaben werden feldgenau validiert und verständlich erklärt.
     6. Vor dem Absenden kann der Nutzer alle kaufrelevanten Daten prüfen; ein erneutes Absenden erzeugt keine Doppelbestellung.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: app/api/orders/route.ts; lib/app-user.ts; app/account/page.tsx
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-245, KAN-246, KAN-247, KAN-248.
   1. TASK KAN-245: konkrete Änderung bzw. Anpassung
@@ -9017,7 +9219,12 @@ Akzeptanz-/Fachziel:
     5. Adress-, Versand- und Formulareingaben werden feldgenau validiert und verständlich erklärt.
     6. Vor dem Absenden kann der Nutzer alle kaufrelevanten Daten prüfen; ein erneutes Absenden erzeugt keine Doppelbestellung.
 
+UMSETZUNGSSTAND: TEILWEISE vorhanden
+  Beleg: app/checkout/page.tsx Zeile 189; db/schema.ts Zeile 191 (shipping_address als JSON an der Bestellung)
+  Lücke: Die Adresse wird je Bestellung erfasst, aber nicht als wiederverwendbare Adresse gespeichert (siehe E5-06).
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Ein Teil der Funktion ist im Code belegt. Umzusetzen ist nur die oben genannte Lücke; der belegte Teil wird geprüft statt neu gebaut.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-249, KAN-250, KAN-251, KAN-252.
   1. TASK KAN-249: konkrete Änderung bzw. Anpassung
@@ -9224,7 +9431,12 @@ Akzeptanz-/Fachziel:
     5. Adress-, Versand- und Formulareingaben werden feldgenau validiert und verständlich erklärt.
     6. Vor dem Absenden kann der Nutzer alle kaufrelevanten Daten prüfen; ein erneutes Absenden erzeugt keine Doppelbestellung.
 
+UMSETZUNGSSTAND: TEILWEISE vorhanden
+  Beleg: lib/shipping.ts; lib/shipping-countries.ts; tests/shipping-countries.test.mjs
+  Lücke: Versandkosten werden berechnet, eine Auswahl zwischen mehreren Versandarten gibt es im Checkout nicht.
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Ein Teil der Funktion ist im Code belegt. Umzusetzen ist nur die oben genannte Lücke; der belegte Teil wird geprüft statt neu gebaut.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-253, KAN-254, KAN-255, KAN-256.
   1. TASK KAN-253: konkrete Änderung bzw. Anpassung
@@ -9431,7 +9643,11 @@ Akzeptanz-/Fachziel:
     5. Adress-, Versand- und Formulareingaben werden feldgenau validiert und verständlich erklärt.
     6. Vor dem Absenden kann der Nutzer alle kaufrelevanten Daten prüfen; ein erneutes Absenden erzeugt keine Doppelbestellung.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: app/checkout/page.tsx Zeile 200 (Bestelluebersicht vor der Zahlung)
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-257, KAN-258, KAN-259, KAN-260.
   1. TASK KAN-257: konkrete Änderung bzw. Anpassung
@@ -9638,7 +9854,11 @@ Akzeptanz-/Fachziel:
     5. Adress-, Versand- und Formulareingaben werden feldgenau validiert und verständlich erklärt.
     6. Vor dem Absenden kann der Nutzer alle kaufrelevanten Daten prüfen; ein erneutes Absenden erzeugt keine Doppelbestellung.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: lib/request-body.ts; lib/public-form.ts; app/checkout/page.tsx (Feldfehler und Meldungen)
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-261, KAN-262, KAN-263, KAN-264.
   1. TASK KAN-261: konkrete Änderung bzw. Anpassung
@@ -9845,7 +10065,11 @@ Akzeptanz-/Fachziel:
     5. Kunde und Betreiber erhalten bei relevanten Statusänderungen klare, konsistente Informationen.
     6. Erstattungen und Stornierungen berücksichtigen Bestand, Zahlungsstatus und bereits ausgeführte Folgeaktionen.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: lib/paypal/; app/api/paypal/orders/route.ts; app/api/paypal/capture/route.ts; app/checkout/paypal/success/page.tsx
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-265, KAN-266, KAN-267, KAN-268.
   1. TASK KAN-265: konkrete Änderung bzw. Anpassung
@@ -10052,7 +10276,11 @@ Akzeptanz-/Fachziel:
     5. Kunde und Betreiber erhalten bei relevanten Statusänderungen klare, konsistente Informationen.
     6. Erstattungen und Stornierungen berücksichtigen Bestand, Zahlungsstatus und bereits ausgeführte Folgeaktionen.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: app/api/paypal/orders/route.ts (serverseitige Betragsberechnung); app/checkout/page.tsx Zeile 203
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-269, KAN-270, KAN-271, KAN-272.
   1. TASK KAN-269: konkrete Änderung bzw. Anpassung
@@ -10259,7 +10487,11 @@ Akzeptanz-/Fachziel:
     5. Kunde und Betreiber erhalten bei relevanten Statusänderungen klare, konsistente Informationen.
     6. Erstattungen und Stornierungen berücksichtigen Bestand, Zahlungsstatus und bereits ausgeführte Folgeaktionen.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: app/checkout/paypal/cancel/page.tsx; app/api/paypal/capture/route.ts (Fehlerpfade)
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-273, KAN-274, KAN-275, KAN-276.
   1. TASK KAN-273: konkrete Änderung bzw. Anpassung
@@ -10466,7 +10698,11 @@ Akzeptanz-/Fachziel:
     5. Kunde und Betreiber erhalten bei relevanten Statusänderungen klare, konsistente Informationen.
     6. Erstattungen und Stornierungen berücksichtigen Bestand, Zahlungsstatus und bereits ausgeführte Folgeaktionen.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: db/schema.ts Zeile 163 (reservations); lib/order-guard.ts; tests/order-guard.test.mjs
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-277, KAN-278, KAN-279, KAN-280.
   1. TASK KAN-277: konkrete Änderung bzw. Anpassung
@@ -10673,7 +10909,11 @@ Akzeptanz-/Fachziel:
     5. Kunde und Betreiber erhalten bei relevanten Statusänderungen klare, konsistente Informationen.
     6. Erstattungen und Stornierungen berücksichtigen Bestand, Zahlungsstatus und bereits ausgeführte Folgeaktionen.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: app/api/orders/release/route.ts; lib/order-guard.ts
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-281, KAN-282, KAN-283, KAN-284.
   1. TASK KAN-281: konkrete Änderung bzw. Anpassung
@@ -10880,7 +11120,11 @@ Akzeptanz-/Fachziel:
     5. Kunde und Betreiber erhalten bei relevanten Statusänderungen klare, konsistente Informationen.
     6. Erstattungen und Stornierungen berücksichtigen Bestand, Zahlungsstatus und bereits ausgeführte Folgeaktionen.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: app/api/paypal/webhook/route.ts; lib/paypal/; tests/paypal-webhook.test.mjs
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-285, KAN-286, KAN-287, KAN-288.
   1. TASK KAN-285: konkrete Änderung bzw. Anpassung
@@ -11087,7 +11331,11 @@ Akzeptanz-/Fachziel:
     5. Kunde und Betreiber erhalten bei relevanten Statusänderungen klare, konsistente Informationen.
     6. Erstattungen und Stornierungen berücksichtigen Bestand, Zahlungsstatus und bereits ausgeführte Folgeaktionen.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: db/schema.ts Zeile 181 (orders.status); app/api/admin/orders/route.ts Zeile 133; tests/n5-orders.test.mjs
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-289, KAN-290, KAN-291, KAN-292.
   1. TASK KAN-289: konkrete Änderung bzw. Anpassung
@@ -11294,7 +11542,11 @@ Akzeptanz-/Fachziel:
     5. Kunde und Betreiber erhalten bei relevanten Statusänderungen klare, konsistente Informationen.
     6. Erstattungen und Stornierungen berücksichtigen Bestand, Zahlungsstatus und bereits ausgeführte Folgeaktionen.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: db/schema.ts Zeile 314 (webhook_events als Idempotenzschluessel); tests/paypal-webhook.test.mjs
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-293, KAN-294, KAN-295, KAN-296.
   1. TASK KAN-293: konkrete Änderung bzw. Anpassung
@@ -11501,7 +11753,11 @@ Akzeptanz-/Fachziel:
     5. Kunde und Betreiber erhalten bei relevanten Statusänderungen klare, konsistente Informationen.
     6. Erstattungen und Stornierungen berücksichtigen Bestand, Zahlungsstatus und bereits ausgeführte Folgeaktionen.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: app/admin/orders-panel.tsx; app/api/admin/orders/route.ts
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-297, KAN-298, KAN-299, KAN-300.
   1. TASK KAN-297: konkrete Änderung bzw. Anpassung
@@ -11708,7 +11964,11 @@ Akzeptanz-/Fachziel:
     5. Kunde und Betreiber erhalten bei relevanten Statusänderungen klare, konsistente Informationen.
     6. Erstattungen und Stornierungen berücksichtigen Bestand, Zahlungsstatus und bereits ausgeführte Folgeaktionen.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: app/api/admin/orders/route.ts Zeile 133 (Statuswechsel, Versanddienst, Sendungsnummer); lib/shipping.ts
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-301, KAN-302, KAN-303, KAN-304.
   1. TASK KAN-301: konkrete Änderung bzw. Anpassung
@@ -11915,7 +12175,11 @@ Akzeptanz-/Fachziel:
     5. Kunde und Betreiber erhalten bei relevanten Statusänderungen klare, konsistente Informationen.
     6. Erstattungen und Stornierungen berücksichtigen Bestand, Zahlungsstatus und bereits ausgeführte Folgeaktionen.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: db/schema.ts Zeile 198 (tracking_number); lib/shipping.ts Zeile 39 (trackingUrl); app/admin/orders-panel.tsx
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-305, KAN-306, KAN-307, KAN-308.
   1. TASK KAN-305: konkrete Änderung bzw. Anpassung
@@ -12122,7 +12386,11 @@ Akzeptanz-/Fachziel:
     5. Kunde und Betreiber erhalten bei relevanten Statusänderungen klare, konsistente Informationen.
     6. Erstattungen und Stornierungen berücksichtigen Bestand, Zahlungsstatus und bereits ausgeführte Folgeaktionen.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: app/api/admin/orders/cancel/route.ts; app/api/admin/orders/refund/route.ts
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-309, KAN-310, KAN-311, KAN-312.
   1. TASK KAN-309: konkrete Änderung bzw. Anpassung
@@ -12329,7 +12597,11 @@ Akzeptanz-/Fachziel:
     5. Datenschutzrelevante Aktionen wie Löschung oder Export sind nachvollziehbar, vollständig und gegen Fehlbedienung geschützt.
     6. Die Oberfläche ist responsiv, tastaturbedienbar und liefert klare Zustände für Laden, Erfolg und Fehler.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: app/account/page.tsx Zeile 248 (resetPasswordForEmail) und Zeile 366 („Passwort vergessen?“)
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-325, KAN-326, KAN-327, KAN-328.
   1. TASK KAN-325: konkrete Änderung bzw. Anpassung
@@ -12536,7 +12808,11 @@ Akzeptanz-/Fachziel:
     5. Datenschutzrelevante Aktionen wie Löschung oder Export sind nachvollziehbar, vollständig und gegen Fehlbedienung geschützt.
     6. Die Oberfläche ist responsiv, tastaturbedienbar und liefert klare Zustände für Laden, Erfolg und Fehler.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: app/api/account/profile/route.ts; app/account/page.tsx Zeile 294; lib/user-profile.ts
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-329, KAN-330, KAN-331, KAN-332.
   1. TASK KAN-329: konkrete Änderung bzw. Anpassung
@@ -12743,7 +13019,12 @@ Akzeptanz-/Fachziel:
     5. Datenschutzrelevante Aktionen wie Löschung oder Export sind nachvollziehbar, vollständig und gegen Fehlbedienung geschützt.
     6. Die Oberfläche ist responsiv, tastaturbedienbar und liefert klare Zustände für Laden, Erfolg und Fehler.
 
+UMSETZUNGSSTAND: OFFEN
+  Beleg: db/schema.ts Zeile 191 (Adresse haengt an der Bestellung)
+  Lücke: Es gibt kein Adressbuch im Konto: Adressen lassen sich nicht anlegen, aendern oder wiederverwenden.
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Für diese Story gibt es keinen Codebeleg. Die vier Tasks sind vollständig umzusetzen; vorher ist die oben genannte Abhängigkeit zu klären.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-333, KAN-334, KAN-335, KAN-336.
   1. TASK KAN-333: konkrete Änderung bzw. Anpassung
@@ -12950,7 +13231,11 @@ Akzeptanz-/Fachziel:
     5. Datenschutzrelevante Aktionen wie Löschung oder Export sind nachvollziehbar, vollständig und gegen Fehlbedienung geschützt.
     6. Die Oberfläche ist responsiv, tastaturbedienbar und liefert klare Zustände für Laden, Erfolg und Fehler.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: app/api/account/orders/route.ts; app/account/page.tsx Zeile 147
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-337, KAN-338, KAN-339, KAN-340.
   1. TASK KAN-337: konkrete Änderung bzw. Anpassung
@@ -13157,7 +13442,11 @@ Akzeptanz-/Fachziel:
     5. Datenschutzrelevante Aktionen wie Löschung oder Export sind nachvollziehbar, vollständig und gegen Fehlbedienung geschützt.
     6. Die Oberfläche ist responsiv, tastaturbedienbar und liefert klare Zustände für Laden, Erfolg und Fehler.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: app/api/account/orders/route.ts (Status und Sendungsnummer je Bestellung); lib/shipping.ts
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-341, KAN-342, KAN-343, KAN-344.
   1. TASK KAN-341: konkrete Änderung bzw. Anpassung
@@ -13364,7 +13653,12 @@ Akzeptanz-/Fachziel:
     5. Datenschutzrelevante Aktionen wie Löschung oder Export sind nachvollziehbar, vollständig und gegen Fehlbedienung geschützt.
     6. Die Oberfläche ist responsiv, tastaturbedienbar und liefert klare Zustände für Laden, Erfolg und Fehler.
 
+UMSETZUNGSSTAND: OFFEN
+  Beleg: app/account/page.tsx
+  Lücke: Kein Nachbestellen aus der Historie. Bei Einzelstuecken ist das fachlich ohnehin fraglich und sollte vor einer Umsetzung geklaert werden.
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Für diese Story gibt es keinen Codebeleg. Die vier Tasks sind vollständig umzusetzen; vorher ist die oben genannte Abhängigkeit zu klären.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-345, KAN-346, KAN-347, KAN-348.
   1. TASK KAN-345: konkrete Änderung bzw. Anpassung
@@ -13571,7 +13865,11 @@ Akzeptanz-/Fachziel:
     5. Datenschutzrelevante Aktionen wie Löschung oder Export sind nachvollziehbar, vollständig und gegen Fehlbedienung geschützt.
     6. Die Oberfläche ist responsiv, tastaturbedienbar und liefert klare Zustände für Laden, Erfolg und Fehler.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: app/api/account/data/route.ts; app/api/account/delete/route.ts; lib/account-data.ts; lib/retention.ts; tests/n4-privacy-backup.test.mjs
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-349, KAN-350, KAN-351, KAN-352.
   1. TASK KAN-349: konkrete Änderung bzw. Anpassung
@@ -13783,7 +14081,11 @@ Akzeptanz-/Fachziel:
     5. Fehler bei Upload, Speicherung oder Statuswechseln sind wiederholbar und hinterlassen keine halbfertigen Angebote.
     6. Die Funktion ist für Desktop und Smartphone verständlich und enthält Hinweise zu nächsten Schritten und Verantwortlichkeiten.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: app/verkaufen/page.tsx; app/api/card-submissions/route.ts; db/schema.ts Zeile 264
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-353, KAN-354, KAN-355, KAN-356.
   1. TASK KAN-353: konkrete Änderung bzw. Anpassung
@@ -13990,7 +14292,12 @@ Akzeptanz-/Fachziel:
     5. Fehler bei Upload, Speicherung oder Statuswechseln sind wiederholbar und hinterlassen keine halbfertigen Angebote.
     6. Die Funktion ist für Desktop und Smartphone verständlich und enthält Hinweise zu nächsten Schritten und Verantwortlichkeiten.
 
+UMSETZUNGSSTAND: TEILWEISE vorhanden
+  Beleg: app/verkaufen/page.tsx Zeile 48 (Freitextfeld fuer Anzahl und Hinweise)
+  Lücke: Eine Sammlung wird als Freitext eingereicht; ein eigener Einreichungstyp mit Positionsliste fehlt.
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Ein Teil der Funktion ist im Code belegt. Umzusetzen ist nur die oben genannte Lücke; der belegte Teil wird geprüft statt neu gebaut.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-357, KAN-358, KAN-359, KAN-360.
   1. TASK KAN-357: konkrete Änderung bzw. Anpassung
@@ -14197,7 +14504,11 @@ Akzeptanz-/Fachziel:
     5. Fehler bei Upload, Speicherung oder Statuswechseln sind wiederholbar und hinterlassen keine halbfertigen Angebote.
     6. Die Funktion ist für Desktop und Smartphone verständlich und enthält Hinweise zu nächsten Schritten und Verantwortlichkeiten.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: app/verkaufen/page.tsx Zeile 54; db/schema.ts Zeile 277 (card_submission_assets); app/api/admin/card-submissions/assets/route.ts
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-361, KAN-362, KAN-363, KAN-364.
   1. TASK KAN-361: konkrete Änderung bzw. Anpassung
@@ -14404,7 +14715,11 @@ Akzeptanz-/Fachziel:
     5. Fehler bei Upload, Speicherung oder Statuswechseln sind wiederholbar und hinterlassen keine halbfertigen Angebote.
     6. Die Funktion ist für Desktop und Smartphone verständlich und enthält Hinweise zu nächsten Schritten und Verantwortlichkeiten.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: app/verkaufen/page.tsx Zeile 44 bis 50 (Titel, Preiswunsch, Nachricht, E-Mail)
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-365, KAN-366, KAN-367, KAN-368.
   1. TASK KAN-365: konkrete Änderung bzw. Anpassung
@@ -14611,7 +14926,12 @@ Akzeptanz-/Fachziel:
     5. Fehler bei Upload, Speicherung oder Statuswechseln sind wiederholbar und hinterlassen keine halbfertigen Angebote.
     6. Die Funktion ist für Desktop und Smartphone verständlich und enthält Hinweise zu nächsten Schritten und Verantwortlichkeiten.
 
+UMSETZUNGSSTAND: TEILWEISE vorhanden
+  Beleg: app/verkaufen/page.tsx Zeile 48
+  Lücke: Der Zustand wird im Freitext mitgeteilt; es gibt kein eigenes Zustandsfeld und keine Auswahl.
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Ein Teil der Funktion ist im Code belegt. Umzusetzen ist nur die oben genannte Lücke; der belegte Teil wird geprüft statt neu gebaut.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-369, KAN-370, KAN-371, KAN-372.
   1. TASK KAN-369: konkrete Änderung bzw. Anpassung
@@ -14818,7 +15138,11 @@ Akzeptanz-/Fachziel:
     5. Fehler bei Upload, Speicherung oder Statuswechseln sind wiederholbar und hinterlassen keine halbfertigen Angebote.
     6. Die Funktion ist für Desktop und Smartphone verständlich und enthält Hinweise zu nächsten Schritten und Verantwortlichkeiten.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: app/verkaufen/page.tsx Zeile 45 (Gewuenschter Preis)
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-373, KAN-374, KAN-375, KAN-376.
   1. TASK KAN-373: konkrete Änderung bzw. Anpassung
@@ -15025,7 +15349,11 @@ Akzeptanz-/Fachziel:
     5. Fehler bei Upload, Speicherung oder Statuswechseln sind wiederholbar und hinterlassen keine halbfertigen Angebote.
     6. Die Funktion ist für Desktop und Smartphone verständlich und enthält Hinweise zu nächsten Schritten und Verantwortlichkeiten.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: app/api/card-submissions/route.ts; db/schema.ts Zeile 264 (card_submissions)
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-377, KAN-378, KAN-379, KAN-380.
   1. TASK KAN-377: konkrete Änderung bzw. Anpassung
@@ -15232,7 +15560,12 @@ Akzeptanz-/Fachziel:
     5. Fehler bei Upload, Speicherung oder Statuswechseln sind wiederholbar und hinterlassen keine halbfertigen Angebote.
     6. Die Funktion ist für Desktop und Smartphone verständlich und enthält Hinweise zu nächsten Schritten und Verantwortlichkeiten.
 
+UMSETZUNGSSTAND: TEILWEISE vorhanden
+  Beleg: app/api/account/offers/route.ts; db/schema.ts Zeile 264 (status)
+  Lücke: Der Status wird gefuehrt, aber Einreichende sehen ihn nicht im Konto; Rueckmeldung laeuft ueber E-Mail.
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Ein Teil der Funktion ist im Code belegt. Umzusetzen ist nur die oben genannte Lücke; der belegte Teil wird geprüft statt neu gebaut.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-381, KAN-382, KAN-383, KAN-384.
   1. TASK KAN-381: konkrete Änderung bzw. Anpassung
@@ -15439,7 +15772,11 @@ Akzeptanz-/Fachziel:
     5. Fehler bei Upload, Speicherung oder Statuswechseln sind wiederholbar und hinterlassen keine halbfertigen Angebote.
     6. Die Funktion ist für Desktop und Smartphone verständlich und enthält Hinweise zu nächsten Schritten und Verantwortlichkeiten.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: app/admin/requests-panel.tsx; app/api/admin/card-submissions/route.ts
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-385, KAN-386, KAN-387, KAN-388.
   1. TASK KAN-385: konkrete Änderung bzw. Anpassung
@@ -15646,7 +15983,12 @@ Akzeptanz-/Fachziel:
     5. Fehler bei Upload, Speicherung oder Statuswechseln sind wiederholbar und hinterlassen keine halbfertigen Angebote.
     6. Die Funktion ist für Desktop und Smartphone verständlich und enthält Hinweise zu nächsten Schritten und Verantwortlichkeiten.
 
+UMSETZUNGSSTAND: TEILWEISE vorhanden
+  Beleg: app/admin/requests-panel.tsx; lib/email/
+  Lücke: Das Ankaufsangebot wird ausserhalb des Systems per E-Mail unterbreitet; ein Angebotsdatensatz zur Einreichung fehlt.
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Ein Teil der Funktion ist im Code belegt. Umzusetzen ist nur die oben genannte Lücke; der belegte Teil wird geprüft statt neu gebaut.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-389, KAN-390, KAN-391, KAN-392.
   1. TASK KAN-389: konkrete Änderung bzw. Anpassung
@@ -15853,7 +16195,12 @@ Akzeptanz-/Fachziel:
     5. Fehler bei Upload, Speicherung oder Statuswechseln sind wiederholbar und hinterlassen keine halbfertigen Angebote.
     6. Die Funktion ist für Desktop und Smartphone verständlich und enthält Hinweise zu nächsten Schritten und Verantwortlichkeiten.
 
+UMSETZUNGSSTAND: TEILWEISE vorhanden
+  Beleg: app/admin/requests-panel.tsx (Statuspflege durch Admins)
+  Lücke: Es gibt keine Annahme oder Ablehnung durch die einreichende Person im System.
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Ein Teil der Funktion ist im Code belegt. Umzusetzen ist nur die oben genannte Lücke; der belegte Teil wird geprüft statt neu gebaut.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-393, KAN-394, KAN-395, KAN-396.
   1. TASK KAN-393: konkrete Änderung bzw. Anpassung
@@ -16060,7 +16407,12 @@ Akzeptanz-/Fachziel:
     5. Fehler bei Upload, Speicherung oder Statuswechseln sind wiederholbar und hinterlassen keine halbfertigen Angebote.
     6. Die Funktion ist für Desktop und Smartphone verständlich und enthält Hinweise zu nächsten Schritten und Verantwortlichkeiten.
 
+UMSETZUNGSSTAND: OFFEN
+  Beleg: lib/card-submission-cleanup.ts (nur Aufbewahrung und Loeschung)
+  Lücke: Uebergabe und Auszahlung sind nicht abgebildet; der Vorgang endet ausserhalb des Shops.
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Für diese Story gibt es keinen Codebeleg. Die vier Tasks sind vollständig umzusetzen; vorher ist die oben genannte Abhängigkeit zu klären.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-397, KAN-398, KAN-399, KAN-400.
   1. TASK KAN-397: konkrete Änderung bzw. Anpassung
@@ -16272,7 +16624,11 @@ Akzeptanz-/Fachziel:
     5. Fehlerhafte Datensätze werden isoliert behandelt, ohne gültige Bestände oder Bestellungen zu beschädigen.
     6. Das Admin-Interface ist für die vorgesehenen Breakpoints bedienbar und schützt irreversible Aktionen vor Fehlbedienung.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: app/api/admin/dashboard/route.ts; app/admin/page.tsx Zeile 16 (Kennzahlen und letzte Einreichungen)
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-409, KAN-410, KAN-411, KAN-412.
   1. TASK KAN-409: konkrete Änderung bzw. Anpassung
@@ -16479,7 +16835,12 @@ Akzeptanz-/Fachziel:
     5. Fehlerhafte Datensätze werden isoliert behandelt, ohne gültige Bestände oder Bestellungen zu beschädigen.
     6. Das Admin-Interface ist für die vorgesehenen Breakpoints bedienbar und schützt irreversible Aktionen vor Fehlbedienung.
 
+UMSETZUNGSSTAND: TEILWEISE vorhanden
+  Beleg: app/admin/products-panel.tsx; app/api/admin/products/route.ts
+  Lücke: Anlegen und Sichtbarkeit sind moeglich. Preis-, Bild- und Bestandspflege bestehender Produkte fehlen (siehe E1-02, E7-05, E7-06).
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Ein Teil der Funktion ist im Code belegt. Umzusetzen ist nur die oben genannte Lücke; der belegte Teil wird geprüft statt neu gebaut.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-413, KAN-414, KAN-415, KAN-416.
   1. TASK KAN-413: konkrete Änderung bzw. Anpassung
@@ -16686,7 +17047,12 @@ Akzeptanz-/Fachziel:
     5. Fehlerhafte Datensätze werden isoliert behandelt, ohne gültige Bestände oder Bestellungen zu beschädigen.
     6. Das Admin-Interface ist für die vorgesehenen Breakpoints bedienbar und schützt irreversible Aktionen vor Fehlbedienung.
 
+UMSETZUNGSSTAND: TEILWEISE vorhanden
+  Beleg: app/admin/products-panel.tsx Zeile 101 (Bilder nur beim Anlegen)
+  Lücke: Bilder bestehender Produkte lassen sich nicht nachtraeglich ergaenzen, ersetzen, sortieren oder loeschen.
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Ein Teil der Funktion ist im Code belegt. Umzusetzen ist nur die oben genannte Lücke; der belegte Teil wird geprüft statt neu gebaut.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-417, KAN-418, KAN-419, KAN-420.
   1. TASK KAN-417: konkrete Änderung bzw. Anpassung
@@ -16893,7 +17259,12 @@ Akzeptanz-/Fachziel:
     5. Fehlerhafte Datensätze werden isoliert behandelt, ohne gültige Bestände oder Bestellungen zu beschädigen.
     6. Das Admin-Interface ist für die vorgesehenen Breakpoints bedienbar und schützt irreversible Aktionen vor Fehlbedienung.
 
+UMSETZUNGSSTAND: OFFEN
+  Beleg: app/admin/products-panel.tsx; app/api/admin/products/route.ts
+  Lücke: Es gibt kein Bedienelement und keinen Endpunkt zur Bestandskorrektur; der Bestand ist ausschliesslich sync- und bestellgetrieben.
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Für diese Story gibt es keinen Codebeleg. Die vier Tasks sind vollständig umzusetzen; vorher ist die oben genannte Abhängigkeit zu klären.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-421, KAN-422, KAN-423, KAN-424.
   1. TASK KAN-421: konkrete Änderung bzw. Anpassung
@@ -17100,7 +17471,11 @@ Akzeptanz-/Fachziel:
     5. Fehlerhafte Datensätze werden isoliert behandelt, ohne gültige Bestände oder Bestellungen zu beschädigen.
     6. Das Admin-Interface ist für die vorgesehenen Breakpoints bedienbar und schützt irreversible Aktionen vor Fehlbedienung.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: app/admin/orders-panel.tsx; app/api/admin/orders/route.ts (Liste, Blaettern, Statuswechsel, Storno, Erstattung)
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-425, KAN-426, KAN-427, KAN-428.
   1. TASK KAN-425: konkrete Änderung bzw. Anpassung
@@ -17307,7 +17682,12 @@ Akzeptanz-/Fachziel:
     5. Fehlerhafte Datensätze werden isoliert behandelt, ohne gültige Bestände oder Bestellungen zu beschädigen.
     6. Das Admin-Interface ist für die vorgesehenen Breakpoints bedienbar und schützt irreversible Aktionen vor Fehlbedienung.
 
+UMSETZUNGSSTAND: OFFEN
+  Beleg: app/admin/ (kein Kundenbereich)
+  Lücke: Kundenkonten lassen sich im Adminbereich weder einsehen noch bearbeiten oder sperren.
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Für diese Story gibt es keinen Codebeleg. Die vier Tasks sind vollständig umzusetzen; vorher ist die oben genannte Abhängigkeit zu klären.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-429, KAN-430, KAN-431, KAN-432.
   1. TASK KAN-429: konkrete Änderung bzw. Anpassung
@@ -17514,7 +17894,11 @@ Akzeptanz-/Fachziel:
     5. Fehlerhafte Datensätze werden isoliert behandelt, ohne gültige Bestände oder Bestellungen zu beschädigen.
     6. Das Admin-Interface ist für die vorgesehenen Breakpoints bedienbar und schützt irreversible Aktionen vor Fehlbedienung.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: app/admin/offers-panel.tsx; app/api/admin/offers/route.ts; lib/price-offers.ts
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-433, KAN-434, KAN-435, KAN-436.
   1. TASK KAN-433: konkrete Änderung bzw. Anpassung
@@ -17721,7 +18105,12 @@ Akzeptanz-/Fachziel:
     5. Fehlerhafte Datensätze werden isoliert behandelt, ohne gültige Bestände oder Bestellungen zu beschädigen.
     6. Das Admin-Interface ist für die vorgesehenen Breakpoints bedienbar und schützt irreversible Aktionen vor Fehlbedienung.
 
+UMSETZUNGSSTAND: OFFEN
+  Beleg: db/schema.ts Zeile 72
+  Lücke: Es gibt keine Katalogstammdaten zu verwalten, solange Sets, Serien und Zustaende nicht modelliert sind (haengt an E1-03 bis E1-05).
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Für diese Story gibt es keinen Codebeleg. Die vier Tasks sind vollständig umzusetzen; vorher ist die oben genannte Abhängigkeit zu klären.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-437, KAN-438, KAN-439, KAN-440.
   1. TASK KAN-437: konkrete Änderung bzw. Anpassung
@@ -17928,7 +18317,11 @@ Akzeptanz-/Fachziel:
     5. Fehlerhafte Datensätze werden isoliert behandelt, ohne gültige Bestände oder Bestellungen zu beschädigen.
     6. Das Admin-Interface ist für die vorgesehenen Breakpoints bedienbar und schützt irreversible Aktionen vor Fehlbedienung.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: app/api/admin/ebay-sync/route.ts; db/schema.ts Zeile 290 (sync_runs); lib/sync-lock.ts; app/admin/page.tsx
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-441, KAN-442, KAN-443, KAN-444.
   1. TASK KAN-441: konkrete Änderung bzw. Anpassung
@@ -18135,7 +18528,11 @@ Akzeptanz-/Fachziel:
     5. Fehlerhafte Datensätze werden isoliert behandelt, ohne gültige Bestände oder Bestellungen zu beschädigen.
     6. Das Admin-Interface ist für die vorgesehenen Breakpoints bedienbar und schützt irreversible Aktionen vor Fehlbedienung.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: app/admin/outbox-panel.tsx; app/api/admin/ebay/outbox/route.ts; lib/ebay-outbox.ts; db/schema.ts Zeile 303 (sync_events); tests/ebay-outbox.test.mjs
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-445, KAN-446, KAN-447, KAN-448.
   1. TASK KAN-445: konkrete Änderung bzw. Anpassung
@@ -18342,7 +18739,12 @@ Akzeptanz-/Fachziel:
     5. Fehlerhafte Datensätze werden isoliert behandelt, ohne gültige Bestände oder Bestellungen zu beschädigen.
     6. Das Admin-Interface ist für die vorgesehenen Breakpoints bedienbar und schützt irreversible Aktionen vor Fehlbedienung.
 
+UMSETZUNGSSTAND: TEILWEISE vorhanden
+  Beleg: lib/admin-audit.ts; db/schema.ts Zeile 358 (audit_events)
+  Lücke: Aenderungen werden protokolliert, aber es gibt keine Ansicht im Adminbereich, in der sich der Verlauf nachvollziehen laesst.
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Ein Teil der Funktion ist im Code belegt. Umzusetzen ist nur die oben genannte Lücke; der belegte Teil wird geprüft statt neu gebaut.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-449, KAN-450, KAN-451, KAN-452.
   1. TASK KAN-449: konkrete Änderung bzw. Anpassung
@@ -18555,7 +18957,11 @@ Akzeptanz-/Fachziel:
     6. Kontraste, Beschriftungen, semantische Struktur und Alternativtexte unterstützen Screenreader und assistive Technologien.
     7. Bilder, Schriftgrößen und Inhalte bleiben bei unterschiedlichen Auflösungen scharf, lesbar und ohne Layoutsprünge.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: app/globals.css (gemeinsame Token und Komponentenklassen fuer alle Seiten)
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-461, KAN-462, KAN-463, KAN-464.
   1. TASK KAN-461: konkrete Änderung bzw. Anpassung
@@ -18763,7 +19169,11 @@ Akzeptanz-/Fachziel:
     6. Kontraste, Beschriftungen, semantische Struktur und Alternativtexte unterstützen Screenreader und assistive Technologien.
     7. Bilder, Schriftgrößen und Inhalte bleiben bei unterschiedlichen Auflösungen scharf, lesbar und ohne Layoutsprünge.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: app/karten/page.tsx Zeile 192 (product-grid); app/globals.css
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-465, KAN-466, KAN-467, KAN-468.
   1. TASK KAN-465: konkrete Änderung bzw. Anpassung
@@ -18971,7 +19381,11 @@ Akzeptanz-/Fachziel:
     6. Kontraste, Beschriftungen, semantische Struktur und Alternativtexte unterstützen Screenreader und assistive Technologien.
     7. Bilder, Schriftgrößen und Inhalte bleiben bei unterschiedlichen Auflösungen scharf, lesbar und ohne Layoutsprünge.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: app/karten/[id]/page.tsx; app/globals.css
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-469, KAN-470, KAN-471, KAN-472.
   1. TASK KAN-469: konkrete Änderung bzw. Anpassung
@@ -19179,7 +19593,11 @@ Akzeptanz-/Fachziel:
     6. Kontraste, Beschriftungen, semantische Struktur und Alternativtexte unterstützen Screenreader und assistive Technologien.
     7. Bilder, Schriftgrößen und Inhalte bleiben bei unterschiedlichen Auflösungen scharf, lesbar und ohne Layoutsprünge.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: app/globals.css (12 Media-Queries); docs/jira/generated/brandycards-xray-responsive-viewports-update.csv
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-473, KAN-474, KAN-475, KAN-476.
   1. TASK KAN-473: konkrete Änderung bzw. Anpassung
@@ -19387,7 +19805,11 @@ Akzeptanz-/Fachziel:
     6. Kontraste, Beschriftungen, semantische Struktur und Alternativtexte unterstützen Screenreader und assistive Technologien.
     7. Bilder, Schriftgrößen und Inhalte bleiben bei unterschiedlichen Auflösungen scharf, lesbar und ohne Layoutsprünge.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: app/site-chrome.tsx (Field-Komponente); app/globals.css (form-field); lib/public-form.ts
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-477, KAN-478, KAN-479, KAN-480.
   1. TASK KAN-477: konkrete Änderung bzw. Anpassung
@@ -19595,7 +20017,11 @@ Akzeptanz-/Fachziel:
     6. Kontraste, Beschriftungen, semantische Struktur und Alternativtexte unterstützen Screenreader und assistive Technologien.
     7. Bilder, Schriftgrößen und Inhalte bleiben bei unterschiedlichen Auflösungen scharf, lesbar und ohne Layoutsprünge.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: app/karten/page.tsx Zeile 185; app/admin/page.tsx Zeile 22 (Lademeldungen je Ansicht)
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-481, KAN-482, KAN-483, KAN-484.
   1. TASK KAN-481: konkrete Änderung bzw. Anpassung
@@ -19803,7 +20229,11 @@ Akzeptanz-/Fachziel:
     6. Kontraste, Beschriftungen, semantische Struktur und Alternativtexte unterstützen Screenreader und assistive Technologien.
     7. Bilder, Schriftgrößen und Inhalte bleiben bei unterschiedlichen Auflösungen scharf, lesbar und ohne Layoutsprünge.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: app/karten/page.tsx Zeile 186; app/globals.css (empty-state)
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-485, KAN-486, KAN-487, KAN-488.
   1. TASK KAN-485: konkrete Änderung bzw. Anpassung
@@ -20011,7 +20441,12 @@ Akzeptanz-/Fachziel:
     6. Kontraste, Beschriftungen, semantische Struktur und Alternativtexte unterstützen Screenreader und assistive Technologien.
     7. Bilder, Schriftgrößen und Inhalte bleiben bei unterschiedlichen Auflösungen scharf, lesbar und ohne Layoutsprünge.
 
+UMSETZUNGSSTAND: TEILWEISE vorhanden
+  Beleg: app/karten/[id]/page.tsx Zeile 59 (Lightbox schliesst per Escape); app/globals.css (5 focus-visible-Regeln)
+  Lücke: Es gibt keinen Sprunglink zum Inhalt, und die Lightbox haelt den Fokus nicht fest (im Code als bekannt vermerkt).
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Ein Teil der Funktion ist im Code belegt. Umzusetzen ist nur die oben genannte Lücke; der belegte Teil wird geprüft statt neu gebaut.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-489, KAN-490, KAN-491, KAN-492.
   1. TASK KAN-489: konkrete Änderung bzw. Anpassung
@@ -20219,7 +20654,12 @@ Akzeptanz-/Fachziel:
     6. Kontraste, Beschriftungen, semantische Struktur und Alternativtexte unterstützen Screenreader und assistive Technologien.
     7. Bilder, Schriftgrößen und Inhalte bleiben bei unterschiedlichen Auflösungen scharf, lesbar und ohne Layoutsprünge.
 
+UMSETZUNGSSTAND: TEILWEISE vorhanden
+  Beleg: app/karten/page.tsx Zeile 163 und 190 (aria-label, role=status); app/karten/[id]/page.tsx
+  Lücke: Aria-Auszeichnungen sind punktuell gesetzt. Ein durchgehender Screenreader-Nachweis ueber alle Seiten fehlt.
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Ein Teil der Funktion ist im Code belegt. Umzusetzen ist nur die oben genannte Lücke; der belegte Teil wird geprüft statt neu gebaut.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-493, KAN-494, KAN-495, KAN-496.
   1. TASK KAN-493: konkrete Änderung bzw. Anpassung
@@ -20427,7 +20867,11 @@ Akzeptanz-/Fachziel:
     6. Kontraste, Beschriftungen, semantische Struktur und Alternativtexte unterstützen Screenreader und assistive Technologien.
     7. Bilder, Schriftgrößen und Inhalte bleiben bei unterschiedlichen Auflösungen scharf, lesbar und ohne Layoutsprünge.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: app/globals.css (focus-visible-Regeln und Aktivzustaende)
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-497, KAN-498, KAN-499, KAN-500.
   1. TASK KAN-497: konkrete Änderung bzw. Anpassung
@@ -20635,7 +21079,11 @@ Akzeptanz-/Fachziel:
     6. Kontraste, Beschriftungen, semantische Struktur und Alternativtexte unterstützen Screenreader und assistive Technologien.
     7. Bilder, Schriftgrößen und Inhalte bleiben bei unterschiedlichen Auflösungen scharf, lesbar und ohne Layoutsprünge.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: lib/ebay-images.ts; app/karten/page.tsx Zeile 196 (verkleinerte Rastervariante statt Original); tests/ebay-images.test.mjs
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-501, KAN-502, KAN-503, KAN-504.
   1. TASK KAN-501: konkrete Änderung bzw. Anpassung
@@ -20843,7 +21291,11 @@ Akzeptanz-/Fachziel:
     6. Kontraste, Beschriftungen, semantische Struktur und Alternativtexte unterstützen Screenreader und assistive Technologien.
     7. Bilder, Schriftgrößen und Inhalte bleiben bei unterschiedlichen Auflösungen scharf, lesbar und ohne Layoutsprünge.
 
+UMSETZUNGSSTAND: VORHANDEN im Code
+  Beleg: app/globals.css; docs/jira/generated/brandycards-xray-responsive-viewports-update.csv (sieben gepruefte Viewports)
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Der Funktionsumfang ist im Code belegt. Die vier Tasks dienen hier als Nachweis- und Abnahmeraster, nicht als Neubau: prüfen, ob die Abnahmekriterien am vorhandenen Stand erfüllt sind, und nur die Lücken nacharbeiten.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-505, KAN-506, KAN-507, KAN-508.
   1. TASK KAN-505: konkrete Änderung bzw. Anpassung
@@ -21055,7 +21507,12 @@ Akzeptanz-/Fachziel:
     5. Fehlgeschlagene Tests führen zu nachvollziehbaren Fehlern mit ausreichendem Kontext für die Analyse.
     6. Testabdeckung und Release-Abnahme lassen sich nach Epic, Priorität und Status auswerten.
 
+UMSETZUNGSSTAND: AUSSERHALB DES CODES (Jira-/Xray-Governance)
+  Beleg: docs/ai-handover.md (Auftrag 2026-08-14)
+  Lücke: Governance-Arbeit in Jira und Xray. Der Stand steht dort, nicht im Repository.
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Diese Story wird nicht im Repository umgesetzt, sondern in Jira und Xray. Der tatsächliche Stand ist dort zu prüfen; die Tasks beschreiben die Governance-Arbeit.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-525, KAN-526, KAN-527, KAN-528.
   1. TASK KAN-525: konkrete Änderung bzw. Anpassung
@@ -21262,7 +21719,12 @@ Akzeptanz-/Fachziel:
     5. Fehlgeschlagene Tests führen zu nachvollziehbaren Fehlern mit ausreichendem Kontext für die Analyse.
     6. Testabdeckung und Release-Abnahme lassen sich nach Epic, Priorität und Status auswerten.
 
+UMSETZUNGSSTAND: AUSSERHALB DES CODES (Jira-/Xray-Governance)
+  Beleg: docs/ai-handover.md (Testplan KAN-898)
+  Lücke: Governance-Arbeit in Jira und Xray. Der Stand steht dort, nicht im Repository.
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Diese Story wird nicht im Repository umgesetzt, sondern in Jira und Xray. Der tatsächliche Stand ist dort zu prüfen; die Tasks beschreiben die Governance-Arbeit.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-529, KAN-530, KAN-531, KAN-532.
   1. TASK KAN-529: konkrete Änderung bzw. Anpassung
@@ -21469,7 +21931,12 @@ Akzeptanz-/Fachziel:
     5. Fehlgeschlagene Tests führen zu nachvollziehbaren Fehlern mit ausreichendem Kontext für die Analyse.
     6. Testabdeckung und Release-Abnahme lassen sich nach Epic, Priorität und Status auswerten.
 
+UMSETZUNGSSTAND: AUSSERHALB DES CODES (Jira-/Xray-Governance)
+  Beleg: docs/ai-handover.md (Testausfuehrung KAN-899)
+  Lücke: Governance-Arbeit in Jira und Xray. Der Stand steht dort, nicht im Repository.
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Diese Story wird nicht im Repository umgesetzt, sondern in Jira und Xray. Der tatsächliche Stand ist dort zu prüfen; die Tasks beschreiben die Governance-Arbeit.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-533, KAN-534, KAN-535, KAN-536.
   1. TASK KAN-533: konkrete Änderung bzw. Anpassung
@@ -21676,7 +22143,12 @@ Akzeptanz-/Fachziel:
     5. Fehlgeschlagene Tests führen zu nachvollziehbaren Fehlern mit ausreichendem Kontext für die Analyse.
     6. Testabdeckung und Release-Abnahme lassen sich nach Epic, Priorität und Status auswerten.
 
+UMSETZUNGSSTAND: AUSSERHALB DES CODES (Jira-/Xray-Governance)
+  Beleg: docs/jira/generated/brandycards-xray-tests.csv (Feld Tests)
+  Lücke: Governance-Arbeit in Jira und Xray. Der Stand steht dort, nicht im Repository.
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Diese Story wird nicht im Repository umgesetzt, sondern in Jira und Xray. Der tatsächliche Stand ist dort zu prüfen; die Tasks beschreiben die Governance-Arbeit.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-537, KAN-538, KAN-539, KAN-540.
   1. TASK KAN-537: konkrete Änderung bzw. Anpassung
@@ -21883,7 +22355,12 @@ Akzeptanz-/Fachziel:
     5. Fehlgeschlagene Tests führen zu nachvollziehbaren Fehlern mit ausreichendem Kontext für die Analyse.
     6. Testabdeckung und Release-Abnahme lassen sich nach Epic, Priorität und Status auswerten.
 
+UMSETZUNGSSTAND: TEILWEISE vorhanden
+  Beleg: tests/ (32 Testdateien); npm test; .github/workflows/ci.yml
+  Lücke: Eine automatisierte Regressionssuite existiert im Repository. Die Xray-Regressionssuite in Jira ist davon getrennt zu betrachten.
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Ein Teil der Funktion ist im Code belegt. Umzusetzen ist nur die oben genannte Lücke; der belegte Teil wird geprüft statt neu gebaut.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-541, KAN-542, KAN-543, KAN-544.
   1. TASK KAN-541: konkrete Änderung bzw. Anpassung
@@ -22090,7 +22567,12 @@ Akzeptanz-/Fachziel:
     5. Fehlgeschlagene Tests führen zu nachvollziehbaren Fehlern mit ausreichendem Kontext für die Analyse.
     6. Testabdeckung und Release-Abnahme lassen sich nach Epic, Priorität und Status auswerten.
 
+UMSETZUNGSSTAND: AUSSERHALB DES CODES (Jira-/Xray-Governance)
+  Beleg: docs/jira/generated/brandycards-xray-responsive-viewports-update.csv
+  Lücke: Governance-Arbeit in Jira und Xray. Der Stand steht dort, nicht im Repository.
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Diese Story wird nicht im Repository umgesetzt, sondern in Jira und Xray. Der tatsächliche Stand ist dort zu prüfen; die Tasks beschreiben die Governance-Arbeit.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-545, KAN-546, KAN-547, KAN-548.
   1. TASK KAN-545: konkrete Änderung bzw. Anpassung
@@ -22297,7 +22779,12 @@ Akzeptanz-/Fachziel:
     5. Fehlgeschlagene Tests führen zu nachvollziehbaren Fehlern mit ausreichendem Kontext für die Analyse.
     6. Testabdeckung und Release-Abnahme lassen sich nach Epic, Priorität und Status auswerten.
 
+UMSETZUNGSSTAND: AUSSERHALB DES CODES (Jira-/Xray-Governance)
+  Beleg: docs/jira/generated/brandycards-xray-screenshot-policy-update.csv; docs/jira/generated/e9-next-20/
+  Lücke: Governance-Arbeit in Jira und Xray. Der Stand steht dort, nicht im Repository.
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Diese Story wird nicht im Repository umgesetzt, sondern in Jira und Xray. Der tatsächliche Stand ist dort zu prüfen; die Tasks beschreiben die Governance-Arbeit.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-549, KAN-550, KAN-551, KAN-552.
   1. TASK KAN-549: konkrete Änderung bzw. Anpassung
@@ -22504,7 +22991,12 @@ Akzeptanz-/Fachziel:
     5. Fehlgeschlagene Tests führen zu nachvollziehbaren Fehlern mit ausreichendem Kontext für die Analyse.
     6. Testabdeckung und Release-Abnahme lassen sich nach Epic, Priorität und Status auswerten.
 
+UMSETZUNGSSTAND: AUSSERHALB DES CODES (Jira-/Xray-Governance)
+  Beleg: docs/jira/generated/e9-next-30/
+  Lücke: Governance-Arbeit in Jira und Xray. Der Stand steht dort, nicht im Repository.
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Diese Story wird nicht im Repository umgesetzt, sondern in Jira und Xray. Der tatsächliche Stand ist dort zu prüfen; die Tasks beschreiben die Governance-Arbeit.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-553, KAN-554, KAN-555, KAN-556.
   1. TASK KAN-553: konkrete Änderung bzw. Anpassung
@@ -22711,7 +23203,12 @@ Akzeptanz-/Fachziel:
     5. Fehlgeschlagene Tests führen zu nachvollziehbaren Fehlern mit ausreichendem Kontext für die Analyse.
     6. Testabdeckung und Release-Abnahme lassen sich nach Epic, Priorität und Status auswerten.
 
+UMSETZUNGSSTAND: AUSSERHALB DES CODES (Jira-/Xray-Governance)
+  Beleg: docs/jira/generated/brandycards-xray-tests.csv
+  Lücke: Governance-Arbeit in Jira und Xray. Der Stand steht dort, nicht im Repository.
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Diese Story wird nicht im Repository umgesetzt, sondern in Jira und Xray. Der tatsächliche Stand ist dort zu prüfen; die Tasks beschreiben die Governance-Arbeit.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-557, KAN-558, KAN-559, KAN-560.
   1. TASK KAN-557: konkrete Änderung bzw. Anpassung
@@ -22918,7 +23415,12 @@ Akzeptanz-/Fachziel:
     5. Fehlgeschlagene Tests führen zu nachvollziehbaren Fehlern mit ausreichendem Kontext für die Analyse.
     6. Testabdeckung und Release-Abnahme lassen sich nach Epic, Priorität und Status auswerten.
 
+UMSETZUNGSSTAND: AUSSERHALB DES CODES (Jira-/Xray-Governance)
+  Beleg: docs/ai-todo.md
+  Lücke: Governance-Arbeit in Jira und Xray. Der Stand steht dort, nicht im Repository.
+
 UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE
+  Einordnung: Diese Story wird nicht im Repository umgesetzt, sondern in Jira und Xray. Der tatsächliche Stand ist dort zu prüfen; die Tasks beschreiben die Governance-Arbeit.
   Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.
   Umzusetzen in dieser Kaskade: KAN-561, KAN-562, KAN-563, KAN-564.
   1. TASK KAN-561: konkrete Änderung bzw. Anpassung
@@ -23118,6 +23620,9 @@ KONTROLLEN UND GRENZEN DER ABLEITUNG
 - Tests mit auflösbarer Coverage-Story: 333/333.
 - Stories mit genau vier Tasks: 111/111.
 - Stories mit genau drei Xray-Tests: 111/111.
+- Stories mit hinterlegtem Umsetzungsstand: 111/111.
+- Der Umsetzungsstand ist aus Dateien dieses Repositorys abgeleitet und je Story mit dem Beleg ausgewiesen. Er ersetzt keine fachliche Abnahme und keinen Xray-Status: eine vorhandene Funktion kann ihren Test dennoch nicht bestehen.
+- Stories mit dem Vermerk AUSSERHALB DES CODES lassen sich im Repository grundsätzlich nicht belegen; ihr Stand ist ausschließlich in Jira und Xray zu prüfen.
 - Die CSV-Work-Item-IDs sind Import-IDs; die Jira-Schlüssel wurden nach den bestätigten Bereichen KAN-121..KAN-564 für Tasks und KAN-565..KAN-897 für Tests zugeordnet.
 - Die Datei ersetzt keine Jira-Blocks-Links. Wo der Export nur Parent oder Tests enthält, ist die Reihenfolge als fachliche Empfehlung gekennzeichnet und muss bei paralleler Umsetzung im Team bestätigt werden.
 - Tests mit Responsive-/Accessibility-Anteil sind nach der UI-Implementierung eingeordnet und nicht automatisch als tatsächlich ausgeführt zu verstehen.

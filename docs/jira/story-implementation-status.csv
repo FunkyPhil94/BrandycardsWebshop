@@ -1,0 +1,112 @@
+﻿Issue Key,Story Code,Status,Beleg,Luecke
+KAN-10,E1-01,VORHANDEN,app/admin/products-panel.tsx (Formular „Karte von Hand einstellen“); app/api/admin/products/route.ts; tests/manual-cards.test.mjs,
+KAN-11,E1-02,TEILWEISE,app/api/admin/products/route.ts; app/admin/products-panel.tsx Zeile 22 (FELDNAMEN),"Bearbeitbar sind nur Titel, Beschreibung und Sichtbarkeit. Preis, Bilder und Bestand lassen sich nach dem Anlegen nicht mehr aendern."
+KAN-12,E1-03,OFFEN,db/schema.ts Zeile 72 (products),"Es gibt keine Klassifikationsfelder. Der Katalog ist titelbasiert; Sportart, Spieler und Kartentyp stehen nur im Freitexttitel."
+KAN-13,E1-04,OFFEN,db/schema.ts Zeile 72 (products),"Serien und Sets sind nicht modelliert; keine Tabelle, kein Feld, keine Verwaltung."
+KAN-14,E1-05,OFFEN,db/schema.ts Zeile 72 (products),Zustand und Grading sind nicht als Felder vorhanden; die Angabe steckt unstrukturiert in Titel und Beschreibung.
+KAN-15,E1-06,VORHANDEN,db/schema.ts Zeile 134 (product_assets); lib/ebay-images.ts; app/api/products/[id]/assets/[assetId]/route.ts,
+KAN-16,E1-07,TEILWEISE,db/schema.ts Zeile 72 (price_amount_cents); lib/offer-price.ts; db/schema.ts Zeile 100 (ebay_listings),Preise kommen aus dem eBay-Listing oder werden beim Anlegen gesetzt. Eine Preispflege im Adminbereich fehlt.
+KAN-17,E1-08,TEILWEISE,db/schema.ts Zeile 149 (inventory); lib/ebay-stock-check.ts; lib/ebay-stock-guard.ts,Bestand wird durch Sync und Bestellvorgang fortgeschrieben. Eine manuelle Korrektur durch Admins fehlt (siehe E7-06).
+KAN-18,E1-09,OFFEN,"db/schema.ts Zeile 72 (kind: EBAY_SYNCED, PRELISTED)",Bundles und Sammlungen sind kein eigener Produkttyp. Ein Sammelangebot ist nur ein Produkt mit entsprechendem Titel.
+KAN-19,E1-10,VORHANDEN,db/schema.ts Zeile 72 (status ACTIVE/INACTIVE/SOLD); app/api/admin/products/route.ts,
+KAN-20,E1-11,VORHANDEN,lib/ebay-sync.ts; lib/ebay-sync-diff.ts; app/api/admin/ebay-sync/route.ts; tests/ebay-sync-diff.test.mjs,
+KAN-21,E2-01,VORHANDEN,"app/api/products/route.ts Zeile 93 und 109 (Freitextsuche ueber Titel, Beschreibung, SKU); app/karten/page.tsx Zeile 163",
+KAN-22,E2-02,OFFEN,app/karten/page.tsx Zeile 163 (einfaches Eingabefeld),Es gibt keine Vorschlagsliste und keinen Autocomplete-Endpunkt.
+KAN-23,E2-03,OFFEN,"app/api/products/route.ts Zeile 94 (nur category, origin, Preis)",Ohne Sportart- und Saisonfelder im Datenmodell ist dieser Filter nicht baubar (haengt an E1-03).
+KAN-24,E2-04,OFFEN,"app/api/products/route.ts Zeile 20 (CATEGORIES: fixed, manual, prelisted)","Die vorhandene Kategorie ist die Verkaufsart, nicht Kartentyp oder Set (haengt an E1-03 und E1-04)."
+KAN-25,E2-05,OFFEN,app/api/products/route.ts Zeile 103 (Filterliste),"Kein Zustandsfilter, weil der Zustand nicht strukturiert erfasst ist (haengt an E1-05)."
+KAN-26,E2-06,VORHANDEN,app/api/products/route.ts Zeile 100 (min/max); app/karten/page.tsx Zeile 176 und 180; lib/catalog-availability.ts,
+KAN-27,E2-07,TEILWEISE,app/api/products/route.ts Zeile 103 und 124 (and-Verknuepfung aller Filter),Die vorhandenen Filter sind kombinierbar. Es fehlen die Filterdimensionen aus E2-03 bis E2-05.
+KAN-28,E2-08,OFFEN,app/api/products/route.ts Zeile 139 (fest: orderBy createdAt desc),Es gibt keinen Sortierparameter und kein Bedienelement zur Sortierung.
+KAN-29,E2-09,VORHANDEN,lib/pagination.ts; app/api/products/route.ts Zeile 91; app/karten/page.tsx Zeile 132; tests/cart-and-pagination.test.mjs,
+KAN-30,E2-10,VORHANDEN,app/karten/[id]/page.tsx; app/api/products/[id]/route.ts,
+KAN-31,E2-11,VORHANDEN,"app/karten/[id]/page.tsx Zeile 34 und 191 (Lightbox, Schliessen per Escape)",
+KAN-32,E2-12,OFFEN,app/karten/[id]/page.tsx,Keine Empfehlungs- oder Aehnlichkeitslogik auf der Detailseite.
+KAN-33,E2-13,VORHANDEN,"app/karten/page.tsx Zeile 185 und 186 (Lade-, Fehler- und Ergebniszustand); lib/catalog-availability.ts",
+KAN-34,E3-01,VORHANDEN,lib/cart.ts (cartButtonState); app/karten/[id]/page.tsx; tests/cart-and-pagination.test.mjs,
+KAN-35,E3-02,TEILWEISE,lib/cart.ts Zeile 28; app/checkout/page.tsx Zeile 203 (updateQuantity),"Alle Karten sind Einzelstuecke, die Menge ist damit faktisch 0 oder 1. Eine echte Mengenaenderung ist fachlich nicht vorgesehen."
+KAN-36,E3-03,VORHANDEN,app/checkout/page.tsx Zeile 203 (Entfernen); lib/cart.ts,
+KAN-37,E3-04,VORHANDEN,"app/checkout/page.tsx Zeile 203 (Zwischensumme, Versand, Gesamt, Ersparnis); lib/shipping.ts",
+KAN-38,E3-05,VORHANDEN,lib/catalog-availability.ts; lib/ebay-stock-guard.ts; lib/order-guard.ts; tests/catalog-availability.test.mjs,
+KAN-39,E3-06,VORHANDEN,lib/cart.ts; app/checkout/page.tsx (Warenkorb im Browserspeicher),
+KAN-40,E3-07,VORHANDEN,app/checkout/page.tsx Zeile 189 („Kein Kundenkonto noetig“); app/api/orders/route.ts; tests/guest-checkout.test.mjs,
+KAN-41,E3-08,VORHANDEN,app/api/orders/route.ts; lib/app-user.ts; app/account/page.tsx,
+KAN-42,E3-09,TEILWEISE,app/checkout/page.tsx Zeile 189; db/schema.ts Zeile 191 (shipping_address als JSON an der Bestellung),"Die Adresse wird je Bestellung erfasst, aber nicht als wiederverwendbare Adresse gespeichert (siehe E5-06)."
+KAN-43,E3-10,TEILWEISE,lib/shipping.ts; lib/shipping-countries.ts; tests/shipping-countries.test.mjs,"Versandkosten werden berechnet, eine Auswahl zwischen mehreren Versandarten gibt es im Checkout nicht."
+KAN-44,E3-11,VORHANDEN,app/checkout/page.tsx Zeile 200 (Bestelluebersicht vor der Zahlung),
+KAN-45,E3-12,VORHANDEN,lib/request-body.ts; lib/public-form.ts; app/checkout/page.tsx (Feldfehler und Meldungen),
+KAN-46,E4-01,VORHANDEN,lib/paypal/; app/api/paypal/orders/route.ts; app/api/paypal/capture/route.ts; app/checkout/paypal/success/page.tsx,
+KAN-47,E4-02,VORHANDEN,app/api/paypal/orders/route.ts (serverseitige Betragsberechnung); app/checkout/page.tsx Zeile 203,
+KAN-48,E4-03,VORHANDEN,app/checkout/paypal/cancel/page.tsx; app/api/paypal/capture/route.ts (Fehlerpfade),
+KAN-49,E4-04,VORHANDEN,db/schema.ts Zeile 163 (reservations); lib/order-guard.ts; tests/order-guard.test.mjs,
+KAN-50,E4-05,VORHANDEN,app/api/orders/release/route.ts; lib/order-guard.ts,
+KAN-51,E4-06,VORHANDEN,app/api/paypal/webhook/route.ts; lib/paypal/; tests/paypal-webhook.test.mjs,
+KAN-52,E4-07,VORHANDEN,db/schema.ts Zeile 181 (orders.status); app/api/admin/orders/route.ts Zeile 133; tests/n5-orders.test.mjs,
+KAN-53,E4-08,VORHANDEN,db/schema.ts Zeile 314 (webhook_events als Idempotenzschluessel); tests/paypal-webhook.test.mjs,
+KAN-54,E4-09,VORHANDEN,app/admin/orders-panel.tsx; app/api/admin/orders/route.ts,
+KAN-55,E4-10,VORHANDEN,"app/api/admin/orders/route.ts Zeile 133 (Statuswechsel, Versanddienst, Sendungsnummer); lib/shipping.ts",
+KAN-56,E4-11,VORHANDEN,db/schema.ts Zeile 198 (tracking_number); lib/shipping.ts Zeile 39 (trackingUrl); app/admin/orders-panel.tsx,
+KAN-57,E4-12,VORHANDEN,app/api/admin/orders/cancel/route.ts; app/api/admin/orders/refund/route.ts,
+KAN-58,E5-01,VORHANDEN,app/account/page.tsx Zeile 254; app/api/account/validate-registration/route.ts,
+KAN-59,E5-02,VORHANDEN,app/account/page.tsx Zeile 270; lib/supabase-server.ts (Bestaetigungsmail ueber Supabase),
+KAN-60,E5-03,VORHANDEN,app/account/page.tsx Zeile 210 und 278; lib/supabase-browser.ts,
+KAN-61,E5-04,VORHANDEN,app/account/page.tsx Zeile 248 (resetPasswordForEmail) und Zeile 366 („Passwort vergessen?“),
+KAN-62,E5-05,VORHANDEN,app/api/account/profile/route.ts; app/account/page.tsx Zeile 294; lib/user-profile.ts,
+KAN-63,E5-06,OFFEN,db/schema.ts Zeile 191 (Adresse haengt an der Bestellung),"Es gibt kein Adressbuch im Konto: Adressen lassen sich nicht anlegen, aendern oder wiederverwenden."
+KAN-64,E5-07,VORHANDEN,app/api/account/orders/route.ts; app/account/page.tsx Zeile 147,
+KAN-65,E5-08,VORHANDEN,app/api/account/orders/route.ts (Status und Sendungsnummer je Bestellung); lib/shipping.ts,
+KAN-66,E5-09,OFFEN,app/account/page.tsx,Kein Nachbestellen aus der Historie. Bei Einzelstuecken ist das fachlich ohnehin fraglich und sollte vor einer Umsetzung geklaert werden.
+KAN-67,E5-10,VORHANDEN,app/api/account/data/route.ts; app/api/account/delete/route.ts; lib/account-data.ts; lib/retention.ts; tests/n4-privacy-backup.test.mjs,
+KAN-68,E6-01,VORHANDEN,app/verkaufen/page.tsx; app/api/card-submissions/route.ts; db/schema.ts Zeile 264,
+KAN-69,E6-02,TEILWEISE,app/verkaufen/page.tsx Zeile 48 (Freitextfeld fuer Anzahl und Hinweise),Eine Sammlung wird als Freitext eingereicht; ein eigener Einreichungstyp mit Positionsliste fehlt.
+KAN-70,E6-03,VORHANDEN,app/verkaufen/page.tsx Zeile 54; db/schema.ts Zeile 277 (card_submission_assets); app/api/admin/card-submissions/assets/route.ts,
+KAN-71,E6-04,VORHANDEN,"app/verkaufen/page.tsx Zeile 44 bis 50 (Titel, Preiswunsch, Nachricht, E-Mail)",
+KAN-72,E6-05,TEILWEISE,app/verkaufen/page.tsx Zeile 48,Der Zustand wird im Freitext mitgeteilt; es gibt kein eigenes Zustandsfeld und keine Auswahl.
+KAN-73,E6-06,VORHANDEN,app/verkaufen/page.tsx Zeile 45 (Gewuenschter Preis),
+KAN-74,E6-07,VORHANDEN,app/api/card-submissions/route.ts; db/schema.ts Zeile 264 (card_submissions),
+KAN-75,E6-08,TEILWEISE,app/api/account/offers/route.ts; db/schema.ts Zeile 264 (status),"Der Status wird gefuehrt, aber Einreichende sehen ihn nicht im Konto; Rueckmeldung laeuft ueber E-Mail."
+KAN-76,E6-09,VORHANDEN,app/admin/requests-panel.tsx; app/api/admin/card-submissions/route.ts,
+KAN-77,E6-10,TEILWEISE,app/admin/requests-panel.tsx; lib/email/,Das Ankaufsangebot wird ausserhalb des Systems per E-Mail unterbreitet; ein Angebotsdatensatz zur Einreichung fehlt.
+KAN-78,E6-11,TEILWEISE,app/admin/requests-panel.tsx (Statuspflege durch Admins),Es gibt keine Annahme oder Ablehnung durch die einreichende Person im System.
+KAN-79,E6-12,OFFEN,lib/card-submission-cleanup.ts (nur Aufbewahrung und Loeschung),Uebergabe und Auszahlung sind nicht abgebildet; der Vorgang endet ausserhalb des Shops.
+KAN-80,E7-01,VORHANDEN,lib/admin-access.ts; app/admin/admin-auth.ts; app/admin/mfa-panel.tsx; app/api/admin/mfa/status/route.ts (Adminbereich erzwingt MFA-Stufe aal2),
+KAN-81,E7-02,TEILWEISE,lib/admin-access.ts; db/schema.ts Zeile 51 (users.role); Cloudflare-Secret ADMIN_EMAILS,Rollen kommen aus einer Allowlist und der Benutzertabelle. Eine Verwaltung von Rollen und Rechten in der Oberflaeche gibt es nicht.
+KAN-82,E7-03,VORHANDEN,app/api/admin/dashboard/route.ts; app/admin/page.tsx Zeile 16 (Kennzahlen und letzte Einreichungen),
+KAN-83,E7-04,TEILWEISE,app/admin/products-panel.tsx; app/api/admin/products/route.ts,"Anlegen und Sichtbarkeit sind moeglich. Preis-, Bild- und Bestandspflege bestehender Produkte fehlen (siehe E1-02, E7-05, E7-06)."
+KAN-84,E7-05,TEILWEISE,app/admin/products-panel.tsx Zeile 101 (Bilder nur beim Anlegen),"Bilder bestehender Produkte lassen sich nicht nachtraeglich ergaenzen, ersetzen, sortieren oder loeschen."
+KAN-85,E7-06,OFFEN,app/admin/products-panel.tsx; app/api/admin/products/route.ts,Es gibt kein Bedienelement und keinen Endpunkt zur Bestandskorrektur; der Bestand ist ausschliesslich sync- und bestellgetrieben.
+KAN-86,E7-07,VORHANDEN,"app/admin/orders-panel.tsx; app/api/admin/orders/route.ts (Liste, Blaettern, Statuswechsel, Storno, Erstattung)",
+KAN-87,E7-08,OFFEN,app/admin/ (kein Kundenbereich),Kundenkonten lassen sich im Adminbereich weder einsehen noch bearbeiten oder sperren.
+KAN-88,E7-09,VORHANDEN,app/admin/offers-panel.tsx; app/api/admin/offers/route.ts; lib/price-offers.ts,
+KAN-89,E7-10,OFFEN,db/schema.ts Zeile 72,"Es gibt keine Katalogstammdaten zu verwalten, solange Sets, Serien und Zustaende nicht modelliert sind (haengt an E1-03 bis E1-05)."
+KAN-90,E7-11,VORHANDEN,app/api/admin/ebay-sync/route.ts; db/schema.ts Zeile 290 (sync_runs); lib/sync-lock.ts; app/admin/page.tsx,
+KAN-91,E7-12,VORHANDEN,app/admin/outbox-panel.tsx; app/api/admin/ebay/outbox/route.ts; lib/ebay-outbox.ts; db/schema.ts Zeile 303 (sync_events); tests/ebay-outbox.test.mjs,
+KAN-92,E7-13,TEILWEISE,lib/admin-audit.ts; db/schema.ts Zeile 358 (audit_events),"Aenderungen werden protokolliert, aber es gibt keine Ansicht im Adminbereich, in der sich der Verlauf nachvollziehen laesst."
+KAN-93,E8-01,VORHANDEN,app/site-chrome.tsx (SiteHeader und SiteFooter auf allen Seiten),
+KAN-94,E8-02,VORHANDEN,app/site-chrome.tsx; app/checkout/page.tsx Zeile 207 (durchgaengige Rechtsnavigation),
+KAN-95,E8-03,VORHANDEN,app/globals.css (gemeinsame Token und Komponentenklassen fuer alle Seiten),
+KAN-96,E8-04,VORHANDEN,app/karten/page.tsx Zeile 192 (product-grid); app/globals.css,
+KAN-97,E8-05,VORHANDEN,app/karten/[id]/page.tsx; app/globals.css,
+KAN-98,E8-06,VORHANDEN,app/globals.css (12 Media-Queries); docs/jira/generated/brandycards-xray-responsive-viewports-update.csv,
+KAN-99,E8-07,VORHANDEN,app/site-chrome.tsx (Field-Komponente); app/globals.css (form-field); lib/public-form.ts,
+KAN-100,E8-08,VORHANDEN,app/karten/page.tsx Zeile 185; app/admin/page.tsx Zeile 22 (Lademeldungen je Ansicht),
+KAN-101,E8-09,VORHANDEN,app/karten/page.tsx Zeile 186; app/globals.css (empty-state),
+KAN-102,E8-10,TEILWEISE,app/karten/[id]/page.tsx Zeile 59 (Lightbox schliesst per Escape); app/globals.css (5 focus-visible-Regeln),"Es gibt keinen Sprunglink zum Inhalt, und die Lightbox haelt den Fokus nicht fest (im Code als bekannt vermerkt)."
+KAN-103,E8-11,TEILWEISE,"app/karten/page.tsx Zeile 163 und 190 (aria-label, role=status); app/karten/[id]/page.tsx",Aria-Auszeichnungen sind punktuell gesetzt. Ein durchgehender Screenreader-Nachweis ueber alle Seiten fehlt.
+KAN-104,E8-12,VORHANDEN,app/globals.css (focus-visible-Regeln und Aktivzustaende),
+KAN-105,E8-13,VORHANDEN,lib/ebay-images.ts; app/karten/page.tsx Zeile 196 (verkleinerte Rastervariante statt Original); tests/ebay-images.test.mjs,
+KAN-106,E8-14,VORHANDEN,app/globals.css; docs/jira/generated/brandycards-xray-responsive-viewports-update.csv (sieben gepruefte Viewports),
+KAN-107,E9-01,AUSSERHALB_CODE,docs/jira/generated/brandycards-story-acceptance-criteria.csv,"Governance-Arbeit in Jira und Xray. Der Stand steht dort, nicht im Repository."
+KAN-108,E9-02,AUSSERHALB_CODE,docs/jira/generated/brandycards-xray-tests.csv,"Governance-Arbeit in Jira und Xray. Der Stand steht dort, nicht im Repository."
+KAN-109,E9-03,AUSSERHALB_CODE,docs/jira/generated/brandycards-xray-native-steps.json,"Governance-Arbeit in Jira und Xray. Der Stand steht dort, nicht im Repository."
+KAN-110,E9-04,AUSSERHALB_CODE,docs/jira/generated/brandycards-xray-tests.csv,"Governance-Arbeit in Jira und Xray. Der Stand steht dort, nicht im Repository."
+KAN-111,E9-05,AUSSERHALB_CODE,docs/ai-handover.md (Auftrag 2026-08-14),"Governance-Arbeit in Jira und Xray. Der Stand steht dort, nicht im Repository."
+KAN-112,E9-06,AUSSERHALB_CODE,docs/ai-handover.md (Testplan KAN-898),"Governance-Arbeit in Jira und Xray. Der Stand steht dort, nicht im Repository."
+KAN-113,E9-07,AUSSERHALB_CODE,docs/ai-handover.md (Testausfuehrung KAN-899),"Governance-Arbeit in Jira und Xray. Der Stand steht dort, nicht im Repository."
+KAN-114,E9-08,AUSSERHALB_CODE,docs/jira/generated/brandycards-xray-tests.csv (Feld Tests),"Governance-Arbeit in Jira und Xray. Der Stand steht dort, nicht im Repository."
+KAN-115,E9-09,TEILWEISE,tests/ (32 Testdateien); npm test; .github/workflows/ci.yml,Eine automatisierte Regressionssuite existiert im Repository. Die Xray-Regressionssuite in Jira ist davon getrennt zu betrachten.
+KAN-116,E9-10,AUSSERHALB_CODE,docs/jira/generated/brandycards-xray-responsive-viewports-update.csv,"Governance-Arbeit in Jira und Xray. Der Stand steht dort, nicht im Repository."
+KAN-117,E9-11,AUSSERHALB_CODE,docs/jira/generated/brandycards-xray-screenshot-policy-update.csv; docs/jira/generated/e9-next-20/,"Governance-Arbeit in Jira und Xray. Der Stand steht dort, nicht im Repository."
+KAN-118,E9-12,AUSSERHALB_CODE,docs/jira/generated/e9-next-30/,"Governance-Arbeit in Jira und Xray. Der Stand steht dort, nicht im Repository."
+KAN-119,E9-13,AUSSERHALB_CODE,docs/jira/generated/brandycards-xray-tests.csv,"Governance-Arbeit in Jira und Xray. Der Stand steht dort, nicht im Repository."
+KAN-120,E9-14,AUSSERHALB_CODE,docs/ai-todo.md,"Governance-Arbeit in Jira und Xray. Der Stand steht dort, nicht im Repository."

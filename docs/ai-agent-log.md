@@ -1884,3 +1884,37 @@ verfälscht, ohne dass die Datei fehlerhaft aussah.
 Verifikation: Ausgabe 0 Mojibake-Treffer, Zeilenzahl unverändert 23123; ein
 Vergleich der ASCII-Gerüste von alter und neuer Datei zeigt genau diese 56
 Abweichungen, alle in Richtung generisch → spezifisch.
+
+
+## 2026-08-15 — Umsetzungsstand in der Kaskadenliste
+
+Die Kaskadenliste beschrieb bis hierher jede der 111 Stories so, als sei sie neu
+zu bauen — auch die, deren Funktion seit Monaten produktiv läuft. Wer sie als
+Arbeitsvorrat gelesen hätte, hätte bei „E4-01 Mit PayPal bezahlen" mit der
+Implementierung einer Zahlungsanbindung begonnen, die es gibt.
+
+Der Stand steht deshalb jetzt bei jeder Story, aber **nicht** als Ableitung zur
+Laufzeit. Er wird als eigene Datei `docs/jira/story-implementation-status.csv`
+gepflegt, weil eine Statusaussage nachprüfbar und widersprechbar sein muss: jede
+Zeile nennt die Datei, aus der der Status stammt, und bei allem außer VORHANDEN
+zusätzlich die konkrete Lücke. Eine Heuristik im Generator hätte dieselbe Aussage
+erzeugt, aber ohne Beleg und ohne Möglichkeit, ihr zu widersprechen.
+
+Vier Werte: VORHANDEN (63), TEILWEISE (19), OFFEN (16), AUSSERHALB_CODE (13).
+Der letzte Wert ist die ehrliche Antwort für Epic 9: Xray-Governance findet in
+Jira statt und lässt sich im Repository grundsätzlich nicht belegen — „offen" zu
+schreiben wäre dort eine Falschaussage gewesen.
+
+Die Grenze steht ausdrücklich in der Datei: VORHANDEN heißt „die Funktion
+existiert im Code", nicht „der Test ist bestanden". Der Vermerk ersetzt weder
+die fachliche Abnahme noch den Xray-Status.
+
+Auffällig ist die Struktur der offenen Punkte: E1-03 bis E1-05 (Klassifikation,
+Sets, Zustand) sind nicht modelliert, der Katalog ist titelbasiert. Daran hängen
+unmittelbar E2-03 bis E2-05 und E7-09. Diese fünf Stories sind keine fünf
+Aufgaben, sondern eine: ohne Attribute am Produkt ist keiner der Filter baubar.
+Das steht bei den betroffenen Stories jeweils als Abhängigkeit dabei.
+
+Fehlt eine Story in der Statusdatei, bricht der Generator ab, statt den Vermerk
+leer zu lassen. Ein leeres Feld läse sich wie „nichts bekannt", obwohl es nur
+vergessen wurde.
