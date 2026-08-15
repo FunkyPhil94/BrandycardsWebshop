@@ -60,44 +60,38 @@ eBay-Schreibpfad, dann bewerben.**
 
 ---
 
-## X. Testergebnisse brauchen einen auswertbaren Ort — ERGEBNIS DER JIRA-PRÜFUNG vom 2026-08-15
+## X. Xray-Testergebnisse ziehen — BRAUCHT XRAY-ZUGANG, Jira-API reicht nicht
 
-**Der ursprüngliche Auftrag ist erledigt und hat sich dabei selbst widerlegt.**
-Der Ist-Status wurde am 2026-08-15 über den Atlassian-MCP-Server aus
-`brandycards.atlassian.net` gelesen. Ergebnis:
+**Stand 2026-08-15.** Über den Atlassian-MCP-Server wurde gelesen, was die
+Jira-REST-API hergibt:
 
-- Alle 333 Testvorgänge stehen in der Statuskategorie „To Do".
-- Im ganzen Projekt (904 Vorgänge) ist genau einer „Fertig", keiner „In Arbeit".
+- Der **Jira-Vorgangsstatus** aller 333 Testvorgänge lautet „Zu erledigen".
 - 331 der 333 tragen Anhänge; ohne Anhang sind KAN-724 und KAN-835.
-- **Xray ist in dieser Instanz nicht installiert.** `Test`, `Precondition`,
-  `Test Set`, `Test Plan` und `Test Execution` sind projekteigene Vorgangstypen
-  (`scope: PROJECT`) ohne Ausführungsfelder. Es gibt kein Feld, das PASS, FAIL
-  oder BLOCKED trägt. Von den drei letztgenannten Typen existieren zusammen
-  drei Vorgänge — für 333 Tests.
+- Testplan KAN-898, Testausführung KAN-899 und Test Set KAN-1358 sind vorhanden.
 
-Die geplante Kreuztabelle Testergebnis × Umsetzungsstand ist damit nicht
-baubar: es gibt nur eine Achse. Wo Ergebnisse dokumentiert wurden, stecken sie
-in **Dateinamen von Anhängen** (Muster `KAN-565_S04_FAILED.png`) und nicht in
-einem Feld, das sich filtern, zählen oder über einen Testplan auswerten lässt.
+**Das ist nicht der gesuchte Wert.** Xray Cloud führt Testergebnisse (PASS,
+FAIL, TODO) in seinem eigenen Speicher, nicht in Jira-Feldern. Über die
+Jira-REST-API sind sie grundsätzlich nicht lesbar — der Atlassian-MCP-Server
+kann sie also nicht liefern, egal wie die Abfrage lautet. Aus dem durchgängigen
+„Zu erledigen" darf **nicht** geschlossen werden, dass nichts ausgeführt wurde;
+Vorgangsstatus und Testergebnis sind voneinander unabhängig.
 
-**Was daraus folgt — die eigentliche offene Aufgabe:** Bevor 333 Tests
-ausgeführt werden, braucht das Ergebnis einen Ort, an dem es maschinell
-auswertbar ist. Sonst ist nach dem Durchlauf genauso wenig bekannt wie vorher,
-nur mit mehreren tausend Screenshots mehr. Drei Wege stehen offen, die
-Entscheidung liegt beim Betreiber:
+**Zwei Wege, den Xray-Stand tatsächlich zu bekommen:**
 
-1. **Xray oder ein vergleichbares Test-Management installieren.** Löst das
-   Problem an der Wurzel, kostet Lizenz und Einrichtung.
-2. **Mit Bordmitteln arbeiten:** ein eigenes Statusfeld oder ein Workflow mit
-   den Zuständen PASS/FAIL/BLOCKED am Vorgangstyp `Test`. Kostenlos, aber die
-   Historie mehrerer Läufe geht verloren — ein Vorgang trägt nur einen Zustand.
-3. **Ergebnisse im Repository führen**, etwa als CSV neben
-   `story-implementation-status.csv`, und Jira nur als Beschreibungsablage
-   nutzen. Passt zur bisherigen Arbeitsweise, verlässt aber das Board.
+1. **Export aus Xray.** In der Testausführung KAN-899 beziehungsweise über die
+   Xray-Ansicht die Ergebnisliste als CSV exportieren und als
+   `docs/jira/xray-status-export.csv` ablegen. Kein Zugang nötig, rein manuell.
+2. **Xray-Cloud-API.** Braucht ein API-Schlüsselpaar (Client ID und Secret) aus
+   den Xray-Einstellungen. Das sind Geheimnisse: Sie gehören in
+   Umgebungsvariablen und niemals ins Repository. Ein Abfrageskript kann die
+   Werte aus der Umgebung lesen, ohne dass sie jemand anders zu Gesicht bekommt.
 
-**Erledigt wenn:** Der Ort für Testergebnisse ist entschieden und eingerichtet;
-ein Probelauf mit mindestens einem Test zeigt, dass sich das Ergebnis danach
-abfragen lässt, ohne Dateinamen zu lesen.
+**Erledigt wenn:** Für alle 333 Tests liegt das Xray-Ergebnis vor, ist gegen
+`brandycards-xray-tests.csv` auf Vollständigkeit geprüft und als Kreuztabelle
+gegen [story-implementation-status.csv](jira/story-implementation-status.csv)
+ausgewertet — die Antwort auf die Frage, welche Tests an fehlender Funktion
+scheitern und welche an etwas anderem. In der Kaskadenliste wird das Ergebnis
+mit Abrufdatum als Momentaufnahme ausgewiesen.
 
 **Grenze:** In Jira wurde nur gelesen. Kein Status, kein Vorgang und keine
 Ausführung wurde verändert.

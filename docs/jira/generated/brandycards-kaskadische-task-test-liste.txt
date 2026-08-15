@@ -35,12 +35,12 @@ Wichtig: Der Vermerk ist eine Einschätzung aus Codebelegen, keine Abnahme. „V
 Verteilung über alle 111 Stories: AUSSERHALB DES CODES (Jira-/Xray-Governance): 13; OFFEN: 16; TEILWEISE vorhanden: 19; VORHANDEN im Code: 63.
 
 IST-STATUS IN JIRA — MOMENTAUFNAHME VOM 2026-08-15
-Direkt aus brandycards.atlassian.net gelesen. Anders als der Umsetzungsstand, der aus dem Repository stammt und mit ihm mitwandert, ist dieser Abschnitt ein Stichtagswert und veraltet, sobald jemand in Jira etwas bewegt.
-- Alle 333 Testvorgänge stehen in der Statuskategorie „To Do". Kein einziger ist „In Arbeit" oder „Fertig".
-- Im gesamten Projekt (904 Vorgänge) steht genau ein Vorgang auf „Fertig", keiner auf „In Arbeit".
+Über die Jira-REST-API aus brandycards.atlassian.net gelesen. Anders als der Umsetzungsstand, der aus dem Repository stammt und mit ihm mitwandert, ist dieser Abschnitt ein Stichtagswert und veraltet, sobald jemand in Jira etwas bewegt.
+- Der Jira-Vorgangsstatus aller 333 Testvorgänge lautet „Zu erledigen" (Statuskategorie „To Do"). Keiner ist „In Arbeit" oder „Fertig".
 - 331 der 333 Testvorgänge tragen Anhänge; ohne Anhang sind KAN-724 (E5-06) und KAN-835 (E8-08).
-- Es gibt keinen Ausführungsstatus im Sinne von PASS, FAIL oder BLOCKED. Xray ist in dieser Instanz nicht installiert: Test, Precondition, Test Set, Test Plan und Test Execution sind projekteigene Vorgangstypen ohne Ausführungsfelder. Den drei vorhandenen Vorgängen dieser Typen stehen 333 Tests gegenüber.
-- Folge: Ein Vergleich „Testergebnis gegen Umsetzungsstand" ist derzeit nicht möglich. Es gibt nur eine Achse. Wo Ergebnisse dokumentiert wurden, stecken sie in Dateinamen von Anhängen und nicht in einem auswertbaren Feld.
+- Testplan KAN-898, Testausführung KAN-899 und Test Set KAN-1358 sind vorhanden.
+WICHTIG — was hier NICHT steht: Das Xray-Testergebnis (PASS, FAIL, TODO) ist etwas anderes als der Jira-Vorgangsstatus und in dieser Aufstellung nicht enthalten. Xray Cloud führt Ergebnisse in seinem eigenen Speicher, nicht in Jira-Feldern; über die Jira-REST-API sind sie grundsätzlich nicht lesbar. Aus dem durchgängigen „Zu erledigen" darf deshalb NICHT geschlossen werden, dass nichts ausgeführt wurde — die beiden Werte sind voneinander unabhängig.
+Der Xray-Stand ist damit weiterhin offen. Er lässt sich nur über die Xray-eigene API oder einen Export aus Xray beschaffen; siehe Punkt X in docs/ai-todo.md.
 
 MASSNAHMENPLAN FÜR EIN POSITIVES TESTERGEBNIS
 0. Zuerst den Umsetzungsstand der Story lesen. Ist er VORHANDEN, wird geprüft statt gebaut; ist er TEILWEISE, wird nur die genannte Lücke bearbeitet. Das verhindert, dass fertige Funktionen erneut umgesetzt werden.

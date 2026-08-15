@@ -1955,3 +1955,39 @@ derselbe Wert je Test.
 Die eigentliche Konsequenz steht als Punkt X in docs/ai-todo.md: Bevor 333 Tests
 ausgeführt werden, braucht das Ergebnis einen auswertbaren Ort. Sonst ist danach
 genauso wenig bekannt wie vorher, nur mit einigen tausend Screenshots mehr.
+
+
+## 2026-08-15 — Korrektur: Xray ist installiert, die Jira-API sieht es nur nicht
+
+Der Eintrag oben („Der Ist-Status aus Jira, und warum es ihn nicht gibt") war in
+seiner Kernaussage falsch und wird hiermit richtiggestellt. Der Betreiber hat
+widersprochen: Xray ist installiert, und es wurden Tests ausgeführt, die auf
+Passed, Failed und Todo stehen. Die Nachprüfung gibt ihm recht.
+
+Zwei Fehlschlüsse führten zur falschen Aussage:
+
+**`scope: PROJECT` beweist nichts.** Das Projekt ist team-managed
+(`simplified: true`), und dort sind *alle* Vorgangstypen projekteigen — auch
+`Epic`, `Story` und `Task`. Das stand in derselben Antwort, aus der die
+Behauptung abgeleitet wurde. Aus „projekteigener Vorgangstyp" folgt nicht
+„nicht von Xray angelegt".
+
+**Fehlende Felder sind bei Xray Cloud der Normalfall.** Xray Cloud führt
+Testergebnisse in seinem eigenen Speicher und nicht als Jira-Custom-Fields.
+Dass am Vorgang KAN-565 kein Feld mit PASS oder FAIL hängt, ist deshalb kein
+Befund über das Projekt, sondern eine Eigenschaft der Produktarchitektur. Der
+Atlassian-MCP-Server spricht die Jira-REST-API; die Xray-Daten liegen hinter
+einer anderen API und sind über diesen Weg grundsätzlich unerreichbar.
+
+Was von der Messung bleibt, ist gültig, aber enger als gedacht: Der
+**Jira-Vorgangsstatus** aller 333 Testvorgänge lautet „Zu erledigen". Das ist
+eine andere Größe als das **Xray-Testergebnis** und sagt nichts über
+ausgeführte Tests aus. Beide Werte sind unabhängig voneinander, und genau diese
+Unterscheidung — die im ursprünglichen Arbeitsauftrag ausdrücklich stand — wurde
+beim Auswerten fallengelassen.
+
+Lehre für künftige Sitzungen: Wenn eine Messung ein überraschend radikales
+Ergebnis liefert („es gibt gar keine Testergebnisse"), ist der wahrscheinlichere
+Grund ein blinder Fleck des Messverfahrens und nicht ein außergewöhnlicher
+Zustand des Messobjekts. Die Reichweite des eigenen Zugangs gehört geprüft,
+bevor aus einem Nichtfund ein Befund wird.
