@@ -5847,3 +5847,12 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 - Ziel: Jede der 111 Stories in der Kaskadenliste erhält einen belegten Vermerk, ob die Funktion im Code vorhanden, teilweise vorhanden oder offen ist; der Remediationsauftrag wird entsprechend als erfüllt oder offen gekennzeichnet.
 - Umsetzung: Der Stand wird als eigene, versionierte Datenquelle docs/jira/story-implementation-status.csv mit Belegspalte gepflegt und vom Generator eingelesen. Grundlage sind Dateien im Repository und docs/ai-todo.md, kein Rateschluss.
 - Rahmen: Keine Anwendungscodes und keine Produktionsdaten ändern. Kein Status ohne konkreten Beleg; unklare Fälle werden ausdrücklich als ungeprüft ausgewiesen statt als erfüllt.
+
+## Auftrag 2026-08-15: Umsetzungsstand in die Kaskadenliste einarbeiten — abgeschlossen
+- Ergebnis: Alle 111 Stories tragen in der Kaskadenliste einen Block „UMSETZUNGSSTAND" mit Dateibeleg und, wo zutreffend, benannter Lücke. Der Remediationsauftrag beginnt jetzt mit einer Einordnung, die zwischen prüfen und bauen unterscheidet.
+- Datenquelle: docs/jira/story-implementation-status.csv, versioniert und von Hand pflegbar. Verteilung: VORHANDEN 63, TEILWEISE 19, OFFEN 16, AUSSERHALB_CODE 13.
+- Schutz: Fehlt eine Story in der Statusdatei, bricht der Generator mit Nennung des Schlüssels ab; geprüft durch einen Testlauf ohne KAN-85.
+- Prüfung: Ausgabe 23628 Zeilen, 0 Mojibake, 111 Statusblöcke, 111 Einordnungszeilen, 48 Lückenzeilen (entspricht 19+16+13). Alle drei berührten Dateien tragen eine UTF-8-BOM.
+- Grenze: Der Stand ist aus Codebelegen abgeleitet und ersetzt weder die fachliche Abnahme noch den Xray-Status. Kein Anwendungscode und keine Produktionsdaten berührt.
+- Begründung ausführlich in docs/ai-agent-log.md.
+- Status: ABGESCHLOSSEN.
