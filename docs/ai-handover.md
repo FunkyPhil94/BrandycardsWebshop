@@ -5881,3 +5881,12 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 - Falle für die nächste Sitzung: `status = "Zu erledigen"` liefert in JQL 0 Treffer, obwohl alle Vorgänge diesen Status tragen. Über `statusCategory = "To Do"` abfragen.
 - Rahmen eingehalten: In Jira ausschließlich gelesen.
 - Status: ABGESCHLOSSEN.
+
+
+## Auftrag 2026-08-15: Korrektur des Jira-Befunds
+- Status: ABGESCHLOSSEN.
+- Anlass: Der Betreiber widersprach der Aussage, Xray sei nicht installiert. Zu Recht.
+- Richtigstellung: Xray ist installiert. Die Jira-REST-API kann seine Ergebnisse nicht sehen, weil Xray Cloud sie im eigenen Speicher führt statt in Jira-Feldern. Der Fehlschluss beruhte auf `scope: PROJECT` (bei team-managed Projekten tragen das alle Vorgangstypen, auch Epic und Story) und auf fehlenden Custom Fields (bei Xray Cloud der Normalfall).
+- Gültig bleibt: Der Jira-Vorgangsstatus aller 333 Testvorgänge lautet „Zu erledigen". Das ist eine andere Größe als das Xray-Testergebnis und sagt nichts über ausgeführte Tests.
+- Bereinigt: Falschaussagen aus der Kaskadenliste und aus Punkt X in docs/ai-todo.md entfernt; beide Stellen weisen jetzt ausdrücklich aus, was über die Jira-API nicht sichtbar ist. Korrekturbegründung in docs/ai-agent-log.md.
+- Weiterhin offen: Der Xray-Stand selbst. Er braucht einen Export aus Xray oder die Xray-Cloud-API mit eigenem Schlüsselpaar; der Atlassian-MCP-Server reicht dafür grundsätzlich nicht.
