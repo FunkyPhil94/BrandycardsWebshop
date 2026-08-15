@@ -374,6 +374,14 @@ Add-Line '4. Qualitätssicherung und Betriebsbeobachtung: Unit-/Integrations-/UI
 Add-Line '5. Xray-Testausführung: Happy Path, negative/Grenzwertfälle sowie Berechtigungs-, Betriebs-, Responsive- oder Accessibility-Fälle.'
 Add-Line 'Ein Test darf erst als vollständige Abnahme gelten, wenn seine vier Story-Tasks abgeschlossen, Testdaten vorbereitet und die geforderten Screenshots je Schritt hinterlegt sind.'
 Add-Line ''
+Add-Line 'MASSNAHMENPLAN FÜR EIN POSITIVES TESTERGEBNIS'
+Add-Line '1. Mensch oder KI setzt die vier Tasks der abgedeckten Story in der angegebenen Reihenfolge um; die konkreten Änderungen stehen je Story unter „Umsetzungs- und Remediationauftrag“.'
+Add-Line '2. Nach jeder Task-Umsetzung werden Ziel und „Erledigt wenn“-Kriterien gegen Code, Konfiguration, Daten, Rollen und UI geprüft; offene Abweichungen werden als Bug oder Folge-Task dokumentiert.'
+Add-Line '3. Vor der Xray-Ausführung werden die genannten Testdaten, Benutzerrollen, Umgebungen und Integrationen reproduzierbar vorbereitet.'
+Add-Line '4. Der Test wird vollständig ausgeführt. Jeder Schritt erhält ein tatsächliches Ergebnis und einen eigenen Screenshot; UI-Tests werden zusätzlich in allen sieben definierten Viewports geprüft.'
+Add-Line '5. PASS wird nur gesetzt, wenn erwartetes Ergebnis, alle Schritte, alle Nachweise und die fachliche Abnahme erfüllt sind. Bei FAIL oder BLOCKED bleiben Befund, Ursache, Bugreferenz und nächste Anpassung dokumentiert.'
+Add-Line '6. Die Datei ist ein Umsetzungs- und Abnahmeplan. Sie ändert keinen Code automatisch und ersetzt keine aktuelle Jira-/Xray-Statusprüfung.'
+Add-Line ''
 Add-Line 'EMPFOHLENE PHASEN'
 for ($stage = 0; $stage -le 8; $stage++) {
     Add-Line (('{0}. {1}' -f $stage, (Get-StageTitle $stage)))
@@ -425,9 +433,23 @@ foreach ($story in $orderedStories) {
         Add-IndentedBlock $story.Description
     }
 
+    $storyTasks = @($taskByStory[$story.Key])
+    $taskKeys = ($storyTasks | ForEach-Object { $_.Key }) -join ', '
+    Add-Line ''
+    Add-Line 'UMSETZUNGS- UND REMEDIATIONSAUFTRAG FÜR POSITIVE TESTERGEBNISSE'
+    Add-Line ('  Verantwortlich: Mensch oder KI kann die Umsetzung durchführen; die fachliche Abnahme und die Entscheidung über die Freigabe bleiben beim Team.')
+    Add-Line ('  Umzusetzen in dieser Kaskade: ' + $taskKeys + '.')
+    $remediationNumber = 0
+    foreach ($remediationTask in $storyTasks) {
+        $remediationNumber++
+        Add-Line ('  {0}. TASK {1}: konkrete Änderung bzw. Anpassung' -f $remediationNumber, $remediationTask.Key)
+        Add-IndentedBlock (Get-Paragraph $remediationTask.Description 'Ziel') '     Ziel: '
+        Add-IndentedBlock (Get-Paragraph $remediationTask.Description 'Erledigt wenn') '     Abnahme: '
+    }
+    Add-Line '  Abschlussbedingung: Erst wenn alle vier Tasks umgesetzt und ihre Abnahmekriterien belegt sind, darf der zugehörige Xray-Test als vollständige Umsetzungskontrolle starten.'
+
     Add-Line ''
     Add-Line 'TASKS IN AUFBAUREIHENFOLGE'
-    $storyTasks = @($taskByStory[$story.Key])
     $taskNumber = 0
     foreach ($task in $storyTasks) {
         $taskNumber++
@@ -467,6 +489,12 @@ foreach ($story in $orderedStories) {
         Add-Line '    Responsive Viewports und Nachweis:'
         Add-IndentedBlock (Get-Paragraph $test.Description 'Responsive Viewports') '      '
         Add-IndentedBlock (Get-Paragraph $test.Description 'Beleg und Nachbereitung') '      '
+        Add-Line '    LÖSUNGS- UND NACHWEISPLAN FÜR PASS:'
+        Add-Line ('      1. Umsetzung: Die Story-Tasks {0} sind abgeschlossen; ihre Ziele und Abnahmekriterien sind geprüft.' -f $taskKeys)
+        Add-Line '      2. Vorbereitung: Die Vorbedingungen, Testdaten, Benutzerrollen, Umgebung und erforderlichen Integrationen sind reproduzierbar hergestellt.'
+        Add-Line '      3. Ausführung: Alle oben genannten Schritte werden in Reihenfolge ausgeführt und mit einem tatsächlichen Ergebnis dokumentiert.'
+        Add-Line '      4. Beweis: Jeder Schritt erhält einen eigenen Screenshot; bei UI-Fällen kommt je definierter Auflösung ein zusätzlicher Screenshot hinzu. Geheimnisse werden maskiert.'
+        Add-Line '      5. Korrekturzyklus: Bei einer Abweichung werden Ursache und Bug erfasst, die betroffene Task- oder Codeanpassung umgesetzt und anschließend genau dieser Test erneut ausgeführt.'
         Add-Line '    Ausführungsregel: Erst nach den erforderlichen Story-Tasks ausführen; bei FAIL reproduzierbaren Befund und Bugreferenz ergänzen; bei PASS müssen alle Schritte und Belege vorhanden sein.'
     }
 }

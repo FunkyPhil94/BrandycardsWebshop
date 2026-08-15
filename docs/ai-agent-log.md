@@ -1,5 +1,32 @@
 # BrandyCards Agentenprotokoll
 
+## 2026-08-15 - KAN-897 nach Responsive-Fix erneut ausgeführt und Maßnahmenplan ergänzt
+
+KAN-897 war der erste nicht bestandene Test in der absteigenden Prüfung der
+Xray-Ausführung KAN-899. Die Ursache war die bereits bekannte Wide-Screen-
+Darstellung aus KAN-1355. Der zugehörige Shop-Fix aus Commit `25f3257` war
+bereits produktiv als Version
+`0bd8f09e-40b3-45cc-aae1-8cb073904fe8` ausgerollt; deshalb war in diesem
+Durchlauf keine weitere Codeänderung erforderlich.
+
+Der vierte native Xray-Schritt von KAN-897 wurde mit dem tatsächlichen
+Retest-Ergebnis aktualisiert und von `FAILED` auf `PASSED` gesetzt. Die drei
+vorherigen Schritte waren bereits `PASSED`; damit steht KAN-897 im Testlauf
+KAN-899 insgesamt auf `PASSED`. Als Nachweis wurden sieben neue Screenshots an
+KAN-897 angehängt: 1440 x 900, 1920 x 1080, 2560 x 1440, 3440 x 1440,
+3840 x 2160, 768 x 1024 und 390 x 844 CSS-Pixel. Die Jira-Anhangszahl beträgt
+damit 20.
+
+Die zuvor erzeugte Textdatei enthielt bereits Tasks, Ziele, Erledigt-Kriterien,
+Testschritte, erwartete Ergebnisse, Viewports und Screenshotregeln. Sie hatte
+aber noch keinen ausdrücklich benannten Plan, welche Änderungen Mensch oder KI
+vornehmen und welche Nachweise vor einem positiven Testergebnis vorliegen
+müssen. Deshalb wurden `docs/jira/artifact_work/build-cascade-list.ps1` und
+die daraus erzeugte
+`docs/jira/generated/brandycards-kaskadische-task-test-liste.txt` erweitert:
+globaler Maßnahmenplan, konkrete vier Task-Umsetzungen je Story sowie ein
+Lösungs- und Nachweisplan je Xray-Test inklusive Korrekturzyklus bei FAIL.
+
 ## 2026-08-15 - Kaskadierende Gesamtübersicht für Jira-Tasks und Xray-Tests
 
 Für die vorhandenen Jira-/Xray-Importdaten wurde eine vollständige, lesbare

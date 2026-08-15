@@ -39,15 +39,18 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 <!-- Fuer den naechsten Auftrag freihalten. -->
 
-### 2026-08-15 - Erste offene Xray-Tests analysieren und beheben
-
-- Status: LÄUFT.
-- Ziel: Den ersten noch offenen oder nicht gelösten Test in Xray KAN-899 identifizieren, die Ursache fachlich und technisch prüfen, eine echte Code-/Konfigurationsbehebung umsetzen und den Test mit vollständigen Schritt- und Viewport-Nachweisen erneut ausführen.
-- Rahmen: Bestehende Tests nur nach sichtbarer Prüfung auf PASS/FAIL/TODO setzen; keine Ergebnisse erfinden. Bei einem echten Shopfehler Code ändern und lokal sowie produktiv prüfen; bei einem reinen Werkzeug-/Testdatenblocker die Ursache dokumentieren und den Test nicht künstlich bestehen lassen.
-- Geplant: Xray-Ausführungsreihenfolge auslesen, ersten offenen Test samt Story/Tasks analysieren, kleinsten belastbaren Fix umsetzen, Tests ausführen, Screenshots in allen vereinbarten Auflösungen hinterlegen und Jira/Xray aktualisieren.
-- Offen: Welcher Test der erste offene Fall ist und ob seine Ursache im Shop, in Testdaten, in Xray-Schritten oder in der Browserausführung liegt.
+Keine laufenden Aufträge.
 
 ## Historie
+
+### 2026-08-15 - KAN-897 nach behobenem Responsive-Fehler erneut ausgeführt
+
+- Status: ABGESCHLOSSEN.
+- Befund: KAN-897 war der erste nicht bestandene Test in der absteigenden Prüfung des Xray-Laufs KAN-899. Der Fehler bezog sich auf KAN-1355 und war bereits durch den produktiv ausgerollten Fix aus Commit `25f3257` behoben.
+- Jira/Xray: Schritt 4 „Korrektur erneut testen“ wurde mit dem tatsächlichen Retest-Ergebnis aktualisiert und von `FAILED` auf `PASSED` gesetzt. Damit stehen alle vier nativen Schritte und der Testlauf KAN-897 auf `PASSED`.
+- Nachweise: Sieben neue Anhänge mit den Viewports 1440x900, 1920x1080, 2560x1440, 3440x1440, 3840x2160, 768x1024 und 390x844 CSS-Pixel wurden an KAN-897 gespeichert. Die Jira-Anhangszahl stieg von 13 auf 20.
+- Code: In diesem Durchlauf war keine weitere Shop-Codeänderung erforderlich; die technische Ursache war bereits behoben und der Retest bestätigte die Korrektur.
+- Dokumentation: `docs/jira/generated/brandycards-kaskadische-task-test-liste.txt` und der Generator wurden um einen globalen Maßnahmenplan sowie pro Story und Test um konkrete Umsetzungs-, Remediation- und Nachweisvorgaben ergänzt. Damit ist ausdrücklich dokumentiert, was Mensch oder KI umsetzen und vor `PASS` nachweisen muss.
 
 ### 2026-08-15 - Kaskadierende Jira-Task-/Xray-Testliste erstellt
 
