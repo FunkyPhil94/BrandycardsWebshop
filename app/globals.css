@@ -735,3 +735,8 @@ footer { background:var(--ink); color:#fff; padding:52px max(48px,calc((100vw - 
   .catalog-select,.catalog-price { justify-content:space-between; }
   .catalog-select select,.catalog-price input { flex:1; }
 }
+
+/* Keep the split copy's growing desktop padding from consuming its content
+   box at wide viewports. The text paragraphs retain their own readable max
+   width; the grid item itself must remain wide enough for that padding. */
+.split-copy { max-width:none; min-width:0; }
