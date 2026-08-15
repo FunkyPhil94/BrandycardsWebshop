@@ -5942,3 +5942,12 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 - Ziel: 35 story-spezifische Testfälle für die Wege, an denen Geld hängt, als docs/jira/new-test-cases.csv. Ersetzt die 333 Schablonen mit 27 Abläufen.
 - Rahmen: Nur Vorbereitung im Repository. Nichts nach Jira schreiben, solange das neue Projekt nicht existiert; der Betreiber löscht und legt es selbst an.
 - Hinweis: Die bestehenden Import-CSVs verweisen auf Schlüssel und interne IDs des alten Boards und sind ohne Nacharbeit nicht wiederverwendbar. Der Import läuft deshalb in Runden mit Neuschreiben der Verknüpfungen dazwischen.
+
+
+## Auftrag 2026-08-15: Neues Board BWS befüllen
+- Status: LÄUFT.
+- Ausgangslage: Projekt KAN gelöscht, neues Projekt BWS („BrandyCards Webshop Projekt", team-managed, id 10033) angelegt. Xray-Vorgangstypen fehlen dort noch; verfügbar sind nur Sub-Task, Epic, Task, Story, Feature, Bug.
+- Ziel: 9 Epics, 111 Stories und 444 Tasks anlegen und die tatsächlich vergebenen Schlüssel zurückschreiben, damit die Repository-Dateien nicht mehr auf feste Nummern angewiesen sind.
+- Umsetzung: docs/jira/artifact_work/import-board.mjs, Runden nacheinander (Epics, Stories, Tasks), Verknüpfung jeweils über die echten Schlüssel der Vorrunde. Zugangsdaten nur aus der Umgebung.
+- Offen bis zur Freischaltung von Xray: die 35 Testfälle aus docs/jira/new-test-cases.csv.
+- Rahmen: Nur anlegen, nichts löschen. Wiederholter Lauf darf keine Dubletten erzeugen.
