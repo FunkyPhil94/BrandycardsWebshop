@@ -1,5 +1,65 @@
 # BrandyCards Agentenprotokoll
 
+## 2026-08-16 - Variante 2: die Grammatik gehört dorthin, wo die Regeln stehen
+
+Variante 1 war ausgerollt und nachweislich scharf, als der Betreiber sprechend
+prüfte: „absolut schrecklich, aber sie funktioniert prinzipiell". Das ist kein
+Fehlschlag, sondern ein Messergebnis. Die Vorauswahl kann nur unter dem wählen,
+was SAPI ihr anbietet; enthält keine der fünf Lesarten die gemeinte Frage, hilft
+der beste Schiedsrichter nichts. Damit war die Annahme hinter Variante 1
+widerlegt — die richtige Lesart ist meist gar nicht dabei — und der Engpass
+eindeutig lokalisiert.
+
+**Freies Diktat ist der falsche Betriebsfall.** Eine `DictationGrammar()` spannt
+die gesamte deutsche Sprache auf und muss aus Millionen Wortfolgen die
+wahrscheinlichste raten. Genau darin ist die alte SAPI-Desktop-Erkennung
+schwach. Bekommt sie stattdessen eine geschlossene Liste von Sätzen, wird aus
+dem Raten ein Vergleich — das ist der Fall, für den die Engine gebaut wurde.
+
+**Die eigentliche Schwierigkeit war nicht die Grammatik, sondern ihr Ort.** Die
+Fragemuster liegen bereits im serverseitigen Planer. Sie im Desktop noch einmal
+hinzuschreiben, wäre die Doppelpflege gewesen, die Phase 4 abgeschafft hat —
+und sie wäre schlimmer als die alte: Zwei Listen, die auseinanderdriften,
+erzeugen Fragen, die der Nutzer perfekt ausspricht und trotzdem nicht
+beantwortet bekommt. Der ärgerlichste denkbare Fehler.
+
+Die Phrasen stehen deshalb in `ASSISTANT_SPEECH_PHRASES` neben den Planerregeln
+und werden über die bestehende `GET`-Route mitgeliefert; ein neuer Pfad
+entstand nicht. Zusammengehalten werden beide Seiten **durch einen Test, nicht
+durch Disziplin**: Jede ausgelieferte Phrase muss durch den
+`RuleBasedAssistantPlanner` laufen und mindestens ein Werkzeug treffen. Eine
+Phrase, die er nicht versteht, macht die Suite rot. Zusätzlich wird verlangt,
+dass die Grammatik mindestens zehn der zwölf Werkzeuge erreicht — eine
+Grammatik, die nur zwei Ecken abdeckt, verengte den Suchraum auf den falschen
+Ausschnitt.
+
+**Beide Grammatiken laufen nebeneinander, und das ist Absicht.** Eine
+geschlossene Grammatik kennt nur ihre Sätze; alles andere presst sie in den
+nächstgelegenen. Das freie Diktat bleibt deshalb geladen und fängt auf, was
+nicht vorgesehen war. Ein Grammatiktreffer wird den Diktatlesarten nur
+oberhalb einer Konfidenzschwelle vorgezogen — sie trennt „das war eine dieser
+Fragen" von „das war es nicht, hier ist die ähnlichste". Der Startwert 0,5 ist
+ausdrücklich geraten und gehört am Gerät nachjustiert; eine ehrlichere Zahl gibt
+es vor dem ersten echten Sprechen nicht.
+
+Die beiden Schichten greifen dabei ineinander: Grammatiktreffer kommen in der
+Kandidatenliste nach vorn, und darüber entscheidet weiterhin die Vorauswahl aus
+Variante 1. Variante 1 wurde damit nicht ersetzt, sondern bekommt bessere
+Kandidaten.
+
+**Der Nebenbefund war die halbe Erklärung wert.** `SelectRecognizer()` fällt
+notfalls auf irgendeinen installierten Erkenner zurück — auf einem Gerät ohne
+deutsche Sprachfunktion also auf einen englischen, stillschweigend. Die
+Statusmeldung nennt die verwendete Sprache jetzt. Zugleich wird die deutsche
+Grammatik einem nichtdeutschen Erkenner gar nicht erst untergeschoben:
+`GrammarBuilder` und Erkenner müssen dieselbe Kultur haben, sonst wirft schon
+das Laden.
+
+**Nebenbei hat die Prüfung ihren eigenen Wächter bestätigt.** Beim Durchmessen
+aller 16 Phrasen über die echte Route antworteten die letzten acht mit 429. Die
+Ratenbegrenzung greift also wirklich — und das ist genau der Grund, aus dem
+Variante 1 alle Kandidaten in einer einzigen Anfrage prüft statt in fünf.
+
 ## 2026-08-16 - Variante 1: der Planer entscheidet, welche Lesart gemeint war
 
 Die Spracheingabe war „etwas ungenau". Das Mikrofon war es nicht, die

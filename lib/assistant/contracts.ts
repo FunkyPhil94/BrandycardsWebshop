@@ -53,6 +53,43 @@ export const ASSISTANT_TOOL_DEFINITIONS = [
   availability: AssistantToolAvailability;
 }[];
 
+/** Die Sätze, auf die die lokale Spracherkennung ihren Suchraum verengt.
+ *
+ * **Warum das hier steht und nicht im Desktop.** Diese Liste ist die Grammatik
+ * der Spracheingabe. Läge sie in C#, gäbe es die Fragemuster zweimal — einmal
+ * hier in den Planerregeln, einmal dort — und sie liefen auseinander, sobald
+ * jemand nur eine Seite anfasst. Genau diese Doppelpflege hat Phase 4 beseitigt.
+ *
+ * **Was sie zusammenhält, ist ein Test, keine Disziplin.**
+ * `tests/assistant-speech-grammar.test.mjs` schickt jede Phrase durch den
+ * `RuleBasedAssistantPlanner` und verlangt mindestens ein Werkzeug. Eine Phrase,
+ * die der Planer nicht versteht, wäre eine Frage, die der Nutzer perfekt
+ * ausspricht und trotzdem nicht beantwortet bekommt — der ärgerlichste
+ * denkbare Fehler. Der Test macht ihn unmöglich.
+ *
+ * **Es sind bewusst ganze Sätze, keine Stichwörter.** Ein Erkenner mit
+ * Wortlisten muss die Wortgrenzen selbst finden; einer mit Sätzen kennt sie.
+ * Für alles, was hier nicht steht, bleibt das freie Diktat daneben geladen.
+ */
+export const ASSISTANT_SPEECH_PHRASES = [
+  "Welche Karte wurde zuletzt verkauft?",
+  "Welche Karte wurde zuletzt eingestellt?",
+  "Welche Bestellungen sind neu?",
+  "Welche Bestellungen muss ich bearbeiten?",
+  "Welche offenen Preisvorschläge gibt es?",
+  "Gibt es offene Preisvorschläge bei eBay?",
+  "Welcher Bestand ist knapp?",
+  "Welche Lagerbestände sind kritisch?",
+  "Wie viele Verkäufe hatte ich in den letzten 30 Tagen?",
+  "Wie viel Umsatz hatte ich in den letzten 7 Tagen?",
+  "Zeig mir die Statistik.",
+  "Wie läuft der Shop?",
+  "Wie ist der Stand des eBay-Abgleichs?",
+  "Welche eBay-Angebote wurden am häufigsten angesehen?",
+  "Gibt es neue Nachrichten bei eBay?",
+  "Gibt es neue Anfragen im Shop?",
+] as const;
+
 export type AssistantToolInput<K extends AssistantToolName = AssistantToolName> = {
   tool: K;
   limit: number;

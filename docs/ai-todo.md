@@ -24,9 +24,12 @@ benutzt `System.Speech` mit einer blanken `DictationGrammar()` — die alte
 SAPI-Desktop-Erkennung. Freies Diktat trifft Fachvokabular schlecht, und die
 Fragen bestehen genau daraus.
 
-**Stand 2026-08-16:** Variante 1 ist gebaut und geprüft (siehe unten). Offen
-bleiben der gesprochene Nachweis am Gerät, die beiden weiteren Ansätze für den
-Fall, dass Variante 1 nicht reicht, und der Nebenbefund zur Erkennersprache.
+**Stand 2026-08-16:** Variante 1 ist ausgerollt und **gesprochen geprüft** — das
+Urteil des Betreibers: „absolut schrecklich, aber sie funktioniert
+prinzipiell". Damit ist belegt, dass die Auswahl nicht der Engpass ist, sondern
+das, was SAPI überhaupt anbietet. **Variante 2 ist daraufhin gebaut** (siehe
+unten) und wartet auf Rollout und gesprochenen Nachweis. Der Nebenbefund zur
+Erkennersprache ist mit erledigt.
 
 ### ~~Variante 1 — Beste Alternative statt der ersten~~ — ERLEDIGT am 2026-08-16
 
@@ -115,23 +118,52 @@ Doppelpflege, die Phase 4 beseitigt hat. Zwei gangbare Wege:
 
 </details>
 
-### Weitere Ansätze, falls Variante 1 nicht reicht
+### ~~Variante 2 — Domänengrammatik neben das Diktat~~ — GEBAUT am 2026-08-16
 
-- **Eine Domänengrammatik neben das Diktat legen.** Ein `GrammarBuilder` mit
-  den tatsächlichen Fragemustern und ihren Schlüsselwörtern. Erkannt werden
-  muss nicht der ganze Satz, sondern nur das Wort, an dem der Planer hängt.
+Variante 1 reichte nicht: gesprochen geprüft und für „absolut schrecklich"
+befunden, obwohl die Vorauswahl nachweislich lief. Der Grund ist strukturell —
+die Auswahl kann nur nehmen, was SAPI anbietet.
+
+**Umgesetzt:** 16 Fragemuster in `ASSISTANT_SPEECH_PHRASES`
+([contracts.ts](../lib/assistant/contracts.ts)), ausgeliefert über die
+bestehende `GET`-Route. Der Desktop baut daraus einen `GrammarBuilder` und lädt
+ihn **neben** dem freien Diktat; Grammatiktreffer oberhalb der
+Konfidenzschwelle kommen in der Kandidatenliste nach vorn, wo die Vorauswahl aus
+Variante 1 weiter entscheidet.
+
+**Die Phrasen stehen serverseitig, und ein Test hält sie am Planer fest.** Jede
+muss auf mindestens ein Werkzeug fallen, die Grammatik insgesamt mindestens
+zehn der zwölf erreichen, und keine darf im Desktop fest verdrahtet sein. Ohne
+diesen Test wären es zwei Listen, die auseinanderdriften — und das Ergebnis
+wäre eine Frage, die der Nutzer perfekt ausspricht und trotzdem nicht
+beantwortet bekommt.
+
+**Mit erledigt:** Der Nebenbefund unten. Die Statusmeldung nennt jetzt die
+Erkennersprache, und einem nichtdeutschen Erkenner wird die deutsche Grammatik
+gar nicht erst untergeschoben.
+
+**Offen:** Rollout **und** Desktop-Neubau — anders als bei Variante 1 genügt die
+Serverseite hier nicht. Danach der gesprochene Nachweis. Die Schwelle
+`MinimumDomainConfidence = 0.5` ist ein Startwert und gehört am Gerät
+nachjustiert.
+
+### Bleibt, falls auch Variante 2 nicht reicht
+
 - **Auf `Windows.Media.SpeechRecognition` wechseln** (WinRT, ebenfalls
-  offline). Größerer Umbau, moderne Engine.
+  offline). Größerer Umbau, moderne Engine. **Achtung:** Sie setzt
+  Paketidentität voraus — genau deshalb wurde sie in Phase 3 verworfen, weil
+  der unpackaged Startpfad mit Pet-Overlay umgebaut werden müsste.
 
 Unabhängig davon hilft dem SAPI-Erkenner das Windows-Sprachtraining
 (Systemsteuerung → Spracherkennung → „Sprachtraining starten") spürbar. Das ist
 Betreibersache und kostet ein paar Minuten.
 
-**Nebenbefund, eigener kleiner Punkt:** `SelectRecognizer()` fällt notfalls auf
-`installedRecognizers.FirstOrDefault()` zurück — auf einem Gerät ohne deutsche
-Sprachfunktion also auf einen englischen Erkenner, **stillschweigend**. Eine
-deutsche Frage an eine englische Erkennung erklärt jede Ungenauigkeit. Es sollte
-mindestens in der Statusmeldung stehen, in welcher Sprache zugehört wurde.
+**~~Nebenbefund~~ — ERLEDIGT am 2026-08-16 mit Variante 2:**
+`SelectRecognizer()` fiel notfalls auf `installedRecognizers.FirstOrDefault()`
+zurück — auf einem Gerät ohne deutsche Sprachfunktion also auf einen englischen
+Erkenner, **stillschweigend**. Die Statusmeldung nennt die verwendete Sprache
+jetzt („Diktat erkannt (Deutsch (Deutschland))"), und die deutsche Grammatik
+wird einem nichtdeutschen Erkenner gar nicht erst untergeschoben.
 
 ---
 

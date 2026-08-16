@@ -47,6 +47,7 @@ public sealed partial class MainPage : Page
     private bool _assistantPanelExpanded;
     private bool _assistantRequestRunning;
     private bool _speechRecognitionRunning;
+    private IReadOnlyList<string>? _speechPhrases;
     private bool _conversationInitialized;
 
     private static readonly IReadOnlyDictionary<string, AnimationSpec> Animations = new Dictionary<string, AnimationSpec>(StringComparer.OrdinalIgnoreCase)
@@ -302,10 +303,13 @@ public sealed partial class MainPage : Page
         if (_assistantRequestRunning || _speechRecognitionRunning) return;
 
         SetSpeechRecognitionBusy(true);
-        AssistantStatusTextBlock.Text = "Windows hört zu …";
         try
         {
-            var transcription = await _speechRecognitionService.TranscribeOnceAsync();
+            // Die Fragemuster einmal je Sitzung holen, bevor das Mikrofon
+            // aufgeht -- danach kostet das Diktat keine zusätzliche Wartezeit.
+            var phrases = await EnsureSpeechPhrasesAsync();
+            AssistantStatusTextBlock.Text = "Windows hört zu …";
+            var transcription = await _speechRecognitionService.TranscribeOnceAsync(phrases);
             if (!transcription.Succeeded)
             {
                 AssistantStatusTextBlock.Text = transcription.StatusMessage;
@@ -333,6 +337,21 @@ public sealed partial class MainPage : Page
             SetSpeechRecognitionBusy(false);
             AssistantInputTextBox.Focus(FocusState.Programmatic);
         }
+    }
+
+    /// <summary>
+    /// Holt die Fragemuster für die Spracherkennung einmal je Sitzung.
+    ///
+    /// Gescheiterte Versuche werden nicht gemerkt: Wer beim ersten Diktat
+    /// offline war, soll beim zweiten die Grammatik bekommen. Ein Erfolg wird
+    /// gemerkt, damit nicht jedes Diktat eine Anfrage kostet.
+    /// </summary>
+    private async Task<IReadOnlyList<string>?> EnsureSpeechPhrasesAsync()
+    {
+        if (_speechPhrases is not null) return _speechPhrases;
+        if (string.IsNullOrWhiteSpace(_settings.DeviceToken)) return null;
+        _speechPhrases = await _assistantService.GetSpeechPhrasesAsync(NormalizeShopUrl(_settings.ShopUrl), _settings.DeviceToken);
+        return _speechPhrases;
     }
 
     /// <summary>

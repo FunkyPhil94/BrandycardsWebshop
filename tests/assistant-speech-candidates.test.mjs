@@ -102,10 +102,13 @@ test("die Erkennung reicht die Alternativen heraus, statt sie zu verwerfen", asy
   const speech = await read(SPEECH);
   // Ohne MaxAlternates bleibt die zweitbeste Lesart im Erkenner liegen.
   assert.match(speech, /recognizer\.MaxAlternates = MaxCandidates;/u);
-  assert.match(speech, /result\.Alternates\.Select\(alternate => alternate\.Text\)/u);
+  assert.match(speech, /lesarten\.AddRange\(result\.Alternates\);/u);
   assert.match(speech, /if \(candidates\.Count == MaxCandidates\) break;/u);
-  // Position 0 muss verlässlich das sein, was die Erkennung von sich aus gab.
-  assert.match(speech, /new\[\] \{ result\.Text \}\.Concat/u);
+  // Die beste Lesart steht in der Liste vorn, damit das freie Diktat seine
+  // eigene Reihenfolge behält. Seit Variante 2 dürfen Grammatiktreffer davor
+  // -- aber nur sie, und nur oberhalb der Konfidenzschwelle.
+  assert.match(speech, /new List<RecognizedPhrase> \{ result \}/u);
+  assert.match(speech, /\.Where\(IstGrammatiktreffer\)[\s\S]*OrderByDescending\(phrase => phrase\.Confidence\)/u);
   assert.match(speech, /candidates\.Contains\(trimmed, StringComparer\.OrdinalIgnoreCase\)/u);
   // Phase 3 gilt weiter: Audio und Transkript bleiben lokal.
   assert.doesNotMatch(speech, /HttpClient|https?:\/\//u);

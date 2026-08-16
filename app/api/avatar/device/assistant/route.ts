@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { ASSISTANT_TOOL_DEFINITIONS, AssistantRequestError, parseAssistantQuestionInput } from "../../../../../lib/assistant/contracts";
+import { ASSISTANT_SPEECH_PHRASES, ASSISTANT_TOOL_DEFINITIONS, AssistantRequestError, parseAssistantQuestionInput } from "../../../../../lib/assistant/contracts";
 import { createServerAssistantOrchestrator } from "../../../../../lib/assistant/server-orchestrator";
 import { authenticateAvatarDevice } from "../../../../../lib/avatar-device-auth";
 import { enforcePublicRateLimit, RateLimitError } from "../../../../../lib/rate-limit";
@@ -20,7 +20,16 @@ export async function GET(request: Request) {
     if (!(await authorize(request))) {
       return NextResponse.json({ error: "Desktop-Assistent ist nicht gekoppelt." }, { status: 401, headers: NO_STORE });
     }
-    return NextResponse.json({ readOnly: true, orchestrated: true, input: "message", tools: ASSISTANT_TOOL_DEFINITIONS }, { headers: NO_STORE });
+    // `speechPhrases` ist die Grammatik der lokalen Spracherkennung. Sie wird
+    // hier mitgeliefert, damit die Fragemuster nur an einer Stelle stehen --
+    // im Desktop nachgebaut wären sie eine zweite, driftende Regelkopie.
+    return NextResponse.json({
+      readOnly: true,
+      orchestrated: true,
+      input: "message",
+      tools: ASSISTANT_TOOL_DEFINITIONS,
+      speechPhrases: ASSISTANT_SPEECH_PHRASES,
+    }, { headers: NO_STORE });
   } catch (error) {
     if (error instanceof RateLimitError) {
       return NextResponse.json({ error: error.message }, { status: error.status, headers: { ...NO_STORE, "retry-after": String(error.retryAfterSeconds) } });

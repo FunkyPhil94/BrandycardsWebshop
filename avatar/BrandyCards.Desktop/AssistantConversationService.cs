@@ -63,6 +63,41 @@ internal sealed class AssistantConversationService(HttpClient httpClient)
     internal readonly record struct AssistantAnswer(bool Succeeded, string Text);
 
     /// <summary>
+    /// Holt die Fragemuster für die lokale Spracherkennung.
+    ///
+    /// Die Liste ist die Grammatik der Spracheingabe und wird **serverseitig
+    /// gepflegt**, direkt neben den Planerregeln; ein Test hält beide
+    /// aneinander. Hier wird sie nur abgeholt — steht sie nicht zur Verfügung,
+    /// gibt es <c>null</c> und die Erkennung läuft wie bisher mit freiem
+    /// Diktat. Eine ältere Serverfassung ohne dieses Feld ist damit kein
+    /// Fehlerfall, sondern schlicht der Zustand von vorher.
+    /// </summary>
+    public async Task<IReadOnlyList<string>?> GetSpeechPhrasesAsync(string shopUrl, string deviceToken, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            timeout.CancelAfter(ProbeTimeout);
+
+            using var request = new HttpRequestMessage(HttpMethod.Get, $"{shopUrl}/api/avatar/device/assistant");
+            request.Headers.Authorization = new("Bearer", deviceToken);
+
+            using var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeout.Token);
+            if (!response.IsSuccessStatusCode) return null;
+
+            var body = await ReadBoundedBodyAsync(response, timeout.Token);
+            if (body.Outcome != BodyOutcome.Complete) return null;
+
+            var phrases = ReadStringArray(body.Text, "speechPhrases");
+            return phrases.Count == 0 ? null : phrases;
+        }
+        catch (Exception exception) when (exception is HttpRequestException or IOException or OperationCanceledException or JsonException)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
     /// Zeitrahmen der Lesartenprüfung — deutlich kürzer als der einer Frage.
     ///
     /// Die Prüfung entscheidet serverseitig allein nach Regeln, ohne Datenbank
@@ -228,6 +263,44 @@ internal sealed class AssistantConversationService(HttpClient httpClient)
     private enum FieldKind { Found, Missing, NotJson }
 
     private readonly record struct JsonField(FieldKind Kind, string? Value);
+
+    /// <summary>
+    /// Liest ein Feld mit Zeichenkettenliste. Nicht-Texte und Leereinträge
+    /// fallen weg; die Zahl ist begrenzt, weil aus dieser Liste eine Grammatik
+    /// gebaut wird und deren Größe die Erkennung bremst.
+    /// </summary>
+    private static IReadOnlyList<string> ReadStringArray(string body, string field)
+    {
+        var werte = new List<string>();
+        try
+        {
+            using var document = JsonDocument.Parse(body);
+            if (document.RootElement.ValueKind != JsonValueKind.Object) return werte;
+            if (!document.RootElement.TryGetProperty(field, out var value)) return werte;
+            if (value.ValueKind != JsonValueKind.Array) return werte;
+
+            foreach (var element in value.EnumerateArray())
+            {
+                if (werte.Count == MaxSpeechPhrases) break;
+                if (element.ValueKind != JsonValueKind.String) continue;
+                var text = element.GetString()?.Trim();
+                if (!string.IsNullOrEmpty(text)) werte.Add(text);
+            }
+        }
+        catch (JsonException)
+        {
+            return [];
+        }
+
+        return werte;
+    }
+
+    /// <summary>
+    /// Obergrenze für die Grammatik. Weit über den derzeit ausgelieferten
+    /// Sätzen, aber nicht unbegrenzt: Die Liste kommt über das Netz, und eine
+    /// beliebig große Grammatik zu bauen kostet Zeit vor jedem Diktat.
+    /// </summary>
+    internal const int MaxSpeechPhrases = 200;
 
     private static JsonField ReadStringField(string body, string field)
     {

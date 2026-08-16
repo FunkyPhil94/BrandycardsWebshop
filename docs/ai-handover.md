@@ -37,9 +37,15 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
+<!-- Fuer den naechsten Auftrag freihalten. -->
+
+Keine laufenden Aufträge.
+
+## Historie
+
 ### 2026-08-16 - Variante 2: Domänengrammatik neben das Diktat
 
-- Stand: **LÄUFT.**
+- Stand: **ABGESCHLOSSEN**, gebaut und geprüft. **Nicht ausgerollt.**
 - Vorgeschichte: Variante 1 ist ausgerollt und **nachweislich scharf** — die
   Prüfroute antwortet produktiv mit 401 statt 404. Der Betreiber hat danach
   gesprochen geprüft: „absolut schrecklich, aber sie funktioniert prinzipiell".
@@ -81,7 +87,52 @@ Dazu der gesprochene Nachweis am Gerät — den kann nur der Betreiber führen.
 **Nicht Teil des Auftrags:** Produktionsdaten, Remote-Migrationen,
 eBay-Schreibvorgänge. `NativePetOverlay.cs` bleibt unberührt.
 
-## Historie
+**Ergebnis: gebaut, alle vier Prüfungen grün.**
+
+| Prüfung | Ergebnis |
+|---|---|
+| `npm test` | 535/535 |
+| `npx tsc --noEmit` | fehlerfrei |
+| `npm run lint` | 0 Fehler (bekannte Hook-Warnung bleibt) |
+| WinUI x64 Debug | 0 Warnungen, 0 Fehler |
+
+Es werden **16 Phrasen** ausgeliefert, die **12 Werkzeuge** erreichen. Sechs
+neue Tests in `tests/assistant-speech-grammar.test.mjs`; der wichtigste schickt
+jede Phrase durch den Planer, ein zweiter verlangt Abdeckung von mindestens
+zehn Werkzeugen, ein dritter verbietet die Phrasen fest im Desktop.
+
+**End-to-end lokal belegt** (Dev-Server, kurzlebiges lokales Token, danach
+entfernt):
+
+- `GET /api/avatar/device/assistant` liefert mit Token HTTP 200, **16
+  `speechPhrases`** und 12 Werkzeuge.
+- **Alle 16 Phrasen** einzeln über `POST …/probe`: durchweg `selectedIndex: 0`.
+- Gemischt — Diktatunsinn zuerst, Grammatikphrase danach:
+  `["Welcher Baum steht im Garten", "Welche Bestellungen sind neu?"]` →
+  `selectedIndex: 1`. Die beiden Schichten greifen also ineinander.
+
+**Der Wächter hat sich selbst bestätigt:** Beim Durchmessen aller 16 Phrasen
+antworteten die letzten acht mit **429**. Die Ratenbegrenzung greift wirklich —
+genau der Grund, aus dem Variante 1 alle Kandidaten in *einer* Anfrage prüft.
+Nach Ablauf des Fensters liefen die verbliebenen acht sauber durch.
+
+**Aufgeräumt:** Testtoken gelöscht, Tabelle entfernt (0 `avatar%`-Tabellen),
+Dev-Server gestoppt. Keine Produktionsdaten, keine Remote-Migration, kein
+eBay-Schreibvorgang, kein Deployment. `NativePetOverlay.cs` hat keinen Diff.
+
+**Was offen bleibt:**
+
+1. **Der gesprochene Nachweis.** Ob die Grammatik die Trefferquote wirklich
+   hebt, zeigt nur das Mikrofon. Das ist der eigentliche Zweck dieser Änderung
+   und der einzige Punkt, den keine Suite abdecken kann.
+2. **Die Konfidenzschwelle von 0,5 ist geraten**, nicht gemessen
+   (`MinimumDomainConfidence`). Greift die Grammatik zu selten, muss sie runter;
+   zieht sie fremde Sätze an sich, muss sie hoch. Erst am Gerät zu beurteilen.
+3. **Nicht ausgerollt.** Ohne Deploy liefert die `GET`-Route keine
+   `speechPhrases`, und der Desktop bleibt beim freien Diktat — genau der
+   Zustand von vorher, ohne Fehlermeldung. Der Desktop muss zusätzlich neu
+   gebaut werden; die Serverseite allein genügt hier **nicht**, anders als bei
+   Variante 1.
 
 ### 2026-08-16 - Variante 1 der Spracherkennung umsetzen
 
