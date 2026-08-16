@@ -39,7 +39,23 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 <!-- Fuer den naechsten Auftrag freihalten. -->
 
-Keine laufenden Aufträge.
+### 2026-08-16 - Phase 4 des Desktop-Assistenten: zentraler Read-only-Orchestrator
+
+- Status: LÄUFT.
+- Auftrag: Einen zentralen Orchestrator für freie Fragen zu BrandyCards-Shop-
+  und eBay-Daten implementieren. Text- und vorhandene Spracheingabe sollen
+  denselben Orchestrator verwenden, der ausschließlich registrierte
+  Read-only-Tools auswählt und kurze deutsche, quellengebundene Textantworten
+  mit sauberer Behandlung von Fehlern, leeren und nicht verfügbaren Daten
+  erzeugt.
+- Sicherheitsgrenzen: Keine modellgenerierten SQL-Abfragen, Schreiboperationen,
+  Nachrichten, Angebote, eBay-Änderungen, Produktionsänderungen, Remote-
+  Migrationen oder Deployments. `NativePetOverlay` und das transparente Pet
+  bleiben unverändert.
+- Geplante Prüfung: Verträge und Tool-Rückgaben prüfen; Routing,
+  Tool-Auswahl, fehlende Daten, Fehler und Sicherheitsgrenzen automatisiert
+  testen; die lokale Desktop-App bauen und Text- sowie Spracheingabe über den
+  gemeinsamen Orchestrator end-to-end prüfen.
 
 ## Historie
 
