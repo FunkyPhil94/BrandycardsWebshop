@@ -37,9 +37,31 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-<!-- Fuer den naechsten Auftrag freihalten. -->
+### 2026-08-16 - Die Aufrufzahlen-Sperre aufheben, nachdem die Zustimmung erneuert wurde
 
-Keine laufenden Aufträge.
+- Stand: **LÄUFT.**
+- Vorgeschichte: Der Betreiber hat die eBay-Zustimmung mit beiden Scopes erneut
+  durchlaufen und den neuen `EBAY_REFRESH_TOKEN` hinterlegt — Cloudflare hat um
+  17:45:10 UTC die Version `a8863f44` mit `Source: Secret Change` auf 100 %
+  gestellt. Den Schreibzugriff hat er über „eBay-Schreibzugriff prüfen"
+  bestätigt; `sell.inventory` ist also mitgekommen.
+- Problem: `ebay_read_syncs` trägt für `TRAFFIC` noch den Fehlversuch von
+  15:48 UTC. Nach einem `SCOPE_NOT_GRANTED` wartet der Lesesync sechs Stunden
+  (`EBAY_READ_SYNC_BLOCKED_BACKOFF_MS`) — die Sperre war gegen sinnloses
+  Dagegenlaufen gedacht und steht jetzt der frischen Zustimmung im Weg. Von
+  allein liefe der nächste Versuch erst gegen 21:48 UTC.
+- Eingriff (**Schreibzugriff auf Produktionsdaten, vom Betreiber ausdrücklich
+  freigegeben**): `UPDATE ebay_read_syncs SET last_attempt_at = NULL WHERE
+  data_type = 'TRAFFIC'`. `isEbayReadSyncDue` behandelt eine fehlende
+  Zeitangabe als „lange her" und gibt den Datentyp sofort wieder frei; der
+  nächste Cron-Schlag (alle 3 Minuten) holt die Zahlen.
+- Warum diese Zeile ungefährlich ist: `ebay_read_syncs` ist eine reine
+  Zustandstabelle, keine Nutzdaten. Betroffen ist genau ein Feld einer Zeile,
+  und der nächste Lauf überschreibt es ohnehin. Die drei Datentabellen bleiben
+  unberührt.
+- Abnahme: `ebay_read_syncs` nach dem nächsten Lauf lesen — `TRAFFIC` muss auf
+  `OK` stehen oder einen **anderen** Grund als `SCOPE_NOT_GRANTED` nennen.
+  `MESSAGES` und `BEST_OFFERS` dürfen sich dabei nicht verschlechtern.
 
 ## Historie
 
