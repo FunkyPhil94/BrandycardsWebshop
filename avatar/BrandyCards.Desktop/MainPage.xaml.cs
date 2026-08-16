@@ -3,8 +3,11 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media.Imaging;
+using VirtualKey = Windows.System.VirtualKey;
 
 namespace BrandyCards_Desktop;
 
@@ -19,6 +22,7 @@ public sealed partial class MainPage : Page
     private readonly DispatcherQueue _dispatcherQueue;
     private readonly Queue<PendingAnimation> _animationQueue = new();
     private readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web);
+    private readonly AssistantConversationService _assistantService;
     private AvatarSettings _settings = new();
     private DeviceCursor? _cursor;
     private NativePetOverlay? _petOverlay;
@@ -26,6 +30,9 @@ public sealed partial class MainPage : Page
     private int _frameIndex;
     private bool _polling;
     private bool _initialized;
+    private bool _assistantPanelExpanded;
+    private bool _assistantRequestRunning;
+    private bool _conversationInitialized;
 
     private static readonly IReadOnlyDictionary<string, AnimationSpec> Animations = new Dictionary<string, AnimationSpec>(StringComparer.OrdinalIgnoreCase)
     {
@@ -46,6 +53,7 @@ public sealed partial class MainPage : Page
         _idleTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(160) };
         _idleTimer.Tick += IdleTimer_Tick;
         _httpClient.Timeout = TimeSpan.FromSeconds(12);
+        _assistantService = new AssistantConversationService(_httpClient);
         SpriteImage.Source = new BitmapImage(new Uri(Path.Combine(AppContext.BaseDirectory, "Assets", "spritesheet.png")));
         ApplyFrame();
     }
@@ -218,6 +226,127 @@ public sealed partial class MainPage : Page
         Disconnect("Bitte einen neuen Pairing-Code eingeben.", clearToken: true);
     }
 
+    private void LauncherButton_Click(object sender, RoutedEventArgs e) => SetAssistantPanelExpanded(!_assistantPanelExpanded);
+
+    private void CloseAssistantButton_Click(object sender, RoutedEventArgs e) => SetAssistantPanelExpanded(false);
+
+    private void Page_KeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (e.Key == VirtualKey.Escape && _assistantPanelExpanded)
+        {
+            SetAssistantPanelExpanded(false);
+            e.Handled = true;
+        }
+    }
+
+    private async void SendAssistantButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_assistantRequestRunning) return;
+
+        var message = AssistantInputTextBox.Text.Trim();
+        if (message.Length == 0)
+        {
+            AssistantStatusTextBlock.Text = "Bitte gib zuerst eine Nachricht ein.";
+            AssistantInputTextBox.Focus(FocusState.Programmatic);
+            return;
+        }
+
+        AddConversationMessage("Du", message, isUser: true);
+        AssistantInputTextBox.Text = string.Empty;
+        SetAssistantBusy(true);
+        try
+        {
+            if (string.IsNullOrWhiteSpace(_settings.DeviceToken))
+            {
+                throw new InvalidOperationException("Der Assistant ist nicht gekoppelt. Bitte ändere die Verbindung und kopple das Gerät erneut.");
+            }
+
+            var shopUrl = NormalizeShopUrl(_settings.ShopUrl);
+            var reply = await _assistantService.AskAsync(shopUrl, _settings.DeviceToken, message);
+            AddConversationMessage("Assistant", reply, isUser: false);
+            AssistantStatusTextBlock.Text = "Antwort empfangen";
+        }
+        catch (Exception ex)
+        {
+            AddConversationMessage("Assistant", $"Die Anfrage konnte nicht ausgeführt werden: {ex.Message}", isUser: false);
+            AssistantStatusTextBlock.Text = "Anfrage fehlgeschlagen";
+        }
+        finally
+        {
+            SetAssistantBusy(false);
+            AssistantInputTextBox.Focus(FocusState.Programmatic);
+        }
+    }
+
+    private void SetAssistantPanelExpanded(bool expanded)
+    {
+        _assistantPanelExpanded = expanded;
+        AssistantPanel.Visibility = expanded ? Visibility.Visible : Visibility.Collapsed;
+        LauncherSubtitleTextBlock.Text = expanded ? "Textpanel geöffnet" : "Textpanel öffnen";
+        LauncherChevronIcon.Glyph = expanded ? "\uE70E" : "\uE70D";
+        AutomationProperties.SetName(LauncherButton, expanded ? "BrandyCards Assistant schließen" : "BrandyCards Assistant öffnen");
+        ((App)Application.Current).MainWindow?.ConfigureLauncherWindow(expanded);
+
+        if (expanded)
+        {
+            EnsureConversationInitialized();
+            AssistantInputTextBox.Focus(FocusState.Programmatic);
+        }
+        else
+        {
+            LauncherButton.Focus(FocusState.Programmatic);
+        }
+    }
+
+    private void EnsureConversationInitialized()
+    {
+        if (_conversationInitialized) return;
+        _conversationInitialized = true;
+        AddConversationMessage(
+            "Assistant",
+            "Hallo! Ich kann fest definierte, ausschließlich lesende Fragen zu Verkäufen, Listings, Bestellungen, Preisvorschlägen, Bestand, Anfragen, eBay-Sync und Statistiken beantworten.",
+            isUser: false);
+    }
+
+    private void AddConversationMessage(string author, string message, bool isUser)
+    {
+        var text = new TextBlock
+        {
+            Text = message,
+            Style = (Style)Application.Current.Resources["ConversationBodyTextStyle"],
+        };
+        var authorText = new TextBlock
+        {
+            Text = author,
+            Style = (Style)Application.Current.Resources["ConversationAuthorTextStyle"],
+        };
+        var content = new StackPanel { Spacing = 3 };
+        content.Children.Add(authorText);
+        content.Children.Add(text);
+
+        var messageBorder = new Border
+        {
+            Style = (Style)Application.Current.Resources[isUser ? "UserMessageBorderStyle" : "AssistantMessageBorderStyle"],
+            MaxWidth = 420,
+            HorizontalAlignment = isUser ? HorizontalAlignment.Right : HorizontalAlignment.Left,
+            Child = content,
+        };
+        AutomationProperties.SetName(messageBorder, $"{author}: {message}");
+        ConversationPanel.Children.Add(messageBorder);
+        ConversationScrollViewer.UpdateLayout();
+        ConversationScrollViewer.ChangeView(null, ConversationScrollViewer.ScrollableHeight, null);
+    }
+
+    private void SetAssistantBusy(bool isBusy)
+    {
+        _assistantRequestRunning = isBusy;
+        AssistantProgressRing.IsActive = isBusy;
+        AssistantProgressRing.Visibility = isBusy ? Visibility.Visible : Visibility.Collapsed;
+        AssistantInputTextBox.IsEnabled = !isBusy;
+        SendAssistantButton.IsEnabled = !isBusy;
+        if (isBusy) AssistantStatusTextBlock.Text = "Assistant liest Daten …";
+    }
+
     private void Disconnect(string message, bool clearToken = true)
     {
         _pollTimer.Stop();
@@ -238,7 +367,9 @@ public sealed partial class MainPage : Page
     private void EnterSetupMode()
     {
         _petOverlay?.Hide();
+        _assistantPanelExpanded = false;
         SetupSurface.Visibility = Visibility.Visible;
+        ConnectedSurface.Visibility = Visibility.Collapsed;
         AvatarPanel.Visibility = Visibility.Collapsed;
         ((App)Application.Current).MainWindow?.ConfigureSetupWindow();
     }
@@ -246,11 +377,12 @@ public sealed partial class MainPage : Page
     private void EnterPetMode()
     {
         SetupSurface.Visibility = Visibility.Collapsed;
+        ConnectedSurface.Visibility = Visibility.Visible;
         AvatarPanel.Visibility = Visibility.Collapsed;
         _petOverlay ??= new NativePetOverlay(
             Path.Combine(AppContext.BaseDirectory, "Assets", "spritesheet.png"),
             () => _dispatcherQueue.TryEnqueue(() => Disconnect("Bitte erneut koppeln.", clearToken: true)));
-        ((App)Application.Current).MainWindow?.ConfigurePetWindow();
+        ((App)Application.Current).MainWindow?.ConfigureLauncherWindow();
         _petOverlay.Show();
         _idleTimer.Start();
     }

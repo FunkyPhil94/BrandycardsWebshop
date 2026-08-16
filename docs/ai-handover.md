@@ -37,22 +37,22 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-### 2026-08-16 - Desktop-Pet zum sicheren persönlichen Assistenten ausbauen
+<!-- Fuer den naechsten Auftrag freihalten. -->
 
-- Status: LÄUFT.
-- Ziel: Das bestehende per-pixel-transparente Desktop-Pet als zentrale Oberfläche behalten und schrittweise um eine sichere, ausschließlich textuell antwortende Assistenz erweitern.
-- Phasen: (1) serverseitige read-only Assistant-API und typisierte Datenwerkzeuge, (2) WinUI-Menü und Textkommunikation, (3) Spracheingabe zu Text, (4) zentraler Orchestrator, (5) Tests und lokale Verifikation.
-- Aktueller Fokus: Phase 2 ergänzt neben dem unveränderten nativen per-pixel-transparenten Desktop-Pet ein eigenständiges, fokussierbares WinUI-Launcherfenster. Dessen Launcher öffnet und schließt ein ausschließlich textuelles Assistenzpanel, das per Maus und Tastatur bedienbar ist und die in Phase 1 bestehende read-only Geräte-API nutzt.
-- Sicherheitsrahmen: Keine Produktionsdaten verändern, keine Remote-Migrationen ausführen und nichts deployen. eBay-, Datenbank- und sonstige Secrets bleiben ausschließlich serverseitig; schreibende Assistant-Aktionen sind nicht Bestandteil dieser Phase.
-- Bekannte Datenlücken: eBay-Aufrufzahlen und eBay-Nachrichten sind derzeit weder zuverlässig persistiert noch über einen vorhandenen Read-Client angebunden und müssen bis zu einer späteren, expliziten Integration als nicht verfügbar ausgewiesen werden.
-- Zwischenstand Phase 1: ABGESCHLOSSEN. Neue Geräte-API `/api/avatar/device/assistant`, feste Tool-Allowlist und typisierte Shop-/eBay-/Verkaufs-/Angebots-/Nachrichten-/Statistikwerkzeuge implementiert. Es existiert kein Assistant-Schreibwerkzeug und kein Pfad für modellgeneriertes SQL; DTOs schließen Kunden-, Token- und Provider-Rohdaten aus. Die lokale Migration `0011_avatar_assistant_scope.sql` hält bestehende Tokens auf `EVENTS`; nur neu gekoppelte, auf 90 Tage begrenzte Geräte erhalten `ASSISTANT_READ`.
-- Prüfung Phase 1: Fokussierte Assistant-Tests 11/11, `npx tsc --noEmit` erfolgreich, Produktions-Build erfolgreich, vollständige Suite 367/367 bestanden. Separater WinUI-x64-Debug-Build des unveränderten Pets erfolgreich mit 0 Warnungen und 0 Fehlern. ESLint meldet nur die vorbestehende Hook-Warnung in `app/account/page.tsx`.
-- Umsetzung Phase 2 geplant: Das bestehende unpackaged WinUI-Projekt behält `NativePetOverlay` und dessen Animations-/Eventpfad unverändert. Das vorhandene WinUI-Hauptfenster wird im gekoppelten Zustand als zugänglicher Launcher mit einem einblendbaren Textpanel genutzt; eingebaute WinUI-Controls, Theme-Ressourcen, sichtbare Fokuszustände, sinnvolle Automation-Namen und eine definierte Tab-Reihenfolge bilden die Bedienoberfläche. Noch keine Spracheingabe und kein freier Orchestrator; Assistant-API-Änderungen nur bei technisch zwingendem UI-Bedarf.
-- Prüfung Phase 2 geplant: x64-Debug-Build, relevante automatisierte Tests sowie echter lokaler Start mit visueller und tastaturbasierter Sichtprüfung von Pet, Launcher und Textpanel. Keine Produktion, Remote-Migration oder Deployment.
-- Nächster Schritt nach Phase 2: Vor produktiver Nutzung HTTPS-Zielprüfung, DPAPI-geschützte Tokenablage und einen Widerrufs-/Rotationspfad umsetzen; Sprache und Orchestrierung bleiben späteren Phasen vorbehalten.
-- Unverändert: Keine Produktionsdaten, Remote-Migrationen, eBay-Schreibvorgänge oder Deployments ausgeführt.
+Keine laufenden Aufträge.
 
 ## Historie
+
+### 2026-08-16 - Phase 2 des Desktop-Assistenten: zugänglicher WinUI-Launcher
+
+- Status: ABGESCHLOSSEN.
+- Ergebnis: Neben dem unveränderten nativen per-pixel-transparenten Pet bleibt jetzt ein separates, fokussierbares WinUI-Launcherfenster sichtbar. Der Launcher öffnet und schließt ein lesbares Textpanel; Pet-Overlay, Atlas-Rendering, Animationen und Event-Polling wurden nicht verändert.
+- Kommunikation: Natürlich formulierter Text wird lokal und deterministisch auf die zehn festen read-only Phase-1-Werkzeuge abgebildet. Unbekannte Fragen zeigen lokal Beispiele; kein freier Orchestrator, keine Spracheingabe und keine Änderung der Assistant-API.
+- Zugänglichkeit: Standard-WinUI-Controls mit Automation-Namen, logischer Tab-Reihenfolge, sichtbaren Fokuszuständen, Live-Status, Fokus im Eingabefeld beim Öffnen und Rückfokus zum Launcher beim Schließen. Light-, Dark- und High-Contrast-Ressourcen sowie DPI-skalierte Fenstermaße sind berücksichtigt.
+- Prüfung: x64-Debug-Build erfolgreich mit 0 Warnungen und 0 Fehlern; fokussierte Assistant-Tests 11/11 bestanden. Echter unpackaged Start erfolgreich, Prozess antwortet. UI-Automation bestätigte Launcher und alle fünf Bedienziele, 520×680 effektive Panelgröße bei 150 % DPI, Öffnen per Enter, lokale Nachricht per Tab+Enter, Schließen per Escape und erneutes Öffnen. Finale Sichtprüfung zeigt lesbares Dark-Theme-Panel und unverändertes transparentes Pet gleichzeitig; die verifizierte App bleibt geöffnet.
+- Zwischenläufe: Erster Restore innerhalb der Netzwerk-Sandbox wegen blockiertem NuGet-Signaturzugriff fehlgeschlagen und nach Freigabe erfolgreich wiederholt. Spätere Builds waren einmal durch die zur Sichtprüfung laufende App und einmal durch zwei eindeutig identifizierte lokale Reflection-Testprozesse gesperrt; nach gezieltem Beenden der eigenen Prozesse jeweils erfolgreich.
+- Unverändert: Keine Produktionsdaten, Remote-Migrationen, eBay-Schreibvorgänge oder Deployments. Die Assistant-API und `NativePetOverlay.cs` haben keinen Diff.
+- Später, nicht Teil von Phase 2: Spracheingabe, freier Orchestrator sowie vor produktiver Assistant-Nutzung HTTPS-Zielprüfung, DPAPI-Tokenablage und Widerruf/Rotation.
 
 ### 2026-08-16 - Transparenzfehler des Desktop-Pets endgültig behoben
 

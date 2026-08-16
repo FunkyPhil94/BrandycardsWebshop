@@ -1,5 +1,50 @@
 # BrandyCards Agentenprotokoll
 
+## 2026-08-16 - Phase 2 des Desktop-Assistenten: zugänglicher WinUI-Launcher
+
+Das per-pixel-transparente native Pet bleibt ein eigenes, nicht aktivierendes
+`WS_EX_LAYERED`-Overlay; `NativePetOverlay.cs`, Atlas-Rendering, Animationstimer
+und Event-Polling wurden nicht verändert. Statt das vorhandene WinUI-Fenster im
+gekoppelten Zustand auszublenden, bleibt es nun als separates, fokussierbares
+Launcherfenster links neben dem Pet sichtbar. Der Launcher öffnet ein
+einseitiges Textpanel und skaliert seine effektiven Maße über die aktuelle
+`XamlRoot.RasterizationScale`, damit 520×680 effektive Pixel auch bei 150 % DPI
+tatsächlich nutzbar bleiben.
+
+Das Panel verwendet ausschließlich eingebaute WinUI-Controls. Launcher,
+Schließen, Texteingabe, Senden und „Verbindung ändern“ besitzen zugängliche
+Namen, eine definierte Tab-Reihenfolge und sichtbare Standard-Fokuszustände.
+Beim Öffnen erhält das Nachrichtenfeld den Fokus; Escape schließt das Panel und
+setzt den Fokus zurück auf den Launcher. Statusmeldungen sind als höfliche
+Live-Regionen markiert. Theme-Dictionaries und theme-aware Styles halten
+Setup, Nachrichten und Bedienelemente in Light, Dark und High Contrast lesbar.
+
+Eine neue lokale `AssistantConversationService`-Schicht ordnet natürliche
+deutsche Fragen deterministisch den zehn festen Phase-1-Werkzeugnamen zu und
+formatiert deren typisierte JSON-Antworten als verständlichen Text. Unbekannte
+Fragen werden rein lokal mit unterstützten Beispielen beantwortet. Es wurde
+weder ein freier Orchestrator noch eine Spracheingabe ergänzt; die
+Assistant-API blieb unverändert und erhält weiterhin nur `{ tool, limit }`.
+Das Launcherfenster und seine lokale Hilfsantwort funktionieren auch ohne
+erreichbaren Webshop, während echte Datenabfragen erwartungsgemäß die
+bestehende Geräteverbindung benötigen.
+
+Verifikation: Der x64-Debug-Build war mit 0 Warnungen und 0 Fehlern
+erfolgreich; die fokussierten Assistant-Tests bestanden 11/11. Der finale
+unpackaged Prozess antwortet und zeigt gleichzeitig das transparente Pet und
+das WinUI-Fenster. Die DPI-bewusste Sichtprüfung bestätigte Launcher,
+Textpanel, lesbare Unterhaltung und unveränderte Alpha-Darstellung. Die
+Tastaturprüfung öffnete per Enter, sendete eine lokale unbekannte Frage per
+Tab+Enter, schloss per Escape und öffnete erneut. Der Accessibility-Baum
+enthielt alle erwarteten benannten Controls und die lokale Antwort. Ein erster
+Restore war innerhalb der Netzwerk-Sandbox blockiert und wurde mit
+freigegebenem NuGet-Zugriff wiederholt. Ein Zwischenbuild war durch die zur
+Sichtprüfung laufende App gesperrt; der finale Build zunächst durch zwei
+eindeutig identifizierte, hängende lokale Reflection-Testprozesse. Nach dem
+gezielten Beenden dieser eigenen Prozesse lief der Build jeweils sauber durch.
+Es wurden keine Produktionsdaten verändert, keine Remote-Migration
+ausgeführt und nichts deployed.
+
 ## 2026-08-16 - Phase 1 des Desktop-Assistenten: sichere Datenwerkzeuge
 
 Die erste Assistant-Phase verwendet die bestehende, nur serverseitig prüfbare

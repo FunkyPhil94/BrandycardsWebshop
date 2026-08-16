@@ -3,7 +3,7 @@
     x:Class="BrandyCards_Desktop.MainWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    Title="BrandyCards Desktop Pet">
+    Title="BrandyCards Assistant">
     <Grid Background="Transparent">
         <Frame x:Name="RootFrame" />
     </Grid>

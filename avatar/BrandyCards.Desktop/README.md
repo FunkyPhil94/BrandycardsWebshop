@@ -16,6 +16,15 @@ Die App läuft unabhängig vom Webshop als echtes Desktop-Pet mit per-pixel-tran
 
 Der Code ist zehn Minuten gültig. Danach speichert die App nur das Geräte-Token lokal unter `%LOCALAPPDATA%\BrandyCards\DesktopAvatar\settings.json` und fragt alle drei Sekunden nach neuen Ereignissen.
 
+## Text-Assistant
+
+Nach erfolgreicher Kopplung bleiben zwei voneinander getrennte Fenster sichtbar:
+
+- Das bestehende per-pixel-transparente Desktop-Pet zeigt unverändert seine Animationen.
+- Links daneben öffnet der WinUI-Launcher auf Klick oder per Tastatur das Textpanel.
+
+Das Textpanel ist vollständig mit Tab, Umschalt+Tab, Enter/Leertaste und Escape bedienbar. Es ordnet natürlich formulierte Fragen lokal und deterministisch einer festen read-only Funktion der Assistant-API zu. Unterstützt werden Verkäufe, Listings, Bestellungen, Preisvorschläge, Bestandsprüfung, Shop-Anfragen, eBay-Datenverfügbarkeit, eBay-Sync und Statistiken. Unbekannte Fragen lösen keinen freien Modell- oder SQL-Aufruf aus, sondern zeigen die unterstützten Beispiele. Spracheingabe und freie Orchestrierung sind nicht Bestandteil dieser Phase.
+
 ## Ereignisse
 
 | Shop-Ereignis | Avatar-Reaktion |
