@@ -43,6 +43,65 @@ Keine laufenden Aufträge.
 
 ## Historie
 
+### 2026-08-16 - Umlautfaltung im Regelplaner
+
+- Stand: **ABGESCHLOSSEN** im Code. **Noch nicht ausgerollt** — Deployment war
+  in dieser Auftragskette ausgeschlossen. Produktiv gilt weiterhin das alte
+  Verhalten, bis jemand `npx wrangler deploy` fährt.
+- Anlass: Produktiv am 2026-08-16 gemessen — „Wie viele **Verkaeufe** …" endet
+  in `UNSUPPORTED`, „**Verkäufe**" wird beantwortet. `normalizeQuestion`
+  entfernt Diakritika, faltet aber die Ersatzschreibung `ae`/`oe`/`ue` nicht.
+- Umsetzung: Eine gefaltete Fassung **zusätzlich** zur bestehenden prüfen, nicht
+  an ihrer Stelle. Ein reines `ue → u` wäre falsch: „neue" enthält „ue" und
+  würde zu „neu", womit „neue anfrage" nicht mehr träfe. Gegen beide Fassungen
+  gesucht, kann eine Ersetzung nur Treffer hinzufügen und keinen entfernen.
+- Berührt nur [lib/assistant/planner.ts](../lib/assistant/planner.ts),
+  `RuleBasedAssistantPlanner`. Registry, Orchestrator, Route und Desktop bleiben
+  unverändert; es kommt kein Werkzeug und keine Schreiboperation dazu.
+- Abnahme: Regressionstest mit **beiden** Schreibweisen je Frage; die elf Fragen
+  des bestehenden Fallback-Tests und „neue anfrage" müssen unverändert grün
+  bleiben. Dazu `npm test`, `npx tsc --noEmit`, `npm run lint`.
+- Grenzen wie in Phase 10: kein Deployment, kein Push, keine Secrets.
+
+**Ergebnis: umgesetzt wie geplant.** `foldUmlautDigraphs` faltet `ae`/`oe`/`ue`
+auf den Grundbuchstaben; `RuleBasedAssistantPlanner` sucht über ein lokales
+`enthaelt(...)` gegen **beide** Fassungen. Berührt wurde nur
+[lib/assistant/planner.ts](../lib/assistant/planner.ts) — kein neues Werkzeug,
+keine Schreiboperation, Registry und Route unverändert.
+
+Der Gewinn ist größer als die beiden gemeldeten Fragen, weil viele Suchbegriffe
+ohnehin schon in der diakritikfreien Form dastehen und damit jetzt aus beiden
+Schreibweisen erreichbar sind:
+
+| Ersatzschreibung | gefaltet | trifft Begriff |
+|---|---|---|
+| verkaeufe | verkaufe | `verkauf` |
+| preisvorschlaege | preisvorschlage | `preisvorschlage` |
+| haeufigsten | haufigsten | `am haufigsten angesehen` |
+| verfuegbar | verfugbar | `ebay daten nicht verfugbar` |
+| uebersicht | ubersicht | `ubersicht` |
+| nachfuellung | nachfullung | `nachfull` |
+| ruecknahmen | rucknahmen | `rucknahme` |
+| erloes | erlos | `erlos` |
+
+Zwei neue Tests in `tests/assistant-phase10.test.mjs`: acht Fragepaare, deren
+Pläne **identisch** sein müssen (nicht nur „beide treffen etwas" — auch Limit
+und Zeitraum werden verglichen), und der Nachweis, dass die Faltung ergänzt
+statt ersetzt.
+
+**Ein Detail, das beim Schreiben schiefging und deshalb hier steht:** Der
+Kommentar behauptete zuerst, „neue" werde zu „nu". Es wird zu „**neu**" — ein
+`ue`, nicht zwei. Der Test hat es sofort gefangen. Am Argument ändert es
+nichts: Auch „neu anfrage" trifft `neue anfrage` nicht, die Faltung muss also
+neben der Originalfassung stehen. Aber ein Kommentar, der die falschen
+Buchstaben nennt, führt den nächsten Leser in die Irre — korrigiert in Code
+und Protokoll.
+
+**Prüfläufe:** `npm test` 518/518 (vorher 516, +2), `npx tsc --noEmit`
+fehlerfrei, `npm run lint` 0 Fehler / 1 vorbestehende Warnung.
+
+## Historie
+
 ### 2026-08-16 - Migration 0011 produktiv einspielen
 
 - Stand: **ABGESCHLOSSEN.**
@@ -256,7 +315,7 @@ fehlerfrei, `npm run lint` 0 Fehler / 1 vorbestehende Warnung in
 
    **Vorschlag, nicht umgesetzt:** die gefaltete Fassung *zusätzlich* prüfen,
    nicht ersetzen. Ein naives `ue → u` wäre falsch — „neue" enthält „ue" und
-   würde zu „nu", womit „neue anfrage" nicht mehr träfe. Wird gegen beide
+   würde zu „neu", womit „neue anfrage" nicht mehr träfe. Wird gegen beide
    Fassungen gesucht, kann eine Ersetzung nur Treffer hinzufügen und keinen
    entfernen.
 

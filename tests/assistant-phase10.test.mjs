@@ -21,6 +21,7 @@ const {
   SALES_OVERVIEW_MAX_DAYS,
 } = await import("../lib/assistant/contracts.ts");
 const {
+  foldUmlautDigraphs,
   HybridAssistantPlanner,
   OpenAIResponsesAssistantPlanner,
   RuleBasedAssistantPlanner,
@@ -142,6 +143,53 @@ test("ohne Modellanbieter beantwortet der deterministische Planer weiterhin alle
   }
   // Und nur dann, wenn nichts passt, sagt er ausdrücklich warum.
   assert.deepEqual(await planner.plan("Erzähl mir einen Witz über Sammelkarten."), { tools: [], reason: "MODEL_NOT_CONFIGURED" });
+});
+
+/** Anlass: produktiv am 2026-08-16 gemessen. „Wie viele Verkäufe hatte ich in
+ *  den letzten 7 Tagen?" wurde beantwortet, „Verkaeufe" endete in
+ *  `UNSUPPORTED`. Solange kein Modell-Planer konfiguriert ist, ist der
+ *  Regelplaner der einzige — was er verfehlt, ist unbeantwortbar. */
+test("dieselbe Frage trifft mit Umlaut und in Ersatzschreibung dieselben Werkzeuge", async () => {
+  const planner = new RuleBasedAssistantPlanner();
+  const paare = [
+    ["Wie viele Verkäufe hatte ich in den letzten 7 Tagen?", "Wie viele Verkaeufe hatte ich in den letzten 7 Tagen?"],
+    ["Gibt es offene Preisvorschläge von Käufern bei eBay?", "Gibt es offene Preisvorschlaege von Kaeufern bei eBay?"],
+    ["Welche meiner eBay-Angebote wurden am häufigsten angesehen?", "Welche meiner eBay-Angebote wurden am haeufigsten angesehen?"],
+    ["Welche eBay-Daten sind derzeit nicht verfügbar?", "Welche eBay-Daten sind derzeit nicht verfuegbar?"],
+    ["Gib mir eine Übersicht über den Shop.", "Gib mir eine Uebersicht ueber den Shop."],
+    ["Welche Karten brauchen Nachfüllung?", "Welche Karten brauchen Nachfuellung?"],
+    ["Wie steht es um offene Rücknahmen bei eBay?", "Wie steht es um offene Ruecknahmen bei eBay?"],
+    ["Wie hoch war mein Erlös im letzten Monat?", "Wie hoch war mein Erloes im letzten Monat?"],
+  ];
+  for (const [mitUmlaut, ersatzschreibung] of paare) {
+    const erwartet = await planner.plan(mitUmlaut);
+    const gefunden = await planner.plan(ersatzschreibung);
+    assert.equal(erwartet.reason, "READY", `Vorbedingung: „${mitUmlaut}" muss ohnehin treffen`);
+    assert.deepEqual(
+      gefunden.tools.map((item) => item.tool),
+      erwartet.tools.map((item) => item.tool),
+      `„${ersatzschreibung}" muss dieselben Werkzeuge wählen wie „${mitUmlaut}"`,
+    );
+    assert.deepEqual(gefunden, erwartet, "auch Limit und Zeitraum dürfen sich nicht unterscheiden");
+  }
+});
+
+test("die Faltung tritt neben die ursprüngliche Fassung und nicht an ihre Stelle", async () => {
+  // Der Grund, warum nicht einfach ersetzt wird: „neue" enthält „ue" und
+  // verliert dabei genau den Buchstaben, an dem „neue anfrage" hängt.
+  assert.equal(foldUmlautDigraphs("neue anfrage"), "neu anfrage");
+  assert.equal(foldUmlautDigraphs("verkaeufe"), "verkaufe");
+  assert.equal(foldUmlautDigraphs("preisvorschlaege"), "preisvorschlage");
+  assert.equal(foldUmlautDigraphs("bestellung"), "bestellung");
+
+  // Würde die Faltung ersetzen statt ergänzen, fiele genau diese Frage aus.
+  const planner = new RuleBasedAssistantPlanner();
+  const plan = await planner.plan("Gibt es neue Anfragen im Shop?");
+  assert.deepEqual(plan.tools.map((item) => item.tool), ["new_shop_inquiries"]);
+
+  // Und eine Frage ohne passendes Werkzeug bleibt ohne passendes Werkzeug:
+  // Die zusätzliche Lesart darf keine Treffer erfinden.
+  assert.deepEqual(await planner.plan("Erzähl mir einen Witz über Sammelkarten."), { tools: [], reason: "UNSUPPORTED" });
 });
 
 test("Prompt-Injektionen wählen ausschließlich Lesewerkzeuge aus der Registry", async () => {

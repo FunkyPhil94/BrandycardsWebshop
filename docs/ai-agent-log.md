@@ -126,11 +126,27 @@ Das wiegt schwerer, als es klingt, weil der Regelplaner mangels
 `OPENAI_API_KEY` derzeit der *einzige* Planer ist. Ein Modell hätte „Verkaeufe"
 mühelos verstanden; der Fallback muss jede Formulierung selbst treffen. Genau
 deshalb ist die naheliegende Reparatur auch die falsche: `ue → u` würde „neue"
-zu „nu" machen, und „neue anfrage" träfe nicht mehr. Die gefaltete Fassung
+zu „neu" machen, und „neue anfrage" träfe nicht mehr. Die gefaltete Fassung
 gehört *neben* die ursprüngliche, nicht an ihre Stelle — dann kann eine
-Ersetzung nur Treffer hinzufügen und keinen wegnehmen. Nicht umgesetzt, weil
-der Auftrag an dieser Stelle lautete, Fragen zu stellen, nicht den Planer
-umzubauen.
+Ersetzung nur Treffer hinzufügen und keinen wegnehmen.
+
+**Nachtrag: auf Zuruf umgesetzt.** `foldUmlautDigraphs` faltet `ae`/`oe`/`ue`,
+und der Regelplaner sucht gegen beide Fassungen. Der Gewinn reicht über die
+zwei gemeldeten Fragen hinaus, weil die Suchbegriffe ohnehin in der
+diakritikfreien Form dastehen: „verfuegbar", „uebersicht", „haeufigsten",
+„nachfuellung", „ruecknahmen", „erloes" treffen jetzt alle. Das war kein
+Zufallsfund, sondern die Folge davon, dass NFD und Ersatzschreibung dasselbe
+Ziel haben und nur auf verschiedenen Wegen dorthin kommen.
+
+Beim Schreiben ging der Kommentar daneben: Er behauptete, „neue" werde zu
+„nu". Es wird zu „neu" — ein `ue`, nicht zwei. Der Test hat es beim ersten Lauf
+gefangen. Das Argument trägt weiterhin, denn auch „neu anfrage" trifft
+`neue anfrage` nicht; falsch war nur das Beispiel. Erwähnenswert ist es, weil
+ein Kommentar mit den falschen Buchstaben schlimmer ist als keiner: Der
+nächste Leser prüft ihn nicht nach, er glaubt ihn.
+
+Nicht ausgerollt — Deployment war in dieser Auftragskette ausgeschlossen.
+Produktiv gilt bis dahin das alte Verhalten.
 
 **Die Ratenbegrenzung brauchte zwei Anläufe.** Vierzehn Anfragen nacheinander
 liefen sämtlich durch, obwohl die Grenze bei zehn pro Minute liegt. Vierzig

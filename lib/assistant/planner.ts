@@ -40,6 +40,23 @@ function normalizeQuestion(message: string): string {
     .trim();
 }
 
+/** Die deutsche Ersatzschreibung `ae`/`oe`/`ue` auf den Grundbuchstaben falten.
+ *
+ * `normalizeQuestion` zerlegt nach NFD und entfernt Diakritika, macht also aus
+ * `ä` ein `a`. „Verkäufe" wird so zu „verkaufe" und trifft „verkauf". Wer ohne
+ * deutsche Tastatur tippt, schreibt aber „Verkaeufe" — und das sind zwei
+ * Buchstaben, keine Diakritik. Produktiv am 2026-08-16 gemessen: Die Frage mit
+ * Umlaut wurde beantwortet, dieselbe Frage ohne Umlaut endete in `UNSUPPORTED`.
+ *
+ * **Das Ergebnis ersetzt die ursprüngliche Fassung nicht, es tritt daneben.**
+ * Eine Ersetzung wäre falsch: „neue" enthält „ue" und würde zu „neu" — „neue
+ * anfrage" träfe dann nicht mehr. Wird gegen beide Fassungen gesucht, kann
+ * diese Faltung nur Treffer hinzufügen und keinen wegnehmen.
+ */
+export function foldUmlautDigraphs(text: string): string {
+  return text.replaceAll("ae", "a").replaceAll("oe", "o").replaceAll("ue", "u");
+}
+
 function containsAny(text: string, terms: readonly string[]): boolean {
   return terms.some((term) => text.includes(term));
 }
@@ -81,11 +98,16 @@ function uniqueInputs(inputs: AssistantToolInput[]): AssistantToolInput[] {
 export class RuleBasedAssistantPlanner implements AssistantPlanner {
   async plan(message: string): Promise<AssistantPlan> {
     const text = normalizeQuestion(message);
+    // Die zweite Lesart derselben Frage. Beide werden durchsucht — siehe
+    // `foldUmlautDigraphs` dazu, warum sie nebeneinander stehen und nicht
+    // hintereinander.
+    const gefaltet = foldUmlautDigraphs(text);
+    const enthaelt = (terms: readonly string[]) => containsAny(text, terms) || containsAny(gefaltet, terms);
     const limit = requestedLimit(text);
     const tools: AssistantToolInput[] = [];
     const add = (tool: AssistantToolName) => tools.push({ tool, limit });
 
-    const asksEbayAvailability = containsAny(text, [
+    const asksEbayAvailability = enthaelt([
       "ebay daten nicht verfugbar",
       "ebay daten fehlen",
       "ebay informationen fehlen",
@@ -98,13 +120,13 @@ export class RuleBasedAssistantPlanner implements AssistantPlanner {
       add("ebay_buyer_offers");
     }
 
-    if (containsAny(text, ["statistik", "kennzahl", "ubersicht", "shop status", "wie lauft der shop"])) {
+    if (enthaelt(["statistik", "kennzahl", "ubersicht", "shop status", "wie lauft der shop"])) {
       add("assistant_statistics");
     }
-    if (containsAny(text, ["sync", "abgleich", "rucknahme", "outbox", "ebay zustand", "ebay status"])) {
+    if (enthaelt(["sync", "abgleich", "rucknahme", "outbox", "ebay zustand", "ebay status"])) {
       add("ebay_sync_health");
     }
-    if (containsAny(text, [
+    if (enthaelt([
       "aufruf",
       "views",
       "meistgesehen",
@@ -118,13 +140,13 @@ export class RuleBasedAssistantPlanner implements AssistantPlanner {
     ])) {
       add("ebay_most_viewed");
     }
-    if (text.includes("ebay") && containsAny(text, ["nachricht", "postfach", "message"])) {
+    if (text.includes("ebay") && enthaelt(["nachricht", "postfach", "message"])) {
       add("ebay_messages");
     }
-    if (containsAny(text, ["shop anfrage", "kundenanfrage", "kontakt anfrage", "neue anfrage", "anfragen im shop"])) {
+    if (enthaelt(["shop anfrage", "kundenanfrage", "kontakt anfrage", "neue anfrage", "anfragen im shop"])) {
       add("new_shop_inquiries");
     }
-    if (containsAny(text, [
+    if (enthaelt([
       "bestand",
       "lager",
       "nachfull",
@@ -140,7 +162,7 @@ export class RuleBasedAssistantPlanner implements AssistantPlanner {
     // nicht welche. „Gibt es neue Käufer-Preisvorschläge?" meint beides — wer
     // nur eine Quelle beantwortet, verschweigt die andere, ohne es zu sagen.
     // Nur eine ausdrücklich genannte Seite grenzt ein.
-    if (containsAny(text, [
+    if (enthaelt([
       "preisvorschlag",
       "preisvorschlage",
       "offene angebote",
@@ -156,10 +178,10 @@ export class RuleBasedAssistantPlanner implements AssistantPlanner {
       if (!nurEbay) add("open_shop_offers");
       if (!nurShop) add("ebay_buyer_offers");
     }
-    if (containsAny(text, ["bestellung", "bestellungen", "order", "zu bearbeiten"])) {
+    if (enthaelt(["bestellung", "bestellungen", "order", "zu bearbeiten"])) {
       add("new_orders");
     }
-    if (containsAny(text, ["eingestellt", "listing", "gelistet", "inseriert", "neueste karte", "zuletzt hinzugefugt"])) {
+    if (enthaelt(["eingestellt", "listing", "gelistet", "inseriert", "neueste karte", "zuletzt hinzugefugt"])) {
       add("latest_listing");
     }
     // **Vor `latest_sale`, und das ist der Punkt.** „Was habe ich in den
@@ -168,12 +190,12 @@ export class RuleBasedAssistantPlanner implements AssistantPlanner {
     // Frage passt wie eine Zahl zu einer Liste. Der Zeitraum oder das Wort
     // „Umsatz" ist das Unterscheidungsmerkmal.
     const zeitraum = requestedDays(text);
-    const fragtNachUmsatz = containsAny(text, ["umsatz", "einnahmen", "eingenommen", "verdient", "erlos"]);
-    const fragtNachVerkaufen = containsAny(text, ["verkauft", "verkauf", "sale", "abgesetzt"]);
-    if (fragtNachUmsatz || (fragtNachVerkaufen && (zeitraum !== undefined || containsAny(text, ["ubersicht", "bilanz", "insgesamt", "wie viele"])))) {
+    const fragtNachUmsatz = enthaelt(["umsatz", "einnahmen", "eingenommen", "verdient", "erlos"]);
+    const fragtNachVerkaufen = enthaelt(["verkauft", "verkauf", "sale", "abgesetzt"]);
+    if (fragtNachUmsatz || (fragtNachVerkaufen && (zeitraum !== undefined || enthaelt(["ubersicht", "bilanz", "insgesamt", "wie viele"])))) {
       tools.push({ tool: "sales_overview", limit, ...(zeitraum === undefined ? {} : { days: zeitraum }) });
     }
-    if (fragtNachVerkaufen || containsAny(text, ["letzter kauf", "ging zuletzt weg"])) {
+    if (fragtNachVerkaufen || enthaelt(["letzter kauf", "ging zuletzt weg"])) {
       add("latest_sale");
     }
 

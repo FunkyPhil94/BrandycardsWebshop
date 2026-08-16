@@ -11,30 +11,25 @@ dabei, damit niemand den Gesprächsverlauf braucht.
 
 ---
 
-## Zuerst: Der Planer versteht „Verkaeufe" nicht
+## Zuerst: Die Umlautfaltung ausrollen
 
-**Kleiner Eingriff, spürbare Wirkung.** Am 2026-08-16 produktiv gemessen:
-„Wie viele **Verkäufe** hatte ich in den letzten 7 Tagen?" wird beantwortet,
-„Wie viele **Verkaeufe** …" nicht. Dasselbe bei „Preisvorschlaege" und
-„Kaeufern".
+**Der Code liegt fertig und getestet im Zweig, produktiv gilt noch das alte
+Verhalten.** Deployment war in der Auftragskette vom 2026-08-16 ausgeschlossen,
+deshalb steht dieser Punkt hier statt erledigt zu sein.
 
-**Ursache:** `normalizeQuestion` in [lib/assistant/planner.ts](../lib/assistant/planner.ts)
-zerlegt nach NFD und entfernt Diakritika (`ä` → `a`). Die deutsche
-Ersatzschreibung `ae`/`oe`/`ue` ist eine andere Umformung und wird nicht
-gefaltet.
+Was drinsteckt: Der Regelplaner versteht jetzt auch die Ersatzschreibung ohne
+Umlaute — „Verkaeufe", „Preisvorschlaege", „verfuegbar", „uebersicht",
+„haeufigsten". Produktiv gemessen am 2026-08-16: dieselbe Frage mit Umlaut
+wurde beantwortet, ohne Umlaut nicht. Solange kein `OPENAI_API_KEY` gesetzt
+ist, ist der Regelplaner der einzige Planer.
 
-**Warum es zählt:** Ohne `OPENAI_API_KEY` ist der Regelplaner der einzige
-Planer. Was er verfehlt, ist unbeantwortbar — und ohne deutsche Tastatur tippt
-man genau so.
+**Schritte:** bauen (mit `.env.local` im Build-Verzeichnis!), `npx wrangler
+deploy`. Danach nach der Regel aus [CLAUDE.md](../CLAUDE.md) eine Seite prüfen,
+die Client-Konfiguration braucht — `/admin` —, nicht nur `/`.
 
-**Umsetzung:** Die gefaltete Fassung *zusätzlich* prüfen, nicht ersetzen.
-`containsAny` sucht gegen beide Fassungen. Ein reines `ue → u` wäre falsch:
-„neue" enthält „ue" und würde zu „nu", womit „neue anfrage" nicht mehr träfe.
-Gegen beide Fassungen gesucht, kann eine Ersetzung nur Treffer hinzufügen.
-
-**Abnahme:** Regressionstest in `tests/assistant-phase10.test.mjs` mit beiden
-Schreibweisen je Frage; die bestehenden elf Fragen des Fallback-Tests müssen
-unverändert grün bleiben.
+**Abnahme:** „Wie viele Verkaeufe hatte ich in den letzten 7 Tagen?" produktiv
+über den Desktop stellen. Muss dieselbe Antwort liefern wie die Fassung mit
+Umlaut.
 
 ---
 
