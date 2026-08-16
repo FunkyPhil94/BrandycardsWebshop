@@ -1,5 +1,69 @@
 # BrandyCards Agentenprotokoll
 
+## 2026-08-16 - Variante 1: der Planer entscheidet, welche Lesart gemeint war
+
+Die Spracheingabe war „etwas ungenau". Das Mikrofon war es nicht, die
+Erkennersprache auch nicht — beides hatte Phase 10 schon ausgeschlossen. Übrig
+blieb die blanke `DictationGrammar()` von `System.Speech`: freies Diktat, das
+Fachvokabular schlecht trifft. Die Fragen an diesen Assistenten bestehen aber
+aus fast nichts anderem.
+
+Der Ansatz nutzt aus, dass die Erkennung ihre Unsicherheit **kennt und
+ausweist**. `RecognitionResult.Alternates` trägt weitere Lesarten desselben
+Diktats, nach Konfidenz sortiert; genommen wurde bisher blind die erste. Die
+zusätzliche Information lag also schon vor, sie wurde nur weggeworfen.
+
+Wer entscheidet, ist der Punkt. Ein zweites Erkennungssystem danebenzustellen
+hieße, dieselbe Frage noch einmal falsch beantworten zu können. Der Planer
+dagegen weiß etwas, das kein Erkenner weiß: **welche Sätze überhaupt eine Frage
+sind, die dieses System beantworten kann.** Zwölf Werkzeuge decken einen
+winzigen Ausschnitt des Deutschen ab. Eine Lesart, die dort landet, ist mit
+hoher Wahrscheinlichkeit die gemeinte — und eine, die nirgends landet, war als
+Frage ohnehin wertlos. Das ist der ganze Gedanke: Die Domäne ist so klein, dass
+Zuordenbarkeit selbst zum Erkennungssignal wird.
+
+**Drei Entscheidungen, die der Entwurf offengelassen hatte.**
+
+*Eine Anfrage statt einer je Kandidat.* Der Arbeitsvorrat sah bis zu fünf
+Prüfaufrufe vor. Die Ratenbegrenzung liegt bei zehn Anfragen je Minute und wird
+mit der eigentlichen Frage geteilt — fünf Prüfungen plus eine Frage wären sechs
+davon für **eine** gesprochene Frage gewesen. Alle Kandidaten gehen deshalb
+gemeinsam hinaus; es bleiben zwei Anfragen. Die Kosten der Grenze bestimmen
+hier den Zuschnitt der Schnittstelle, nicht umgekehrt.
+
+*Nur der Regelplaner prüft.* Der Hybrid-Planer darf je Frage 15 Sekunden ans
+Modell geben. Fünf Kandidaten wären im schlechtesten Fall über eine Minute
+Wartezeit **vor** der eigentlichen Frage, dazu fünf bezahlte Aufrufe — für eine
+Vorauswahl, die auch danebenliegen kann. Der Modellpfad bleibt deshalb der
+eigentlichen Frage vorbehalten. Der Preis dafür ist bekannt und klein: Eine
+Lesart, die nur das Modell verstünde, wird nicht vorgezogen.
+
+*Auswählen, nicht diktieren.* Die Prüfung liefert einen Text zurück, und dieser
+Text würde anschließend als Frage gestellt und im Panel als eigene Eingabe
+angezeigt. Zwischen Desktop und Shop steht im Ernstfall ein fremder
+Zwischenknoten. Übernommen wird deshalb nur ein Wert, der **wörtlich einer der
+gesendeten Lesarten** entspricht.
+
+**Was die Prüfung nicht darf: die Frage verhindern.** Sie ist eine
+Verbesserung, keine Voraussetzung. Netzfehler, 429, Zeitüberschreitung,
+unlesbare Antwort — jeder dieser Fälle endet im ersten Kandidaten und damit im
+bisherigen Verhalten. Deshalb fängt `SelectCandidateAsync` alles ab und wirft
+nichts; deshalb ist ihr Zeitrahmen mit acht Sekunden deutlich kürzer als die
+dreißig der Frage. Was sie an Zeit verbraucht, wartet der Nutzer zusätzlich.
+
+**Ein Wächtertest schlug an, und das war richtig so.** Phase 8 hält als
+Gleichheitsprüfung fest, welche Pfade der Desktop nach außen anspricht — genau
+einen. Die neue Prüfroute ließ ihn rot werden. Nachgezogen wurde die Liste, nicht
+die Prüfung: Sie ist weiterhin eine Gleichheit, jetzt über zwei Pfade, und ein
+dritter fällt weiter auf.
+
+**Belegt ist die Entscheidung, nicht die Trefferquote.** An der echten
+HTTP-Route mit echtem Gerätetoken (lokal, danach entfernt): Liegt die erste
+Lesart daneben und die zweite trifft, kommt `selectedIndex: 1` zurück; trifft
+keine, kommt `null` — es wird nichts erraten. Ob im Alltag oft genug eine
+passende Lesart dabei ist, zeigt aber erst das Sprechen. Diese Zahl ist mit
+keinem Test zu haben.
+
 ## 2026-08-16 - Phase 10: Der Assistant war nie produktiv erreichbar
 
 Der Auftrag lautete, den Desktop-Pet produktiv zu verifizieren. Die erste

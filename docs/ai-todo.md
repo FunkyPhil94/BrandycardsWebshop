@@ -24,11 +24,43 @@ benutzt `System.Speech` mit einer blanken `DictationGrammar()` — die alte
 SAPI-Desktop-Erkennung. Freies Diktat trifft Fachvokabular schlecht, und die
 Fragen bestehen genau daraus.
 
-### Variante 1 — die ausgewählte. Beste Alternative statt der ersten
+**Stand 2026-08-16:** Variante 1 ist gebaut und geprüft (siehe unten). Offen
+bleiben der gesprochene Nachweis am Gerät, die beiden weiteren Ansätze für den
+Fall, dass Variante 1 nicht reicht, und der Nebenbefund zur Erkennersprache.
 
-**Vom Betreiber am 2026-08-16 als der Weg bestimmt, absichtlich noch nicht
-umgesetzt.** Hier steht alles, was zur Umsetzung nötig ist; der
-Gesprächsverlauf wird nicht gebraucht.
+### ~~Variante 1 — Beste Alternative statt der ersten~~ — ERLEDIGT am 2026-08-16
+
+Gebaut als Commit `4599e9e`. Die Erkennung reicht jetzt bis zu fünf Lesarten
+heraus; verwendet wird die erste, die der Regelplaner auf ein Werkzeug abbildet.
+
+**Abweichung vom Entwurf, bewusst.** Der Entwurf sah für den bevorzugten Weg
+„ein Aufruf je Kandidat" vor. Es ist **eine** Anfrage mit **allen** Kandidaten
+geworden: `POST /api/avatar/device/assistant/probe`. Grund ist die
+Ratenbegrenzung von zehn Anfragen je Minute, die sich die Prüfung mit der
+eigentlichen Frage teilt — fünf Prüfaufrufe plus die Frage wären sechs von zehn
+für eine einzige gesprochene Frage, so sind es zwei. Die Route führt kein
+Werkzeug aus und kennt die Registry nicht; die Zuordnungsregeln bleiben
+serverseitig in einer Fassung.
+
+Zweite Festlegung: Geprüft wird **nur** mit dem Regelplaner, nicht mit dem
+Hybrid-Planer. Fünf Modellaufrufe à 15 s wären der falsche Preis für eine
+Vorauswahl. Der Modellpfad bleibt der eigentlichen Frage erhalten — trifft keine
+Lesart die Regeln, geht der erste Kandidat wie bisher hinaus.
+
+**Alle fünf Abnahmekriterien erfüllt.** Kriterium 1 und 2 sind an der echten
+HTTP-Route mit echtem Gerätetoken belegt (lokal, Token danach entfernt):
+`["Der Baum steht im Garten", "Wie viele Verkäufe hatte ich in den letzten 7
+Tagen?"]` → `selectedIndex: 1`; ohne Treffer → `selectedIndex: null`. Der
+gemeinsame Sendepfad ist ungeteilt geblieben, der Test aus Phase 4 steht
+wörtlich unverändert. `npm test` 529/529, TypeScript fehlerfrei, ESLint 0
+Fehler, WinUI-x64-Build 0 Warnungen und 0 Fehler.
+
+**Was damit noch nicht belegt ist:** ein echter gesprochener Durchlauf, bei dem
+die beste Erkennung danebenliegt. Dass die Auswahl richtig entscheidet, ist
+gemessen; dass sie im Alltag oft genug greift, zeigt erst das Sprechen. Das
+gehört in die nächste Sitzung am Gerät.
+
+<details><summary>Ursprünglicher Arbeitsauftrag, zur Nachvollziehbarkeit</summary>
 
 **Die Idee.** `SpeechRecognitionEngine.Recognize()` liefert ein
 `RecognitionResult`, das neben `Text` auch `Alternates` trägt — eine nach
@@ -80,6 +112,8 @@ Doppelpflege, die Phase 4 beseitigt hat. Zwei gangbare Wege:
    bestehende Test dazu bleibt unverändert grün.
 4. Die Zahl der Kandidaten ist gedeckelt und im Code begründet.
 5. `npm test`, `npx tsc --noEmit`, `npm run lint`, WinUI-x64-Build.
+
+</details>
 
 ### Weitere Ansätze, falls Variante 1 nicht reicht
 

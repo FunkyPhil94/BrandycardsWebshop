@@ -37,9 +37,16 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
+<!-- Fuer den naechsten Auftrag freihalten. -->
+
+Keine laufenden Aufträge.
+
+## Historie
+
 ### 2026-08-16 - Variante 1 der Spracherkennung umsetzen
 
-- Stand: **LÄUFT.**
+- Stand: **ABGESCHLOSSEN**, gebaut und geprüft. **Nicht ausgerollt** — siehe
+  unten.
 - Auftrag: Der Betreiber hat Variante 1 aus dem Arbeitsvorrat zur Umsetzung
   freigegeben, ausdrücklich auf Basis des Phase-10-Branches.
 - Basis, vor diesem Eintrag ausgeführt: `claude/brandycards-phase-10-verification-02e3df`
@@ -80,7 +87,56 @@ eine Frage sind zwei. Die Regeln bleiben in beiden Fällen serverseitig.
 **Nicht Teil des Auftrags:** Produktionsdaten, Remote-Migrationen,
 eBay-Schreibvorgänge. `NativePetOverlay.cs` bleibt unberührt.
 
-## Historie
+**Ergebnis: gebaut als Commit `4599e9e`, alle vier Prüfungen grün.**
+
+| Prüfung | Ergebnis |
+|---|---|
+| `npm test` | 529/529 |
+| `npx tsc --noEmit` | fehlerfrei |
+| `npm run lint` | 0 Fehler (die bekannte Hook-Warnung in `app/account/page.tsx` bleibt) |
+| WinUI x64 Debug | 0 Warnungen, 0 Fehler |
+
+**Die neuen Tests sind 11 an der Zahl** (`tests/assistant-speech-candidates.test.mjs`)
+und decken Vertragsprüfung, Auswahl, Abbruch beim ersten Treffer, die Grenzen
+und die C#-Seite ab.
+
+**Ein Wächtertest aus Phase 8 wurde rot und nachgezogen, nicht abgeschwächt.**
+Er hält als Gleichheitsprüfung fest, welche Pfade der Desktop nach außen
+anspricht; die Prüfroute ist der zweite. Die Liste bleibt eine Gleichheit — ein
+dritter Pfad fällt weiterhin auf.
+
+**End-to-end an der echten HTTP-Route belegt**, nicht nur als Unit. Die lokale
+D1 dieses Worktrees war leer; angelegt wurde ausschließlich
+`avatar_device_tokens` mit **einem** Token für den Testlauf. Ergebnisse:
+
+| Kandidaten | Antwort |
+|---|---|
+| „Der Baum steht im Garten", „Wie viele Verkäufe hatte ich in den letzten 7 Tagen?" | `selectedIndex: 1` — **Kriterium 1** |
+| „Der Baum steht im Garten", „Erzähl mir einen Witz" | `selectedIndex: null` — **Kriterium 2**, nichts erraten |
+| „Welche Bestellungen sind neu?", … | `selectedIndex: 0` — die beste Lesart bleibt, wenn sie trifft |
+| sechs Kandidaten | 400, „höchstens 5 Lesarten" |
+| Feld `sql` mitgeschickt | 400, „Nicht unterstützte Felder: sql." |
+
+Vorher geprüft, weil eine nicht registrierte Route still auf das alte Verhalten
+zurückfiele: `POST` ohne Token antwortet **401** statt 404, `GET` auf die
+Prüfroute **405**. Die bestehende Frageroute antwortet unverändert 401.
+
+**Aufgeräumt:** Testtoken gelöscht, die angelegte Tabelle wieder entfernt (0
+`avatar%`-Tabellen), derselbe Token danach erneut versucht und abgewiesen. Der
+Dev-Server ist gestoppt. Keine Produktionsdaten, keine Remote-Migration, kein
+eBay-Schreibvorgang, kein Deployment. `NativePetOverlay.cs` hat keinen Diff.
+
+**Was offen bleibt, und das ist der wichtigere Teil:**
+
+1. **Der gesprochene Nachweis fehlt.** Dass die Auswahl richtig entscheidet, ist
+   gemessen. Ob im Alltag oft genug eine passende Lesart dabei ist, zeigt erst
+   das Sprechen am Gerät. Diese Zahl ist mit keinem Test zu haben.
+2. **Nicht ausgerollt.** Die Prüfroute muss serverseitig live sein, bevor der
+   Desktop etwas davon hat — bis dahin läuft die Prüfung ins Leere und der
+   Desktop bleibt beim ersten Kandidaten. Der Rollout wurde bewusst nicht ohne
+   Rückfrage vorgenommen: Dieser Branch ist der einzige mit Phase 10 **und**
+   Variante 1, `main` kennt beides nicht, und CLAUDE.md verlangt den Build aus
+   dem Hauptverzeichnis mit `.env.local` — das dieser Worktree nicht hat.
 
 ### 2026-08-16 - Umlautfaltung ausrollen und produktiv abnehmen
 
