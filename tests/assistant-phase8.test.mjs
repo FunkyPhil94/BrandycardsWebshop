@@ -331,7 +331,7 @@ test("Pet-Darstellung und DPI-Positionierung bleiben unberuehrt", async () => {
   assert.match(overlay, /FrameHeight = 208/u);
 });
 
-test("die Zustimmung fragt genau die zwei benannten Rechte an, keines mehr", async () => {
+test("die Zustimmung fragt genau die drei benannten Rechte an, keines mehr", async () => {
   const [route, beispiel, wrangler] = await Promise.all([
     read("app/api/admin/ebay/oauth/start/route.ts"),
     read(".env.example"),
@@ -343,21 +343,31 @@ test("die Zustimmung fragt genau die zwei benannten Rechte an, keines mehr", asy
   assert.match(route, /process\.env\.EBAY_OAUTH_CONSENT_SCOPES/u);
   assert.match(route, /return process\.env\.EBAY_WRITE_OAUTH_SCOPE \|\| "https:\/\/api\.ebay\.com\/oauth\/api_scope\/sell\.inventory"/u);
   // **Seit dem 2026-08-16 ist die Variable gesetzt** -- auf ausdrueckliche
-  // Anforderung des Betreibers, um die Aufrufzahlen freizuschalten. Bis dahin
-  // pruefte diese Stelle, dass sie *fehlt*. Der Zweck bleibt derselbe und wird
-  // jetzt schaerfer geprueft: nicht "nichts steht da", sondern "genau diese
-  // zwei stehen da". Ein spaeter angehaengter dritter Scope -- etwa
-  // sell.account oder ein Schreibrecht -- faellt hier auf, statt beim naechsten
+  // Anforderung des Betreibers, um erst die Aufrufzahlen und dann die
+  // Verkaufsuebersicht freizuschalten. Bis dahin pruefte diese Stelle, dass sie
+  // *fehlt*. Der Zweck bleibt derselbe und wird schaerfer geprueft: nicht
+  // "nichts steht da", sondern "genau diese drei stehen da". Ein spaeter
+  // angehaengter vierter Scope faellt hier auf, statt beim naechsten
   // Zustimmungsklick unbemerkt mitzulaufen.
+  //
+  // Alle drei sind benannt und begruendet: sell.inventory traegt die Ruecknahme
+  // verkaufter Karten, die beiden readonly-Scopes tragen Aufrufzahlen und
+  // Verkaufshistorie. Kein weiteres Schreibrecht.
   const gesetzt = wrangler.match(/^EBAY_OAUTH_CONSENT_SCOPES = "([^"]+)"/mu);
   assert.ok(gesetzt, "die Produktionskonfiguration benennt die angefragten Rechte");
   assert.deepEqual(gesetzt[1].split(/\s+/u), [
     "https://api.ebay.com/oauth/api_scope/sell.inventory",
     "https://api.ebay.com/oauth/api_scope/sell.analytics.readonly",
+    "https://api.ebay.com/oauth/api_scope/sell.fulfillment.readonly",
   ]);
+  // Kein Schreibrecht ausser dem einen, das es schon gab.
+  assert.doesNotMatch(gesetzt[1], /sell\.fulfillment(?!\.readonly)|sell\.account|sell\.marketing(?!\.readonly)/u);
   // Dokumentiert, aber auskommentiert: ein Refresh-Token gehoert nicht in einen
   // Commit. Die Rechteliste oben ist keiner -- der Token ist ein Secret.
-  assert.match(beispiel, /^# EBAY_OAUTH_CONSENT_SCOPES=.*sell\.analytics\.readonly$/mu);
+  const beispielZeile = beispiel.match(/^# EBAY_OAUTH_CONSENT_SCOPES=(.*)$/mu);
+  assert.ok(beispielZeile, "der Weg steht dokumentiert in .env.example");
+  assert.match(beispielZeile[1], /sell\.analytics\.readonly/u);
+  assert.match(beispielZeile[1], /sell\.fulfillment\.readonly/u);
   assert.doesNotMatch(beispiel, /^EBAY_OAUTH_CONSENT_SCOPES=/mu);
 });
 

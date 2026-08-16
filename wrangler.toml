@@ -51,9 +51,14 @@ EBAY_WRITE_ENABLED = "true"
 # Kein Geheimnis: eine Rechteliste, kein Zugangsdatum. Der Token gehört zu den
 # Secrets, diese Liste bewusst hierher — sonst weiß niemand, was der Knopf
 # anfragt. `tests/assistant-phase8.test.mjs` hält den Inhalt auf genau diese
-# zwei Scopes fest; beide sind lesend bzw. der schon zuvor erteilte
+# drei Scopes fest; zwei davon sind lesend, dazu der schon zuvor erteilte
 # Schreib-Scope.
-EBAY_OAUTH_CONSENT_SCOPES = "https://api.ebay.com/oauth/api_scope/sell.inventory https://api.ebay.com/oauth/api_scope/sell.analytics.readonly"
+#
+# `sell.fulfillment.readonly` kam am 2026-08-16 für die Verkaufsübersicht dazu
+# (Phase 9). Die Verkaufshistorie mit Beträgen liegt hinter `getOrders` der
+# Fulfillment-API, und dafür nennt eBay `sell.fulfillment` oder die lesende
+# Fassung — genommen wird die lesende, weil der Shop hier nichts schreibt.
+EBAY_OAUTH_CONSENT_SCOPES = "https://api.ebay.com/oauth/api_scope/sell.inventory https://api.ebay.com/oauth/api_scope/sell.analytics.readonly https://api.ebay.com/oauth/api_scope/sell.fulfillment.readonly"
 EBAY_RUNAME = "BrandyCards_GbR-BrandyCa-Brandy-cqibopjv"
 EBAY_OAUTH_CALLBACK_URL = "https://shop.brandycards.de/api/admin/ebay/oauth/callback"
 EBAY_NOTIFICATION_ENDPOINT = "https://shop.brandycards.de/api/ebay/notifications"
