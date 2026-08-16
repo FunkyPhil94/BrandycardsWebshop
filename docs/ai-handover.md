@@ -131,12 +131,42 @@ eBay-Schreibvorgang, kein Deployment. `NativePetOverlay.cs` hat keinen Diff.
 1. **Der gesprochene Nachweis fehlt.** Dass die Auswahl richtig entscheidet, ist
    gemessen. Ob im Alltag oft genug eine passende Lesart dabei ist, zeigt erst
    das Sprechen am Gerät. Diese Zahl ist mit keinem Test zu haben.
-2. **Nicht ausgerollt.** Die Prüfroute muss serverseitig live sein, bevor der
-   Desktop etwas davon hat — bis dahin läuft die Prüfung ins Leere und der
-   Desktop bleibt beim ersten Kandidaten. Der Rollout wurde bewusst nicht ohne
-   Rückfrage vorgenommen: Dieser Branch ist der einzige mit Phase 10 **und**
-   Variante 1, `main` kennt beides nicht, und CLAUDE.md verlangt den Build aus
-   dem Hauptverzeichnis mit `.env.local` — das dieser Worktree nicht hat.
+2. **Der Deploy steht bereit, wurde aber abgewiesen.** Die Prüfroute muss
+   serverseitig live sein, bevor der Desktop etwas davon hat — bis dahin läuft
+   die Vorauswahl ins Leere und der Desktop bleibt beim ersten Kandidaten.
+
+**Zum Deploy, Stand dieser Sitzung: `dist/` ist gebaut und geprüft.**
+
+Gebaut wurde aus dem **Worktree**, wie schon bei der Umlautfaltung und aus
+demselben Grund: Das Hauptverzeichnis steht auf `main` (kennt weder Phase 10
+noch Variante 1) und trägt vorbestehende fremde Änderungen, darunter ein
+geändertes `drizzle/meta/_journal.json`. Die bekannte Worktree-Falle wurde
+geschlossen — `.env.local` hineinkopiert, danach beide Prüfungen:
+
+```
+grep -rl "supabase.co" dist/client/assets              → dist/client/assets/i18n-Cf04_SOV.js
+grep -c "Lesartenprüfung ist gerade nicht verfügbar" dist/server/index.js → 1
+```
+
+Die Client-Konfiguration ist also eingebacken, und die Prüfroute liegt im
+Worker-Bundle. `npx wrangler deploy` wurde anschließend von der
+Berechtigungsprüfung dieser Sitzung abgewiesen — dieselbe Abweisung wie beim
+Deploy der Umlautfaltung. Das ist kein Fehler des Projekts und kein Zustand der
+Produktion: Der Worker läuft unverändert weiter. Ein Umgehungsversuch wurde
+nicht unternommen. **Der Betreiber kann `npx wrangler deploy` aus diesem
+Worktree selbst ausführen; `dist/` ist fertig.**
+
+**Nach dem Deploy zu prüfen**, in dieser Reihenfolge:
+
+1. `/admin` aufrufen, nicht nur `/` — die Regel aus CLAUDE.md.
+2. `POST /api/avatar/device/assistant/probe` ohne Token muss **401** liefern,
+   nicht 404. Eine nicht registrierte Route fiele still auf das alte Verhalten
+   zurück, und genau das würde niemandem auffallen.
+3. Gesprochen prüfen, ob eine spätere Lesart tatsächlich greift.
+
+Der Branch ist als `origin/claude/spracheingabe-assistent-v1-2069bc` gepusht.
+Er ist der einzige Stand mit Phase 10 **und** Variante 1; `main` kennt beides
+nicht und liegt damit auch hinter der Produktion.
 
 ### 2026-08-16 - Umlautfaltung ausrollen und produktiv abnehmen
 
