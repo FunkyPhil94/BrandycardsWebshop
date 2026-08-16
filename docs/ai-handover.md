@@ -37,9 +37,15 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
+<!-- Fuer den naechsten Auftrag freihalten. -->
+
+Keine laufenden Aufträge.
+
+## Historie
+
 ### 2026-08-16 - Phase 9: Verkaufsübersicht aus eBay, dritte Zustimmungsrunde
 
-- Stand: **LÄUFT.**
+- Stand: **ABGESCHLOSSEN**, bis auf den Schritt, der beim Kontoinhaber liegt.
 - Auftrag des Betreibers: (1) die Zustimmung um den Fulfillment-Scope erweitern,
   (2) eine Übersicht „meine Verkäufe der letzten x Tage".
 - Reihenfolge mit Absicht: Teil 1 zuerst ausrollen, damit der Betreiber die
@@ -81,7 +87,64 @@ Scope weiterhin auffällt.
   Wiederholungslauf, Tests für leere/lückenhafte Antworten sowie Scope- und
   Rate-Limit-Fehler.
 
-## Historie
+**Ergebnis Teil 1 — ausgerollt.** `EBAY_OAUTH_CONSENT_SCOPES` trägt jetzt drei
+Scopes, Worker-Version `ab2e8e32`. Der Test hält die Liste weiterhin als
+Gleichheitsprüfung fest, jetzt auf drei statt zwei, plus eine Zusicherung, dass
+kein weiteres **Schreibrecht** hineinrutscht.
+
+**Ergebnis Teil 2 — gebaut, ausgerollt, wartet auf den Token.**
+
+Neu: `ebay_sales` (Migration `0013`), `fetchEbaySales`/`parseSalesOrders` in
+`lib/ebay-read-api.ts`, `syncSales` in `lib/ebay-read-sync.ts`, Werkzeug
+`sales_overview` in `lib/assistant/tools/sales.ts`, Planerregel samt
+`requestedDays`, Formatierung, `tests/assistant-phase9.test.mjs`.
+Geändert: `db/schema.ts`, `lib/assistant/{contracts,ebay-availability,planner,
+response-formatter,server-tool-registry}.ts`, `package.json`,
+`tests/assistant-{orchestrator,phase8}.test.mjs`, `.env.example`, `wrangler.toml`.
+
+Drei Entwurfsentscheidungen, die beim Bauen entstanden sind:
+
+1. **Die Verkaufstabelle wird nie leergeräumt.** Die drei Quellen aus Phase 8
+   löschen, was eBay nicht mehr meldet — dort heißt das „gilt nicht mehr". Ein
+   Verkauf dagegen rutscht nur aus dem Abfragefenster, ohne ungeschehen zu
+   werden. Dieselbe Fensterschreibweise hätte die Historie bei jedem Lauf auf
+   90 Tage zurückgeschnitten. `tests/assistant-phase8.test.mjs` hält jetzt
+   ausdrücklich fest, dass es zu `ebaySales` kein `db.delete` gibt.
+2. **Der Umsatz summiert über Bestellungen, nicht über Posten.** Der
+   Bestellbetrag steht auf jedem Posten derselben Bestellung, weil eBay keinen
+   Schlüssel mitliefert, nach dem sich Versand und Steuern aufteilen ließen.
+   Wer die Posten summiert, zählt eine Bestellung mit drei Karten dreifach —
+   an echtem SQL nachgemessen: 4 500 statt 9 000 Cent.
+3. **Keine Gesamtsumme aus einer halben Grundlage.** Fehlt die eBay-Hälfte,
+   bleibt `totalRevenueCents` `null` und die Antwort sagt warum. Eine Zahl, die
+   einen ganzen Kanal verschweigt, sieht vollständig aus und ist es nicht.
+   Dasselbe bei gemischten Währungen.
+
+Der Umsatz ist ausdrücklich **brutto vor eBay-Gebühren**, inklusive des vom
+Käufer getragenen Versands; `revenueBasis` trägt diesen Satz mit in die
+Antwort. Was eBay einbehält, steht in der Fulfillment-Antwort nicht
+vollständig — eine Zahl „nach Gebühren" wäre geraten.
+
+**Verifikation:** `npm test` 504/504 (vorher 489), `npx tsc --noEmit` sauber,
+ESLint 0 Fehler (1 vorbestehende Warnung), `git diff --check` sauber. Migration
+`0013` lokal auf leerer Datenbank durch die Kette `0000`–`0013` gefahren; der
+Neuaufbau von `ebay_read_syncs` erhält die Zeilen nachweislich, `SALES` wird
+angenommen, ein unbekannter Datentyp weiterhin abgelehnt
+(`SQLITE_CONSTRAINT_CHECK`). Upsert an echtem SQL gemessen: zweimal derselbe
+Inhalt ergibt zwei Zeilen statt vier, Umsatz 4 500 statt 9 000.
+**Produktion:** `0013` angewendet — die drei bestehenden Zustandszeilen haben
+den Tabellenneuaufbau mit Zeitstempeln und Zählern überlebt. Deploy
+`4fb0a2e3`; `/admin` und das Bundle mit der Supabase-Konfiguration antworten
+mit 200.
+
+**Was noch beim Kontoinhaber liegt:** die Zustimmung erneut durchlaufen und den
+**neuen** `EBAY_REFRESH_TOKEN` hinterlegen. Bis dahin meldet `SALES`
+wahrheitsgemäß `SCOPE_NOT_GRANTED`, und die Übersicht weist die Shop-Hälfte aus
+und benennt die fehlende eBay-Hälfte samt Grund.
+
+**Nicht getan:** kein Live-Aufruf gegen die Fulfillment-API (ohne den neuen
+Token nicht möglich), keine Änderung an Bestellungen, Beständen oder Produkten,
+keine Admin-Oberfläche für die Übersicht — sie ist ein Assistant-Werkzeug.
 
 ### 2026-08-16 - Die eBay-Verkäufe vor dem Assistenten nachtragen
 

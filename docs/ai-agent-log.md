@@ -1,5 +1,51 @@
 # BrandyCards Agentenprotokoll
 
+## 2026-08-16 - Phase 9: Warum ein Verkauf anders gespeichert wird als eine Aufrufzahl
+
+Phase 8 hat eine Bauweise etabliert, die gut funktioniert: abrufen, alles mit
+demselben Stempel schreiben, alles mit abweichendem Stempel löschen. Zweimal
+derselbe eBay-Inhalt ergibt denselben Tabelleninhalt. Für die Verkaufshistorie
+wäre genau diese Bauweise ein Datenverlust gewesen.
+
+**Der Unterschied liegt in der Bedeutung von „eBay meldet es nicht mehr".** Bei
+Aufrufzahlen, Postfach und Preisvorschlägen heißt das: gilt nicht mehr. Ein
+zurückgezogener Preisvorschlag *ist* weg. Bei einem Verkauf heißt es: aus dem
+90-Tage-Fenster gerutscht. Der Verkauf hat trotzdem stattgefunden. Hätte
+`syncSales` gelöscht wie seine drei Geschwister, wäre die Historie bei jedem
+Lauf auf das Abfragefenster zurückgeschnitten worden — und zwar lautlos, weil
+eine Übersicht „letzte 90 Tage" auch dann plausibel aussieht, wenn ihr der
+hintere Teil fehlt. Die Verkaufstabelle wird deshalb als einzige nur
+fortgeschrieben, nie geleert; ein Test hält fest, dass es zu ihr kein
+`db.delete` gibt.
+
+**Der Umsatz war die zweite Falle, und sie ist rein arithmetisch.** eBay legt
+den Bestellbetrag auf jeden Posten der Bestellung, weil sich Versand und
+Steuern nicht nach einem mitgelieferten Schlüssel aufteilen lassen. Wer die
+Posten summiert, zählt eine Bestellung mit drei Karten dreifach. An echtem SQL
+nachgemessen: über Bestellungen eindeutig gemacht 4 500 Cent, naiv über Posten
+9 000. **Beide Zahlen sehen aus wie ein Umsatz.** Nur eine ist einer.
+
+**Eine Zahl ohne Bezugsgröße ist keine Auskunft.** „Umsatz" kann brutto oder
+nach Gebühren heißen, mit oder ohne Versand — die Antworten liegen bei diesem
+Sortiment gut zehn Prozent auseinander. Die Fulfillment-Antwort nennt die
+eBay-Gebühren nicht vollständig, eine Netto-Zahl wäre also geraten. Der
+Datensatz führt deshalb ein Feld `revenueBasis`, dessen Inhalt in jede Antwort
+mit hineingeht: brutto, inklusive vom Käufer getragenem Versand, vor Gebühren.
+
+**Und die Fortsetzung von Phase 8s Grundgedanken:** Fehlt die eBay-Hälfte,
+entsteht keine Gesamtsumme. Die Shop-Zahlen stehen trotzdem da, die eBay-Zeile
+nennt den Grund. Eine addierte Zahl, der ein ganzer Verkaufskanal fehlt, wäre
+schlimmer als eine fehlende — sie sähe vollständig aus, und niemand sähe ihr an,
+dass sie es nicht ist. Dasselbe gilt bei gemischten Währungen.
+
+**Der Planer musste eine Frage lernen zu unterscheiden.** „Was habe ich zuletzt
+verkauft?" und „Was habe ich in den letzten 30 Tagen verkauft?" enthalten
+dasselbe Wort. Die neue Regel steht deshalb *vor* `latest_sale` und greift nur
+bei einem genannten Zeitraum oder dem Wort Umsatz. Zusätzlich braucht die
+Übersicht einen zweiten Parameter: `requestedLimit` hätte aus „30 Tagen" die
+Zahl 30 gelesen, sie auf 20 gedeckelt und daraus einen Zeitraum von drei Wochen
+gemacht — eine falsche Antwort, die niemandem auffällt.
+
 ## 2026-08-16 - Ein leeres Ereignisprotokoll sieht aus wie ein falscher Verkauf
 
 Der Betreiber sagte, er habe gestern verkauft; `latest_sale` nannte den 09.08.
