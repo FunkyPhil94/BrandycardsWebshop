@@ -37,9 +37,44 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-<!-- Fuer den naechsten Auftrag freihalten. -->
+### 2026-08-16 - Phase 5b des Desktop-Assistenten: Produktionsvorbereitung
 
-Keine laufenden Aufträge.
+- Status: LÄUFT.
+- Ziel: Die beiden in Phase 5 ausdrücklich offen gelassenen Befunde schließen,
+  soweit sie einer produktiven Kopplung im Weg stehen. Kein neuer Funktions-
+  umfang, keine Schreiboperation, keine Änderung an der Sicherheitsgrenze des
+  Orchestrators.
+- Ausgangslage: Die Phase-5-Arbeit lag auf `claude/brandycards-phase-5-testing-13ad58`
+  (`23e88b7`), dieser Arbeitszweig stand noch auf `75c3762`. Erster Schritt war
+  deshalb ein reiner Fast-Forward auf den Phase-5-Stand; ohne ihn wäre gegen
+  Code gearbeitet worden, den es nicht mehr gibt. Danach dieser Eintrag.
+
+**1. Timeout-Widerspruch Client/Server**
+
+`MainPage` setzt `_httpClient.Timeout` auf 12 s, der Modellpfad in
+`lib/assistant/planner.ts` darf 15 s laufen. Sobald `OPENAI_API_KEY`
+serverseitig gesetzt wird, bricht der Desktop ab, bevor der Server antworten
+kann — der Nutzer sähe einen Fehler, obwohl die Anfrage noch läuft. Geplant:
+ein eigener, dokumentierter Zeitrahmen für die Assistant-Anfrage, der über dem
+maximalen Serverpfad plus Netzpuffer liegt (30 s), während Abruf und Kopplung
+bei ihren kurzen 12 s bleiben — ein Poll alle drei Sekunden darf nicht eine
+halbe Minute hängen. Die Grenze bleibt endlich. Dazu ein Test, der beide Werte
+aus den echten Quelldateien liest und die Ordnung erzwingt.
+
+**2. Mehrmonitor, DPI und Taskleiste**
+
+Phase 5 hat gemessen, dass das Pet an `SM_CYSCREEN` ankert und dadurch in die
+Taskleiste ragt; geprüft wird, ob das ohne Eingriff in Transparenz, Animation
+und Pet-Größe zu beheben ist. Mehrmonitorbetrieb ist am Prüfgerät weiterhin
+nicht real testbar; er wird nur aus dem Code beurteilt und als ungeprüft
+ausgewiesen.
+
+- Rahmen: keine Produktionsänderung, keine Remote-Migration, kein Deployment,
+  keine Änderung an eBay-Tokens oder Cloudflare-Secrets, kein externer
+  OpenAI-Aufruf in Tests.
+- Verifikation: `npm test`, `npx tsc --noEmit`, `npm run lint`,
+  WinUI-x64-Debug-Build, Sichtprüfung von Pet und Launcher, Timeout- und
+  Abbruchverhalten ohne `OPENAI_API_KEY`, `git diff --check`.
 
 ## Historie
 
