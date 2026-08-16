@@ -37,9 +37,56 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-<!-- Fuer den naechsten Auftrag freihalten. -->
+### 2026-08-16 - Phase 6 des Desktop-Assistenten: verbleibende Produktionsrisiken
 
-Keine laufenden Aufträge.
+- Status: LÄUFT.
+- Ziel: Die drei aus Phase 5 und 5b ausdrücklich offen gebliebenen Risiken
+  prüfen und nur dort beheben, wo es nachweisbar sicher ist. Kein neuer
+  Funktionsumfang, keine Schreiboperation, keine Änderung an der
+  Sicherheitsgrenze des Orchestrators.
+- Ausgangslage: Dieser Arbeitszweig stand auf `75c3762` (= `main`) und damit
+  vor der gesamten Phase-5-Arbeit. Erster Schritt war deshalb ein reiner
+  Fast-Forward auf den Phase-5b-Stand `d81cc1d`; ohne ihn wäre gegen Code
+  gearbeitet worden, den es in dieser Form nicht mehr gibt. Danach dieser
+  Eintrag. Der Phase-5b-Worktree bleibt unberührt.
+
+**1. Mehrmonitorbetrieb**
+
+Am Prüfgerät hängt weiterhin genau ein Monitor (`SM_CMONITORS` = 1,
+2160×1440, 144 dpi). Ein echter Mehrschirmtest ist damit unmöglich und wird
+auch nicht behauptet. Geprüft wird stattdessen die Positionierungslogik
+selbst: Das Pet ist über `WM_NCHITTEST` → `HTCAPTION` frei verschiebbar,
+`MainWindow.PositionBesidePet` rechnet aber fest gegen
+`DisplayArea.Primary.WorkArea`. Ob der Launcher dem Pet folgen kann, statt
+auf den Primärmonitor zurückzuspringen, wird untersucht; ein Eingriff nur,
+wenn er Transparenz, Animation und Pet-Größe nachweislich nicht berührt.
+
+**2. Serverfehlerpfad**
+
+HTTP 4xx, HTTP 5xx, Zeitüberschreitung, Offline und ungültiges JSON gegen
+einen lokalen Wegwerf-Testserver auf `127.0.0.1`. Keine Produktions-URL.
+Erwartung: verständliche deutsche und *längenbegrenzte* Meldungen.
+
+**3. Pet-Größe bei 150 % DPI**
+
+Zuerst Analyse, ob 173×200 effektive Pixel sinnvoll sind. Atlas,
+`NativePetOverlay` und Skalierung werden ohne belastbare technische Prüfung
+nicht angefasst; gefährdet eine Änderung Transparenz, Animation oder
+Positionierung, werden die Optionen dokumentiert statt nebenbei umgesetzt.
+
+**4. Modell-Planer**
+
+Bleibt aus. Kein `OPENAI_API_KEY`, kein externer Aufruf. Die deterministische
+Tool- und Antwortlogik bleibt unverändert.
+
+- Rahmen: keine Produktionsänderung, kein Deployment, kein Push zu `origin`,
+  keine Remote-Migration, keine Änderung an eBay-Tokens oder
+  Cloudflare-Secrets, keine Schreiboperation des Assistants, fremde Worktrees
+  unangetastet.
+- Verifikation: `npm test`, `npx tsc --noEmit`, `npm run lint`,
+  WinUI-x64-Debug-Build, `git diff --check`, Sichtprüfung bei 150 % DPI,
+  Text-, Sprach-, Offline-, Timeout- und HTTP-Fehlerpfade am laufenden
+  Fenster.
 
 ## Historie
 
