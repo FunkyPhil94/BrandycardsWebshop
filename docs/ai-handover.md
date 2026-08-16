@@ -360,10 +360,27 @@ fehlerfrei, `npm run lint` 0 Fehler / 1 vorbestehende Warnung in
    eBay-Pseudonyme aus dem eigenen Postfach (`vichernand85`, `cosmonauto`) und
    Bestellnummern, aber keine E-Mail-Adresse, keine Anschrift und kein
    Nachrichtentext.
-3. **Spracheingabe live**, ebenfalls von 1 abhängig. Der Diktatpfad endet
-   nachweislich in derselben `SendAssistantMessageAsync`-Methode wie Text
-   (festgehalten in `tests/assistant-orchestrator.test.mjs`), aber zwei echte
-   gesprochene Fragen gegen Produktion konnten nicht gestellt werden.
+3. ~~Spracheingabe live.~~ **Erledigt am 2026-08-16**: Der Betreiber hat sie
+   nach dem Rollout gesprochen geprüft — sie funktioniert. Damit ist Phase 10
+   in allen Punkten produktiv nachgewiesen.
+
+   Gemeldet wurde dabei, die Erkennung sei „etwas ungenau", vermutet wurde das
+   Mikrofon. Zwei Codeursachen wurden daraufhin geprüft, eine ausgeschlossen:
+   `SelectRecognizer()` in
+   [WindowsSpeechRecognitionService.cs](../avatar/BrandyCards.Desktop/WindowsSpeechRecognitionService.cs)
+   fällt notfalls auf **irgendeinen** installierten Erkenner zurück — bei einer
+   englischen Stimme auf eine deutsche Frage wäre das die Erklärung. Auf dem
+   Prüfgerät sind `de-DE` und `en-GB` installiert und `CurrentUICulture` ist
+   `de-DE`, der erste Treffer ist also der richtige. Die stille Rückfallebene
+   bleibt trotzdem eine Falle für ein anderes Gerät: Sie sagt nicht, in welcher
+   Sprache sie zugehört hat.
+
+   Was bleibt: Der Dienst benutzt `System.Speech` mit einer blanken
+   `DictationGrammar()` — die alte SAPI-Desktop-Erkennung, keine moderne
+   Engine. Freies Diktat trifft damit Fachvokabular schlecht, und genau daraus
+   bestehen die Fragen („Topps Chrome", „Refractor", Spielernamen). Das ist
+   kein Mikrofonproblem. Verbesserungsvorschläge stehen im Arbeitsvorrat; nicht
+   umgesetzt, weil nicht beauftragt.
 4. **Doppelte Bezeichnung in `UNAVAILABLE`-Antworten**, kosmetisch:
    „eBay-Aufrufzahlen: Aufrufzahlen: eBay verweigert …". Der Formatierer setzt
    das Label davor, die Meldung bringt ihr eigenes mit. Nicht angefasst, weil

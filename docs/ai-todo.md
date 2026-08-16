@@ -11,12 +11,42 @@ dabei, damit niemand den Gesprächsverlauf braucht.
 
 ---
 
-## Zuerst: Spracheingabe produktiv belegen
+## Zuerst: Treffsicherheit der Spracheingabe
 
-Zwei gesprochene Fragen über den Desktop stellen. Der Diktatpfad endet
-nachweislich in derselben `SendAssistantMessageAsync`-Methode wie Text
-(festgehalten in `tests/assistant-orchestrator.test.mjs`), ist aber nie
-produktiv gesprochen worden. Der letzte offene Punkt aus Phase 10.
+**Die Spracheingabe funktioniert** — am 2026-08-16 vom Betreiber gesprochen
+geprüft. Gemeldet wurde, sie sei „etwas ungenau"; vermutet wurde das Mikrofon.
+Geprüft und ausgeschlossen: Die Sprachwahl greift, auf dem Gerät sind `de-DE`
+und `en-GB` installiert und `CurrentUICulture` ist `de-DE`.
+
+Was übrig bleibt, liegt im Code, nicht in der Hardware:
+[WindowsSpeechRecognitionService.cs](../avatar/BrandyCards.Desktop/WindowsSpeechRecognitionService.cs)
+benutzt `System.Speech` mit einer blanken `DictationGrammar()` — die alte
+SAPI-Desktop-Erkennung. Freies Diktat trifft Fachvokabular schlecht, und die
+Fragen bestehen genau daraus.
+
+Drei Ansätze, aufsteigend nach Aufwand:
+
+1. **Die beste Alternative nehmen, nicht die erste.** `RecognitionResult`
+   liefert `Alternates`. Statt blind `result.Text` zu nehmen: die Alternativen
+   durchgehen und die erste verwenden, die der Regelplaner auf ein Werkzeug
+   abbildet. Die Domäne ist klein und geschlossen — der Planer ist damit der
+   natürliche Schiedsrichter über eine unsichere Erkennung. Kleinster Eingriff,
+   vermutlich größte Wirkung.
+2. **Eine Domänengrammatik neben das Diktat legen.** Ein `GrammarBuilder` mit
+   den tatsächlichen Fragemustern und ihren Schlüsselwörtern. Erkannt werden
+   muss nicht der ganze Satz, sondern nur das Wort, an dem der Planer hängt.
+3. **Auf `Windows.Media.SpeechRecognition` wechseln** (WinRT, ebenfalls
+   offline). Größerer Umbau, moderne Engine.
+
+Unabhängig davon hilft dem SAPI-Erkenner das Windows-Sprachtraining
+(Systemsteuerung → Spracherkennung → „Sprachtraining starten") spürbar. Das ist
+Betreibersache und kostet ein paar Minuten.
+
+**Nebenbefund, eigener kleiner Punkt:** `SelectRecognizer()` fällt notfalls auf
+`installedRecognizers.FirstOrDefault()` zurück — auf einem Gerät ohne deutsche
+Sprachfunktion also auf einen englischen Erkenner, **stillschweigend**. Eine
+deutsche Frage an eine englische Erkennung erklärt jede Ungenauigkeit. Es sollte
+mindestens in der Statusmeldung stehen, in welcher Sprache zugehört wurde.
 
 ---
 
