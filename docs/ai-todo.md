@@ -11,39 +11,37 @@ dabei, damit niemand den Gesprächsverlauf braucht.
 
 ---
 
-## Zuerst: Migration `0011` produktiv einspielen
+## Zuerst: Desktop einmal neu koppeln
 
-**Das ist ein laufender Produktionsfehler**, gefunden am 2026-08-16 in Phase 10.
-Der gesamte Desktop-Pfad ist tot: `/api/avatar/device/assistant` und
-`/api/avatar/device/events` antworten mit HTTP 503, sobald ein Gerätetoken
-mitgeschickt wird. Ohne Token kommt korrekt 401 — der Fehler steckt im
-Token-Lookup.
+**Handgriff des Betreibers, kein Entwicklungsschritt** — aber alles Weitere am
+Assistenten hängt daran.
 
-**Ursache:** In der produktiven `avatar_device_tokens` fehlen `scopes`,
-`pairing_id`, `created_by_user_id` und `expires_at`. `drizzle/0010` ist
-eingespielt, `drizzle/0011_avatar_assistant_scope.sql` nicht. Drizzle wählt
-`scopes` mit ab, D1 antwortet `no such column: scopes`.
+Vorgeschichte: Phase 10 fand am 2026-08-16 einen laufenden Produktionsfehler.
+Beide Desktop-Routen antworteten mit HTTP 503, weil `drizzle/0011` nie
+eingespielt war und dadurch vier Spalten in `avatar_device_tokens` fehlten.
+Die Migration ist am selben Tag nach ausdrücklicher Freigabe eingespielt
+worden; der Ereignisabruf antwortet seitdem wieder mit 200.
 
-**Warum es unbemerkt blieb:** Startseite und `/api/products` sind durchgehend
-gesund, und ein Desktop-Pet ohne Ereignisse zeigt seine Leerlaufschleife — es
-sieht aus wie „nichts los", nicht wie „keine Verbindung".
+**Was offen ist:** Der Assistant antwortet **401**. Die beiden produktiven
+Tokenzeilen stammen vom 2026-08-15 und tragen nach der Migration die Vorgabe
+`["EVENTS"]` — so gewollt, ein alter Ereignistoken soll keinen Zugriff auf
+Geschäftsdaten erben.
 
-**Eingriff** (schreibend auf Produktionsdaten, deshalb nur nach Rücksprache):
+**Schritte:** Im Adminbereich einen Pairing-Code erzeugen, ihn im Desktop unter
+„Verbindung ändern" eingeben. Der Claim-Pfad vergibt dann
+`["EVENTS","ASSISTANT_READ"]` und 90 Tage Gültigkeit.
 
-```bash
-npx wrangler d1 execute brandycards-production --remote --file drizzle/0011_avatar_assistant_scope.sql
-```
-
-**Abnahme:** `PRAGMA table_info(avatar_device_tokens)` muss neun Spalten zeigen;
-danach eine echte Frage vom Desktop stellen. Erwartete produktive Antworten
-(aus D1 gelesen, Stand 2026-08-16): 5 ungelesene von 248 eBay-Nachrichten,
+**Abnahme danach:** Die sieben Fragen aus Phase 10 produktiv stellen. Erwartete
+Werte (aus D1 gelesen, Stand 2026-08-16): 5 ungelesene von 248 eBay-Nachrichten,
 0 offene Käufer-Preisvorschläge, 276 Aufrufzeilen, 157 eBay-Verkaufsposten,
-4 offene Shop-Bestellungen. Alle vier eBay-Lesequellen stehen auf `OK`.
+4 offene Shop-Bestellungen. Alle vier eBay-Lesequellen stehen auf `OK` — es
+sollte nichts `UNAVAILABLE` sein. Zusätzlich die Spracheingabe mit zwei
+gesprochenen Fragen belegen.
 
-Anschließend die drei in [ai-handover.md](ai-handover.md) unter Phase 10
-notierten Restpunkte abarbeiten: die sieben Fragen produktiv nachholen, die
-Spracheingabe mit zwei gesprochenen Fragen belegen, und optional den
-Modell-Planer über `OPENAI_API_KEY` scharf schalten.
+**Optional danach:** den Modell-Planer über `OPENAI_API_KEY` scharf schalten.
+Bis dahin läuft ausschließlich der deterministische Planer, der alle bekannten
+Fragen beantwortet und für unbekannte Formulierungen ausdrücklich sagt, dass
+der freie Planer nicht konfiguriert ist.
 
 ---
 

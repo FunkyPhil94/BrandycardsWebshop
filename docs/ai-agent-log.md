@@ -88,6 +88,26 @@ daraus ein 503 statt einer erfundenen Antwort. Ein Fehler, der als solcher
 ankommt, ist besser als einer, der zu einer Auskunft geglättet wird — und eine
 dokumentierte Entscheidung kippt man nicht nebenbei in einer Prüfphase.
 
+**Nachtrag am selben Tag: die Migration wurde freigegeben und eingespielt.**
+Der Ereignisabruf sprang von 503 auf 200, der Assistant von 503 auf 401. Der
+zweite Wert ist die interessante Zahl: Beide produktiven Tokenzeilen stammen
+vom 2026-08-15 und damit aus der Zeit vor dem Scope-Konzept. `ALTER TABLE ADD
+COLUMN scopes ... DEFAULT '["EVENTS"]'` gibt ihnen genau das — und nichts
+weiter. Der Kommentar in `0011` hatte diesen Fall vorweggenommen: Ein alter
+Ereignistoken erbt keinen Zugriff auf Geschäftsdaten.
+
+Das ist die richtige Vorgabe, und sie kostet den Betreiber einen Kopplungsvorgang.
+Die naheliegende Abkürzung — ein `UPDATE` auf die bestehende Zeile — wurde
+nicht genommen. Sie hätte in einer Minute funktioniert und dabei die einzige
+Schutzabsicht dieser Migration stillschweigend zurückgenommen. Ein
+Sicherheitsstandard, der beim ersten eigenen Umweg umgangen wird, ist keiner.
+
+Bemerkenswert bleibt, dass der Ausfall die Kopplung selbst mit umfasste: Der
+Claim-Pfad schreibt `scopes`, `pairing_id`, `created_by_user_id` und
+`expires_at` und wäre an denselben fehlenden Spalten gescheitert. Wer nach dem
+Ausfall versucht hätte, das Problem durch Neukoppeln zu lösen, hätte ein
+zweites 503 bekommen — und vermutlich den Desktop verdächtigt.
+
 **Die Ratenbegrenzung brauchte zwei Anläufe.** Vierzehn Anfragen nacheinander
 liefen sämtlich durch, obwohl die Grenze bei zehn pro Minute liegt. Vierzig
 gleichzeitige ergaben 34 × 429. Cloudflares Zähler ist ausdrücklich als

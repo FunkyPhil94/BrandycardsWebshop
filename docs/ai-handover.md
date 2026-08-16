@@ -43,6 +43,63 @@ Keine laufenden Aufträge.
 
 ## Historie
 
+### 2026-08-16 - Migration 0011 produktiv einspielen
+
+- Stand: **ABGESCHLOSSEN.**
+- Freigabe: Der Betreiber hat den schreibenden Eingriff in die produktive
+  Datenbank ausdrücklich erteilt, nachdem Phase 10 den Ausfall gemeldet hatte.
+- Eingriff: `npx wrangler d1 execute brandycards-production --remote --file
+  drizzle/0011_avatar_assistant_scope.sql`. Rein additiv — vier
+  `ALTER TABLE ADD COLUMN` und ein `CREATE INDEX`. Keine bestehende Spalte und
+  keine bestehende Zeile wird verändert.
+- Vorabprüfung erledigt: Der Index `avatar_device_tokens_expiry_idx` existiert
+  produktiv **nicht**; das `CREATE INDEX` ohne `IF NOT EXISTS` läuft also durch.
+  Produktiv liegen zwei Tokenzeilen vom 2026-08-15, beide nicht widerrufen.
+- **Erwartete Nebenwirkung, ausdrücklich gewollt:** `scopes` bekommt die Vorgabe
+  `'["EVENTS"]'`. Die beiden bestehenden Token stammen aus der Zeit vor dem
+  Scope-Konzept und behalten damit **nur** `EVENTS`. Der Ereignisabruf wird also
+  wieder gesund, der Assistant antwortet danach **401 statt 503** — bis das
+  Gerät neu gekoppelt wird. Genau so ist die Migration kommentiert: Ein alter
+  Ereignistoken darf nicht stillschweigend Zugriff auf Geschäftsdaten erben.
+- Abnahme: `PRAGMA table_info(avatar_device_tokens)` muss neun Spalten zeigen;
+  danach beide Desktop-Routen produktiv nachmessen und den Statuswechsel
+  503 → 401 bzw. 503 → 200 belegen.
+
+**Ergebnis: eingespielt, `changed_db: true`, 7 geschriebene Zeilen, keine
+Fehler.** Die Tabelle hat jetzt neun Spalten; `avatar_device_tokens_expiry_idx`
+ist angelegt.
+
+Produktiv nachgemessen, unmittelbar danach:
+
+| Route | vorher | nachher |
+|---|---|---|
+| `/api/avatar/device/events` mit Token | 503 | **200** (`{"events":[],…}`) |
+| `/api/avatar/device/assistant` mit Token | 503 | **401** |
+| beide ohne Token | 401 | 401 |
+
+**Der interne Fehler ist damit weg.** Der Desktop-Pet ist wieder mit dem
+Ereignisfeed verbunden — das war der Pfad, der neun Phasen lang als „keine
+Ereignisse" gelesen wurde, obwohl er „keine Verbindung" bedeutete.
+
+**Der Assistant antwortet 401, und das ist kein Restfehler, sondern die
+Absicht der Migration.** Beide produktiven Tokenzeilen stammen vom
+2026-08-15, also aus der Zeit vor dem Scope-Konzept, und tragen nach der
+Migration die Vorgabe `["EVENTS"]`. Der Kommentar in `0011` sagt genau das:
+Ein alter Ereignistoken erbt keinen Zugriff auf Geschäftsdaten.
+
+**Was noch fehlt, liegt beim Betreiber:** einmal neu koppeln. Im Adminbereich
+einen Pairing-Code erzeugen und ihn im Desktop unter „Verbindung ändern"
+eingeben. Der Claim-Pfad in
+[app/api/avatar/device/claim/route.ts](app/api/avatar/device/claim/route.ts)
+vergibt dabei `["EVENTS","ASSISTANT_READ"]` und ein Ablaufdatum von 90 Tagen.
+Erst danach lassen sich die sieben Fragen produktiv stellen.
+
+Nicht getan und bewusst nicht: die bestehende Tokenzeile per `UPDATE` auf
+`ASSISTANT_READ` heben. Das wäre ein zweiter, nicht freigegebener Schreibzugriff
+und würde genau die Schutzabsicht aushebeln, die diese Migration mitbringt.
+
+## Historie
+
 ### 2026-08-16 - Phase 10: produktive Assistant-Verifikation und Planner-Härtung
 
 - Stand: **ABGESCHLOSSEN**, mit einem produktiven Befund, der außerhalb der
