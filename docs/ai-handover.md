@@ -37,11 +37,133 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-<!-- Fuer den naechsten Auftrag freihalten. -->
+### 2026-08-16 - Desktop-Pet zum sicheren persönlichen Assistenten ausbauen
 
-Keine laufenden Aufträge.
+- Status: LÄUFT.
+- Ziel: Das bestehende per-pixel-transparente Desktop-Pet als zentrale Oberfläche behalten und schrittweise um eine sichere, ausschließlich textuell antwortende Assistenz erweitern.
+- Phasen: (1) serverseitige read-only Assistant-API und typisierte Datenwerkzeuge, (2) WinUI-Menü und Textkommunikation, (3) Spracheingabe zu Text, (4) zentraler Orchestrator, (5) Tests und lokale Verifikation.
+- Aktueller Fokus: Phase 1 implementiert feste, typisierte Shop-, eBay-, Verkaufs-, Angebots-, Nachrichten- und Statistikfunktionen hinter der bestehenden Geräteauthentifizierung. Das Modell erhält keine Möglichkeit, SQL frei zu erzeugen.
+- Sicherheitsrahmen: Keine Produktionsdaten verändern, keine Remote-Migrationen ausführen und nichts deployen. eBay-, Datenbank- und sonstige Secrets bleiben ausschließlich serverseitig; schreibende Assistant-Aktionen sind nicht Bestandteil dieser Phase.
+- Bekannte Datenlücken: eBay-Aufrufzahlen und eBay-Nachrichten sind derzeit weder zuverlässig persistiert noch über einen vorhandenen Read-Client angebunden und müssen bis zu einer späteren, expliziten Integration als nicht verfügbar ausgewiesen werden.
 
 ## Historie
+
+### 2026-08-16 - Transparenzfehler des Desktop-Pets endgültig behoben
+
+- Status: ABGESCHLOSSEN.
+- Ergebnis: Der grüne Hintergrund ist aus dem echten Desktop-Pet entfernt; im finalen DPI-bewussten Desktop-Screenshot ist ausschließlich die Avatarfigur vor dem darunterliegenden Desktop sichtbar.
+- Umsetzung: Color-Key- und DWM-Ansatz durch ein natives `WS_EX_LAYERED`-Overlay mit per-pixel Alpha ersetzt. Der Frame wird als transparenter ARGB-DIB über `Bitmap.GetHbitmap()` an `UpdateLayeredWindow` übergeben. Die produktive Geräteverbindung und Eventanimationen bleiben erhalten.
+- Prüfung: Finaler Debug-Build mit 0 Warnungen und 0 Fehlern. Der echte Overlay-Ausschnitt wurde mit 19.500 Pixelstichproben geprüft: 0 grüne Hintergrundpixel. Der finale Screenshot wurde aus der interaktiven Windows-Sitzung aufgenommen; es wurden keine Produktionsdaten, Tokens oder Cloudflare-Einstellungen verändert.
+
+### 2026-08-16 - Desktop-Pet statt Avatar-Anwendungsfenster
+
+- Status: ABGESCHLOSSEN.
+- Ergebnis: Den Live-Avatar aus dem produktiven Webshop-Admin entfernt; die notwendige Desktop-Verbindung mit Pairing-Code bleibt bestehen. Die ungenutzte React-Komponente und ihre CSS-Regeln wurden entfernt.
+- Befund: Die produktive `avatar_events`-Tabelle war leer; deshalb gab es keine Ereignisanimation. Die Desktop-App hatte zusätzlich keine laufende Idle-Uhr.
+- Umsetzung: WinUI-Fenster auf transparenten, rahmenlosen Always-on-top-Pet umgestellt, Setup-Ansicht und Pet-Ansicht getrennt, Idle-Animation mit 160-ms-Takt ergänzt und Einstellungsbutton zum erneuten Koppeln erhalten. eBay-, Cloudflare- und Geräte-Secrets werden nicht in den Client übernommen.
+- Prüfung: WinUI-Build erfolgreich mit 0 Fehlern und 0 Warnungen; laufender Desktop-Prozess antwortet. `npm test`: 356/356 bestanden; `npx tsc --noEmit`: erfolgreich. Produktions-Worker `brandycards-webshop` auf `shop.brandycards.de` deployed, Version `fee50e21-b368-4069-a381-0ffb967b28de`; Admin-Seite danach geprüft: kein `LIVE-AVATAR`, `DESKTOP-VERBINDUNG` vorhanden.
+
+### 2026-08-16 - Desktop-Avatar produktiv aktivieren
+
+- Status: ABGESCHLOSSEN.
+- Freigabe: Der Nutzer hat die produktive Aktivierung ausdrücklich angefordert.
+- Remote-Schema: `users.preferred_locale` und `orders.shipped_at` waren bereits vorhanden; `avatar_events`, `avatar_device_pairings` und `avatar_device_tokens` fehlten.
+- Umsetzung: `drizzle/0009_avatar_events.sql` und `drizzle/0010_avatar_device_pairing.sql` erfolgreich auf der produktiven D1 `brandycards-production` angewendet. Anschließend Worker `brandycards-webshop` auf `shop.brandycards.de` deployed, Version `a1a5615a-db4f-42b8-991c-8af38b41cc0b`.
+- Prüfung: Produktive Admin-Seite nach Reload zeigt LIVE-AVATAR und DESKTOP-VERBINDUNG mit Pairing-Schaltfläche. Unautorisierter Gerätefeed antwortet mit 401, ungültiges Claim mit 400. Keine Secrets ausgegeben oder in die Desktop-App übertragen.
+
+### 2026-08-16 - Desktop-Avatar-Fenster vergrößern
+
+- Status: ABGESCHLOSSEN.
+- Umsetzung: Standardgröße auf 520×760 effektive Pixel erhöht, manuelles Vergrößern zugelassen und die Pairing-Oberfläche in einen vertikal scrollbareren `ScrollViewer` gelegt. Damit bleibt der untere Hilfetext auch bei kleinerer Bildschirmhöhe erreichbar.
+- Prüfung: WinUI-Build erfolgreich mit 0 Fehlern und 0 Warnungen; App neu gestartet und als responsiver Prozess verifiziert. Keine Produktionsdaten, Migrationen oder Secrets verändert.
+
+### 2026-08-16 - Kontrast des Desktop-Avatars korrigieren
+
+- Status: ABGESCHLOSSEN.
+- Befund: Die Pairing-Oberfläche war hell hinterlegt, während WinUI aus dem System-Theme helle Text- und Eingabefarben übernahm; dadurch war fast nichts lesbar.
+- Umsetzung: Theme-Dictionaries für hell, dunkel und hohen Kontrast ergänzt; Texte, Eingabefelder, Platzhalter, Buttons und Avatar-Fläche auf kontrastreiche, theme-aware Ressourcen umgestellt.
+- Prüfung: `dotnet build avatar/BrandyCards.Desktop/BrandyCards.Desktop.csproj -c Debug -p:Platform=x64` erfolgreich mit 0 Fehlern und 0 Warnungen. App anschließend neu gestartet und als responsiver Prozess verifiziert. Keine Produktionsdaten, Migrationen oder Secrets verändert.
+
+### 2026-08-16 - Eigenständigen Desktop-Avatar als WinUI-App erstellen
+
+- Status: TEILWEISE ABGESCHLOSSEN.
+- Ergebnis: WinUI 3 / Windows App SDK eingerichtet und eine direkt startbare C#-Desktop-App unter `avatar/BrandyCards.Desktop/` erstellt. Das Fenster bleibt im Vordergrund, zeigt den BrandyCards-Avatar und koppelt sich über einen einmaligen Pairing-Code an den Shop.
+- Umsetzung: Neue lokale Geräte-Kopplung mit gehashtem Pairing-Code und Geräte-Token, geschützter Ereignisfeed sowie Token-Speicherung ausschließlich unter `%LOCALAPPDATA%\BrandyCards\DesktopAvatar\settings.json`. eBay-, Cloudflare- und Supabase-Secrets bleiben serverseitig.
+- Animationen: `OFFER_RECEIVED`, `OFFER_ACCEPTED`, `OFFER_REJECTED` und `CARD_SOLD` werden aus dem Atlas abgespielt und bei mehreren Treffern nacheinander in eine Animationswarteschlange gelegt.
+- Prüfung: `dotnet build` erfolgreich mit 0 Fehlern und 0 Warnungen; laufender WinUI-Prozess verifiziert; `npm run build`, `npx tsc --noEmit` und `npm test` erfolgreich, 356 Tests bestanden. Lokaler Gerätefeed ohne Token antwortet mit 401, ungültiges Pairing mit 400. ESLint meldet nur die bereits vorhandene Warnung in `app/account/page.tsx`.
+- Offen: Migration `drizzle/0010_avatar_device_pairing.sql` und die neuen Worker-Routen müssen noch ausdrücklich in der produktiven Cloudflare-D1/Worker-Umgebung deployed werden. Danach muss einmalig ein produktiver Pairing-Code im Adminbereich erzeugt und in der App eingegeben werden. Es wurden keine Produktionsdaten und keine Secrets verändert.
+
+### 2026-08-16 - Avatar-Ereignisfilter auf SQLite-Zeitvergleich korrigieren
+
+- Status: ABGESCHLOSSEN.
+- Befund: Der Feed meldete Verbindung, verwarf aber Ereignisse wegen eines lexikografischen Vergleichs zwischen D1-`CURRENT_TIMESTAMP` (`YYYY-MM-DD HH:MM:SS`) und ISO-Zeitstempeln (`YYYY-MM-DDTHH:mm:ss.sssZ`).
+- Umsetzung: Die Admin-Abfrage vergleicht Zeitstempel nun über SQLite `datetime()`; keine Ereignisse gelöscht und keine Produktionsdaten berührt.
+- Prüfung: `npm run build` erfolgreich.
+
+### 2026-08-16 - Lokale D1-Bestellmigration nachziehen
+
+- Status: ABGESCHLOSSEN.
+- Befund: `orders.shipped_at` fehlte lokal; dadurch schlug `/api/admin/orders` mit `D1_ERROR` fehl. Die Migrationen `0008` und `0009` waren bereits lokal angewendet.
+- Umsetzung: Nur lokal `drizzle/0007_order_fulfillment.sql` angewendet. Danach ein frisches lokales `CARD_SOLD`-Testereignis eingefügt.
+- Unverändert: Remote-D1, Produktionsdaten und Secrets.
+
+### 2026-08-15 - Avatar-Testfenster für kurz zurückliegende Ereignisse erweitern
+
+- Status: ABGESCHLOSSEN.
+- Befund: Die lokalen Testzeilen waren vorhanden, aber beim Avatar-Start bereits rund 74 Sekunden alt; der Client suchte nur zehn Sekunden zurück.
+- Umsetzung: Initiales Ereignisfenster auf fünf Minuten erweitert, sowohl in der Admin-API als auch im Avatar-Client. Keine Daten gelöscht und keine Produktionsverbindung verändert.
+- Prüfung: `npm run build` erfolgreich.
+
+### 2026-08-15 - Lokale D1-Schemaabweichung beim Admin-Login beheben
+
+- Status: ABGESCHLOSSEN.
+- Befund: `users.preferred_locale` fehlte lokal; dadurch schlug die Supabase-/Admin-Prüfung mit `D1_ERROR` fehl. Die Avatar-Migration `0009` war lokal bereits vorhanden.
+- Umsetzung: Nur lokal `drizzle/0008_user_preferred_locale.sql` angewendet. Anschließend verifiziert: `users.preferred_locale`, `avatar_events.event_type` und `avatar_events.dedupe_key` sind vorhanden.
+- Unverändert: Produktions-D1, Cloudflare-Remote-Daten und Secrets.
+
+### 2026-08-15 - Ereignisgesteuerten Avatar an Shop-Ereignisse anbinden
+
+- Status: TEILWEISE ABGESCHLOSSEN.
+- Ergebnis: Der Avatar im Adminbereich reagiert auf neuen Preisvorschlag (`waiting`), angenommene Zusage (`waving`), abgelehnte Zusage (`failed`) und Shop-/eBay-Verkauf (`jumping`).
+- Umsetzung: Neue idempotente Tabelle `avatar_events`, Migration `drizzle/0009_avatar_events.sql`, Admin-Pollingroute und Spritesheet-Anzeige unter `app/admin/avatar-pet.tsx`. PayPal-Capture/Webhook, eBay-Order-Notification sowie Preisvorschlags- und Entscheidungsrouten erzeugen die Ereignisse.
+- Schutz: eBay-/Cloudflare-Secrets bleiben serverseitig; das Ereignis-Feed ist MFA-geschützt und enthält keine Zugangsdaten. Deduplizierung verhindert Mehrfachanimationen bei Retries.
+- Prüfung: `npm run build`, `npm test` mit 356 bestandenen Tests und `npm run lint` erfolgreich; Lint meldet nur die bereits vorhandene Warnung in `app/account/page.tsx`.
+- Offen: Die separate WinUI-Desktop-App konnte nicht gebaut/gestartet werden, weil kein .NET SDK, Windows App SDK oder Visual Studio vorhanden ist. Der automatische System-Setup wurde wegen möglicher systemweiter Änderungen nicht ausgeführt. Die Migration und Anwendung sind noch nicht nach Cloudflare deployt.
+
+### 2026-08-15 - Animierten BrandyCards-Avatar erstellen
+
+- Status: ABGESCHLOSSEN.
+- Ergebnis: Codex-kompatibler Avatar aus der linken Person von `app/brand/brandycards-logo.png` erstellt: schwarze Cap, Bart, schwarzes Shirt, helle Jeans und weiße Sneaker.
+- Umsetzung: Alle neun Zustände (`idle`, `running-right`, `running-left`, `waving`, `jumping`, `failed`, `waiting`, `running`, `review`) als eigene `$imagegen`-Reihen erzeugt; Logo-Schriftzug und Markenemblem nicht in den Frames reproduziert.
+- QA: Frame-Inspektion ohne Fehler; Atlas als RGBA-PNG und WebP mit 1536×1872 Pixeln, 192×208-Zellen und 0 transparenten RGB-Restpixeln validiert; Kontaktbogen und Animationsvorschauen erstellt und visuell geprüft.
+- Projektdateien: `avatar/brandycards-avatar/pet.json`, `avatar/brandycards-avatar/spritesheet.webp` und `avatar/brandycards-avatar/contact-sheet.png`.
+- Codex-Paket: `C:\Users\pbran\.codex\pets\brandycards-black-cap\pet.json` und `spritesheet.webp`.
+- Nachbereitung: Nicht benötigte Generierungs-, Strip- und Atlas-Zwischenstände aus dem Arbeitslauf entfernt; Prüfberichte, Kontaktbogen und GIF-Vorschauen bleiben unter `avatar/hatch-pet-run/brandycards-blackcap/qa/` erhalten.
+- Hinweis: Die generierten Originalbilder verbleiben gemäß Bildgenerierungsrichtlinie im lokalen Generated-Images-Verzeichnis; das Projekt enthält die ausgewählten Arbeits- und Enddateien.
+
+### 2026-08-15 - Inhalt des Unterordners „Avatar“ entfernen
+
+- Status: ABGESCHLOSSEN.
+- Ergebnis: Alle Dateien und Unterordner in `C:\Projekte\BrandyCards WebShop\avatar` entfernt. Der Ordner selbst besteht weiterhin und ist leer.
+- Prüfung: Zielpfad bestätigt; `FolderExists = True`, `RemainingItems = 0`.
+- Unverändert gelassen: Andere Dateien und bestehende lokale Änderungen im Repository.
+- Hinweis: Ein leerer Ordner wird von Git nicht versioniert; lokal bleibt er vorhanden.
+
+### 2026-08-15 - Unterprojekt „Avatar“ anlegen
+
+- Status: ABGESCHLOSSEN.
+- Ergebnis: Eigenständiges Vite/React/TypeScript-Projekt unter `avatar/` angelegt. Es läuft lokal auf `127.0.0.1:4303`.
+- Workspace-Zugriff: Die Vite-Konfiguration erlaubt den übergeordneten Repository-Root. Ein read-only Manifest listet die zugänglichen Projektdateien; eine geprüfte Dateivorschau liest Textdateien bis 2 MB.
+- Schutz: Pfad-Traversal, Umgebungsdateien, private Schlüssel, Abhängigkeiten sowie Build-/Cache-Verzeichnisse werden ausgeschlossen. Der Server bindet nur an localhost; Produktionsdaten und externe Dienste werden nicht verändert.
+- Prüfung: `npm run build` in `avatar/` erfolgreich. HTTP-Checks: Startseite 200, Manifest 200 mit 1.566 Dateien, `README.md`-Vorschau erfolgreich, Traversal und `.env.local` jeweils 403.
+- Unverändert gelassen: Bestehende lokale Änderungen und unversionierte Dateien außerhalb von `avatar/`.
+
+### 2026-08-15 - Neues Unterprojekt mit Zugriff auf das Hauptverzeichnis
+
+- Status: ABGESCHLOSSEN.
+- Ergebnis: Bestehende Repository-Regeln und Struktur geprüft. Ein neues Unterprojekt wurde noch nicht angelegt, weil Zweck, Name und gewünschter Stack nicht festgelegt sind.
+- Festgestellt: Das Repository enthält bereits eigenständige Vite/React-Unterprojekte (`redesign-v2`, `redesign-v3`, `redesign-v4`). Ein neues Projekt kann als weiteres Unterverzeichnis angelegt werden; der Zugriff auf gemeinsame Daten muss bei der jeweiligen Toolchain explizit konfiguriert werden.
+- Unverändert gelassen: Vorhandene lokale Änderungen und unversionierte Dateien.
 
 ### 2026-08-15 - BWS-CSV-Import schriftlich dokumentieren
 
