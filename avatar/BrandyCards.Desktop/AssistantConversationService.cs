@@ -1,4 +1,3 @@
-using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 
@@ -28,7 +27,42 @@ internal sealed class AssistantConversationService(HttpClient httpClient)
     /// </summary>
     public static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(30);
 
-    public async Task<string> AskAsync(string shopUrl, string deviceToken, string message, CancellationToken cancellationToken = default)
+    /// <summary>
+    /// Obergrenze für den gelesenen Antwortkörper.
+    ///
+    /// Gemessen in Phase 6: Der vorherige Weg über `ReadFromJsonAsync` las den
+    /// Körper vollständig in den Speicher, ohne jede Grenze — ein Testserver
+    /// mit zwei Millionen Zeichen kam ungebremst durch. Zwischen Desktop und
+    /// Shop steht im Ernstfall ein fremder Zwischenknoten (Proxy, Portalseite,
+    /// Fehlerseite des Betreibers); dessen Antwortlänge bestimmt sonst der
+    /// Absender. 64 KiB liegen weit über der längsten Antwort, die der
+    /// Orchestrator erzeugen kann (sechs Werkzeuge à höchstens zwanzig
+    /// Einträgen), und weit unter allem, was dem Fenster gefährlich wird.
+    /// </summary>
+    internal const int MaxResponseBytes = 64 * 1024;
+
+    /// <summary>
+    /// Obergrenze für den angezeigten Antworttext. Deutlich über der längsten
+    /// echten Antwort, damit keine gültige Auskunft beschnitten wird.
+    /// </summary>
+    internal const int MaxAnswerCharacters = 20_000;
+
+    /// <summary>
+    /// Obergrenze für eine vom Server gelieferte Fehlermeldung. Die Meldungen
+    /// der eigenen Route sind alle unter 100 Zeichen lang; alles darüber kommt
+    /// nicht von ihr und gehört nicht ungekürzt in die Unterhaltung.
+    /// </summary>
+    internal const int MaxErrorCharacters = 500;
+
+    /// <summary>
+    /// Was im Panel steht — und ob es eine Auskunft ist oder eine Absage.
+    ///
+    /// Vorher gab diese Klasse in beiden Fällen nur einen Text zurück. Die
+    /// Kurzstatuszeile meldete deshalb auch bei HTTP 503 „Antwort empfangen".
+    /// </summary>
+    internal readonly record struct AssistantAnswer(bool Succeeded, string Text);
+
+    public async Task<AssistantAnswer> AskAsync(string shopUrl, string deviceToken, string message, CancellationToken cancellationToken = default)
     {
         using var request = new HttpRequestMessage(HttpMethod.Post, $"{shopUrl}/api/avatar/device/assistant")
         {
@@ -38,36 +72,142 @@ internal sealed class AssistantConversationService(HttpClient httpClient)
         };
         request.Headers.Authorization = new("Bearer", deviceToken);
 
-        using var response = await httpClient.SendAsync(request, cancellationToken);
-        if (!response.IsSuccessStatusCode)
+        // `ResponseHeadersRead` ist hier keine Feinheit, sondern die Bedingung
+        // dafür, dass die Obergrenze unten überhaupt greift: In der
+        // Voreinstellung liest `SendAsync` den gesamten Körper in den Speicher,
+        // bevor es zurückkehrt. Der Testserver mit zwei Millionen Zeichen war
+        // damit längst gepuffert, als die Grenze zuschlug.
+        using var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+
+        if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
         {
-            var error = await TryReadErrorAsync(response, cancellationToken);
-            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
-            {
-                return "Diese Kopplung darf den Assistant nicht verwenden oder ist abgelaufen. Bitte ändere die Verbindung und kopple das Gerät erneut.";
-            }
-            return error ?? $"Der Assistant ist gerade nicht erreichbar (HTTP {(int)response.StatusCode}).";
+            return new AssistantAnswer(false, "Diese Kopplung darf den Assistant nicht verwenden oder ist abgelaufen. Bitte ändere die Verbindung und kopple das Gerät erneut.");
         }
 
-        var payload = await response.Content.ReadFromJsonAsync<AssistantReply>(cancellationToken: cancellationToken);
-        return string.IsNullOrWhiteSpace(payload?.Answer)
-            ? "Der Assistant hat keine lesbare Textantwort geliefert."
-            : payload.Answer.Trim();
+        var body = await ReadBoundedBodyAsync(response, cancellationToken);
+        if (body.Outcome == BodyOutcome.Aborted)
+        {
+            return new AssistantAnswer(false, "Die Verbindung zum Shop ist abgebrochen, bevor die Antwort vollständig war. Die Frage wurde nicht beantwortet; bitte erneut stellen.");
+        }
+        if (body.Outcome == BodyOutcome.TooLarge)
+        {
+            return new AssistantAnswer(false, $"Der Shop hat mehr als {MaxResponseBytes / 1024} KiB geschickt. Das ist keine Antwort dieses Assistants; die Frage wurde nicht beantwortet.");
+        }
+
+        var field = ReadStringField(body.Text, response.IsSuccessStatusCode ? "answer" : "error");
+
+        if (!response.IsSuccessStatusCode)
+        {
+            // Eine Fehlerseite eines Zwischenknotens ist HTML, kein JSON. Dann
+            // bleibt nur der Statuscode — die Rohseite gehört nicht ins Panel.
+            return new AssistantAnswer(false, field.Kind == FieldKind.Found
+                ? $"{Shorten(field.Value!, MaxErrorCharacters)} (HTTP {(int)response.StatusCode})"
+                : $"Der Assistant ist gerade nicht erreichbar (HTTP {(int)response.StatusCode}).");
+        }
+
+        return field.Kind switch
+        {
+            // Gemessen in Phase 6: Vorher warf `ReadFromJsonAsync` hier eine
+            // JsonException, deren englischer Text bis in die Unterhaltung
+            // durchschlug — inklusive des internen Typnamens
+            // („…could not be converted to …+AssistantReply"). Ein 200 mit
+            // HTML-Körper ist genau der Fall, den ein Portal oder ein
+            // fehlkonfigurierter Proxy erzeugt.
+            FieldKind.NotJson => new AssistantAnswer(false, "Der Shop hat auf diese Frage keine lesbare Antwort geschickt (kein gültiges JSON). Die Frage wurde nicht beantwortet; bitte erneut stellen."),
+            FieldKind.Found when !string.IsNullOrWhiteSpace(field.Value) => new AssistantAnswer(true, Shorten(field.Value!.Trim(), MaxAnswerCharacters)),
+            _ => new AssistantAnswer(false, "Der Assistant hat keine lesbare Textantwort geliefert."),
+        };
     }
 
-    private static async Task<string?> TryReadErrorAsync(HttpResponseMessage response, CancellationToken cancellationToken)
+    private enum BodyOutcome { Complete, TooLarge, Aborted }
+
+    private readonly record struct BoundedBody(BodyOutcome Outcome, string Text);
+
+    /// <summary>
+    /// Liest den Antwortkörper mit fester Obergrenze.
+    ///
+    /// Ein Byte mehr als erlaubt wird angefordert: Nur so ist „genau voll" von
+    /// „zu groß" unterscheidbar. Ein Abbruch mitten in der Antwort endet hier
+    /// als eigener Fall, damit im Panel ein deutscher Satz steht statt der
+    /// englischen Framework-Meldung.
+    /// </summary>
+    private static async Task<BoundedBody> ReadBoundedBodyAsync(HttpResponseMessage response, CancellationToken cancellationToken)
+    {
+        // Eine angekündigte Übergröße lässt sich ablehnen, ohne sie zu lesen.
+        // Verlassen darf man sich darauf nicht — bei chunked fehlt die Angabe,
+        // und gelogen sein kann sie ohnehin. Die Grenze unten bleibt deshalb.
+        if (response.Content.Headers.ContentLength > MaxResponseBytes)
+        {
+            return new BoundedBody(BodyOutcome.TooLarge, string.Empty);
+        }
+
+        try
+        {
+            await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+            var buffer = new byte[MaxResponseBytes + 1];
+            var total = 0;
+            while (total < buffer.Length)
+            {
+                var read = await stream.ReadAsync(buffer.AsMemory(total, buffer.Length - total), cancellationToken);
+                if (read == 0) break;
+                total += read;
+            }
+
+            return total > MaxResponseBytes
+                ? new BoundedBody(BodyOutcome.TooLarge, string.Empty)
+                : new BoundedBody(BodyOutcome.Complete, Encoding.UTF8.GetString(buffer, 0, total));
+        }
+        catch (Exception exception) when (exception is IOException or HttpRequestException)
+        {
+            // Der Zeitrahmen bleibt davon unberührt: Ein Abbruch wegen
+            // Zeitüberschreitung ist eine OperationCanceledException und wird
+            // hier bewusst nicht gefangen.
+            return new BoundedBody(BodyOutcome.Aborted, string.Empty);
+        }
+    }
+
+    private enum FieldKind { Found, Missing, NotJson }
+
+    private readonly record struct JsonField(FieldKind Kind, string? Value);
+
+    private static JsonField ReadStringField(string body, string field)
     {
         try
         {
-            var payload = await response.Content.ReadFromJsonAsync<ApiError>(cancellationToken: cancellationToken);
-            return payload?.Error;
+            using var document = JsonDocument.Parse(body);
+            if (document.RootElement.ValueKind != JsonValueKind.Object) return new JsonField(FieldKind.Missing, null);
+            if (!document.RootElement.TryGetProperty(field, out var value)) return new JsonField(FieldKind.Missing, null);
+            // Ein Zahlenwert in `answer` warf vorher ebenfalls eine
+            // JsonException; hier ist er schlicht kein Text.
+            return value.ValueKind == JsonValueKind.String
+                ? new JsonField(FieldKind.Found, value.GetString())
+                : new JsonField(FieldKind.Missing, null);
         }
-        catch
+        catch (JsonException)
         {
-            return null;
+            return new JsonField(FieldKind.NotJson, null);
         }
     }
 
-    private sealed record AssistantReply(string Answer);
-    private sealed record ApiError(string Error);
+    /// <summary>
+    /// Kürzt auf eine Höchstlänge und entfernt Steuerzeichen.
+    ///
+    /// Zeilenumbrüche bleiben erhalten — der Antwortformatierer erzeugt echte
+    /// mehrzeilige Listen. Alles andere unterhalb von U+0020 fliegt raus,
+    /// insbesondere U+001B: Ein Fehlertext mit ANSI-Sequenzen kam im Test
+    /// unverändert durch.
+    /// </summary>
+    private static string Shorten(string value, int maximumCharacters)
+    {
+        var builder = new StringBuilder(Math.Min(value.Length, maximumCharacters));
+        foreach (var character in value)
+        {
+            if (character == '\r') continue;
+            if (character < ' ' && character != '\n') continue;
+            if (builder.Length == maximumCharacters) return builder.Append(" … (gekürzt)").ToString();
+            builder.Append(character);
+        }
+
+        return builder.ToString();
+    }
 }

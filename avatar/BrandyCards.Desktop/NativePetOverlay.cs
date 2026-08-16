@@ -4,6 +4,24 @@ using System.Runtime.InteropServices;
 
 namespace BrandyCards_Desktop;
 
+/// <summary>
+/// Wo das Pet gerade steht und welcher Arbeitsbereich für diesen Platz gilt.
+///
+/// Alle Werte sind physische Bildschirmkoordinaten — dieselbe Einheit, die
+/// `AppWindow.MoveAndResize` erwartet. Der Arbeitsbereich gehört zu dem
+/// Bildschirm, auf dem das Pet tatsächlich liegt, nicht zwingend zum
+/// Primärbildschirm.
+/// </summary>
+public readonly record struct PetPlacement(
+    int Left,
+    int Top,
+    int Right,
+    int Bottom,
+    int WorkLeft,
+    int WorkTop,
+    int WorkRight,
+    int WorkBottom);
+
 internal sealed class NativePetOverlay : IDisposable
 {
     private const int FrameWidth = 192;
@@ -24,6 +42,7 @@ internal sealed class NativePetOverlay : IDisposable
     private const uint SmCxScreen = 0;
     private const uint SmCyScreen = 1;
     private const uint SpiGetWorkArea = 0x0030;
+    private const uint MonitorDefaultToNearest = 0x00000002;
     private const int RightMargin = 32;
     private const int BottomMargin = 48;
     private const uint WmNchittest = 0x0084;
@@ -38,6 +57,7 @@ internal sealed class NativePetOverlay : IDisposable
     private readonly IntPtr _moduleHandle;
     private IntPtr _windowHandle;
     private bool _disposed;
+    private bool _placed;
 
     public NativePetOverlay(string atlasPath, Action onRequestSetup)
     {
@@ -88,7 +108,45 @@ internal sealed class NativePetOverlay : IDisposable
         var y = workArea.Bottom - WindowHeight - BottomMargin;
         SetWindowPos(_windowHandle, new IntPtr(-1), x, y, WindowWidth, WindowHeight, SwpNoActivate | SwpShowWindow);
         ShowWindow(_windowHandle, SwShowNoActivate);
+        _placed = true;
         SetFrame(0, 0);
+    }
+
+    /// <summary>
+    /// Wo das Fenster gerade wirklich steht — oder `null`, solange es keinen
+    /// belastbaren Platz hat.
+    ///
+    /// Das ist nötig, weil das Fenster verschiebbar ist: `WM_NCHITTEST`
+    /// antwortet mit `HTCAPTION`, die gesamte Fläche ist also ein Ziehgriff.
+    /// Nach einem Zug stimmt die aus den Rändern zurückgerechnete Position
+    /// nicht mehr, und ein danebengestelltes Fenster steht am falschen Fleck.
+    /// `GetWindowRect` liefert stattdessen die tatsächliche Lage, und
+    /// `MonitorFromWindow` den Bildschirm, auf dem sie liegt — der bei mehreren
+    /// Bildschirmen nicht der primäre sein muss.
+    ///
+    /// Vor <see cref="Show"/> gibt es bewusst nichts zurück: Das Fenster wird
+    /// bei 0/0 erzeugt und stünde sonst als linke obere Ecke in der Rechnung.
+    /// </summary>
+    public PetPlacement? CurrentPlacement()
+    {
+        if (_disposed || _windowHandle == IntPtr.Zero || !_placed) return null;
+        if (!GetWindowRect(_windowHandle, out var bounds)) return null;
+
+        var monitor = MonitorFromWindow(_windowHandle, MonitorDefaultToNearest);
+        if (monitor == IntPtr.Zero) return null;
+
+        var info = new MonitorInfo { Size = (uint)Marshal.SizeOf<MonitorInfo>() };
+        if (!GetMonitorInfo(monitor, ref info)) return null;
+
+        return new PetPlacement(
+            bounds.Left,
+            bounds.Top,
+            bounds.Right,
+            bounds.Bottom,
+            info.WorkArea.Left,
+            info.WorkArea.Top,
+            info.WorkArea.Right,
+            info.WorkArea.Bottom);
     }
 
     /// <summary>
@@ -132,6 +190,7 @@ internal sealed class NativePetOverlay : IDisposable
         if (!_disposed && _windowHandle != IntPtr.Zero)
         {
             ShowWindow(_windowHandle, SwHide);
+            _placed = false;
         }
     }
 
@@ -297,6 +356,15 @@ internal sealed class NativePetOverlay : IDisposable
         public int Bottom;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    private struct MonitorInfo
+    {
+        public uint Size;
+        public Rect Monitor;
+        public Rect WorkArea;
+        public uint Flags;
+    }
+
     private delegate IntPtr WndProcDelegate(IntPtr hWnd, uint message, IntPtr wParam, IntPtr lParam);
 
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
@@ -332,6 +400,12 @@ internal sealed class NativePetOverlay : IDisposable
 
     [DllImport("user32.dll")]
     private static extern bool GetWindowRect(IntPtr windowHandle, out Rect rect);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr MonitorFromWindow(IntPtr windowHandle, uint flags);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    private static extern bool GetMonitorInfo(IntPtr monitor, ref MonitorInfo info);
 
     [DllImport("user32.dll")]
     private static extern IntPtr GetDC(IntPtr windowHandle);

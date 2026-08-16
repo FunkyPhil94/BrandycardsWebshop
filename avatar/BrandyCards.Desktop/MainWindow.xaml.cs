@@ -9,6 +9,7 @@ namespace BrandyCards_Desktop;
 public sealed partial class MainWindow : Window
 {
     private const int PetWidth = 260;
+    private const int PetHeight = 300;
     private const int PetRightOffset = 32;
     private const int PetBottomOffset = 48;
     private const int LauncherGap = 16;
@@ -41,7 +42,7 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    public void ConfigureLauncherWindow(bool assistantPanelExpanded = false)
+    public void ConfigureLauncherWindow(bool assistantPanelExpanded = false, PetPlacement? petPlacement = null)
     {
         var width = ToPhysicalPixels(assistantPanelExpanded ? AssistantWidth : LauncherWidth);
         var height = ToPhysicalPixels(assistantPanelExpanded ? AssistantHeight : LauncherHeight);
@@ -56,7 +57,7 @@ public sealed partial class MainWindow : Window
             presenter.IsMinimizable = true;
         }
 
-        PositionBesidePet(width, height);
+        PositionBesidePet(width, height, petPlacement);
     }
 
     private int ToPhysicalPixels(int effectivePixels)
@@ -83,13 +84,58 @@ public sealed partial class MainWindow : Window
     [DllImport("user32.dll")]
     private static extern uint GetDpiForWindow(IntPtr windowHandle);
 
-    private void PositionBesidePet(int width, int height)
+    /// <summary>
+    /// Stellt das Fenster links neben das Pet, Unterkanten bündig.
+    ///
+    /// Maßgeblich ist die *tatsächliche* Lage des Pets, nicht die aus den
+    /// Rändern zurückgerechnete. Das Pet ist verschiebbar (`HTCAPTION`), und
+    /// vorher rechnete diese Stelle unbeirrt gegen
+    /// <see cref="DisplayArea.Primary"/>: Ein an den linken Rand gezogenes Pet
+    /// ließ das Fenster beim nächsten Öffnen unten rechts stehen — bei mehreren
+    /// Bildschirmen sogar auf einem anderen als das Pet.
+    ///
+    /// Geklemmt wird gegen den Arbeitsbereich des Bildschirms, auf dem das Pet
+    /// liegt. Bei genau einem Bildschirm ist das derselbe Bereich wie zuvor,
+    /// die Position ändert sich dort also nur, wenn das Pet bewegt wurde.
+    /// </summary>
+    private void PositionBesidePet(int width, int height, PetPlacement? petPlacement)
+    {
+        var pet = petPlacement ?? FallbackPlacement();
+
+        var x = pet.Left - LauncherGap - width;
+        var y = pet.Bottom - height;
+
+        // Links kein Platz mehr: dann lieber rechts neben das Pet als darüber.
+        if (x < pet.WorkLeft && pet.Right + LauncherGap + width <= pet.WorkRight)
+        {
+            x = pet.Right + LauncherGap;
+        }
+
+        x = Math.Clamp(x, pet.WorkLeft, Math.Max(pet.WorkLeft, pet.WorkRight - width));
+        y = Math.Clamp(y, pet.WorkTop, Math.Max(pet.WorkTop, pet.WorkBottom - height));
+        AppWindow.MoveAndResize(new RectInt32(x, y, width, height));
+    }
+
+    /// <summary>
+    /// Wo das Pet stehen *wird*, solange es noch nicht sichtbar ist.
+    ///
+    /// Gilt für die Setup-Ansicht und den ersten Aufbau. Dieselbe Rechnung wie
+    /// in `NativePetOverlay.Show()` und mit denselben Rändern; die Gleichheit
+    /// der Konstanten hält `tests/assistant-phase5b.test.mjs` fest.
+    /// </summary>
+    private static PetPlacement FallbackPlacement()
     {
         var workArea = DisplayArea.Primary.WorkArea;
-        var x = workArea.X + workArea.Width - PetRightOffset - PetWidth - LauncherGap - width;
-        var y = workArea.Y + workArea.Height - PetBottomOffset - height;
-        x = Math.Max(workArea.X + LauncherGap, x);
-        y = Math.Max(workArea.Y + LauncherGap, y);
-        AppWindow.MoveAndResize(new RectInt32(x, y, width, height));
+        var right = workArea.X + workArea.Width - PetRightOffset;
+        var bottom = workArea.Y + workArea.Height - PetBottomOffset;
+        return new PetPlacement(
+            right - PetWidth,
+            bottom - PetHeight,
+            right,
+            bottom,
+            workArea.X,
+            workArea.Y,
+            workArea.X + workArea.Width,
+            workArea.Y + workArea.Height);
     }
 }

@@ -1,5 +1,109 @@
 # BrandyCards Agentenprotokoll
 
+## 2026-08-16 - Phase 6: was übrig bleibt, wenn nicht die eigene Route antwortet
+
+Drei Risiken standen offen. Was sie verbindet, wurde erst beim Messen sichtbar:
+Alle drei treten genau dann auf, wenn etwas anderes antwortet als die eigene
+Route — ein Proxy, eine Portalseite, ein halb gestorbener Server — oder wenn
+der Nutzer das Pet anfasst. Kein Servertest kann sie finden, weil der Server
+dabei nicht beteiligt ist. Sie wurden deshalb gegen einen Wegwerf-Testserver
+auf `127.0.0.1` gemessen, der genau diese Fälle spielt, und die echte
+`AssistantConversationService.cs` wurde als Quelldatei in ein Prüfprogramm
+eingebunden, statt ihr Verhalten nachzubauen.
+
+**Der Serverfehlerpfad hielt nur, solange der Shop antwortete.** Der
+Statuspfad war in Ordnung: 4xx und 5xx mit JSON-Körper landeten korrekt als
+deutsche Meldung im Panel. Was fehlte, war alles darunter. Bei HTTP 200 mit
+einem Körper, der kein JSON ist — die Fehlerseite eines Zwischenknotens, eine
+Portalseite im Hotel-WLAN — warf `ReadFromJsonAsync` eine `JsonException`, und
+ihr englischer Text stand wörtlich in der Unterhaltung: *"'<' is an invalid
+start of a value. Path: $ | LineNumber: 0"*. Bei `{"answer": 42}` kam sogar der
+interne Typname mit: *"…could not be converted to …+AssistantReply"*. Das ist
+keine Meldung, das ist ein Stacktrace-Fragment im Gesicht des Nutzers.
+
+Dazu kam die fehlende Grenze. Ein Testserver mit zwei Millionen Zeichen kam
+ungebremst durch und landete vollständig in einem `TextBlock`. Die Reparatur
+ist nicht nur die Obergrenze, sondern auch, *wo* sie greift:
+`HttpCompletionOption.ResponseHeadersRead` musste dazu, denn in der
+Voreinstellung liest `SendAsync` den ganzen Körper in den Speicher, bevor es
+zurückkehrt — eine Grenze danach hätte nur noch die Anzeige begrenzt, nicht
+den Speicher. Gelesen wird jetzt gestreamt mit einem Byte mehr als erlaubt;
+nur so ist „genau voll" von „zu groß" unterscheidbar.
+
+Zwei Grenzen, nicht eine: Der Antworttext darf 20 000 Zeichen haben, weil der
+Orchestrator aus sechs Werkzeugen à zwanzig Einträgen legitim mehrere
+Kilobyte erzeugt — eine zu enge Grenze hätte gültige Auskünfte abgeschnitten,
+und das wäre schlimmer als der Fehler, der behoben werden sollte. Eine vom
+Server gelieferte *Fehlermeldung* darf 500; die der eigenen Route sind alle
+unter 100 Zeichen lang, alles darüber kommt nicht von ihr. Steuerzeichen
+fliegen raus, Zeilenumbrüche bleiben — der Antwortformatierer erzeugt echte
+mehrzeilige Listen, und die zu zerstören hätte den Normalfall beschädigt, um
+einen Ausnahmefall zu heilen. Nachgemessen: eine dreizeilige Bestellliste
+kommt unverändert an, ein Fehlertext mit ANSI-Sequenzen verliert sie.
+
+Nebenbei fiel auf, dass die Statuszeile auch bei HTTP 503 „Antwort empfangen"
+meldete. `AskAsync` gab in beiden Fällen nur einen Text zurück, der Aufrufer
+konnte Auskunft und Absage nicht unterscheiden. Jetzt sagt der Rückgabewert
+beides.
+
+**Mehrschirmbetrieb ließ sich nicht prüfen — die Ursache dahinter schon.** Am
+Gerät hängt ein Monitor, `SM_CMONITORS` meldet 1. Ein echter Zweischirmtest
+hat nicht stattgefunden und wird hier auch nicht behauptet. Beim Codelesen
+zeigte sich aber, dass das eigentliche Problem gar nicht am zweiten Monitor
+hängt: Das Pet ist **verschiebbar** — `WM_NCHITTEST` antwortet mit
+`HTCAPTION`, die ganze Fläche ist ein Ziehgriff — während
+`MainWindow.PositionBesidePet` unbeirrt gegen `DisplayArea.Primary.WorkArea`
+und die Startränder rechnete. Ein an den linken Rand gezogenes Pet ließ das
+Fenster beim nächsten Öffnen unten rechts stehen. Das ist auf *einem* Monitor
+reproduzierbar, und es ist dieselbe Ursache, die auf zwei Monitoren dazu
+führt, dass der Launcher auf dem Primärschirm zurückbleibt.
+
+Damit war die Prüfung möglich: Das Overlay meldet über `GetWindowRect` seine
+tatsächliche Lage und über `MonitorFromWindow`/`GetMonitorInfo` den
+Arbeitsbereich des Bildschirms, auf dem es liegt — read-only, ohne Eingriff in
+Größe, Zeichenweg oder Alpha-Pfad. Gemessen bei 150 %: Pet an den linken
+oberen Rand geschoben, Fenster folgt und stellt sich rechts daneben, weil
+links kein Platz ist; Pet in die Mitte geschoben, Fenster steht links, 16 px
+Abstand, Unterkanten bündig. Ohne Bewegung bleibt die Position auf den Pixel
+dieselbe wie in Phase 5b — die Mehrschirmtauglichkeit folgt daraus
+konstruktiv, geprüft ist sie nicht.
+
+Eine Falle steckte in der Reihenfolge: `EnterPetMode` stellte das Fenster
+daneben, *bevor* `Show()` das Pet platzierte. Vor `Show()` liegt das native
+Fenster bei 0/0, die Lage wäre also die linke obere Ecke gewesen. Deshalb
+meldet `CurrentPlacement()` vor `Show()` bewusst `null`, und der Aufruf wurde
+getauscht — zwei voneinander unabhängige Absicherungen für denselben Fehler.
+
+**Die Pet-Größe wurde analysiert und nicht angefasst.** Bei 150 % ist das Pet
+effektiv 173×200 Pixel groß, weil es in *physischen* Pixeln gezeichnet wird:
+260×300 fest, `DrawImageUnscaled`, keine DPI-Umrechnung. Der Launcher rechnet
+dagegen über `ToPhysicalPixels` und behält seine 400×104 effektiven Pixel bei
+jeder Skalierung. Das Pet schrumpft also relativ zu allem anderen, je höher
+die Skalierung: 260×300 bei 100 %, 173×200 bei 150 %, 130×150 bei 200 %.
+Inkonsistent ist das — sinnvoll nicht.
+
+Geändert wurde es trotzdem nicht, und der Grund ist nachgesehen, nicht
+vermutet: Es gibt kein höher aufgelöstes Ausgangsmaterial. Der Atlas ist
+1536×1872 (8×9 Kacheln à 192×208), die `spritesheet.webp` daneben hat exakt
+dieselben Maße. Eine Vergrößerung auf 150 % hieße, 192×208 um den Faktor 1,5
+zu interpolieren — ein nicht-ganzzahliger Faktor auf Material, das ausweislich
+der Stichprobe bereits weiche, teiltransparente Kanten hat (rund 5 % der
+Pixel). Das berührt genau die drei Dinge, die intakt bleiben sollten:
+Transparenz (der Alpha-Pfad läuft über vormultipliziertes PArgb und
+`UpdateLayeredWindow`), Animation (jede der 6 bis 8 Kacheln je Zeile müsste
+identisch skaliert werden) und Positionierung (`WindowWidth`/`WindowHeight`
+sind zugleich die Bezugsgrößen für die Ränder und liegen als `PetWidth`/
+`PetHeight` ein zweites Mal in `MainWindow`). Die Optionen stehen im
+Übergabeprotokoll; die Entscheidung ist eine gestalterische und braucht neues
+Bildmaterial, keinen Interpolationsfilter.
+
+**Der Modell-Planer blieb aus.** Kein `OPENAI_API_KEY`, kein externer Aufruf,
+keine Änderung an `lib/assistant`. Während der gesamten Prüfung hatte der
+Desktop genau eine bestehende Verbindung: `127.0.0.1:8791`. Die produktive
+`settings.json` wurde vorher gesichert, während der Prüfung auf den lokalen
+Testserver gezeigt und danach byte-gleich wiederhergestellt (SHA256 vorher =
+nachher).
+
 ## 2026-08-16 - Phase 5b: die beiden offenen Punkte aus Phase 5 schließen
 
 Phase 5 hat zwei Befunde bewusst stehen lassen und im Übergabeprotokoll

@@ -37,9 +37,15 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
+<!-- Fuer den naechsten Auftrag freihalten. -->
+
+Keine laufenden Aufträge.
+
+## Historie
+
 ### 2026-08-16 - Phase 6 des Desktop-Assistenten: verbleibende Produktionsrisiken
 
-- Status: LÄUFT.
+- Status: ABGESCHLOSSEN.
 - Ziel: Die drei aus Phase 5 und 5b ausdrücklich offen gebliebenen Risiken
   prüfen und nur dort beheben, wo es nachweisbar sicher ist. Kein neuer
   Funktionsumfang, keine Schreiboperation, keine Änderung an der
@@ -88,7 +94,162 @@ Tool- und Antwortlogik bleibt unverändert.
   Text-, Sprach-, Offline-, Timeout- und HTTP-Fehlerpfade am laufenden
   Fenster.
 
-## Historie
+**Prüfaufbau**
+
+Wegwerf-Testserver auf `127.0.0.1:8791` (nur Loopback), der je Anfrage einen
+Fehlerfall aus einer Modusdatei liest — so lässt sich der Fall zwischen zwei
+Klicks im laufenden Fenster umschalten. Dazu ein Prüfprogramm, das die
+**echte** `AssistantConversationService.cs` als Quelldatei einbindet und alle
+Fälle nacheinander durchspielt. Keine Produktions-URL, kein `npm run dev`
+nötig.
+
+**Ergebnis 1: Serverfehlerpfad — drei Befunde, alle behoben**
+
+Gemessen *vorher* (Ist-Zustand aus Phase 5b), dann behoben, dann erneut
+gemessen. Alle Fälle laufen jetzt in eine deutsche, begrenzte Meldung:
+
+| Fall | vorher | nachher |
+|---|---|---|
+| 200 + HTML-Körper | `'<' is an invalid start of a value. Path: $ …` | „… keine lesbare Antwort geschickt (kein gültiges JSON)" |
+| 200 + abgeschnittenes JSON | `Expected end of string, but instead reached end of data …` | dieselbe deutsche Meldung |
+| `{"answer": 42}` | `…could not be converted to …+AssistantReply` (interner Typname!) | „Der Assistant hat keine lesbare Textantwort geliefert." |
+| 500 mit 200 000 Zeichen | 200 000 Zeichen im `TextBlock` | „Der Shop hat mehr als 64 KiB geschickt …" |
+| 200 mit 2 000 000 Zeichen | 2 000 000 Zeichen im `TextBlock` | dieselbe Meldung |
+| Abbruch mitten im Körper | `An error occurred while sending the request.` | „Die Verbindung zum Shop ist abgebrochen …" |
+| ANSI-Steuerzeichen | unverändert durchgereicht | entfernt, Zeilenumbrüche bleiben |
+| 400/403/404/413/429/500/503 mit JSON | Text ohne Statuscode | Text + `(HTTP nnn)`, auf 500 Zeichen begrenzt |
+| 502 als HTML | „… nicht erreichbar (HTTP 502)." | unverändert (war schon richtig) |
+| 401 | eigene Kopplungsmeldung | unverändert |
+
+- **Ursache der fehlenden Grenze:** `ReadFromJsonAsync` liest ohne Obergrenze,
+  *und* `SendAsync` puffert in der Voreinstellung den ganzen Körper, bevor es
+  zurückkehrt. Deshalb kam `HttpCompletionOption.ResponseHeadersRead` dazu —
+  ohne das hätte eine Grenze nur die Anzeige begrenzt, nicht den Speicher.
+- **Zwei getrennte Grenzen:** Antwort 20 000 Zeichen (der Orchestrator darf aus
+  sechs Werkzeugen à zwanzig Einträgen legitim mehrere Kilobyte erzeugen — eine
+  engere Grenze hätte gültige Auskünfte abgeschnitten), Fehlertext 500
+  Zeichen, Körper 64 KiB.
+- **Mehrzeilige Antworten bleiben unversehrt** — nachgemessen mit einer
+  dreizeiligen Bestellliste samt Umlauten und `€`: 213 Zeichen, unverändert.
+- **Statuszeile:** meldete auch bei HTTP 503 „Antwort empfangen". `AskAsync`
+  gibt jetzt `AssistantAnswer(bool Succeeded, string Text)` zurück; bei einer
+  Absage steht „Shop meldet einen Fehler".
+
+**Ergebnis 2: Mehrmonitor — Ursache behoben, Zweischirmfall NICHT geprüft**
+
+- **Am Prüfgerät hängt ein Monitor** (`SM_CMONITORS` = 1, 2160×1440, 144 dpi).
+  **Ein echter Mehrmonitortest hat nicht stattgefunden.** Was unten steht, ist
+  auf einem Schirm gemessen; die Mehrschirmtauglichkeit folgt konstruktiv und
+  ist **ungeprüft**.
+- Befund, der dabei auffiel und *auf einem* Schirm reproduzierbar ist: Das Pet
+  ist verschiebbar (`WM_NCHITTEST` → `HTCAPTION`), aber
+  `MainWindow.PositionBesidePet` rechnete fest gegen
+  `DisplayArea.Primary.WorkArea` und die Startränder. Ein gezogenes Pet ließ
+  den Launcher stehen, wo das Pet nur beim Start stand.
+- Behoben: `NativePetOverlay.CurrentPlacement()` meldet über `GetWindowRect`
+  die tatsächliche Lage und über `MonitorFromWindow`/`GetMonitorInfo` den
+  Arbeitsbereich des Bildschirms, auf dem das Pet liegt. Read-only; Größe,
+  Zeichenweg, Alpha-Pfad und die Position des Pets selbst sind unberührt.
+- Gemessen bei 150 % (Beobachter mit `PER_MONITOR_AWARE_V2`):
+  - Ohne Bewegung: Pet (1868,1020)–(2128,1320), Launcher (1252,1164)–(1852,1320)
+    — **auf den Pixel identisch mit Phase 5b**, also keine Regression.
+  - Pet nach (120,200): Launcher folgt auf (396,0)–(1176,1020) — rechts
+    daneben, weil links kein Platz ist, und in den Arbeitsbereich geklemmt.
+  - Pet nach (1400,900): Launcher auf (604,180)–(1384,1200) — links daneben,
+    16 px Abstand, Unterkanten bündig bei 1200.
+- Reihenfolgefalle: `EnterPetMode` stellte den Launcher daneben, *bevor*
+  `Show()` das Pet platzierte — vor `Show()` liegt das Fenster bei 0/0.
+  Doppelt abgesichert: Aufrufe getauscht **und** `CurrentPlacement()` meldet
+  vor `Show()` `null` (dann gilt weiter die alte Primärschirm-Rechnung).
+
+**Ergebnis 3: Pet-Größe bei 150 % — analysiert, bewusst NICHT geändert**
+
+- Befund: Das Pet wird in physischen Pixeln gezeichnet (260×300 fest,
+  `DrawImageUnscaled`), der Launcher rechnet über `ToPhysicalPixels`. Das Pet
+  schrumpft daher relativ zu allem anderen: **260×300 effektiv bei 100 %,
+  173×200 bei 150 %, 130×150 bei 200 %.** Inkonsistent — sinnvoll nicht.
+- **Es gibt kein höher aufgelöstes Ausgangsmaterial.** Nachgesehen: Atlas
+  1536×1872 = 8×9 Kacheln à 192×208; `avatar/brandycards-avatar/spritesheet.webp`
+  hat exakt dieselben Maße. Eine Vergrößerung wäre eine 1,5-fache
+  Interpolation von Material mit bereits weichen Kanten (Stichprobe: ~5 % der
+  Pixel teiltransparent).
+- Optionen, bewusst offen gelassen:
+  1. **Nichts tun.** Das Pet bleibt bei hoher Skalierung kleiner als gedacht.
+  2. **Beim Zeichnen skalieren** (`DrawImage` mit Zielrechteck). Berührt den
+     Alpha-Pfad (vormultipliziertes PArgb → `UpdateLayeredWindow`), alle 6–8
+     Kacheln je Animationszeile und die Ränder, weil `WindowWidth`/
+     `WindowHeight` zugleich Bezugsgrößen sind und als `PetWidth`/`PetHeight`
+     ein zweites Mal in `MainWindow` liegen. Qualitätsverlust bei Faktor 1,5.
+  3. **Neues Bildmaterial in 2×** und Auswahl nach DPI. Sauberste Lösung,
+     braucht aber Grafikarbeit, die nicht Teil dieses Auftrags war.
+- Empfehlung: 3, sobald jemand das Material erzeugen kann. Nicht 2.
+
+**Ergebnis 4: Modell-Planer — unverändert aus**
+
+- Kein `OPENAI_API_KEY` gesetzt (Prozessumgebung geprüft), kein externer
+  Aufruf, **keine Änderung an `lib/assistant`** (der Diff berührt nur vier
+  C#-Dateien, `package.json` und Tests).
+- Während der gesamten Prüfung hatte der Desktop genau eine bestehende
+  Verbindung: `127.0.0.1:8791`.
+
+**Am laufenden Fenster geprüft (150 % DPI, ohne Produktionskontakt)**
+
+Die produktive `settings.json` wurde vorher gesichert, während der Prüfung auf
+den lokalen Testserver gezeigt und danach **byte-gleich** wiederhergestellt
+(SHA256 `7111F321…56FD` vorher = nachher, 221 Bytes). Kein Aufruf ging an
+`shop.brandycards.de`.
+
+- Pet transparent, `WS_EX_LAYERED` + `WS_EX_TOOLWINDOW` + `WS_EX_NOACTIVATE`
+  gesetzt, `GetLayeredWindowAttributes` liefert `false` — also weiterhin
+  per-Pixel-Alpha über `UpdateLayeredWindow`, nicht per-Fenster-Alpha.
+  Bildschirmaufnahme abgelegt.
+- Animation läuft: 5 verschiedene Bildsignaturen über 6 Stichproben à 200 ms,
+  die sechste wieder gleich der ersten — die 6-Bild-Leerlaufschleife.
+- Keine Taskleistenüberlappung: Pet-Unterkante 1320, Arbeitsbereich bis 1368.
+- **Timeout:** hängender Server → nach 30 s „Der Shop hat innerhalb von 30
+  Sekunden nicht geantwortet …", Status „Zeitüberschreitung", Bedienelemente
+  danach wieder frei.
+- **Offline:** gestoppter Server → „Der Shop ist gerade nicht erreichbar: …
+  Verbindung verweigerte. (127.0.0.1:8791)", Status „Shop nicht erreichbar".
+- **HTTP-Fehler und kaputtes JSON** je einzeln im Panel bestätigt (500, 503,
+  200+HTML, 200+abgeschnitten, Übergröße).
+- **Sprache:** echte lokale Diktatsitzung ohne gesprochenen Inhalt, 13,4 s,
+  endete mit „Es wurde kein Diktat erkannt …"; währenddessen waren Eingabe,
+  Mikrofon und Senden gesperrt, danach alle drei wieder frei.
+
+**Nicht geprüft / bewusst nicht geändert**
+
+- **Mehrschirmbetrieb weiterhin nicht real geprüft** — nur ein Monitor am
+  Gerät. Die Rechnung ist jetzt monitorbezogen statt primärschirmbezogen, aber
+  **niemand hat sie auf zwei Schirmen gesehen.**
+- **DPI-Wechsel zwischen Monitoren** ist der Rest des Mehrschirmthemas und
+  wurde **nicht** angefasst: `ToPhysicalPixels` rechnet mit der Skalierung des
+  Bildschirms, auf dem das Launcherfenster gerade liegt. Zieht man das Pet auf
+  einen Schirm mit anderer Skalierung, wird die Fenstergröße mit dem alten
+  Faktor berechnet und `WM_DPICHANGED` kommt erst danach. Das blind zu ändern,
+  ohne es je gesehen zu haben, wäre geraten gewesen.
+- Die **Pet-Größe** bleibt bei 173×200 effektiv (Optionen oben).
+- Der **Modell-Planer** wurde erneut nicht live aufgerufen.
+- `HttpRequestException` aus `SendAsync` trägt weiterhin die Framework-Meldung
+  im Anhang („Es konnte keine Verbindung hergestellt werden …"). Sie ist
+  deutsch lokalisiert und nennt Adresse und Port, also brauchbar; ersetzt
+  wurde sie nicht.
+
+**Prüfläufe**
+
+- `npm test`: **414/414** bestanden (vorher 404; 10 neu in
+  `tests/assistant-phase6.test.mjs`, das dort auch in `package.json`
+  registriert wurde — die Testliste ist eine Aufzählung, kein Glob).
+- `npx tsc --noEmit`: fehlerfrei. `npm run lint`: 0 Fehler, weiterhin nur die
+  bekannte Hook-Warnung in `app/account/page.tsx`.
+- WinUI x64 Debug: 0 Warnungen, 0 Fehler. `git diff --check`: sauber.
+- Keine Produktionsänderung, kein Deployment, kein Push, keine
+  Remote-Migration, keine Secrets angefasst, keine Schreiboperation im
+  Assistant, Orchestrator-Grenze unverändert, fremde Worktrees unberührt.
+- Anmerkung: In diesem Worktree fehlt weiterhin `.env.local`. Für die Prüfung
+  ohne Belang, für ein Deployment aus diesem Verzeichnis wäre es die bekannte
+  Falle.
+
 
 ### 2026-08-16 - Phase 5b des Desktop-Assistenten: Produktionsvorbereitung
 

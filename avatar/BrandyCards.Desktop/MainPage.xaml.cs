@@ -341,8 +341,10 @@ public sealed partial class MainPage : Page
 
             var shopUrl = NormalizeShopUrl(_settings.ShopUrl);
             var reply = await _assistantService.AskAsync(shopUrl, _settings.DeviceToken, message);
-            AddConversationMessage("Assistant", reply, isUser: false);
-            AssistantStatusTextBlock.Text = "Antwort empfangen";
+            AddConversationMessage("Assistant", reply.Text, isUser: false);
+            // Eine Absage des Shops ist keine empfangene Antwort. Vorher stand
+            // auch bei HTTP 503 „Antwort empfangen" in der Statuszeile.
+            AssistantStatusTextBlock.Text = reply.Succeeded ? "Antwort empfangen" : "Shop meldet einen Fehler";
         }
         catch (OperationCanceledException)
         {
@@ -378,7 +380,10 @@ public sealed partial class MainPage : Page
         LauncherSubtitleTextBlock.Text = expanded ? "Textpanel geöffnet" : "Textpanel öffnen";
         LauncherChevronIcon.Glyph = expanded ? "\uE70E" : "\uE70D";
         AutomationProperties.SetName(LauncherButton, expanded ? "BrandyCards Assistant schließen" : "BrandyCards Assistant öffnen");
-        ((App)Application.Current).MainWindow?.ConfigureLauncherWindow(expanded);
+        // Die tatsächliche Lage des Pets mitgeben: Es ist verschiebbar, und ohne
+        // sie springt dieses Fenster beim Öffnen oder Schließen an die Stelle
+        // zurück, an der das Pet nur beim Start stand.
+        ((App)Application.Current).MainWindow?.ConfigureLauncherWindow(expanded, _petOverlay?.CurrentPlacement());
 
         if (expanded)
         {
@@ -488,8 +493,10 @@ public sealed partial class MainPage : Page
         _petOverlay ??= new NativePetOverlay(
             Path.Combine(AppContext.BaseDirectory, "Assets", "spritesheet.png"),
             () => _dispatcherQueue.TryEnqueue(() => Disconnect("Bitte erneut koppeln.", clearToken: true)));
-        ((App)Application.Current).MainWindow?.ConfigureLauncherWindow();
+        // Erst das Pet setzen, dann danebenstellen: Vor `Show()` liegt das
+        // native Fenster noch bei 0/0, und die Lage wäre die linke obere Ecke.
         _petOverlay.Show();
+        ((App)Application.Current).MainWindow?.ConfigureLauncherWindow(petPlacement: _petOverlay.CurrentPlacement());
         _idleTimer.Start();
     }
 
