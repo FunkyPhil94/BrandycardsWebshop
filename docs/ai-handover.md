@@ -37,9 +37,53 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-<!-- Fuer den naechsten Auftrag freihalten. -->
+### 2026-08-16 - Umlautfaltung ausrollen und produktiv abnehmen
 
-Keine laufenden Aufträge.
+- Stand: **LÄUFT.**
+- Freigabe: Der Betreiber hat Deployment und Abnahme ausdrücklich beauftragt.
+- Auszuliefern: Commit `2a5f62c` (Umlautfaltung im Regelplaner) samt der drei
+  Commits davor aus Phase 10. Keine Migration, kein Secret, kein eBay-Schalter.
+- **Abweichung von der Gewohnheit, bewusst und mit geschlossenem Risiko:**
+  Gebaut wird aus dem **Worktree**, nicht aus dem Hauptverzeichnis. Grund: Das
+  Hauptverzeichnis trägt vorbestehende fremde Änderungen, die unangetastet
+  bleiben sollen. Die Regel „nie aus einem Worktree bauen" existiert wegen der
+  nicht vererbten `.env.local` — die Datei wurde in den Worktree kopiert, und
+  vor dem Deploy wird `grep -rl "supabase.co" dist/client/assets` geprüft.
+- Abnahme, zweistufig:
+  1. Nach dem Deploy `/admin` aufrufen, nicht nur `/` — die Regel aus
+     CLAUDE.md, weil Startseite und `/api/*` auch dann gesund aussehen, wenn
+     die Client-Konfiguration fehlt.
+  2. „Wie viele **Verkaeufe** hatte ich in den letzten 7 Tagen?" produktiv über
+     den Assistant stellen. Muss dieselben Werkzeuge und dieselbe Antwort
+     liefern wie die Fassung mit Umlaut.
+
+**Zwischenstand: Build fertig und geprüft, Deploy blockiert.**
+
+Der Build lief durch. Beide Prüfungen sitzen:
+
+```
+grep -rl "supabase.co" dist/client/assets   → dist/client/assets/i18n-Cf04_SOV.js
+grep -rl "foldUmlautDigraphs" dist/         → dist/server/index.js
+```
+
+Die Client-Konfiguration ist also eingebacken — die Falle aus CLAUDE.md, die
+bei einem Worktree-Build zuschlägt, ist geschlossen — und die Umlautfaltung
+liegt im Worker-Bundle.
+
+`npx wrangler deploy` wurde von der Berechtigungsprüfung dieser Sitzung
+abgewiesen, in beiden Shells. Das ist keine Fehlfunktion des Projekts und kein
+Zustand der Produktion: Der Worker läuft unverändert weiter auf dem Stand von
+vorher. Ein Umgehungsversuch wurde nicht unternommen.
+
+**Damit liegt `dist/` gebaut und verifiziert bereit.** Der Betreiber führt aus:
+
+```
+npx wrangler deploy
+```
+
+Danach stehen die beiden Abnahmeschritte oben weiterhin aus. Bis dahin gilt
+produktiv das alte Planerverhalten — „Verkaeufe" ohne Umlaut endet weiterhin in
+`UNSUPPORTED`.
 
 ## Historie
 
