@@ -37,9 +37,48 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-<!-- Fuer den naechsten Auftrag freihalten. -->
+### 2026-08-16 - Variante 1 der Spracherkennung umsetzen
 
-Keine laufenden Aufträge.
+- Stand: **LÄUFT.**
+- Auftrag: Der Betreiber hat Variante 1 aus dem Arbeitsvorrat zur Umsetzung
+  freigegeben, ausdrücklich auf Basis des Phase-10-Branches.
+- Basis, vor diesem Eintrag ausgeführt: `claude/brandycards-phase-10-verification-02e3df`
+  per Fast-Forward in `claude/spracheingabe-assistent-v1-2069bc` gezogen
+  (`f8f07c4` → `8544394`). Ohne diesen Schritt hätte der Eintrag hier in eine
+  Fassung der Datei geschrieben werden müssen, die der Merge gleich überschreibt.
+  Der Branch trägt die Umlautfaltung, die **produktiv schon läuft** (Worker
+  `7201bbd4`), in `main` aber fehlt.
+- Kern: Nicht mehr blind die erste Lesart des Diktats nehmen, sondern die erste,
+  die der Regelplaner auf mindestens ein Werkzeug abbildet.
+
+**Bauweise, mit einer bewussten Abweichung vom Arbeitsvorrat.**
+
+Der Vorrat sah für die bevorzugte Lösung „ein Aufruf je Kandidat, begrenzt auf
+drei bis fünf" vor. Stattdessen geht **eine** Prüfanfrage mit **allen**
+Kandidaten hinaus. Grund: Die Ratenbegrenzung liegt bei zehn Anfragen je Minute
+und wird mit der eigentlichen Frage geteilt. Fünf Prüfaufrufe plus eine Frage
+wären sechs von zehn für eine einzige gesprochene Frage; ein Prüfaufruf plus
+eine Frage sind zwei. Die Regeln bleiben in beiden Fällen serverseitig.
+
+- Neue Route `POST /api/avatar/device/assistant/probe`: nimmt bis zu fünf
+  Kandidaten, meldet **nur**, welcher zuordenbar ist. Führt kein Werkzeug aus
+  und liest keine Geschäftsdaten — sie hängt an keiner Registry.
+- Die Prüfung nutzt **nur** den Regelplaner, nicht den Hybrid-Planer. Fünf
+  Modellaufrufe à 15 s wären der falsche Preis für eine Vorauswahl. Der
+  Modellpfad bleibt der eigentlichen Frage erhalten.
+- Desktop: `WindowsSpeechRecognitionService` reicht `Alternates` mit heraus,
+  der Diktat-Handler wählt vor dem Senden aus. Scheitert die Prüfung
+  (Netz, 429, Zeitüberschreitung), bleibt es beim ersten Kandidaten — eine
+  unsichere Vorauswahl darf die Frage nicht verhindern.
+- Der gemeinsame Sendepfad wird **nicht** aufgeteilt: Die Auswahl passiert
+  davor, `SendAssistantMessageAsync(message)` bleibt unverändert die eine
+  Stelle. Damit bleibt der Test aus Phase 4 wörtlich unverändert.
+
+**Abnahme:** die fünf Kriterien aus dem Arbeitsvorrat, dazu `npm test`,
+`npx tsc --noEmit`, `npm run lint` und der WinUI-x64-Build.
+
+**Nicht Teil des Auftrags:** Produktionsdaten, Remote-Migrationen,
+eBay-Schreibvorgänge. `NativePetOverlay.cs` bleibt unberührt.
 
 ## Historie
 
