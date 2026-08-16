@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Application
+    x:Class="BrandyCards_Desktop.App"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:BrandyCards_Desktop">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
+            </ResourceDictionary.MergedDictionaries>
+            <ResourceDictionary.ThemeDictionaries>
+                <ResourceDictionary x:Key="Light">
+                    <SolidColorBrush x:Key="AvatarSurfaceBrush" Color="#F7F3EC" />
+                    <SolidColorBrush x:Key="AvatarPanelBrush" Color="#E9E5DD" />
+                    <SolidColorBrush x:Key="AvatarInputBrush" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="AvatarTextBrush" Color="#1A1A1A" />
+                    <SolidColorBrush x:Key="AvatarMutedBrush" Color="#625A53" />
+                    <SolidColorBrush x:Key="AvatarStrokeBrush" Color="#A9A098" />
+                    <SolidColorBrush x:Key="AvatarAccentBrush" Color="#C73E35" />
+                    <SolidColorBrush x:Key="AvatarAccentTextBrush" Color="#FFFFFF" />
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="Dark">
+                    <SolidColorBrush x:Key="AvatarSurfaceBrush" Color="#202020" />
+                    <SolidColorBrush x:Key="AvatarPanelBrush" Color="#303030" />
+                    <SolidColorBrush x:Key="AvatarInputBrush" Color="#2B2B2B" />
+                    <SolidColorBrush x:Key="AvatarTextBrush" Color="#F5F5F5" />
+                    <SolidColorBrush x:Key="AvatarMutedBrush" Color="#D0CBC4" />
+                    <SolidColorBrush x:Key="AvatarStrokeBrush" Color="#77716A" />
+                    <SolidColorBrush x:Key="AvatarAccentBrush" Color="#E35A50" />
+                    <SolidColorBrush x:Key="AvatarAccentTextBrush" Color="#1A1A1A" />
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="HighContrast">
+                    <SolidColorBrush x:Key="AvatarSurfaceBrush" Color="{ThemeResource SystemColorWindowColor}" />
+                    <SolidColorBrush x:Key="AvatarPanelBrush" Color="{ThemeResource SystemColorWindowColor}" />
+                    <SolidColorBrush x:Key="AvatarInputBrush" Color="{ThemeResource SystemColorWindowColor}" />
+                    <SolidColorBrush x:Key="AvatarTextBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
+                    <SolidColorBrush x:Key="AvatarMutedBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
+                    <SolidColorBrush x:Key="AvatarStrokeBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
+                    <SolidColorBrush x:Key="AvatarAccentBrush" Color="{ThemeResource SystemColorHighlightColor}" />
+                    <SolidColorBrush x:Key="AvatarAccentTextBrush" Color="{ThemeResource SystemColorHighlightTextColor}" />
+                </ResourceDictionary>
+            </ResourceDictionary.ThemeDictionaries>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

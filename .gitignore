@@ -44,3 +44,7 @@ next-env.d.ts
 /outputs/
 /work/
 /backups/
+
+# .NET / WinUI build output
+**/bin/
+**/obj/

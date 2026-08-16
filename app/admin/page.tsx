@@ -26,6 +26,9 @@ export default function AdminPage() {
   const [writeCheckBusy, setWriteCheckBusy] = useState(false);
   const [outboxBusy, setOutboxBusy] = useState(false);
   const [ebayToken, setEbayToken] = useState<string | null>(null);
+  const [desktopPairingBusy, setDesktopPairingBusy] = useState(false);
+  const [desktopPairingCode, setDesktopPairingCode] = useState<string | null>(null);
+  const [desktopPairingExpiresAt, setDesktopPairingExpiresAt] = useState<string | null>(null);
   const [assetUrls, setAssetUrls] = useState<Record<string, string>>({});
   const [mfaBlocked, setMfaBlocked] = useState(false);
   const [mfaActive, setMfaActive] = useState(false);
@@ -190,6 +193,23 @@ export default function AdminPage() {
     }
   }
 
+  async function createDesktopPairing() {
+    setDesktopPairingBusy(true);
+    setDesktopPairingCode(null);
+    setDesktopPairingExpiresAt(null);
+    try {
+      const response = await fetch("/api/admin/avatar/pairing", { method: "POST", headers: await authHeaders(false, true) });
+      const body = await response.json() as { code?: string; expiresAt?: string; error?: string };
+      if (!response.ok || !body.code) throw new Error(body.error ?? "Desktop-Avatar-Kopplung konnte nicht erstellt werden.");
+      setDesktopPairingCode(body.code);
+      setDesktopPairingExpiresAt(body.expiresAt ?? null);
+    } catch (error) {
+      setSyncMessage(error instanceof Error ? error.message : "Desktop-Avatar-Kopplung konnte nicht erstellt werden.");
+    } finally {
+      setDesktopPairingBusy(false);
+    }
+  }
+
   return (
     <main>
       <SiteHeader />
@@ -209,6 +229,18 @@ export default function AdminPage() {
             <div><strong>{dashboard.counts.inquiries}</strong><span>Anfragen</span></div>
             <div><strong>{dashboard.counts.cardSubmissions}</strong><span>Kartenangebote</span></div>
             <div><strong>{dashboard.counts.orders}</strong><span>Bestellungen</span></div>
+          </div>
+          <div className="avatar-pairing-panel">
+            <div>
+              <p className="eyebrow">DESKTOP-VERBINDUNG</p>
+              <h2>Avatar auf diesem PC koppeln.</h2>
+              <p>Erzeuge einen kurz gültigen Code und gib ihn einmalig in der Desktop-App ein. Es werden keine eBay- oder Cloudflare-Zugangsdaten übertragen.</p>
+            </div>
+            <button className="button button-outline" type="button" onClick={createDesktopPairing} disabled={desktopPairingBusy}>{desktopPairingBusy ? "Code wird erstellt …" : "Pairing-Code erzeugen"}</button>
+            {desktopPairingCode && <div className="avatar-pairing-code" role="status">
+              <strong>{desktopPairingCode}</strong>
+              <span>Gültig bis {desktopPairingExpiresAt ? new Date(desktopPairingExpiresAt).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }) : "bald"} Uhr · nur einmal verwendbar</span>
+            </div>}
           </div>
           <button className="button button-primary admin-sync-button" type="button" onClick={runEbaySync} disabled={syncBusy}>{syncBusy ? "eBay-Sync läuft …" : "eBay-Angebote synchronisieren"}</button>
           <button className="button button-outline admin-sync-button" type="button" onClick={connectEbay} disabled={oauthBusy}>{oauthBusy ? "eBay OAuth wird gestartet …" : "eBay OAuth verbinden / Refresh-Token erstellen"}</button>

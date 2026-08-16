@@ -38,6 +38,9 @@ const AUSNAHMEN = {
   // auf einen Kunden. Karten sind Warenbestand und dürfen nicht verschwinden,
   // weil jemand sein Konto löscht; die Spalte fällt per SET NULL weg.
   products: "Warenbestand, kein Kundeninhalt",
+  // Desktop-Avatar-Kopplungen sind Geräteverwaltung. Der Ersteller ist der
+  // Admin, der Pairing-Code und Token enthalten keinen Kundeninhalt.
+  avatar_device_pairings: "Geräteverwaltung, kein Kundeninhalt",
 };
 
 test("jede Tabelle mit Nutzerbezug ist in der Auskunft oder begründet ausgenommen", () => {

@@ -4,6 +4,7 @@ import { getDb } from "../../../../db";
 import { ebayListings, priceOffers, products, users } from "../../../../db/schema";
 import { recordAdminAudit } from "../../../../lib/admin-audit";
 import { requireAdmin } from "../../../../lib/admin-access";
+import { enqueueAvatarEvent } from "../../../../lib/avatar-events";
 import { notifyOfferDecision } from "../../../../lib/email/notify.ts";
 import { offerExpiry } from "../../../../lib/price-offers";
 
@@ -66,6 +67,19 @@ export async function POST(request: Request) {
 
     if (result.meta.changes !== 1) {
       return NextResponse.json({ error: "Dieser Vorschlag wurde bereits entschieden." }, { status: 409 });
+    }
+    try {
+      await enqueueAvatarEvent(db, {
+        eventType: action === "accept" ? "OFFER_ACCEPTED" : "OFFER_REJECTED",
+        aggregateType: "PRICE_OFFER",
+        aggregateId: offerId,
+        dedupeKey: `price-offer:${offerId}:${action}`,
+        payload: { offerId },
+      });
+    } catch (eventError) {
+      // The offer decision is already committed. Keep that business action
+      // successful; a later repair/retry can enqueue the visual event.
+      console.error("avatar offer event enqueue failed", eventError);
     }
     await recordAdminAudit({ request, actorUserId: guard.user.id, action: `offer.${action}`, entityType: "price_offer", entityId: offerId });
     await notifyOfferDecision(db, offerId, action);

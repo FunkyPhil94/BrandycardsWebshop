@@ -47,6 +47,15 @@ export const syncRunStatusValues = ["RUNNING", "SUCCEEDED", "PARTIAL", "FAILED"]
 export const syncEventStatusValues = ["IMPORTED", "UPDATED", "DEACTIVATED", "SKIPPED", "FAILED"] as const;
 export const ebayOutboxStatusValues = ["PENDING", "PROCESSING", "RETRY_WAIT", "SUCCEEDED", "FAILED", "CANCELLED"] as const;
 export const localeValues = ["de", "en"] as const;
+export const avatarEventTypeValues = [
+  "OFFER_RECEIVED",
+  "OFFER_ACCEPTED",
+  "OFFER_REJECTED",
+  "CARD_SOLD",
+] as const;
+export type AvatarEventType = (typeof avatarEventTypeValues)[number];
+export const avatarDeviceScopeValues = ["EVENTS", "ASSISTANT_READ"] as const;
+export type AvatarDeviceScope = (typeof avatarDeviceScopeValues)[number];
 
 export const users = sqliteTable("users", {
   id: id(),
@@ -325,6 +334,48 @@ export const webhookEvents = sqliteTable("webhook_events", {
   uniqueIndex("webhook_provider_event_unique").on(table.provider, table.externalEventId),
   index("webhook_status_idx").on(table.status),
   check("webhook_status_check", sql`${table.status} IN ('RECEIVED', 'PROCESSED', 'FAILED')`),
+]);
+
+export const avatarEvents = sqliteTable("avatar_events", {
+  id: id(),
+  eventType: text("event_type", { enum: avatarEventTypeValues }).notNull(),
+  aggregateType: text("aggregate_type").notNull(),
+  aggregateId: text("aggregate_id").notNull(),
+  payload: json("payload"),
+  dedupeKey: text("dedupe_key").notNull(),
+  createdAt: timestamp("created_at"),
+}, (table) => [
+  uniqueIndex("avatar_events_dedupe_unique").on(table.dedupeKey),
+  index("avatar_events_created_idx").on(table.createdAt),
+  check("avatar_event_type_check", sql`${table.eventType} IN ('OFFER_RECEIVED', 'OFFER_ACCEPTED', 'OFFER_REJECTED', 'CARD_SOLD')`),
+]);
+
+export const avatarDevicePairings = sqliteTable("avatar_device_pairings", {
+  id: id(),
+  codeHash: text("code_hash").notNull(),
+  createdByUserId: text("created_by_user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  expiresAt: timestamp("expires_at"),
+  claimedAt: optionalTimestamp("claimed_at"),
+  createdAt: timestamp("created_at"),
+}, (table) => [
+  uniqueIndex("avatar_device_pairings_code_unique").on(table.codeHash),
+  index("avatar_device_pairings_expiry_idx").on(table.expiresAt),
+]);
+
+export const avatarDeviceTokens = sqliteTable("avatar_device_tokens", {
+  id: id(),
+  tokenHash: text("token_hash").notNull(),
+  label: text("label").notNull().default("BrandyCards Desktop Avatar"),
+  scopes: json("scopes").$type<AvatarDeviceScope[]>().notNull().default(sql`'["EVENTS"]'`),
+  pairingId: text("pairing_id"),
+  createdByUserId: text("created_by_user_id"),
+  expiresAt: optionalTimestamp("expires_at"),
+  createdAt: timestamp("created_at"),
+  revokedAt: optionalTimestamp("revoked_at"),
+}, (table) => [
+  uniqueIndex("avatar_device_tokens_hash_unique").on(table.tokenHash),
+  index("avatar_device_tokens_revoked_idx").on(table.revokedAt),
+  index("avatar_device_tokens_expiry_idx").on(table.expiresAt),
 ]);
 
 // The outbox contains absolute eBay target states. It decouples the local

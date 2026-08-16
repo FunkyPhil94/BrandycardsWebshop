@@ -2,6 +2,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { getDb } from "../../../../db";
 import { orders, payments, webhookEvents } from "../../../../db/schema";
+import { tryEnqueueAvatarEvent } from "../../../../lib/avatar-events";
 import { notifyOrderPaid } from "../../../../lib/email/notify.ts";
 import { getPayPalConfig } from "../../../../lib/paypal/config";
 import { verifyPayPalWebhookSignature } from "../../../../lib/paypal/client";
@@ -139,6 +140,16 @@ export async function POST(request: Request) {
         }).where(and(eq(payments.id, payment.id), inArray(payments.status, ["CREATED", "APPROVED"])))]);
         await db.update(orders).set({ status: "PAID", paidAt: now, updatedAt: now }).where(eq(orders.id, payment.orderId));
         await settlePaidOrder(db, payment.orderId, now);
+        if (captureClaim[0].meta.changes === 1) {
+          await tryEnqueueAvatarEvent(db, {
+            eventType: "CARD_SOLD",
+            aggregateType: "ORDER",
+            aggregateId: payment.orderId,
+            dedupeKey: `shop-sale:${payment.orderId}`,
+            payload: { orderId: payment.orderId, source: "SHOP" },
+            createdAt: now,
+          });
+        }
         if (captureClaim[0].meta.changes === 1) await notifyOrderPaid(db, payment.orderId, "NICHT_GELAUFEN");
       }
     } else if (eventType === "PAYMENT.CAPTURE.DENIED" || eventType === "PAYMENT.CAPTURE.DECLINED") {

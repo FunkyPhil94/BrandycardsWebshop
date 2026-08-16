@@ -45,6 +45,10 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 - Aktueller Fokus: Phase 1 implementiert feste, typisierte Shop-, eBay-, Verkaufs-, Angebots-, Nachrichten- und Statistikfunktionen hinter der bestehenden Geräteauthentifizierung. Das Modell erhält keine Möglichkeit, SQL frei zu erzeugen.
 - Sicherheitsrahmen: Keine Produktionsdaten verändern, keine Remote-Migrationen ausführen und nichts deployen. eBay-, Datenbank- und sonstige Secrets bleiben ausschließlich serverseitig; schreibende Assistant-Aktionen sind nicht Bestandteil dieser Phase.
 - Bekannte Datenlücken: eBay-Aufrufzahlen und eBay-Nachrichten sind derzeit weder zuverlässig persistiert noch über einen vorhandenen Read-Client angebunden und müssen bis zu einer späteren, expliziten Integration als nicht verfügbar ausgewiesen werden.
+- Zwischenstand Phase 1: ABGESCHLOSSEN. Neue Geräte-API `/api/avatar/device/assistant`, feste Tool-Allowlist und typisierte Shop-/eBay-/Verkaufs-/Angebots-/Nachrichten-/Statistikwerkzeuge implementiert. Es existiert kein Assistant-Schreibwerkzeug und kein Pfad für modellgeneriertes SQL; DTOs schließen Kunden-, Token- und Provider-Rohdaten aus. Die lokale Migration `0011_avatar_assistant_scope.sql` hält bestehende Tokens auf `EVENTS`; nur neu gekoppelte, auf 90 Tage begrenzte Geräte erhalten `ASSISTANT_READ`.
+- Prüfung Phase 1: Fokussierte Assistant-Tests 11/11, `npx tsc --noEmit` erfolgreich, Produktions-Build erfolgreich, vollständige Suite 367/367 bestanden. ESLint meldet nur die vorbestehende Hook-Warnung in `app/account/page.tsx`.
+- Nächster Schritt: Phase 2 baut neben dem unveränderten nativen Alpha-Pet ein fokussierbares WinUI-Launcher-/Assistenzfenster für Textkommunikation. Vor produktiver Nutzung werden außerdem HTTPS-Zielprüfung, DPAPI-geschützte Tokenablage und ein Widerrufs-/Rotationspfad umgesetzt.
+- Unverändert: Keine Produktionsdaten, Remote-Migrationen, eBay-Schreibvorgänge oder Deployments ausgeführt.
 
 ## Historie
 

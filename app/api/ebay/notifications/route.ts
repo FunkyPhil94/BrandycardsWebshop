@@ -2,6 +2,7 @@ import { and, eq, inArray, or, sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { getDb } from "../../../../db";
 import { ebayListings, inventory, products, webhookEvents } from "../../../../db/schema";
+import { avatarEventInsert } from "../../../../lib/avatar-events";
 import { notifyOperationalAlert } from "../../../../lib/ops-alerts";
 import {
   buildEbayChallengeResponse,
@@ -133,7 +134,7 @@ export async function POST(request: Request) {
     const writes = [];
     const stockShortfalls: string[] = [];
 
-    for (const lineItem of confirmation.lineItems) {
+    for (const [lineIndex, lineItem] of confirmation.lineItems.entries()) {
       const listing = listingsByItemId.get(lineItem.listingId);
       if (!listing) continue;
       if (lineItem.quantity > listing.quantity) stockShortfalls.push(`${lineItem.listingId} (${lineItem.quantity} > ${listing.quantity})`);
@@ -156,6 +157,14 @@ export async function POST(request: Request) {
         eq(products.id, listing.productId),
         sql`(SELECT max(0, quantity - ${lineItem.quantity}) FROM ebay_listings WHERE id = ${listing.id}) = 0`,
       )));
+      writes.push(avatarEventInsert(db, {
+        eventType: "CARD_SOLD",
+        aggregateType: "EBAY_LISTING",
+        aggregateId: listing.id,
+        dedupeKey: `ebay-sale:${confirmation.notificationId}:${lineIndex}:${listing.id}`,
+        payload: { productId: listing.productId, listingId: listing.id, quantity: lineItem.quantity },
+        createdAt: receivedAt,
+      }));
     }
 
     // Bestand und PROCESSED-Merker gehören in dieselbe D1-Transaktion. Sonst

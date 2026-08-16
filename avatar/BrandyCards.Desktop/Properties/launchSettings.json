@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "BrandyCards.Desktop (Unpackaged)": {
+      "commandName": "Project"
+    },
+    "BrandyCards.Desktop (Package)": {
+      "commandName": "MsixPackage"
+    }
+  }
+}

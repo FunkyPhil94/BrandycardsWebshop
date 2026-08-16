@@ -1,5 +1,47 @@
 # BrandyCards Agentenprotokoll
 
+## 2026-08-16 - Phase 1 des Desktop-Assistenten: sichere Datenwerkzeuge
+
+Die erste Assistant-Phase verwendet die bestehende, nur serverseitig prüfbare
+Desktop-Geräteauthentifizierung. Der neue Endpunkt
+`/api/avatar/device/assistant` akzeptiert keine natürliche Sprache und kein
+SQL, sondern ausschließlich eine feste Tool-ID sowie eine auf 1 bis 20
+begrenzte Ergebniszahl. Der zentrale Registry-Dispatcher kennt nur lesende
+Handler; schreibende Shop- oder eBay-Funktionen werden nicht importiert.
+
+Die Werkzeuge lesen Shop-Verkäufe, letzte Einstellungen, neue bezahlte oder in
+Bearbeitung befindliche Bestellungen, offene Shop-Preisvorschläge,
+Bestandswidersprüche, neue Shop-Anfragen, eBay-Sync-/Outbox-Zustand und
+Statistiken über fest formulierte Drizzle-Abfragen. Gemischte SQLite- und
+ISO-Zeitstempel werden vor Sortierung mit `datetime(...)` und in Antworten als
+ISO-8601 normalisiert. Antworten enthalten Kartentitel, Status, Mengen,
+Preise, Zeit und Datenfrische, aber keine E-Mail-/Adressdaten, Geräte- oder
+Provider-Tokens, Webhook-Payloads oder sonstigen Rohdaten.
+
+Die vorhandene eBay-Anbindung erfasst weder Listing-Aufrufzahlen noch das
+eBay-Postfach. Diese beiden Tools liefern deshalb einen typisierten Status
+`UNAVAILABLE` mit `DATA_NOT_CAPTURED` beziehungsweise
+`SOURCE_NOT_CONNECTED`. Shop-Preisvorschläge bleiben ausdrücklich von bislang
+nicht integrierten eBay-Käuferangeboten getrennt. So kann ein späterer
+Orchestrator keine fehlenden Daten als Tatsachen formulieren.
+
+Der Endpunkt ist zusätzlich größenbegrenzt, schon vor dem D1-Token-Lookup
+rate-limited, nicht cachebar und gibt bei internen Fehlern nur eine generische
+Meldung aus. Die lokale Migration `0011_avatar_assistant_scope.sql` lässt
+bestehende Tokens ausdrücklich auf dem Ereignis-Scope; nur eine neue,
+Admin-autorisierte Kopplung erhält `ASSISTANT_READ`, Betreiberzuordnung und
+90 Tage Laufzeit. Die Credential wird im Desktop-Client noch im Klartext unter
+`%LOCALAPPDATA%` gespeichert. Vor produktiver Assistant-Nutzung wird dieser
+Clientpfad in der UI-Phase gehärtet (HTTPS außer Loopback, DPAPI,
+Widerruf/Rotation). Die Migration wurde nicht remote angewendet und es wurden
+keine Produktionsdaten verändert.
+
+Verifikation: fokussierte Assistant-Tests 11/11, TypeScript ohne Fehler,
+Produktions-Build erfolgreich und gesamte Suite 367/367 bestanden. ESLint hat
+keine neue Warnung; die vorbestehende Hook-Warnung in `app/account/page.tsx`
+bleibt unverändert. Es wurde nichts deployed und keine Remote-Migration oder
+Produktionsabfrage ausgeführt.
+
 ## 2026-08-15 - Eigenständige Dokumentation des BWS-CSV-Imports
 
 Die abgeschlossene Importarbeit wurde zusätzlich in
@@ -1932,3 +1974,109 @@ KAN-1355-Referenznachweis. Bis zur Pause ergeben sich 33 `PASSED` und 16
 `FAILED`. Die Fortsetzung beginnt mit KAN-690. Eine technische Besonderheit
 des Browserlaufs war, dass einzelne Xray-Editoren bereits vorbefüllte
 Ergebnistexte zeigten; der Bearbeitungsablauf wurde dafür stabilisiert.
+
+## 2026-08-16 - Desktop-Pet statt Avatar-Anwendungsfenster
+
+Der Webshop zeigt im Adminbereich keinen Live-Avatar mehr. Die Pairing-Funktion
+bleibt dort als einzige notwendige Desktop-Verbindung sichtbar. Der Grund für
+die scheinbar fehlende Reaktion war zweifach: Die produktive Ereignistabelle war
+leer, und die WinUI-App hatte im Leerlauf keinen Timer, der den Atlas wechselte.
+
+Die WinUI-App verwendet nun im verbundenen Zustand ein transparentes,
+rahmenloses Always-on-top-Fenster mit dem Avatar als einzigem sichtbaren Inhalt.
+Eine separate Idle-Uhr sorgt für permanente sichtbare Bewegung; die vier
+Ereignisanimationen bleiben in ihrer Warteschlange und werden weiterhin über
+den geschützten Gerätefeed ausgelöst. Die Setup-Ansicht wird nur beim ersten
+Koppeln oder nach „Verbindung ändern“ eingeblendet.
+
+Der lokale WinUI-Build lief mit 0 Fehlern und 0 Warnungen. Der Webtestlauf
+bestand mit 356/356 Tests; die TypeScript-Prüfung war erfolgreich. Der Worker
+wurde auf Produktionsversion `fee50e21-b368-4069-a381-0ffb967b28de` deployed
+und die produktive Admin-Seite danach auf das Entfernen des Live-Avatars sowie
+das Weiterbestehen der Desktop-Verbindung geprüft. Es wurden keine Secrets
+ausgegeben und keine Testereignisse in die Produktion geschrieben.
+
+## 2026-08-16 - Native Transparenz für den Desktop-Pet
+
+Der Screenshot mit schwarzer Fläche und weißem Rahmen zeigte die bekannte
+Einschränkung: Ein transparentes XAML-Root allein macht ein WinUI-3-
+Top-Level-Fenster nicht zu einem echten transparenten Desktop-Pet. Die
+Anwendung erhielt deshalb eine kleine native Win32-Interop-Schicht.
+
+Im Pet-Modus wird das Fenster als rahmenloses `WS_POPUP` mit
+`WS_EX_LAYERED` geführt. Eine eindeutige Color-Key-Fläche wird über
+`SetLayeredWindowAttributes` aus dem Fenster entfernt; der native Non-Client-
+Rahmen und der schwarze Button-Hintergrund werden ebenfalls nicht mehr
+angezeigt. Für die Pairing-Ansicht werden die ursprünglichen Fensterstile
+wiederhergestellt, damit die Einrichtung weiterhin lesbar bleibt.
+
+Der WinUI-Build lief danach mit 0 Fehlern und 0 Warnungen. Die neue Instanz
+wurde erneut gestartet und antwortet. Produktive D1-Daten, Eventfeed,
+Pairing-Token und Cloudflare-Konfiguration wurden nicht verändert.
+
+## 2026-08-16 - Color-Key-Ansatz durch DWM-Transparenz ersetzen
+
+Die Nutzerprüfung zeigte, dass der vorherige Color-Key-Ansatz nicht griff: Das
+grüne Füllfeld wurde als sichtbarer Teil der WinUI-Komposition dargestellt.
+Dieser Ansatz wurde deshalb vollständig entfernt.
+
+Das Pet verwendet nun ein rahmenloses `WS_POPUP` und erweitert den DWM-Frame
+über die gesamte Fensterfläche (`DwmExtendFrameIntoClientArea` mit negativen
+Rändern). Zusätzlich setzt die native Fensterkompositions-API den transparenten
+Gradient-Zustand. Das XAML zeichnet keine Hintergrundfarbe mehr; der kleine
+Einstellungsbutton ist ebenfalls ohne Hintergrund.
+
+Die Anwendung wurde danach mit 0 Fehlern und 0 Warnungen gebaut, die alte
+Instanz beendet und die neue Instanz gestartet. Es wurden keine produktiven
+Daten, Tokens oder Cloudflare-Einstellungen verändert.
+
+## 2026-08-16 - Native per-pixel-Transparenz für den Desktop-Pet
+
+Die DWM-Variante wurde durch ein echtes natives `WS_EX_LAYERED`-Overlay ersetzt.
+Die WinUI-Hauptansicht wird im verbundenen Zustand ausgeblendet; das Overlay
+zeichnet ausschließlich eine 260x300 große ARGB-Fläche über
+`UpdateLayeredWindow`. Der Avatar wird aus einer transparenten PNG-Atlasdatei
+gerendert, sodass kein XAML-, Color-Key- oder DWM-Hintergrund mehr an der
+sichtbaren Pet-Fläche beteiligt ist. Rechtsklick oder Doppelklick öffnet wieder
+die Verbindungsansicht.
+
+Der Atlas wurde aus dem bestehenden validierten WebP deterministisch in PNG
+überführt. Die Pixelprüfung ergab 642866 sichtbare und 2232526 transparente
+Pixel sowie 0 RGB-Rückstände in transparenten Pixeln. Die gerenderte
+260x300-Vorschau zeigt ausschließlich den Avatar auf dem Prüf-Hintergrund.
+
+Der WinUI-Build lief mit 0 Warnungen und 0 Fehlern. Das Standard-Launch-Profil
+wurde auf `BrandyCards.Desktop (Unpackaged)` korrigiert. Die native
+Fensteraufnahme konnte in dieser Codex-Ausführungsumgebung noch nicht erfolgen,
+weil dort keine sichtbaren Top-Level-Fenster enumeriert werden; die echte
+Desktop-Sichtprüfung bleibt deshalb offen. Produktionsdaten, Tokens und
+Cloudflare-Einstellungen wurden nicht verändert.
+
+## 2026-08-16 - Erneuter Build nach dem Transparenzwechsel
+
+`NativePetOverlay` wurde nochmals geprüft: `SetFrame(0, 0)` wird erst nach
+`ShowWindow` ausgeführt und der fehlende Screen-DC wird sicher abgefangen. Der
+Output-Atlas enthält 1536x1872 Pixel; die Ecke hat Alpha 0 und keinen RGB-
+Rückstand. Der erneute Build mit dem Unpackaged-Profil lief mit 0 Warnungen und
+0 Fehlern.
+
+Ein separater Laufzeit-Smoketest konnte in der Codex-Ausführungsumgebung kein
+Fenster erzeugen, weil `EnumWindows` dort 0 Top-Level-Fenster liefert. Das ist
+eine Einschränkung der isolierten Desktop-Sitzung; der sichtbare Windows-
+Desktop des Benutzers ist damit nicht fotografisch verifiziert. Es wurden keine
+Produktionsdaten, Tokens oder Cloudflare-Einstellungen verändert.
+
+## 2026-08-16 - Finaler Screenshot-Nachweis der Pet-Transparenz
+
+Der Fehler lag im manuellen `CreateDibSection`-Pfad: Der Aufruf hing in der
+interaktiven Windows-Sitzung, obwohl das Fenster bereits sichtbar war. Der
+Overlay-Frame wird jetzt aus dem transparenten `Bitmap` mit
+`GetHbitmap(Color.FromArgb(0, 0, 0, 0))` erzeugt und an
+`UpdateLayeredWindow` übergeben. Die temporäre Diagnoseprotokollierung und die
+Debug-Marker wurden anschließend aus dem Quellcode entfernt.
+
+Der bereinigte Build lief mit 0 Warnungen und 0 Fehlern. Der echte Windows-
+Desktop wurde DPI-bewusst aufgenommen; der Avatar ist am unteren rechten Rand
+sichtbar, ohne grünes Rechteck oder schwarzen Fensterrahmen. Der ausgeschnittene
+260x300-Overlay-Bereich enthielt in 19.500 Stichproben 0 grüne Hintergrundpixel.
+Produktionsdaten, Tokens und Cloudflare-Einstellungen blieben unverändert.

@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { getDb } from "../../../../db";
 import { orders, payments } from "../../../../db/schema";
 import { getAuthenticatedAppUser } from "../../../../lib/app-user";
+import { tryEnqueueAvatarEvent } from "../../../../lib/avatar-events";
 import { notifyOrderPaid } from "../../../../lib/email/notify.ts";
 import { ebayBestandspruefung } from "../../../../lib/ebay-stock-guard";
 import { capturePayPalOrder } from "../../../../lib/paypal/client";
@@ -53,6 +54,13 @@ export async function POST(request: Request) {
         await db.update(orders).set({ status: "PAID", paidAt: order.paidAt ?? new Date().toISOString(), updatedAt: new Date().toISOString() }).where(and(eq(orders.id, order.id), eq(orders.status, "PENDING")));
       }
       await settlePaidOrder(db, order.id, new Date().toISOString());
+      await tryEnqueueAvatarEvent(db, {
+        eventType: "CARD_SOLD",
+        aggregateType: "ORDER",
+        aggregateId: order.id,
+        dedupeKey: `shop-sale:${order.id}`,
+        payload: { orderId: order.id, source: "SHOP" },
+      });
       return NextResponse.json({ ok: true, idempotent: true, orderId: order.id, ...captureDetails(payment) });
     }
     if (payment.status !== "CREATED" && payment.status !== "APPROVED") {
@@ -96,6 +104,16 @@ export async function POST(request: Request) {
       .where(and(eq(payments.id, payment.id), inArray(payments.status, ["CREATED", "APPROVED"])))]);
     await db.update(orders).set({ status: "PAID", paidAt: now, updatedAt: now }).where(and(eq(orders.id, order.id), inArray(orders.status, ["PENDING", "PROCESSING"])));
     await settlePaidOrder(db, order.id, now);
+    if (captureClaim[0].meta.changes === 1) {
+      await tryEnqueueAvatarEvent(db, {
+        eventType: "CARD_SOLD",
+        aggregateType: "ORDER",
+        aggregateId: order.id,
+        dedupeKey: `shop-sale:${order.id}`,
+        payload: { orderId: order.id, source: "SHOP" },
+        createdAt: now,
+      });
+    }
     if (captureClaim[0].meta.changes === 1) await notifyOrderPaid(db, order.id, bestandspruefung.status);
     return NextResponse.json({ ok: true, idempotent: false, orderId: order.id, captureId: capture.id, status: "CAPTURED" });
   } catch (error) {
