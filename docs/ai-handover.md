@@ -37,9 +37,82 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-<!-- Fuer den naechsten Auftrag freihalten. -->
+### 2026-08-16 - Phase 8 des Desktop-Assistenten: read-only-eBay-Datenintegration
 
-Keine laufenden Aufträge.
+- Stand: **LÄUFT**.
+- Ziel: Drei bisher unbeantwortbare Fragen beantwortbar machen — Aufrufzahlen
+  eigener Angebote, neue eBay-Nachrichten, Käufer-Preisvorschläge. Alles
+  ausschließlich lesend, serverseitig zwischengespeichert, über die geschlossene
+  Assistant-Tool-Registry erreichbar. Der Desktop-Pet bekommt **keine** neue
+  Schnittstelle; er fragt weiter nur `POST /api/avatar/device/assistant`.
+- Ausgangslage: Dieser Arbeitszweig stand — wie schon Phase 6 und 7 — auf
+  `75c3762` (= `main`) und damit vor der gesamten Phase-5-bis-7-Arbeit. Erster
+  Schritt war ein reiner Fast-Forward auf den Phase-7-Stand `506a5f9`. Der Zweig
+  hatte keine eigenen Commits, es ging nichts verloren.
+
+**Bestandsaufnahme: welche eBay-Schnittstelle liefert was**
+
+Vorab an der aktuellen offiziellen Dokumentation geprüft, nicht aus dem
+Gedächtnis angenommen. Ergebnis je Datentyp:
+
+| Datentyp | Schnittstelle | Aufruf | Benötigter OAuth-Scope |
+|---|---|---|---|
+| Aufrufzahlen | Sell **Analytics** API (REST) | `GET /sell/analytics/v1/traffic_report` | `…/oauth/api_scope/sell.analytics.readonly` |
+| Nachrichten | **Trading** API (XML) | `GetMyMessages` | `…/oauth/api_scope` (Basis-Scope) |
+| Preisvorschläge | **Trading** API (XML) | `GetBestOffers` | `…/oauth/api_scope` (Basis-Scope) |
+
+Drei Befunde, die den Entwurf bestimmen:
+
+1. **Der Aufrufzähler ist heute nicht abrufbar.** Der Zustimmungsablauf in
+   `app/api/admin/ebay/oauth/start/route.ts` fordert genau einen Scope an:
+   `sell.inventory`. `sell.analytics.readonly` ist darin nicht enthalten, und
+   ein Scope lässt sich nicht nachträglich an einen bestehenden Refresh-Token
+   heften. Die Aufrufzahlen bleiben deshalb bis zu einer **erneuten
+   Zustimmung durch den Kontoinhaber** unerreichbar. Das ist kein Fehler,
+   sondern ein Produktionsschritt — und der Assistant muss ihn als solchen
+   benennen statt zu schweigen.
+2. **Aufrufzahlen sind kein Live-Wert.** Der Traffic-Report liefert ein
+   Zeitfenster (max. 90 Tage) mit eigenem `lastUpdatedDate`. Es gibt keinen
+   „Aufrufe jetzt"-Wert. Der gespeicherte Stand ist deshalb immer der des
+   Reports, nie der des Abrufs.
+3. **Für Nachrichten gibt es keine REST-Nachfolge.** `GetMyMessages` in der
+   Trading API ist der einzige lesende Zugang zum Verkäuferpostfach. Mit
+   `DetailLevel ReturnHeaders` liefert eBay ausdrücklich **keinen
+   Nachrichtentext** — genau das wird angefordert, damit kein Fließtext in die
+   eigene Datenbank gelangen kann.
+
+Nicht verwendet und warum: Die **Negotiation API** (`sell/negotiation/v1`)
+klingt passend, betrifft aber vom *Verkäufer* an interessierte Käufer gesendete
+Angebote — die Gegenrichtung. Für Käufer-Preisvorschläge ist sie die falsche
+Quelle.
+
+**Entwurf**
+
+- Neue Tabellen (Migration `0012`): `ebay_listing_traffic`,
+  `ebay_inbox_messages`, `ebay_buyer_offers` sowie `ebay_read_syncs` als
+  Zustandstabelle je Datentyp.
+- `ebay_read_syncs` ist der Grund, warum der Assistant „keine Daten" von „nicht
+  abrufbar" unterscheiden kann. Ohne sie wäre ein leeres Postfach von einem
+  fehlenden Scope nicht zu trennen — beides sähe wie null Zeilen aus.
+- Idempotenz durch Fenstersemantik: Ein Lauf schreibt alle Zeilen mit demselben
+  `collected_at` und löscht danach die Zeilen mit abweichendem Stempel. Zweimal
+  derselbe eBay-Inhalt ergibt denselben Tabelleninhalt. Ein **fehlgeschlagener**
+  Abruf löscht nichts.
+- Datensparsamkeit: kein Nachrichtentext, keine Käuferkennung bei
+  Preisvorschlägen (nur ein Kennzeichen, ob eine Nachricht dabei lag), Betreff
+  auf feste Länge gekürzt.
+- Taktgrenze: Der Cron feuert alle 3 Minuten. Zwei zusätzliche Trading-Aufrufe
+  je Lauf kosteten 960 Aufrufe/Tag aus demselben 5 000er-Topf, aus dem sich
+  Kasse, Beschreibungsabfrage und Rücknahme bedienen. Der Lesesync bekommt
+  deshalb eine eigene, längere Frist und wird pro Datentyp gedrosselt.
+
+**Abnahme**: `npm test`, `npx tsc --noEmit`, ESLint, lokale D1-Migration mit
+Wiederholungslauf, Tests für leere/lückenhafte/fehlerhafte eBay-Antworten sowie
+Scope- und Rate-Limit-Fehler, WinUI-x64-Build, `git diff --check`.
+
+**Grenzen**: keine Schreibaufrufe an eBay, keine Remote-Migration, kein Push,
+kein Deployment, keine Änderung an `NativePetOverlay`, Atlas, Pet-Animation oder
+DPI-Positionierung.
 
 ## Historie
 
