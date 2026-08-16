@@ -37,9 +37,22 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-<!-- Fuer den naechsten Auftrag freihalten. -->
+### 2026-08-16 - Die Verkaufsübersicht freischalten
 
-Keine laufenden Aufträge.
+- Stand: **LÄUFT.**
+- Vorgeschichte: Der Betreiber hat die dritte Zustimmungsrunde durchlaufen und
+  den neuen `EBAY_REFRESH_TOKEN` hinterlegt. `SALES` steht seit dem Versuch um
+  18:36:52 UTC auf `SCOPE_NOT_GRANTED` und wartet damit sechs Stunden.
+- Eingriff (**Schreibzugriff auf Produktionsdaten, vom Betreiber freigegeben**):
+  `DELETE FROM ebay_read_syncs WHERE data_type = 'SALES'`. Wie beim selben
+  Schritt für `TRAFFIC` vorhin: `last_attempt_at` ist `NOT NULL`, also wird die
+  Zustandszeile entfernt statt zurückdatiert. Der Upsert legt sie beim nächsten
+  Lauf wahrheitsgemäß neu an.
+- Zusätzlich zu prüfen, weil ein Tokenwechsel mehr betrifft als den neuen Scope:
+  ob `TRAFFIC` weiterhin auf `OK` läuft. Trüge der neue Token die Analytics-
+  Rechte nicht mehr, fiele es sonst erst in Stunden auf.
+- Abnahme: `ebay_read_syncs` nach dem nächsten Lauf lesen; `SALES` muss `OK`
+  melden oder einen anderen Grund als `SCOPE_NOT_GRANTED` nennen.
 
 ## Historie
 
