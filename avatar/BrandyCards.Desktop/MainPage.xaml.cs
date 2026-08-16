@@ -313,8 +313,17 @@ public sealed partial class MainPage : Page
             }
 
             var message = transcription.Text!;
+            AssistantStatusTextBlock.Text = "Diktat erkannt; Lesarten werden geprüft …";
+            var better = await ResolveDictatedReadingAsync(transcription.Readings);
+            var corrected = better is not null && !string.Equals(better, message, StringComparison.Ordinal);
+            if (corrected) message = better!;
+
             AssistantInputTextBox.Text = message;
-            AssistantStatusTextBlock.Text = "Diktat erkannt; Frage wird an den Assistant übergeben …";
+            AssistantStatusTextBlock.Text = corrected
+                // Die Ansage nennt die Korrektur, weil der Nutzer sonst nur
+                // wahrnimmt, dass etwas anderes im Feld steht, als er gesagt hat.
+                ? "Eine spätere Lesart des Diktats passte besser und wird verwendet."
+                : "Diktat erkannt; Frage wird an den Assistant übergeben …";
             message = AssistantInputTextBox.Text.Trim();
             AssistantInputTextBox.Text = string.Empty;
             await SendAssistantMessageAsync(message);
@@ -324,6 +333,20 @@ public sealed partial class MainPage : Page
             SetSpeechRecognitionBusy(false);
             AssistantInputTextBox.Focus(FocusState.Programmatic);
         }
+    }
+
+    /// <summary>
+    /// Fragt den Shop, welche Lesart des Diktats zu einem Werkzeug führt.
+    ///
+    /// Die Zuordnungsregeln liegen serverseitig und bleiben dort — der Desktop
+    /// baut sie nicht nach, sondern fragt. Bei einer einzigen Lesart, ohne
+    /// Kopplung oder bei jedem Fehlschlag kommt <c>null</c> zurück, und der
+    /// Aufrufer bleibt beim ersten Kandidaten.
+    /// </summary>
+    private async Task<string?> ResolveDictatedReadingAsync(IReadOnlyList<string> readings)
+    {
+        if (readings.Count < 2 || string.IsNullOrWhiteSpace(_settings.DeviceToken)) return null;
+        return await _assistantService.SelectCandidateAsync(NormalizeShopUrl(_settings.ShopUrl), _settings.DeviceToken, readings);
     }
 
     private async Task SendAssistantMessageAsync(string message)

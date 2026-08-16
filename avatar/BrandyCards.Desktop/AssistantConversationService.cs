@@ -62,6 +62,65 @@ internal sealed class AssistantConversationService(HttpClient httpClient)
     /// </summary>
     internal readonly record struct AssistantAnswer(bool Succeeded, string Text);
 
+    /// <summary>
+    /// Zeitrahmen der Lesartenprüfung — deutlich kürzer als der einer Frage.
+    ///
+    /// Die Prüfung entscheidet serverseitig allein nach Regeln, ohne Datenbank
+    /// und ohne Modell; sie ist in Millisekunden fertig oder gar nicht. Sie
+    /// steht außerdem **vor** der eigentlichen Frage: Was sie an Zeit
+    /// verbraucht, wartet der Nutzer zusätzlich. Bleibt sie aus, geht die erste
+    /// Lesart hinaus wie bisher — deshalb darf hier früh aufgegeben werden.
+    /// </summary>
+    public static readonly TimeSpan ProbeTimeout = TimeSpan.FromSeconds(8);
+
+    /// <summary>
+    /// Wählt aus den Lesarten eines Diktats die erste, die der Shop einem
+    /// Werkzeug zuordnen kann. Gibt <c>null</c> zurück, wenn keine passt oder
+    /// die Prüfung nicht durchkam.
+    ///
+    /// **Ein Fehlschlag ist hier kein Fehler**, sondern ein Verzicht auf eine
+    /// Verbesserung: Der Aufrufer bleibt dann beim ersten Kandidaten und
+    /// bekommt das bisherige Verhalten. Eine gescheiterte Vorauswahl darf die
+    /// Frage nicht verhindern — deshalb fängt diese Methode alles ab, statt zu
+    /// werfen.
+    /// </summary>
+    public async Task<string?> SelectCandidateAsync(string shopUrl, string deviceToken, IReadOnlyList<string> candidates, CancellationToken cancellationToken = default)
+    {
+        if (candidates.Count < 2) return null;
+
+        try
+        {
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            timeout.CancelAfter(ProbeTimeout);
+
+            using var request = new HttpRequestMessage(HttpMethod.Post, $"{shopUrl}/api/avatar/device/assistant/probe")
+            {
+                Content = new StringContent(JsonSerializer.Serialize(new { candidates }), Encoding.UTF8, "application/json"),
+            };
+            request.Headers.Authorization = new("Bearer", deviceToken);
+
+            using var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeout.Token);
+            if (!response.IsSuccessStatusCode) return null;
+
+            var body = await ReadBoundedBodyAsync(response, timeout.Token);
+            if (body.Outcome != BodyOutcome.Complete) return null;
+
+            var selected = ReadStringField(body.Text, "selected");
+            if (selected.Kind != FieldKind.Found || string.IsNullOrWhiteSpace(selected.Value)) return null;
+
+            // **Nur eine der gesendeten Lesarten wird übernommen.** Die Antwort
+            // bestimmt sonst, was der Desktop als Frage stellt und im Panel als
+            // eigene Eingabe anzeigt; zwischen Desktop und Shop steht im
+            // Ernstfall ein fremder Zwischenknoten. Die Prüfung darf auswählen,
+            // nicht diktieren.
+            return candidates.FirstOrDefault(candidate => string.Equals(candidate, selected.Value!.Trim(), StringComparison.Ordinal));
+        }
+        catch (Exception exception) when (exception is HttpRequestException or IOException or OperationCanceledException or JsonException)
+        {
+            return null;
+        }
+    }
+
     public async Task<AssistantAnswer> AskAsync(string shopUrl, string deviceToken, string message, CancellationToken cancellationToken = default)
     {
         using var request = new HttpRequestMessage(HttpMethod.Post, $"{shopUrl}/api/avatar/device/assistant")

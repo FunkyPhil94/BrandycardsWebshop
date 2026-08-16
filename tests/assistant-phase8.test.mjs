@@ -312,8 +312,17 @@ test("der Desktop-Pet bekommt keine neue Schnittstelle", async () => {
   ]);
   // Phase 8 fuegt Werkzeuge hinzu, keinen Weg nach draussen. Der Pet spricht
   // weiter genau einen Endpunkt an, und der bleibt der orchestrierte.
+  //
+  // Seit Variante 1 der Spracherkennung (2026-08-16) kommt genau ein zweiter
+  // Pfad dazu: die Lesartenpruefung. Sie fuehrt kein Werkzeug aus und liest
+  // keine Geschaeftsdaten -- sie meldet nur, welche Lesart eines Diktats
+  // zuordenbar waere, damit die Regeln serverseitig bleiben. Die Liste bleibt
+  // eine Gleichheitspruefung: Ein dritter Pfad faellt weiterhin auf.
   const pfade = [...service.matchAll(/\/api\/[a-z0-9/-]+/gu)].map((match) => match[0]);
-  assert.deepEqual([...new Set(pfade)], ["/api/avatar/device/assistant"]);
+  assert.deepEqual([...new Set(pfade)].sort(), [
+    "/api/avatar/device/assistant",
+    "/api/avatar/device/assistant/probe",
+  ]);
   assert.doesNotMatch(service, /ebay/iu, "der Pet kennt keine eBay-Begriffe");
   assert.match(route, /createServerAssistantOrchestrator/u);
 });

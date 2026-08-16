@@ -323,6 +323,36 @@ export type AssistantQuestionInput = {
   message: string;
 };
 
+/** Wie viele Lesarten desselben Diktats höchstens geprüft werden.
+ *
+ * Die Zahl ist an der Ratenbegrenzung bemessen, nicht geschätzt: Der Bereich
+ * `avatar-assistant` lässt zehn Anfragen je Minute zu, und die Prüfung teilt
+ * sich dieses Kontingent mit der eigentlichen Frage. Deshalb gehen **alle**
+ * Kandidaten in **einer** Anfrage hinaus — eine gesprochene Frage kostet damit
+ * zwei Anfragen statt sechs.
+ *
+ * Fünf ist die Obergrenze der Liste, nicht ihre Länge: `System.Speech` liefert
+ * oft weniger. Nach unten hin verliert eine weitere Lesart ohnehin rasch an
+ * Wert; was auf Platz sechs steht, hat mit dem Gesprochenen meist wenig zu tun.
+ */
+export const MAX_ASSISTANT_CANDIDATES = 5;
+
+export type AssistantCandidateProbeInput = {
+  candidates: string[];
+};
+
+/** Das Ergebnis der Vorauswahl.
+ *
+ * `selectedIndex: null` heißt „keine Lesart trifft ein Werkzeug" — und ist
+ * ausdrücklich kein Fehler. Der Aufrufer bleibt dann beim ersten Kandidaten;
+ * geraten wird nichts.
+ */
+export type AssistantCandidateProbeResponse = {
+  readOnly: true;
+  selectedIndex: number | null;
+  selected: string | null;
+};
+
 export type AssistantOrchestratorToolSummary = {
   tool: AssistantToolName;
   status: "AVAILABLE" | "UNAVAILABLE" | "ERROR";
@@ -427,4 +457,45 @@ export function parseAssistantQuestionInput(value: unknown): AssistantQuestionIn
   }
 
   return { message };
+}
+
+export function parseAssistantCandidateProbeInput(value: unknown): AssistantCandidateProbeInput {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new AssistantRequestError("Die Assistant-Anfrage muss ein JSON-Objekt sein.");
+  }
+
+  const input = value as Record<string, unknown>;
+  const unexpected = Object.keys(input).filter((field) => field !== "candidates");
+  if (unexpected.length) {
+    throw new AssistantRequestError(`Nicht unterstützte Felder: ${unexpected.join(", ")}.`);
+  }
+
+  if (!Array.isArray(input.candidates)) {
+    throw new AssistantRequestError("candidates muss eine Liste von Lesarten sein.");
+  }
+  if (!input.candidates.length) {
+    throw new AssistantRequestError("Die Liste der Lesarten darf nicht leer sein.");
+  }
+  if (input.candidates.length > MAX_ASSISTANT_CANDIDATES) {
+    throw new AssistantRequestError(`Es werden höchstens ${MAX_ASSISTANT_CANDIDATES} Lesarten geprüft.`);
+  }
+
+  // Jede einzelne Lesart wird an derselben Grenze gemessen wie eine getippte
+  // Frage. Ohne das trüge eine Anfrage mit fünf Kandidaten das Fünffache dessen,
+  // was `parseAssistantQuestionInput` zulässt.
+  const candidates = input.candidates.map((candidate) => {
+    if (typeof candidate !== "string") {
+      throw new AssistantRequestError("Jede Lesart muss Text enthalten.");
+    }
+    const trimmed = candidate.trim();
+    if (!trimmed) {
+      throw new AssistantRequestError("Eine Lesart darf nicht leer sein.");
+    }
+    if (trimmed.length > MAX_ASSISTANT_QUESTION_LENGTH) {
+      throw new AssistantRequestError(`Eine Lesart darf höchstens ${MAX_ASSISTANT_QUESTION_LENGTH} Zeichen lang sein.`);
+    }
+    return trimmed;
+  });
+
+  return { candidates };
 }
