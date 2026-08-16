@@ -37,10 +37,11 @@ Widerruf/Rotation). Die Migration wurde nicht remote angewendet und es wurden
 keine Produktionsdaten verändert.
 
 Verifikation: fokussierte Assistant-Tests 11/11, TypeScript ohne Fehler,
-Produktions-Build erfolgreich und gesamte Suite 367/367 bestanden. ESLint hat
-keine neue Warnung; die vorbestehende Hook-Warnung in `app/account/page.tsx`
-bleibt unverändert. Es wurde nichts deployed und keine Remote-Migration oder
-Produktionsabfrage ausgeführt.
+Produktions-Build erfolgreich und gesamte Suite 367/367 bestanden. Der
+separate x64-Debug-Build des unveränderten WinUI-Pets war mit 0 Warnungen und
+0 Fehlern erfolgreich. ESLint hat keine neue Warnung; die vorbestehende
+Hook-Warnung in `app/account/page.tsx` bleibt unverändert. Es wurde nichts
+deployed und keine Remote-Migration oder Produktionsabfrage ausgeführt.
 
 ## 2026-08-15 - Eigenständige Dokumentation des BWS-CSV-Imports
 
