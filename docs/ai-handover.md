@@ -37,9 +37,15 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
+<!-- Fuer den naechsten Auftrag freihalten. -->
+
+Keine laufenden Aufträge.
+
+## Historie
+
 ### 2026-08-16 - Die Aufrufzahlen-Sperre aufheben, nachdem die Zustimmung erneuert wurde
 
-- Stand: **LÄUFT.**
+- Stand: **ABGESCHLOSSEN.**
 - Vorgeschichte: Der Betreiber hat die eBay-Zustimmung mit beiden Scopes erneut
   durchlaufen und den neuen `EBAY_REFRESH_TOKEN` hinterlegt — Cloudflare hat um
   17:45:10 UTC die Version `a8863f44` mit `Source: Secret Change` auf 100 %
@@ -63,7 +69,42 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
   `OK` stehen oder einen **anderen** Grund als `SCOPE_NOT_GRANTED` nennen.
   `MESSAGES` und `BEST_OFFERS` dürfen sich dabei nicht verschlechtern.
 
-## Historie
+**Der angekündigte Eingriff war so nicht möglich.** `last_attempt_at` ist
+`NOT NULL DEFAULT CURRENT_TIMESTAMP`
+([0012](../drizzle/0012_ebay_read_insights.sql)) — das `UPDATE … SET NULL`
+scheiterte an `SQLITE_CONSTRAINT_NOTNULL`. Der Typ `EbayReadSyncRow` in
+`lib/ebay-read-sync.ts` führt das Feld als `string | null`, und danach hatte
+ich geplant; die Tabelle sieht das enger als der Typ. Ausgeführt wurde deshalb
+`DELETE FROM ebay_read_syncs WHERE data_type = 'TRAFFIC'` (1 Zeile).
+
+Das ist nicht nur der Ausweg, sondern die sauberere Fassung: Ein zurückdatierter
+Zeitstempel hätte einen Versuch behauptet, den es nie gab. Ohne Zeile steht
+schlicht nichts verzeichnet — `isEbayReadSyncDue` gibt den Datentyp bei
+fehlender Zeile sofort frei (`if (!row) return true`), und der Schreibweg ist
+ein Upsert, legt sie also von selbst wieder an. In den höchstens drei Minuten
+dazwischen hätte der Assistant `NOT_SYNCED` gemeldet — zutreffend.
+
+**Ergebnis: die Aufrufzahlen stehen.** Lauf um 17:51:52 UTC, `TRAFFIC` = `OK`,
+277 Angebote. Inhalt: 1 670 Aufrufe und 73 795 Einblendungen im Fenster
+2026-07-17 bis 2026-08-15. `MESSAGES` (248 Zeilen) und `BEST_OFFERS` (0) blieben
+auf `OK` und unberührt. Damit ist die letzte offene Zusage aus Phase 8
+eingelöst: Alle drei Datentypen liefern.
+
+Vorher hatte der Betreiber die Zustimmung erneuert, den neuen
+`EBAY_REFRESH_TOKEN` hinterlegt (Cloudflare-Version `a8863f44`,
+`Source: Secret Change`, 17:45:10 UTC) und über „eBay-Schreibzugriff prüfen"
+bestätigt, dass `sell.inventory` mitgekommen ist — die eigentliche Gefahr bei
+einem Tokenwechsel, denn ohne Schreibrecht endet keine verkaufte Karte mehr auf
+eBay.
+
+**Nebenbefund für später:** Die Abholung des Tokens im Adminbereich ist
+unglücklich gebaut. Sie fragt beim Seitenaufbau per `window.prompt` nach dem
+MFA-Code, während das Dashboard noch lädt; der Kasten mit dem Token *und* jede
+Fehlermeldung erscheinen aber erst, wenn `dashboard` geladen ist
+([app/admin/page.tsx:253](../app/admin/page.tsx)). Wer abbricht oder neu lädt,
+verliert die Kennung — sie wurde vorher aus der Adresszeile entfernt — und muss
+die eBay-Zustimmung komplett wiederholen. Nicht geändert, weil kein Auftrag
+dazu vorlag.
 
 ### 2026-08-16 - Phase-8-Rollout nachtragen, veröffentlichen, Analytics-Scope vorbereiten
 
@@ -271,6 +312,11 @@ zunächst unvermerkt. Beleg: Worker-Version `fd9218f9`, ausgerollt am
 `invalid_scope` — also genau der vorhergesagte Zustand. Schritt 3 ist
 angefangen: die Rechteliste steht seit diesem Auftrag in `wrangler.toml`; die
 Zustimmung und der neue Refresh-Token bleiben beim Kontoinhaber.
+
+**Nachtrag am selben Abend: auch Schritt 3 ist erledigt.** Der Betreiber hat die
+Zustimmung erneuert und den Token hinterlegt; `TRAFFIC` steht seit 17:51:52 UTC
+auf `OK` mit 277 Angeboten. Damit liefern alle drei Datentypen. Einzelheiten im
+Eintrag „Die Aufrufzahlen-Sperre aufheben" weiter oben.
 
 Nicht getan und bewusst so: kein Push, kein Deployment, keine Remote-Migration,
 keine Änderung an `.env` oder produktiven Tokens, kein Live-Aufruf gegen eBay,

@@ -29,6 +29,21 @@ sich keiner. Bis der Kontoinhaber die Zustimmung erneut durchläuft, bleibt der
 alte Token gültig und die Aufrufzahlen melden weiter `SCOPE_NOT_GRANTED` — die
 richtige Antwort, nicht ein Fehler.
 
+**Nachtrag: die Sperre löschen, nicht zurückdatieren.** Nachdem der neue Token
+lag, hielt `ebay_read_syncs` die Aufrufzahlen noch sechs Stunden zurück — die
+Wartezeit nach `SCOPE_NOT_GRANTED`, die gegen sinnloses Dagegenlaufen gedacht
+war und nun der frischen Zustimmung im Weg stand. Der geplante Griff
+(`last_attempt_at = NULL`) scheiterte: Die Spalte ist `NOT NULL`, obwohl der
+Typ `EbayReadSyncRow` sie als `string | null` führt. **Der Typ beschreibt, was
+die Prüffunktion verträgt, nicht was die Tabelle zulässt** — beides sah gleich
+aus und war es nicht.
+
+Statt zurückzudatieren wurde die Zeile gelöscht. Ein alter Zeitstempel hätte
+einen Versuch behauptet, den es nie gab; eine fehlende Zeile sagt die Wahrheit,
+gilt in `isEbayReadSyncDue` sofort als fällig, und der Upsert legt sie beim
+nächsten Lauf richtig an. Drei Minuten später: `OK`, 277 Angebote, 1 670
+Aufrufe im 30-Tage-Fenster. Der Umweg war der bessere Weg.
+
 **Nebenbefund, der die eigentliche Lehre trägt:** Die Prüfung an der
 Produktionsdatenbank zeigte Phase 8 als ausgerollt — Migration `0012`
 angewendet, `ebay_read_syncs` mit `OK` für Postfach und Preisvorschläge —,
