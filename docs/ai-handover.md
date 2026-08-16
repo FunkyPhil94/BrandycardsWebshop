@@ -37,9 +37,11 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-<!-- Fuer den naechsten Auftrag freihalten. -->
-
-Keine laufenden Aufträge.
+- Status: LÄUFT.
+- Ziel: Ausschließlich Phase 3 des BrandyCards Personal Assistant implementieren: Der bestehende zugängliche WinUI-Launcher erhält eine lokale Windows-Spracheingabe, die Diktat als Text an die bereits vorhandene deterministische Phase-2-Zuordnung übergibt.
+- Rahmen: Keine Sprachausgabe, kein Realtime-Speech-to-Speech, kein freier Orchestrator und keine Änderung der Assistant-API. Das transparente Pet, `NativePetOverlay`, Event-Polling und Fensterpositionierung bleiben unverändert. Keine Produktionsdaten, Remote-Migrationen oder Deployments.
+- Umsetzung geplant: Ein zugänglicher Mikrofon-Button nutzt die lokale Windows-Desktop-Spracherkennung in einer einmaligen Diktatsitzung. Berechtigung, fehlendes Mikrofon, fehlende Windows-Spracherkennung, Abbruch und leeres Ergebnis werden als verständliche Live-Statusmeldungen behandelt. Der erkannte Text durchläuft anschließend unverändert `AssistantConversationService.ResolveTool`.
+- Prüfung geplant: x64-Build, fokussierte Tests und echter lokaler unpackaged Start mit Maus-, Tastatur-, Tab-, Screenreader-/UI-Automation- und Sichtprüfung. Die Prüfung hält die Einschränkungen der lokalen Windows-Sprachumgebung ausdrücklich fest.
 
 ## Historie
 
