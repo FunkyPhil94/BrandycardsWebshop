@@ -1,5 +1,127 @@
 # BrandyCards Agentenprotokoll
 
+## 2026-08-16 - Phase 7: zwei veraltete Zahlen und ein Text, der nicht uns gehört
+
+Phase 6 hat zwei Punkte ausdrücklich offen gelassen und dabei genau benannt,
+warum: Der DPI-Wechsel zwischen Bildschirmen war „blind zu ändern, ohne es je
+gesehen zu haben, geraten gewesen", und die Framework-Meldung im
+`HttpRequestException`-Pfad war „deutsch lokalisiert und nennt Adresse und
+Port, also brauchbar". Beides stimmte — und beides hielt der Nachprüfung nicht
+stand.
+
+**Die Skalierung wurde am falschen Bildschirm abgelesen.** Der Ablauf beim
+Öffnen des Launchers war: Größe rechnen, dann neben das Pet schieben.
+`ToPhysicalPixels` nahm die Skalierung aus `RootFrame.XamlRoot`, also die des
+Bildschirms, auf dem das Fenster *gerade* lag; `PositionBesidePet` schob es
+danach dorthin, wo das *Pet* liegt. Bei einem Bildschirm ist das dieselbe
+Zahl und fällt nie auf. Bei zweien ist es die Zahl des Herkunftsschirms, und
+`WM_DPICHANGED` kommt erst *nach* dem Verschieben — die Größe entstand also
+zwangsläufig mit einem veralteten Faktor. Behoben ist es durch die
+Reihenfolge, nicht durch eine Korrektur hinterher: Erst wird die Lage des Pets
+aufgelöst, dann über `MonitorFromRect` + `GetDpiForMonitor(MDT_EFFECTIVE_DPI)`
+die Skalierung *des Zielbildschirms* geholt, dann gerechnet. Der Faktor wird
+seitdem an jeder Umrechnung ausdrücklich mitgegeben; die parameterlose
+Fassung, die sich ihren Faktor still selbst nahm, gibt es nicht mehr.
+
+Lässt sich kein Wert ermitteln, meldet die Abfrage `null` und der Aufrufer
+fällt auf die bisherige Rechnung zurück. Ein erfundener Standardfaktor von 1,0
+wäre hier keine Vereinfachung, sondern genau der Fehler, der behoben werden
+soll — nur ohne die Chance, ihn zu bemerken.
+
+**Die zweite Richtung ist die umgekehrte.** Nicht das Pet, sondern der
+Launcher selbst wandert — am Titelbalken gezogen oder weil jemand die
+Anzeigeeinstellung im Betrieb ändert. Die Fenstergröße in physischen Pixeln
+bleibt dann stehen, während der XAML-Inhalt sofort mit dem neuen Faktor
+gezeichnet wird; das Panel wäre abgeschnitten. `XamlRoot.Changed` ist dafür
+das ehrliche Signal, weil es die tatsächlich angewandte Rasterisierung meldet
+statt eine vermutete. Die Lage bleibt dabei, wo der Nutzer sie hingezogen hat
+— nur die Größe wird nachgeführt und in den Arbeitsbereich geklemmt. Die
+Schranke gegen den zuletzt angewandten Faktor ist kein Feinschliff: `Changed`
+feuert auch bei jeder Größenänderung, das eigene `MoveAndResize` löste sich
+sonst endlos selbst aus.
+
+**Am Gerät hängt ein Monitor. Der Zweischirmfall ist damit nicht prüfbar und
+wird nicht behauptet.** Was stattdessen gemessen wurde: dass die Wege, auf
+denen die neue Rechnung ihre Zahlen holt, hier wirklich funktionieren
+(`GetDpiForMonitor` liefert 144, also 150 %; `MonitorFromRect` findet für das
+Pet-Rechteck denselben Bildschirm; für ein Rechteck außerhalb aller
+Bildschirme liefert `MONITOR_DEFAULTTONEAREST` einen Monitor statt `NULL`).
+Und die Regressionsprobe: Bei einem Bildschirm ergibt die neue Rechnung
+`(1252,1164)-(1852,1320)` — auf den Pixel das, was Phase 6 am laufenden
+Fenster gemessen hat. Die Zweischirmfälle wurden als Rechenvorschrift
+durchgespielt, mit den Konstanten aus der echten Quelldatei gelesen statt
+abgeschrieben: Die alte Regel verfehlt die Sollbreite um Faktor 1,5
+beziehungsweise 0,67, die neue trifft sie. Dazu 12 000 zufällige Pet-Lagen auf
+drei simulierten Bildschirmen ohne eine einzige Lage außerhalb des
+Arbeitsbereichs. **Das ist eine Simulation, kein Mehrschirmtest.**
+
+**Der Fehlertext gehörte uns nie.** Phase 6 hielt `ex.Message` für brauchbar,
+weil dort *"Es konnte keine Verbindung hergestellt werden, da der Zielcomputer
+die Verbindung verweigerte. (127.0.0.1:…)"* stand. Das ist aber eine
+Eigenschaft dieses Rechners: .NET liefert Socket-Meldungen in der
+Systemsprache. Auf einem englischen Windows steht dort *"An error occurred
+while sending the request."* — und der allgemeine Auffangzweig konnte
+ohnehin jeden beliebigen Framework-Text durchreichen; gemessen etwa *"Unable
+to read data from the transport connection: …"* und *"The request was canceled
+due to the configured HttpClient.Timeout of 30 seconds elapsing."*
+
+Die Übersetzung entscheidet deshalb **ausschließlich anhand von
+Aufzählungswerten** — `SocketError` und `HttpRequestError` —, nie anhand des
+Meldungstexts. Damit hängt die Anzeige nicht an Windows-Sprache und
+.NET-Fassung. Die belastbare Zusicherung dahinter: Jeder angezeigte Satz steht
+wörtlich als Zeichenkette in der eigenen Quelldatei. Ein Wort- oder
+Teilstringvergleich hätte das nicht geleistet — „die Verbindung" steht völlig
+zu Recht in beiden Texten, sobald Windows deutsch ist.
+
+Zwei Befunde entstanden erst beim Messen, nicht beim Entwerfen:
+
+- **Die TLS-Meldung wurde vom Socket verdeckt.** Bei einem HTTPS-Aufruf auf
+  einen reinen HTTP-Zuhörer steht im Fehlerbaum *zusätzlich* ein
+  zurückgesetzter Socket. Mit der Socket-Prüfung zuerst meldete die Anzeige
+  „unterwegs getrennt" statt auf die gesicherte Verbindung zu zeigen. Die
+  TLS-, Namens-, Proxy- und Anmeldefälle stehen deshalb jetzt *vor* der
+  Socket-Prüfung; die Socket-Prüfung bleibt danach, weil sie den
+  Verbindungsaufbau genauer benennt (abgelehnt, unbekannter Name, kein Netz),
+  wo `HttpRequestError` nur `ConnectionError` weiß.
+- **Ein abgerissener Antwortkörper kommt nackt an.** Wird nach
+  `ResponseHeadersRead` gelesen und die Gegenstelle legt mittendrin auf, ist
+  es eine `IOException` — nicht in eine `HttpRequestException` verpackt. Der
+  Assistant-Pfad fängt sie seit Phase 6 selbst ab, der Ereignisabruf lief in
+  den allgemeinen Fall. Sie hat jetzt einen eigenen.
+
+Der einzige Text, der weiterhin durchgereicht wird, ist der eigener
+`InvalidOperationException`s — der ist im Programm formuliert und für den
+Nutzer gedacht. Auch er wird begrenzt: `ReadApiErrorAsync` gibt das Feld
+`error` aus der Shop-Antwort zurück, und dessen Länge bestimmt der Absender.
+Phase 6 hat genau diesen Weg im Assistant-Pfad begrenzt und den Kopplungspfad
+übersehen; 2 000 Zeichen kamen dort ungebremst durch. Zusammengezogen wird auf
+eine Zeile, nicht wie im Antwortpfad mehrzeilig erhalten — Ziel ist die
+einzeilige Statuszeile. `char.IsControl` deckt dabei mehr ab als der
+Vergleich gegen U+0020 aus Phase 6: auch U+007F und den C1-Bereich.
+
+**Die Pet-Größe wurde nicht angefasst.** Nachgemessen statt übernommen: Beide
+Atlanten sind 1536×1872 (`Assets/spritesheet.png` und
+`avatar/brandycards-avatar/spritesheet.webp`, letzterer aus dem VP8L-Kopf
+gelesen) — es gibt kein höher aufgelöstes Original. In einer Leerlaufkachel
+sind 5,3 % der Pixel teiltransparent, 76,1 % ganz leer, 18,6 % ganz deckend.
+Diese weiche Kante ist der Grund gegen Interpolation: `UpdateLayeredWindow`
+zeigt sie ohne Hintergrund, der Artefakte kaschieren würde. Was stattdessen
+entstanden ist, sind die Anforderungen an neues 2×-Material mit konkreten
+Maßen (3072×3744, Kachel 384×416, echtes nicht vormultipliziertes Alpha, 2 px
+transparenter Rand) im Desktop-README — damit die spätere Grafikarbeit nicht
+raten muss. `NativePetOverlay.cs` ist in diesem Durchlauf unverändert
+geblieben, auch dort, wo eine DPI-Abfrage bequem gewesen wäre: Die Lage des
+Zielbildschirms wird aus dem Pet-*Rechteck* bestimmt, das die Datei ohnehin
+schon meldet.
+
+**Was nicht geprüft werden konnte.** Das laufende Fenster. Smart App Control
+ist auf diesem Gerät scharf geschaltet (`VerifiedAndReputablePolicyState = 1`)
+und hat die frisch gebaute `BrandyCards.Desktop.exe` am Start gehindert:
+„Eine Anwendungssteuerungsrichtlinie hat diese Datei blockiert." Der Build ist
+sauber, aber Sichtprüfung des transparenten Pets, Fensterlagen am lebenden
+Objekt und die Fehlerpfade im Panel konnten diesmal nicht wiederholt werden.
+Eine Sicherheitseinstellung des Systems dafür zu ändern, kam nicht in Frage.
+
 ## 2026-08-16 - Phase 6: was übrig bleibt, wenn nicht die eigene Route antwortet
 
 Drei Risiken standen offen. Was sie verbindet, wurde erst beim Messen sichtbar:

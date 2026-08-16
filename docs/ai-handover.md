@@ -37,9 +37,15 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
+<!-- Fuer den naechsten Auftrag freihalten. -->
+
+Keine laufenden Aufträge.
+
+## Historie
+
 ### 2026-08-16 - Phase 7 des Desktop-Assistenten: Desktop-Stabilität
 
-- Status: LÄUFT.
+- Status: ABGESCHLOSSEN.
 - Ziel: Die drei Punkte, die Phase 6 ausdrücklich offen gelassen hat. Kein
   neuer Funktionsumfang, keine Schreiboperation, keine Änderung an der
   Sicherheitsgrenze des Orchestrators.
@@ -94,7 +100,134 @@ Bleibt aus. Kein `OPENAI_API_KEY`, kein externer Aufruf, keine Änderung an
   WinUI-x64-Debug-Build, `git diff --check`, DPI- und Positionierungsprüfungen,
   Offline-, Timeout- und HTTP-Fehlerpfade, Sichtprüfung des transparenten Pets.
 
-## Historie
+**Prüfaufbau**
+
+Zwei Wegwerf-Prüfprogramme unter dem ignorierten `work/`, beide gegen die
+*echten* Quelldateien: eines bindet `DesktopErrorMessages.cs` als Quelldatei
+ein und fährt den Fehlerpfad gegen echte Sockets auf `127.0.0.1`; eines liest
+die Konstanten aus `MainWindow.xaml.cs`, ruft die Win32-DPI-Wege auf diesem
+Gerät wirklich auf und spielt die Zweischirmfälle als Rechnung durch. Keine
+Produktions-URL, kein externer Anbieter.
+
+**Ergebnis 1: Per-Monitor-DPI — Ursache behoben, Zweischirmfall NICHT geprüft**
+
+- **Am Prüfgerät hängt genau ein Monitor** (`SM_CMONITORS` = 1, 2160×1440,
+  Arbeitsbereich bis 1368, `MDT_EFFECTIVE_DPI` = 144 → 150 %). **Ein echter
+  Mehrmonitortest hat nicht stattgefunden** und wird nicht behauptet.
+- Befund: `ToPhysicalPixels` rechnete mit der Skalierung des Bildschirms, auf
+  dem das Launcherfenster *herkam*; `PositionBesidePet` schob es danach auf den
+  Bildschirm des Pets. `WM_DPICHANGED` kommt erst *danach* — die Größe entstand
+  also zwangsläufig mit einem veralteten Faktor.
+- Behoben durch die Reihenfolge: erst die Lage des Pets auflösen, dann über
+  `MonitorFromRect` + `GetDpiForMonitor(MDT_EFFECTIVE_DPI)` die Skalierung des
+  *Zielbildschirms* holen, dann rechnen. Jeder Aufruf gibt seinen Faktor jetzt
+  ausdrücklich mit; die parameterlose Umrechnung gibt es nicht mehr.
+- Ist kein Wert ermittelbar, wird `null` gemeldet und auf die bisherige
+  Rechnung zurückgefallen — **kein erfundener Standardfaktor**.
+- Zweite Richtung: Wandert der *Launcher* selbst auf einen anders skalierten
+  Bildschirm, führt `XamlRoot.Changed` die Größe nach. Die Lage bleibt, wo der
+  Nutzer sie hingezogen hat; geklemmt wird gegen den Arbeitsbereich des
+  Bildschirms, auf dem das Fenster jetzt liegt. Schranke gegen den zuletzt
+  angewandten Faktor, sonst löst das eigene `MoveAndResize` sich selbst aus.
+- Gemessen an diesem Gerät: `MonitorFromRect` findet für das Pet-Rechteck
+  denselben Bildschirm; für ein Rechteck außerhalb aller Bildschirme liefert
+  `MONITOR_DEFAULTTONEAREST` einen Monitor statt `NULL`.
+- **Regression ausgeschlossen:** Bei einem Bildschirm ergibt die neue Rechnung
+  `(1252,1164)-(1852,1320)` — auf den Pixel die in Phase 6 am laufenden Fenster
+  gemessene Lage.
+- **Simuliert, nicht gemessen:** 150 %→100 % verfehlt die alte Regel die
+  Sollbreite um Faktor 1,5, 100 %→150 % um 0,67; die neue trifft sie in beiden
+  Richtungen. 12 000 zufällige Pet-Lagen auf drei simulierten Bildschirmen,
+  0 Lagen außerhalb des Arbeitsbereichs.
+
+**Ergebnis 2: Fehlernachrichten — gemessen, zwei Befunde beim Messen entstanden**
+
+Vorher der Text der Ausnahme, nachher ein fester deutscher Satz. Die
+Unterscheidung kommt ausschließlich aus `SocketError`/`HttpRequestError`, also
+aus Aufzählungswerten — nicht aus dem Meldungstext, der je nach
+Windows-Sprache anders lautet:
+
+| Fall | vorher | nachher |
+|---|---|---|
+| Verbindung abgelehnt | „Es konnte keine Verbindung hergestellt werden, da der Zielcomputer …(127.0.0.1:50733)" | „… Die Gegenstelle hat die Verbindung abgelehnt. Läuft der Shop unter dieser Adresse und diesem Port?" |
+| Unbekannter Name | „Der angegebene Host ist unbekannt. (…:80)" | „… Die Adresse konnte keinem Rechner zugeordnet werden." |
+| TLS scheitert | „The SSL connection could not be established, see inner exception." | „… Die gesicherte Verbindung kam nicht zustande." |
+| Kein HTTP am Port | „An error occurred while sending the request." | „Die Verbindung zum Shop wurde unterwegs getrennt." |
+| Körper reißt ab | „Unable to read data from the transport connection: …" | „Die Verbindung zum Shop ist abgebrochen, bevor die Antwort vollständig war." |
+| Zeitrahmen | „The request was canceled due to the configured HttpClient.Timeout of 30 seconds elapsing." | „Der Shop hat nicht rechtzeitig geantwortet." |
+| Fremde Ausnahme | „Object reference not set to an instance of an object." | „Die Anfrage konnte nicht ausgeführt werden." |
+| Shop-Fehlertext, 2000 Zeichen | 2000 Zeichen ungebremst | 312 Zeichen, „… (gekürzt)" |
+| Fehlertext mit ANSI + CR/LF + DEL | unverändert durchgereicht | Steuerzeichen entfernt, einzeilig |
+
+- **Beim Messen entstanden, nicht beim Entwerfen:** (a) Die TLS-Meldung wurde
+  vom Socket verdeckt — im Fehlerbaum steht zusätzlich ein zurückgesetzter
+  Socket, und mit der Socket-Prüfung zuerst meldete die Anzeige „unterwegs
+  getrennt". TLS-, Namens-, Proxy- und Anmeldefälle stehen deshalb jetzt davor.
+  (b) Ein nach `ResponseHeadersRead` abgerissener Körper kommt als nackte
+  `IOException` an und lief in den allgemeinen Fall; sie hat jetzt einen eigenen.
+- Zusicherung, die das Prüfprogramm für jeden Fall nachweist: **Der angezeigte
+  Satz steht wörtlich als Zeichenkette in der eigenen Quelldatei.**
+- Der einzige durchgereichte Text ist der eigener `InvalidOperationException`s
+  — begrenzt auf 300 Zeichen und auf eine Zeile zusammengezogen. Phase 6 hatte
+  diesen Weg im Assistant-Pfad begrenzt, den Kopplungspfad übersehen.
+- Der technische Anlass bleibt über `Debug.WriteLine` erhalten, aber nur dort,
+  wo ihn der Nutzer nicht sieht.
+
+**Ergebnis 3: Pet-Größe — nachgemessen, bewusst NICHT geändert**
+
+- `NativePetOverlay.cs` ist **unverändert** (der Diff berührt sie nicht). Kein
+  Atlas, keine Größe, keine Interpolation.
+- Nachgemessen statt übernommen: Beide Atlanten sind 1536×1872
+  (`spritesheet.webp` aus dem VP8L-Kopf gelesen) — kein höher aufgelöstes
+  Original. In einer Leerlaufkachel 76,1 % ganz transparent, 18,6 % ganz
+  deckend, **5,3 % teiltransparent** — diese weiche Kante ist der Grund gegen
+  eine 1,5-fache Interpolation.
+- Anforderungen an neues 2×-Material stehen mit konkreten Maßen im
+  Desktop-README: 3072×3744, Kachel 384×416, 8×9-Raster, echtes **nicht**
+  vormultipliziertes Alpha, 2 px transparenter Rand, gleiche Zeilenbelegung.
+  Dazu die drei Optionen (nichts tun / beim Zeichnen skalieren / neues
+  Material) mit Empfehlung.
+
+**Ergebnis 4: Modell-Planer — unverändert aus**
+
+- Kein `OPENAI_API_KEY`, kein externer Aufruf, keine Änderung an
+  `lib/assistant` (der Diff berührt zwei C#-Dateien, eine neue C#-Datei, das
+  Desktop-README, `package.json` und eine neue Testdatei).
+
+**Prüfläufe**
+
+- `npm test`: **430/430** bestanden (vorher 414; 16 neu in
+  `tests/assistant-phase7.test.mjs`, dort auch in `package.json` registriert —
+  die Testliste ist eine Aufzählung, kein Glob).
+- `npx tsc --noEmit`: fehlerfrei. `npm run lint`: 0 Fehler, weiterhin nur die
+  bekannte Hook-Warnung in `app/account/page.tsx`.
+- WinUI x64 Debug: 0 Warnungen, 0 Fehler. `git diff --check`: sauber.
+- **Mutationsprobe:** Wird der Zielmonitor-Faktor wieder durch
+  `RasterizationScale()` ersetzt und `ex.Message` in die Statuszeile
+  zurückgeschrieben, schlagen genau die drei zuständigen neuen Tests fehl
+  (13/16). Danach wiederhergestellt und wieder 16/16.
+- Keine Produktionsänderung, kein Deployment, kein Push, keine
+  Remote-Migration, keine Secrets angefasst, keine eBay-Schreiboperation,
+  Orchestrator-Grenze unverändert, fremde Worktrees unberührt.
+
+**Nicht geprüft**
+
+- **Das laufende Fenster.** Smart App Control ist auf diesem Gerät scharf
+  geschaltet (`VerifiedAndReputablePolicyState = 1`) und hat die frisch
+  gebaute `BrandyCards.Desktop.exe` am Start gehindert („Eine
+  Anwendungssteuerungsrichtlinie hat diese Datei blockiert"). Der Build ist
+  sauber, aber **Sichtprüfung des transparenten Pets, Fensterlagen am lebenden
+  Objekt und die Fehlerpfade im Panel konnten diesmal nicht wiederholt
+  werden.** Phase 5b und 6 hatten sie am laufenden Fenster bestätigt. Eine
+  Sicherheitseinstellung des Systems dafür zu ändern, kam nicht in Frage.
+- **Mehrschirmbetrieb weiterhin nicht real geprüft** — nur ein Monitor am
+  Gerät. Die Rechnung nimmt jetzt die Skalierung des Zielbildschirms, aber
+  **niemand hat sie auf zwei Schirmen gesehen.**
+- Das Verhalten von `XamlRoot.Changed` beim echten Übergang zwischen zwei
+  verschieden skalierten Bildschirmen ist aus demselben Grund ungeprüft.
+- Die **Pet-Größe** bleibt bei 173×200 effektiv bei 150 %.
+- In diesem Worktree fehlt weiterhin `.env.local`. Für die Prüfung ohne
+  Belang, für ein Deployment aus diesem Verzeichnis wäre es die bekannte Falle.
 
 ### 2026-08-16 - Phase 6 des Desktop-Assistenten: verbleibende Produktionsrisiken
 

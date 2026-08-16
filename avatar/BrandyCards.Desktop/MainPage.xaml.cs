@@ -136,13 +136,9 @@ public sealed partial class MainPage : Page
         {
             StatusTextBlock.Text = $"Der Shop hat innerhalb von {ShopRequestTimeout.TotalSeconds:0} Sekunden nicht geantwortet. Bitte Adresse prüfen und erneut versuchen.";
         }
-        catch (HttpRequestException ex)
-        {
-            StatusTextBlock.Text = $"Der Shop ist unter dieser Adresse nicht erreichbar: {ex.Message}";
-        }
         catch (Exception ex)
         {
-            StatusTextBlock.Text = ex.Message;
+            StatusTextBlock.Text = DesktopErrorMessages.Describe(ex);
         }
         finally
         {
@@ -218,7 +214,9 @@ public sealed partial class MainPage : Page
         }
         catch (Exception ex)
         {
-            StatusTextBlock.Text = $"Verbindung wird erneut versucht … {ex.Message}";
+            // Der nächste Tick kommt gleich wieder; deshalb steht hier der
+            // Anlass in einem Satz und nicht die Framework-Meldung.
+            StatusTextBlock.Text = $"Verbindung wird erneut versucht … {DesktopErrorMessages.Describe(ex)}";
         }
         finally
         {
@@ -359,12 +357,12 @@ public sealed partial class MainPage : Page
         }
         catch (HttpRequestException ex)
         {
-            AddConversationMessage("Assistant", $"Der Shop ist gerade nicht erreichbar: {ex.Message}", isUser: false);
+            AddConversationMessage("Assistant", DesktopErrorMessages.Describe(ex), isUser: false);
             AssistantStatusTextBlock.Text = "Shop nicht erreichbar";
         }
         catch (Exception ex)
         {
-            AddConversationMessage("Assistant", $"Die Anfrage konnte nicht ausgeführt werden: {ex.Message}", isUser: false);
+            AddConversationMessage("Assistant", DesktopErrorMessages.Describe(ex), isUser: false);
             AssistantStatusTextBlock.Text = "Anfrage fehlgeschlagen";
         }
         finally

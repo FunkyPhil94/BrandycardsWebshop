@@ -20,6 +20,11 @@ public sealed partial class MainWindow : Window
     private const int SetupWidth = 520;
     private const int SetupHeight = 760;
 
+    private int _effectiveWidth = SetupWidth;
+    private int _effectiveHeight = SetupHeight;
+    private double _appliedScale;
+    private bool _watchingScale;
+
     public MainWindow()
     {
         InitializeComponent();
@@ -31,7 +36,12 @@ public sealed partial class MainWindow : Window
     public void ConfigureSetupWindow()
     {
         AppWindow.Show();
-        AppWindow.Resize(new SizeInt32(ToPhysicalPixels(SetupWidth), ToPhysicalPixels(SetupHeight)));
+        // Das Setup-Fenster wird nicht verschoben; maßgeblich ist deshalb die
+        // Skalierung des Bildschirms, auf dem es bereits liegt.
+        Remember(SetupWidth, SetupHeight, RasterizationScale());
+        AppWindow.Resize(new SizeInt32(
+            ToPhysicalPixels(SetupWidth, _appliedScale),
+            ToPhysicalPixels(SetupHeight, _appliedScale)));
 
         if (AppWindow.Presenter is OverlappedPresenter presenter)
         {
@@ -44,8 +54,17 @@ public sealed partial class MainWindow : Window
 
     public void ConfigureLauncherWindow(bool assistantPanelExpanded = false, PetPlacement? petPlacement = null)
     {
-        var width = ToPhysicalPixels(assistantPanelExpanded ? AssistantWidth : LauncherWidth);
-        var height = ToPhysicalPixels(assistantPanelExpanded ? AssistantHeight : LauncherHeight);
+        // Erst das Ziel bestimmen, dann damit rechnen. Dieses Fenster zieht
+        // gleich neben das Pet — bei mehreren Bildschirmen möglicherweise auf
+        // einen anderen als den, auf dem es gerade liegt. Die Größe muss
+        // deshalb mit der Skalierung des *Zielbildschirms* entstehen.
+        var pet = petPlacement ?? FallbackPlacement();
+        var scale = MonitorScale(pet.Left, pet.Top, pet.Right, pet.Bottom) ?? RasterizationScale();
+
+        var width = ToPhysicalPixels(assistantPanelExpanded ? AssistantWidth : LauncherWidth, scale);
+        var height = ToPhysicalPixels(assistantPanelExpanded ? AssistantHeight : LauncherHeight, scale);
+        Remember(assistantPanelExpanded ? AssistantWidth : LauncherWidth,
+            assistantPanelExpanded ? AssistantHeight : LauncherHeight, scale);
         AppWindow.Show();
 
         if (AppWindow.Presenter is OverlappedPresenter presenter)
@@ -57,12 +76,20 @@ public sealed partial class MainWindow : Window
             presenter.IsMinimizable = true;
         }
 
-        PositionBesidePet(width, height, petPlacement);
+        PositionBesidePet(width, height, pet);
     }
 
-    private int ToPhysicalPixels(int effectivePixels)
+    private void Remember(int effectiveWidth, int effectiveHeight, double scale)
     {
-        return (int)Math.Round(effectivePixels * RasterizationScale());
+        _effectiveWidth = effectiveWidth;
+        _effectiveHeight = effectiveHeight;
+        _appliedScale = scale;
+        EnsureScaleWatcher();
+    }
+
+    private static int ToPhysicalPixels(int effectivePixels, double scale)
+    {
+        return (int)Math.Round(effectivePixels * scale);
     }
 
     /// <summary>
@@ -81,8 +108,130 @@ public sealed partial class MainWindow : Window
         return dpi > 0 ? dpi / 96.0 : 1.0;
     }
 
+    /// <summary>
+    /// Skalierung des Bildschirms, auf dem ein *Rechteck* liegt — oder `null`,
+    /// wenn sie sich nicht ermitteln lässt.
+    ///
+    /// <see cref="RasterizationScale"/> beantwortet eine andere Frage: Sie gilt
+    /// für den Bildschirm, auf dem *dieses Fenster* gerade liegt. Solange das
+    /// Fenster gleich dorthin zieht, wo das Pet steht, ist das der falsche
+    /// Bezug: Bei zwei Bildschirmen mit verschiedener Skalierung entstünde die
+    /// Fenstergröße mit dem Faktor des Herkunfts- statt des Zielbildschirms,
+    /// und `WM_DPICHANGED` käme erst *nach* dem Verschieben — die Größe wäre
+    /// also mit einem bereits veralteten Faktor gerechnet.
+    ///
+    /// `MDT_EFFECTIVE_DPI` ist genau der Wert, den der Nutzer in den
+    /// Anzeigeeinstellungen als Skalierung gewählt hat; der Prozess ist laut
+    /// `app.manifest` `PerMonitorV2`, bekommt hier also den echten Wert des
+    /// Bildschirms und nicht den System-DPI-Ersatz. `MONITOR_DEFAULTTONEAREST`
+    /// liefert auch für ein Rechteck, das auf keinem Bildschirm mehr liegt
+    /// (abgehängter Monitor), den nächstgelegenen statt `NULL` — nachgemessen.
+    ///
+    /// Gibt es keinen belastbaren Wert, wird bewusst `null` gemeldet statt ein
+    /// geratener Faktor: Der Aufrufer fällt dann auf die bisherige Rechnung
+    /// zurück, statt mit einer erfundenen Zahl zu arbeiten.
+    /// </summary>
+    private static double? MonitorScale(int left, int top, int right, int bottom)
+    {
+        var rect = new Rect { Left = left, Top = top, Right = right, Bottom = bottom };
+        var monitor = MonitorFromRect(ref rect, MonitorDefaultToNearest);
+        if (monitor == IntPtr.Zero) return null;
+        if (GetDpiForMonitor(monitor, MdtEffectiveDpi, out var dpiX, out _) != 0) return null;
+        return dpiX > 0 ? dpiX / 96.0 : null;
+    }
+
+    /// <summary>
+    /// Hört einmalig zu, ob sich die Skalierung unter dem Fenster ändert.
+    ///
+    /// Das ist die zweite Richtung desselben Themas: Nicht das Pet, sondern der
+    /// Launcher selbst wandert auf einen Bildschirm mit anderer Skalierung —
+    /// gezogen am Titelbalken, oder weil jemand die Anzeigeeinstellung im
+    /// laufenden Betrieb ändert. Die Fenstergröße in physischen Pixeln bleibt
+    /// dabei stehen, während der XAML-Inhalt sofort mit dem neuen Faktor
+    /// gezeichnet wird; ohne Korrektur wäre das Panel abgeschnitten.
+    ///
+    /// `XamlRoot` existiert erst nach dem Navigieren — `ConfigureSetupWindow`
+    /// läuft schon im Konstruktor. Deshalb wird die Anmeldung bei jedem
+    /// Konfigurieren erneut versucht und beim ersten Erfolg festgehalten.
+    /// </summary>
+    private void EnsureScaleWatcher()
+    {
+        if (_watchingScale) return;
+        var xamlRoot = RootFrame.XamlRoot;
+        if (xamlRoot is null) return;
+        xamlRoot.Changed += XamlRoot_Changed;
+        _watchingScale = true;
+    }
+
+    private void XamlRoot_Changed(XamlRoot sender, XamlRootChangedEventArgs args)
+    {
+        var scale = sender.RasterizationScale;
+        // Nur ein echter Skalierungswechsel zählt. `Changed` feuert auch bei
+        // jeder Größenänderung; ohne diese Schranke würde das eigene
+        // `MoveAndResize` unten sich selbst erneut auslösen.
+        if (scale <= 0 || Math.Abs(scale - _appliedScale) < 0.001) return;
+        _appliedScale = scale;
+
+        var width = ToPhysicalPixels(_effectiveWidth, scale);
+        var height = ToPhysicalPixels(_effectiveHeight, scale);
+
+        // Die Lage bleibt, wo der Nutzer sie hingezogen hat — nur die Größe
+        // wird nachgeführt. Geklemmt wird gegen den Arbeitsbereich des
+        // Bildschirms, auf dem das Fenster jetzt liegt, damit das gewachsene
+        // Fenster nicht über dessen Rand hinausragt.
+        var position = AppWindow.Position;
+        var x = position.X;
+        var y = position.Y;
+        if (WorkArea(x, y, x + width, y + height) is { } work)
+        {
+            x = Math.Clamp(x, work.Left, Math.Max(work.Left, work.Right - width));
+            y = Math.Clamp(y, work.Top, Math.Max(work.Top, work.Bottom - height));
+        }
+
+        AppWindow.MoveAndResize(new RectInt32(x, y, width, height));
+    }
+
+    private static Rect? WorkArea(int left, int top, int right, int bottom)
+    {
+        var rect = new Rect { Left = left, Top = top, Right = right, Bottom = bottom };
+        var monitor = MonitorFromRect(ref rect, MonitorDefaultToNearest);
+        if (monitor == IntPtr.Zero) return null;
+        var info = new MonitorInfo { Size = (uint)Marshal.SizeOf<MonitorInfo>() };
+        return GetMonitorInfo(monitor, ref info) ? info.WorkArea : null;
+    }
+
+    private const uint MonitorDefaultToNearest = 0x00000002;
+    private const int MdtEffectiveDpi = 0;
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct Rect
+    {
+        public int Left;
+        public int Top;
+        public int Right;
+        public int Bottom;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct MonitorInfo
+    {
+        public uint Size;
+        public Rect Monitor;
+        public Rect WorkArea;
+        public uint Flags;
+    }
+
     [DllImport("user32.dll")]
     private static extern uint GetDpiForWindow(IntPtr windowHandle);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr MonitorFromRect(ref Rect rect, uint flags);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    private static extern bool GetMonitorInfo(IntPtr monitor, ref MonitorInfo info);
+
+    [DllImport("shcore.dll")]
+    private static extern int GetDpiForMonitor(IntPtr monitor, int type, out uint dpiX, out uint dpiY);
 
     /// <summary>
     /// Stellt das Fenster links neben das Pet, Unterkanten bündig.
