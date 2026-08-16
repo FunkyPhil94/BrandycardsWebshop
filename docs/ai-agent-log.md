@@ -1,5 +1,41 @@
 # BrandyCards Agentenprotokoll
 
+## 2026-08-16 - Ein leeres Ereignisprotokoll sieht aus wie ein falscher Verkauf
+
+Der Betreiber sagte, er habe gestern verkauft; `latest_sale` nannte den 09.08.
+Beide hatten recht. Die Abfrage liest Shop-Bestellungen **und** eBay-Verkäufe,
+letztere aber aus `avatar_events` — und diese Tabelle war leer, weil der Code,
+der sie füllt, erst am selben Tag entstand. Der Verkauf war korrekt verbucht:
+Angebot beendet, Bestand abgebucht, Karte inaktiv. Nur die Spur, aus der der
+Assistent liest, gab es zum Zeitpunkt des Verkaufs noch nicht.
+
+**Das ist die unangenehmste Sorte Fehler, die dieses Projekt kennt:** eine
+Antwort, die plausibel ist und kein Warnschild trägt. Phase 8 hat für die
+eBay-Quellen genau dagegen gebaut — `ebay_read_syncs` unterscheidet „nichts da"
+von „nicht nachgesehen". `latest_sale` hat kein Gegenstück dazu. Es kann nicht
+sagen „ich kenne eBay-Verkäufe erst ab heute", weil es das selbst nicht weiß.
+
+**Rückwirkend füllbar war es, weil die Rohmeldungen noch liegen.**
+`webhook_events` hebt jede eingegangene eBay-Meldung im Original auf — das war
+für Deduplizierung und Nachvollziehbarkeit gedacht und trug hier eine zweite
+Frucht: Aus sechs gespeicherten `ORDER_CONFIRMATION`-Meldungen ließen sich die
+fehlenden Ereignisse nachbilden, ohne eBay noch einmal zu fragen. Wer Rohdaten
+aufhebt, kann später Fragen beantworten, die beim Speichern noch niemand
+gestellt hat.
+
+**Fünf statt sechs, und das ist richtig so.** Zum Verkauf vom 13.08. existiert
+kein Angebot mehr — die Bereinigung desselben Tages hat es entfernt. Ein
+Ereignis darauf zu erfinden hieße, einen Fremdschlüssel ins Leere zeigen zu
+lassen; der Live-Handler überspringt unbekannte Angebote aus demselben Grund.
+Die Lücke ist dokumentiert statt gefüllt.
+
+**Zur Quellenfrage.** „Über den Shop oder direkt von eBay?" trennt Transport
+von Herkunft. Die Meldungen *sind* eBays Daten, signaturgeprüft und
+unverändert; der Shop war nur der Briefkasten. Ein Live-Abruf hätte mehr
+gebracht — Verkäufe vor dem 09.08. und die Beträge — und dafür einen Scope
+verlangt, den die Zustimmung nicht enthält. Der Unterschied ist also nicht
+„echter" gegen „abgeleitet", sondern „vollständiger" gegen „sofort verfügbar".
+
 ## 2026-08-16 - Die Rechteliste sichtbar setzen, statt sie zu verstecken
 
 Phase 8 hat den Analytics-Scope bewusst *nicht* in `wrangler.toml` geschrieben,

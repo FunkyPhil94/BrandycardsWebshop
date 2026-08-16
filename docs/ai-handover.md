@@ -37,9 +37,15 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
+<!-- Fuer den naechsten Auftrag freihalten. -->
+
+Keine laufenden Aufträge.
+
+## Historie
+
 ### 2026-08-16 - Die eBay-Verkäufe vor dem Assistenten nachtragen
 
-- Stand: **LÄUFT.**
+- Stand: **ABGESCHLOSSEN.**
 - Anlass: Der Betreiber meldete einen eBay-Verkauf von gestern, während
   `latest_sale` den 09.08. nannte. Ursache gefunden: Die Abfrage liest
   eBay-Verkäufe aus `avatar_events` (`CARD_SOLD`/`EBAY_LISTING`), und diese
@@ -66,7 +72,42 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 - Abnahme: `avatar_events` auszählen, `latest_sale` muss danach auf den
   15.08. zeigen; ein zweiter Lauf darf nichts hinzufügen.
 
-## Historie
+**Ergebnis: fünf Ereignisse, wie vorhergesagt.**
+
+| Zeitpunkt (UTC) | Karte |
+|---|---|
+| 15.08. 09:53 | Topps Team Set Real Madrid 24/25 Marcelo Flamenco Flare Patch 004/250 |
+| 14.08. 16:57 | Topps Chrome WWE 2026 Arianna Grace Base Auto NXT-ARI |
+| 10.08. 10:05 | Topps UCC Gold 25/26 Glasgow Rangers Mikey Moore Autograph 64/99 |
+| 10.08. 10:05 | Topps UCC Gold 25/26 Glasgow Rangers Mikey Moore Autograph |
+| 09.08. 20:42 | Panini Obsidian 24/25 Deutschland Wirtz, Havertz, Musiala Nucleus 57/75 |
+
+Der sechste Verkauf (13.08., Artikel `398281269762`) hat kein Angebot mehr in
+der Datenbank und damit kein Ziel für ein Ereignis. Belegt: `SELECT COUNT(*)`
+über `ebay_item_id` **und** `ebay_listing_id` ergibt 0. Zeitlich passt es zur
+Bereinigung vom selben Tag, die sieben Produkte samt Listings entfernte.
+
+Idempotenz gemessen statt behauptet: Der zweite Lauf desselben Statements
+meldete `changes: 0`. Der Dedupe-Schlüssel trägt dieselbe Form wie im
+Live-Handler, ein späterer echter Webhook zu denselben Meldungen liefe also
+ebenfalls ins Leere statt zu doppeln.
+
+**Warum aus `webhook_events` und nicht frisch von eBay.** Die Frage kam vom
+Betreiber und ist berechtigt — die Antwort ist, dass beides eBay-Daten sind:
+`webhook_events` enthält die von eBay erzeugten, signaturgeprüften Meldungen
+im Original, der Shop hat daran nichts gerechnet. Ein Live-Abruf hätte zwei
+Dinge zusätzlich gebracht (Verkäufe vor dem 09.08., als es die Subscription
+noch nicht gab, sowie Beträge) und dafür `sell.fulfillment.readonly` verlangt —
+laut eBay-Dokumentation für `getOrders` — also eine dritte Zustimmungsrunde mit
+drittem Refresh-Token. Nicht getan, sondern dem Betreiber als Option benannt.
+
+**Nebenbefund: der Refresh-Token in `.env.local` ist tot.** Eine Wegwerf-Sonde
+gegen `GetOrders` bekam `invalid_grant: the provided authorization refresh
+token is invalid or was issued to another client`. Ob ihn die neue Zustimmung
+entwertet hat oder ob dort längst ein veralteter Wert stand, ist von außen
+nicht zu unterscheiden. Folge für die nächste Sitzung: **eBay-Aufrufe lassen
+sich lokal derzeit nicht ausprobieren**, der gültige Token liegt nur als
+Cloudflare-Secret. Produktion ist davon nicht betroffen.
 
 ### 2026-08-16 - Die Aufrufzahlen-Sperre aufheben, nachdem die Zustimmung erneuert wurde
 
