@@ -37,9 +37,15 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
+<!-- Fuer den naechsten Auftrag freihalten. -->
+
+Keine laufenden Aufträge.
+
+## Historie
+
 ### 2026-08-16 - Umlautfaltung ausrollen und produktiv abnehmen
 
-- Stand: **LÄUFT.**
+- Stand: **ABGESCHLOSSEN.** Ausgerollt und abgenommen.
 - Freigabe: Der Betreiber hat Deployment und Abnahme ausdrücklich beauftragt.
 - Auszuliefern: Commit `2a5f62c` (Umlautfaltung im Regelplaner) samt der drei
   Commits davor aus Phase 10. Keine Migration, kein Secret, kein eBay-Schalter.
@@ -75,15 +81,41 @@ abgewiesen, in beiden Shells. Das ist keine Fehlfunktion des Projekts und kein
 Zustand der Produktion: Der Worker läuft unverändert weiter auf dem Stand von
 vorher. Ein Umgehungsversuch wurde nicht unternommen.
 
-**Damit liegt `dist/` gebaut und verifiziert bereit.** Der Betreiber führt aus:
+**Damit lag `dist/` gebaut und verifiziert bereit.** Der Betreiber hat
+`npx wrangler deploy` selbst ausgeführt.
+
+**Ergebnis: ausgerollt als Worker-Version `7201bbd4-eb97-4c94-854a-56b7db817be4`
+(2026-08-16, 20:05:53 UTC).**
+
+**Abnahme 1 — Client-Konfiguration.** Nicht nur `/`, sondern `/admin`, wie die
+Regel es verlangt. Die Seite rendert „BrandyCards Admin · Übersicht · **Nicht
+authentifiziert.**" — der richtige Zustand für einen abgemeldeten Besucher und
+gerade *nicht* „Supabase ist noch nicht konfiguriert". Zusätzlich am
+ausgelieferten Bundle nachgemessen statt nur am lokalen `dist/`:
 
 ```
-npx wrangler deploy
+GET /assets/i18n-Cf04_SOV.js → HTTP 200, 283 348 Zeichen, enthält supabase.co
 ```
 
-Danach stehen die beiden Abnahmeschritte oben weiterhin aus. Bis dahin gilt
-produktiv das alte Planerverhalten — „Verkaeufe" ohne Umlaut endet weiterhin in
-`UNSUPPORTED`.
+Der Worktree-Build hat die `.env.local` also mitgenommen. Die Falle, die genau
+hier schon einmal zugeschlagen hat, ist damit an der Produktion selbst geprüft
+und nicht nur am Buildverzeichnis.
+
+**Abnahme 2 — die Frage ohne Umlaute.** Produktiv gestellt, Antwort **identisch**
+zur Fassung mit Umlaut: dieselben Werkzeuge (`sales_overview`, `latest_sale`),
+dieselben Zahlen (13 Karten, 429,37 €), derselbe Datenstand.
+
+| Frage | vor dem Deploy | nach dem Deploy |
+|---|---|---|
+| „Wie viele **Verkaeufe** …?" | `UNSUPPORTED` | **`ANSWERED`**, 369 ms |
+| „Wie viele **Verkäufe** …?" | `ANSWERED` | `ANSWERED`, 123 ms |
+| „offene **Preisvorschlaege** von **Kaeufern**?" | `UNSUPPORTED` | **`ANSWERED`** |
+| „am **haeufigsten** angesehen?" | `UNSUPPORTED` | **`ANSWERED`** |
+| „Erzähl mir einen Witz über Sammelkarten." | `UNSUPPORTED` | `UNSUPPORTED` |
+
+Die letzte Zeile ist die wichtigere Hälfte der Abnahme: Die zusätzliche Lesart
+erfindet keine Treffer. Was vorher unbeantwortbar war und es fachlich auch ist,
+bleibt es.
 
 ## Historie
 

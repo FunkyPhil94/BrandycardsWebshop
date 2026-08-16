@@ -11,29 +11,7 @@ dabei, damit niemand den Gesprächsverlauf braucht.
 
 ---
 
-## Zuerst: Die Umlautfaltung ausrollen
-
-**Der Code liegt fertig und getestet im Zweig, produktiv gilt noch das alte
-Verhalten.** Deployment war in der Auftragskette vom 2026-08-16 ausgeschlossen,
-deshalb steht dieser Punkt hier statt erledigt zu sein.
-
-Was drinsteckt: Der Regelplaner versteht jetzt auch die Ersatzschreibung ohne
-Umlaute — „Verkaeufe", „Preisvorschlaege", „verfuegbar", „uebersicht",
-„haeufigsten". Produktiv gemessen am 2026-08-16: dieselbe Frage mit Umlaut
-wurde beantwortet, ohne Umlaut nicht. Solange kein `OPENAI_API_KEY` gesetzt
-ist, ist der Regelplaner der einzige Planer.
-
-**Schritte:** bauen (mit `.env.local` im Build-Verzeichnis!), `npx wrangler
-deploy`. Danach nach der Regel aus [CLAUDE.md](../CLAUDE.md) eine Seite prüfen,
-die Client-Konfiguration braucht — `/admin` —, nicht nur `/`.
-
-**Abnahme:** „Wie viele Verkaeufe hatte ich in den letzten 7 Tagen?" produktiv
-über den Desktop stellen. Muss dieselbe Antwort liefern wie die Fassung mit
-Umlaut.
-
----
-
-## Danach: Spracheingabe produktiv belegen
+## Zuerst: Spracheingabe produktiv belegen
 
 Zwei gesprochene Fragen über den Desktop stellen. Der Diktatpfad endet
 nachweislich in derselben `SendAssistantMessageAsync`-Methode wie Text

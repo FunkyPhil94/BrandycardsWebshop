@@ -145,8 +145,22 @@ gefangen. Das Argument trägt weiterhin, denn auch „neu anfrage" trifft
 ein Kommentar mit den falschen Buchstaben schlimmer ist als keiner: Der
 nächste Leser prüft ihn nicht nach, er glaubt ihn.
 
-Nicht ausgerollt — Deployment war in dieser Auftragskette ausgeschlossen.
-Produktiv gilt bis dahin das alte Verhalten.
+Ausgerollt als Worker-Version `7201bbd4-eb97-4c94-854a-56b7db817be4`. Der
+`wrangler deploy` selbst wurde von der Berechtigungsprüfung dieser Sitzung
+abgewiesen und vom Betreiber ausgeführt; der Build davor lief ausnahmsweise aus
+dem Worktree, weil das Hauptverzeichnis fremde unversionierte Änderungen trug.
+Die Regel „nie aus einem Worktree bauen" zielt auf die nicht vererbte
+`.env.local` — deshalb wurde nicht nur das lokale `dist/` geprüft, sondern das
+**ausgelieferte** Bundle: `GET /assets/i18n-Cf04_SOV.js` enthält `supabase.co`,
+und `/admin` meldet „Nicht authentifiziert" statt „Supabase ist noch nicht
+konfiguriert". Eine Regel durch die Prüfung zu ersetzen, die sie erzwingen
+soll, ist nur dann zulässig, wenn man die Prüfung auch wirklich macht.
+
+Die Abnahme bestätigte beides: „Wie viele **Verkaeufe** …" liefert jetzt
+dieselbe Antwort wie die Fassung mit Umlaut — gleiche Werkzeuge, gleiche
+Zahlen, gleicher Datenstand. Und „Erzähl mir einen Witz über Sammelkarten"
+bleibt `UNSUPPORTED`. Der zweite Teil ist der wichtigere: Eine Faltung, die
+Treffer erfindet, wäre schlimmer als die Lücke, die sie schließt.
 
 **Die Ratenbegrenzung brauchte zwei Anläufe.** Vierzehn Anfragen nacheinander
 liefen sämtlich durch, obwohl die Grenze bei zehn pro Minute liegt. Vierzig
