@@ -128,11 +128,29 @@ eBay-Schreibvorgang, kein Deployment. `NativePetOverlay.cs` hat keinen Diff.
 2. **Die Konfidenzschwelle von 0,5 ist geraten**, nicht gemessen
    (`MinimumDomainConfidence`). Greift die Grammatik zu selten, muss sie runter;
    zieht sie fremde Sätze an sich, muss sie hoch. Erst am Gerät zu beurteilen.
-3. **Nicht ausgerollt.** Ohne Deploy liefert die `GET`-Route keine
-   `speechPhrases`, und der Desktop bleibt beim freien Diktat — genau der
-   Zustand von vorher, ohne Fehlermeldung. Der Desktop muss zusätzlich neu
-   gebaut werden; die Serverseite allein genügt hier **nicht**, anders als bei
-   Variante 1.
+3. **Der Desktop muss neu gebaut und gestartet werden.** Anders als bei
+   Variante 1 genügt die Serverseite hier **nicht**: Die Grammatik wird im
+   Client gebaut. Läuft die alte App weiter, holt sie die Phrasen gar nicht ab
+   und diktiert frei wie bisher — ohne Fehlermeldung.
+
+**Serverseite ausgerollt: Worker-Version `a9045149-ba12-4bef-b891-eaf813a1ee45`.**
+
+Gebaut wieder aus dem Worktree mit hineinkopierter `.env.local`, beide
+Prüfungen vor dem Deploy grün (`supabase.co` in `dist/client/assets`, die
+Phrasen im Worker-Bundle). Der Deploy lief diesmal durch.
+
+**Abnahme in Produktion:**
+
+- `/admin` rendert „BRANDYCARDS ADMIN · Übersicht · **Nicht authentifiziert**" —
+  der richtige Zustand für einen abgemeldeten Besucher und gerade *nicht*
+  „Supabase ist noch nicht konfiguriert". Am **ausgelieferten** Bundle
+  nachgemessen, nicht nur am lokalen `dist/`:
+  `GET /assets/i18n-Cf04_SOV.js` → HTTP 200, 285 202 Bytes, enthält `supabase.co`.
+- `GET /api/avatar/device/assistant` → 401, `POST …/probe` → 401. Beide Routen
+  stehen und sind bewacht.
+- Der Text von `/admin` ist clientseitig gerendert; ein `curl`-Grep findet ihn
+  nicht und sagt nichts über den Zustand. Geprüft wurde deshalb am gerenderten
+  Dokument. **Wer hier nur curl benutzt, prüft nichts.**
 
 ### 2026-08-16 - Variante 1 der Spracherkennung umsetzen
 
