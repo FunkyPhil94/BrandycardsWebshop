@@ -37,9 +37,34 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-<!-- Fuer den naechsten Auftrag freihalten. -->
+### 2026-08-16 - Die eBay-Verkäufe vor dem Assistenten nachtragen
 
-Keine laufenden Aufträge.
+- Stand: **LÄUFT.**
+- Anlass: Der Betreiber meldete einen eBay-Verkauf von gestern, während
+  `latest_sale` den 09.08. nannte. Ursache gefunden: Die Abfrage liest
+  eBay-Verkäufe aus `avatar_events` (`CARD_SOLD`/`EBAY_LISTING`), und diese
+  Tabelle ist leer — der schreibende Code (`lib/avatar-events.ts`, Aufruf in
+  `app/api/ebay/notifications/route.ts`) entstand erst heute mit `175c44d` und
+  wurde um 15:47 UTC ausgerollt. Die Verkäufe davor liefen durch den alten Code:
+  korrekt verbucht, aber ohne Ereigniszeile.
+- Ziel: Die fehlenden `CARD_SOLD`-Zeilen aus den gespeicherten
+  eBay-Meldungen nachbilden, mit demselben Dedupe-Schlüssel, den der Handler
+  live vergibt (`ebay-sale:{notificationId}:{zeile}:{listingId}`).
+- Quelle: `webhook_events` — sechs signaturgeprüfte `ORDER_CONFIRMATION`-Meldungen
+  von eBay, unverändert gespeichert. **Es sind eBay-Daten**, nur über den
+  Webhook zugestellt statt frisch abgefragt; der Shop hat daran nichts gerechnet.
+- Nicht gewählt: ein Live-Abruf der Verkaufshistorie. Der bräuchte
+  `sell.fulfillment.readonly` — nicht Teil der heute erteilten Zustimmung, also
+  eine dritte Zustimmungsrunde samt neuem Refresh-Token.
+- Eingriff (**Schreibzugriff auf Produktionsdaten, vom Betreiber freigegeben**):
+  ein `INSERT … SELECT` in `avatar_events` mit `ON CONFLICT(dedupe_key) DO
+  NOTHING`. Keine Änderung an Bestellungen, Beständen, Angeboten oder Produkten.
+- Erwartung: **fünf** Zeilen, nicht sechs. Zum Verkauf vom 13.08.
+  (Artikel `398281269762`) gibt es kein Angebot mehr — es fiel der Bereinigung
+  am 13.08. zum Opfer. Der Live-Handler überspringt unbekannte Angebote
+  genauso (`if (!listing) continue`), die Lücke ist also kein Sonderfall.
+- Abnahme: `avatar_events` auszählen, `latest_sale` muss danach auf den
+  15.08. zeigen; ein zweiter Lauf darf nichts hinzufügen.
 
 ## Historie
 
