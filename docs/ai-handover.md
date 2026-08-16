@@ -39,25 +39,57 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 <!-- Fuer den naechsten Auftrag freihalten. -->
 
-### 2026-08-16 - Phase 4 des Desktop-Assistenten: zentraler Read-only-Orchestrator
-
-- Status: LÄUFT.
-- Auftrag: Einen zentralen Orchestrator für freie Fragen zu BrandyCards-Shop-
-  und eBay-Daten implementieren. Text- und vorhandene Spracheingabe sollen
-  denselben Orchestrator verwenden, der ausschließlich registrierte
-  Read-only-Tools auswählt und kurze deutsche, quellengebundene Textantworten
-  mit sauberer Behandlung von Fehlern, leeren und nicht verfügbaren Daten
-  erzeugt.
-- Sicherheitsgrenzen: Keine modellgenerierten SQL-Abfragen, Schreiboperationen,
-  Nachrichten, Angebote, eBay-Änderungen, Produktionsänderungen, Remote-
-  Migrationen oder Deployments. `NativePetOverlay` und das transparente Pet
-  bleiben unverändert.
-- Geplante Prüfung: Verträge und Tool-Rückgaben prüfen; Routing,
-  Tool-Auswahl, fehlende Daten, Fehler und Sicherheitsgrenzen automatisiert
-  testen; die lokale Desktop-App bauen und Text- sowie Spracheingabe über den
-  gemeinsamen Orchestrator end-to-end prüfen.
+Keine laufenden Aufträge.
 
 ## Historie
+
+### 2026-08-16 - Phase 4 des Desktop-Assistenten: zentraler Read-only-Orchestrator
+
+- Status: ABGESCHLOSSEN.
+- Architektur: Die Geräte-Assistant-API akzeptiert jetzt ausschließlich eine
+  auf 1.000 Zeichen begrenzte `{ message }`-Frage. Ein zentraler
+  `AssistantOrchestrator` plant maximal sechs eindeutige Aufrufe und führt sie
+  ausschließlich über die bestehende typisierte Read-only-Registry aus. Es
+  wurden keine autonomen Subagents eingeführt.
+- Freie Fragen: Bekannte und zusammengesetzte deutsche Fragen werden durch
+  einen geschlossenen serverseitigen Planer ohne Fremdaufruf erkannt. Für
+  weitere Formulierungen kann ein serverseitiger OpenAI-Responses-Planer mit
+  `OPENAI_API_KEY` und strikten Function-Schemas genutzt werden; Name und
+  Argumente werden danach nochmals gegen die vorhandenen Verträge validiert.
+  Das lokale Testsystem hatte keinen Modellschlüssel, daher wurde dieser
+  Providerpfad mit einem vollständig kontrollierten Fetch-Doppel getestet.
+- Faktentreue: Das Modell erzeugt weder Antworttext noch SQL. Die finale kurze
+  deutsche Antwort entsteht deterministisch aus den typisierten Tool-DTOs und
+  nennt Quelle und Datenstand. Leere Resultate, `UNAVAILABLE`, Einzel- und
+  Gesamtfehler sowie mehrere Quellen werden getrennt dargestellt; fehlende
+  Mengen, Preise oder Zeiten werden nicht durch Ersatzwerte erfunden.
+- Desktop: `AssistantConversationService` enthält kein lokales Routing und
+  keine Datenformatierung mehr, sondern sendet nur `{ message }` und zeigt
+  `answer` an. Der JSON-Body wird mit berechenbarer Länge gesendet. Text- und
+  lokale Spracheingabe enden unverändert in derselben
+  `SendAssistantMessageAsync`-Methode. Audio bleibt lokal; nur das erkannte
+  Transkript wird wie eine Texteingabe an den Server gegeben.
+- Prüfung: Produktions-Build plus vollständige Suite 383/383 bestanden;
+  `npx tsc --noEmit` erfolgreich; Lint 0 Fehler und nur die bekannte
+  Hook-Warnung in `app/account/page.tsx`; WinUI-x64-Debug-Build 0 Warnungen und
+  0 Fehler. Die neue fokussierte Suite umfasst 16 Orchestrator- plus 11
+  Registrytests.
+- End-to-end lokal: Die vorhandene Migration `0011` wurde ausschließlich auf
+  die lokale D1 angewendet. Über ein kurzlebiges lokales Token und einen danach
+  entfernten Claim/Event-Proxy erreichte die sichtbare App die echte
+  localhost-Assistant-API. Text zeigte zwei explizite nicht verfügbare
+  eBay-Quellen und den leeren Bestellpfad; der Sprachlauf erkannte „Welche
+  Bestellungen sind Moll“, routete wegen des Schlüsselworts korrekt auf
+  `new_orders` und zeigte dieselbe quellengebundene Textantwort. Alle
+  Testtoken/-pairings wurden anschließend mit Zähler 0 entfernt und die
+  ursprüngliche produktive Desktop-Einstellung exakt restauriert.
+- Unverändert/offen: Keine Produktionsdaten, Remote-Migration, eBay-
+  Schreiboperation, Nachricht, Angebot, Worker-Konfiguration oder Deployment.
+  `NativePetOverlay.cs`, Pet-Positionierung und Atlas haben keinen Diff. Für
+  die volle Modell-Erkennung freier, vom lokalen Planer nicht abgedeckter
+  Formulierungen muss später serverseitig `OPENAI_API_KEY` gesetzt werden; das
+  wurde nicht eigenmächtig vorgenommen. Die final gebaute App läuft sichtbar
+  mit Launcher und Pet-Overlay.
 
 ### 2026-08-16 - Phase 3 des Desktop-Assistenten: lokale Windows-Spracheingabe
 

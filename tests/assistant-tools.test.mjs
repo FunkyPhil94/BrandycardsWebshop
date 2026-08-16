@@ -95,7 +95,9 @@ test("die Geräte-Assistant-Route authentifiziert, begrenzt und liefert nie cach
   assert.ok(route.indexOf("enforcePublicRateLimit") < route.indexOf("authenticateAvatarDevice(request"), "Rate-Limit muss vor dem D1-Token-Lookup greifen");
   assert.match(route, /readTextBody\(request, MAX_ASSISTANT_REQUEST_BYTES\)/u);
   assert.match(route, /"cache-control": "no-store"/u);
-  assert.match(route, /parseAssistantToolInput\(body\)/u);
+  assert.match(route, /parseAssistantQuestionInput\(body\)/u);
+  assert.match(route, /createServerAssistantOrchestrator\(\)\.ask\(input\)/u);
+  assert.doesNotMatch(route, /parseAssistantToolInput\(body\)/u, "Clients dürfen kein Werkzeug direkt auswählen");
 });
 
 test("alte Pet-Tokens erhalten durch die Migration keinen Assistant-Zugriff", async () => {

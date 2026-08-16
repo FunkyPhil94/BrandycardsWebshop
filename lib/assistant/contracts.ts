@@ -174,6 +174,28 @@ export type AnyAssistantToolResult = {
   [K in AssistantToolName]: AssistantToolResult<K>;
 }[AssistantToolName];
 
+export const MAX_ASSISTANT_QUESTION_LENGTH = 1_000;
+
+export type AssistantQuestionInput = {
+  message: string;
+};
+
+export type AssistantOrchestratorToolSummary = {
+  tool: AssistantToolName;
+  status: "AVAILABLE" | "UNAVAILABLE" | "ERROR";
+  sources: AssistantDataSource[];
+  freshness: string | null;
+};
+
+export type AssistantOrchestratorResponse = {
+  status: "ANSWERED" | "PARTIAL" | "FAILED" | "UNSUPPORTED";
+  readOnly: true;
+  answer: string;
+  tools: AssistantOrchestratorToolSummary[];
+  sources: AssistantDataSource[];
+  freshness: string | null;
+};
+
 export class AssistantRequestError extends Error {
   readonly status = 400;
 
@@ -223,4 +245,30 @@ export function parseAssistantToolInput(value: unknown): AssistantToolInput {
   }
 
   return { tool: input.tool as AssistantToolName, limit };
+}
+
+export function parseAssistantQuestionInput(value: unknown): AssistantQuestionInput {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new AssistantRequestError("Die Assistant-Anfrage muss ein JSON-Objekt sein.");
+  }
+
+  const input = value as Record<string, unknown>;
+  const unexpected = Object.keys(input).filter((field) => field !== "message");
+  if (unexpected.length) {
+    throw new AssistantRequestError(`Nicht unterstützte Felder: ${unexpected.join(", ")}.`);
+  }
+
+  if (typeof input.message !== "string") {
+    throw new AssistantRequestError("message muss Text enthalten.");
+  }
+
+  const message = input.message.trim();
+  if (!message) {
+    throw new AssistantRequestError("Die Frage darf nicht leer sein.");
+  }
+  if (message.length > MAX_ASSISTANT_QUESTION_LENGTH) {
+    throw new AssistantRequestError(`Die Frage darf höchstens ${MAX_ASSISTANT_QUESTION_LENGTH} Zeichen lang sein.`);
+  }
+
+  return { message };
 }

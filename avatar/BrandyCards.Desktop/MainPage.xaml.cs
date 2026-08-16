@@ -274,7 +274,7 @@ public sealed partial class MainPage : Page
 
             var message = transcription.Text!;
             AssistantInputTextBox.Text = message;
-            AssistantStatusTextBlock.Text = "Diktat erkannt; feste Abfrage wird zugeordnet …";
+            AssistantStatusTextBlock.Text = "Diktat erkannt; Frage wird an den Assistant übergeben …";
             message = AssistantInputTextBox.Text.Trim();
             AssistantInputTextBox.Text = string.Empty;
             await SendAssistantMessageAsync(message);
@@ -339,7 +339,7 @@ public sealed partial class MainPage : Page
         _conversationInitialized = true;
         AddConversationMessage(
             "Assistant",
-            "Hallo! Ich kann fest definierte, ausschließlich lesende Fragen zu Verkäufen, Listings, Bestellungen, Preisvorschlägen, Bestand, Anfragen, eBay-Sync und Statistiken beantworten.",
+            "Hallo! Stelle mir freie Fragen zu Verkäufen, Listings, Bestellungen, Preisvorschlägen, Bestand, Anfragen, eBay-Daten und Statistiken. Ich verwende dafür ausschließlich registrierte Lesewerkzeuge.",
             isUser: false);
     }
 

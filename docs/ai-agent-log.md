@@ -1,5 +1,68 @@
 # BrandyCards Agentenprotokoll
 
+## 2026-08-16 - Phase 4 des Desktop-Assistenten: zentraler Read-only-Orchestrator
+
+Phase 4 verschiebt die gesamte Frageverarbeitung vom WinUI-Client auf einen
+zentralen serverseitigen Manager. Der öffentliche Gerätevertrag akzeptiert nur
+noch `{ message }`; direkte Tool-Wahl, Prompt-Zusatzfelder, SQL und sonstige
+Argumente werden abgewiesen. `AssistantConversationService` kennt deshalb
+weder Toolnamen noch Daten-DTOs mehr. Text und das lokal erkannte Diktat laufen
+weiter durch dieselbe `SendAssistantMessageAsync`-Methode und erhalten vom
+Server ausschließlich die fertige Textantwort.
+
+Der Manager besteht bewusst nicht aus autonomen Subagents. Ein geschlossener
+Regelplaner deckt die bekannten und zusammengesetzten deutschen Shopfragen
+deterministisch ab. Für freiere Formulierungen kann serverseitig die OpenAI
+Responses API genutzt werden. Der Modell-Planer sieht genau die zehn
+bestehenden Toolnamen, jeweils mit einem strikten Schema, das nur `limit` von 1
+bis 20 enthält. Modellantworten werden nicht vertraut: Jeder Function Call
+wird erneut durch `parseAssistantToolInput` geschickt, unbekannte Namen,
+Zusatzfelder und Grenzverletzungen scheitern. Maximal sechs eindeutige Calls
+werden pro Frage berücksichtigt. `OPENAI_API_KEY` bleibt eine reine
+Servervariable; der Desktop kennt weder Schlüssel noch Provider-URL.
+
+Die endgültige Antwort wird absichtlich nicht vom Modell geschrieben. Ein
+deterministischer Formatter verarbeitet ausschließlich die typisierten
+Registry-Ergebnisse. Damit kann kein Modell einen Preis, eine Menge, einen
+Status, eine Quelle oder eine Aktualisierungszeit erfinden. Eine fehlende eBay-
+Verkaufsmenge wird insbesondere nicht mehr wie zuvor lokal als `1×` ausgegeben.
+`AVAILABLE` mit leerer Liste, `UNAVAILABLE`, partielle Toolfehler und ein
+vollständiger Lesefehler besitzen eigene, kurze deutsche Texte. Mehrere
+Ergebnisse bleiben getrennt und tragen ihre jeweilige Quelle und Frische; rohe
+Fehlerdetails werden nur serverseitig protokolliert.
+
+Die API behält Geräteauthentifizierung, `ASSISTANT_READ`, Vorab-Rate-Limit,
+4-KiB-Bodygrenze und `no-store`. Kein neuer Datenhandler wurde ergänzt und kein
+Schreibmodul importiert. Auch der OpenAI-Pfad kann nur Registry-Namen und ein
+kleines Ergebnislimit planen; SQL, Tabellen, Nachrichten, Angebote und eBay-
+Änderungen sind für ihn strukturell unerreichbar. Bekannte Fragen funktionieren
+ohne Modellschlüssel. Eine unbekannte Formulierung meldet ohne Schlüssel
+ausdrücklich, dass der freie Modell-Planer nicht konfiguriert ist, statt eine
+Antwort zu erfinden.
+
+Die vollständige Suite besteht nach der Erweiterung aus 383 grünen Tests. Davon
+prüfen 16 neue Orchestrator-Fälle Routing, Mehrfachauswahl, eBay-/Shop-
+Abgrenzung, strikte Modellargumente, leere und nicht verfügbare Daten,
+Teil-/Gesamtfehler, Quellen, fehlende Mengen, serverseitige Secrets und den
+gemeinsamen Text-/Diktatpfad; die 11 Phase-1-Registrytests bleiben grün. Der
+Produktions-Build, `npx tsc --noEmit` und der WinUI-x64-Debug-Build waren
+erfolgreich; WinUI meldete 0 Warnungen und 0 Fehler. ESLint meldet 0 Fehler und
+nur die bekannte Hook-Warnung in `app/account/page.tsx`.
+
+Für den echten lokalen Desktoplauf wurde die vorhandene Scope-Migration
+`0011_avatar_assistant_scope.sql` nur auf die lokale D1 angewendet. Ein
+kurzlebiges lokales Gerätetoken und ein temporärer Claim/Event-Proxy ließen die
+sichtbare App ihre Assistant-Requests an die echte localhost-API senden. Die
+Frage nach nicht verfügbaren eBay-Daten lieferte HTTP 200 und beide expliziten
+`UNAVAILABLE`-Antworten; die Bestellfrage lieferte den belegten Leerzustand aus
+`SHOP_DB`. Beim Sprachlauf wurde die synthetische Lautsprecherausgabe als
+„Welche Bestellungen sind Moll“ erkannt, als normale Frage gesendet und korrekt
+auf `new_orders` geroutet. Testtoken und Pairing wurden danach nachweislich auf
+0 bereinigt, der Proxy entfernt und die ursprüngliche produktive Desktop-
+Einstellung restauriert. Es gab keine Remote-Migration, Produktionsänderung
+oder Deployment. `NativePetOverlay.cs` und das transparente Pet blieben
+unverändert; die finale App-Instanz zeigt Launcher und Overlay und antwortet.
+
 ## 2026-08-16 - Phase 3 des Desktop-Assistenten: lokale Windows-Spracheingabe
 
 Die bestehende App wird bewusst weiterhin unpackaged gestartet. Die aktuelle
