@@ -1,5 +1,100 @@
 # BrandyCards Agentenprotokoll
 
+## 2026-08-16 - Phase 10: Der Assistant war nie produktiv erreichbar
+
+Der Auftrag lautete, den Desktop-Pet produktiv zu verifizieren. Die erste
+Frage — „Was habe ich zuletzt verkauft?" — kam mit HTTP 503 zurück. Die
+zweite auch, und die fünf danach ebenfalls. Der Ausgangsstand nannte den
+Assistenten „bis Phase 9 produktiv ausgerollt" und „keine offenen
+Produktionsfehler bekannt". Beides stimmte nicht, und der Grund dafür ist
+lehrreicher als der Fehler selbst.
+
+**Die Eingrenzung dauerte drei Anfragen.** `GET` ohne Token: 401. `GET` mit
+Token: 503. Damit war die Sache entschieden, bevor irgendein Orchestrator im
+Spiel war: Zwischen „kein Token" und „Token vorhanden" liegt genau ein Schritt,
+und das ist der Datenbank-Lookup in `authenticateAvatarDevice`. Der
+`POST`-Pfad bestätigte es von der anderen Seite — selbst ein falscher
+Content-Type, der eigentlich 415 ergeben müsste, kam als 503 zurück. Beide
+Prüfungen liegen *hinter* `authorize()`, also war schon davor Schluss.
+
+Die Produktionsdatenbank sagte den Rest:
+
+```
+PRAGMA table_info(avatar_device_tokens) → id, token_hash, label, created_at, revoked_at
+```
+
+Fünf Spalten. Das Schema kennt neun. Es fehlen `scopes`, `pairing_id`,
+`created_by_user_id` und `expires_at` — exakt die vier aus Migration `0011`.
+`0010` war eingespielt, `0011` nicht. Drizzle wählt `scopes` mit ab, D1
+antwortet `no such column: scopes`, und die Route macht daraus pflichtschuldig
+ihr generisches „Der freie Assistant ist gerade nicht verfügbar."
+
+**Warum das neun Phasen lang niemandem auffiel.** Die Phasen 5 bis 9 waren
+gründlich — 504 Tests, Prompt-Injektionen, gemessene Read-only-Zusicherung,
+Timeout-Nachweis mit echter Wartezeit. Nur lief alles davon gegen Testdoppel
+und lokale Datenbanken. Produktiv verifiziert wurden die *Daten*: `SELECT` auf
+`ebay_read_syncs`, 133 Verkäufe, vier Quellen auf `OK`. Das ist die Hälfte, die
+funktionierte. Die andere Hälfte — kommt eine Frage vom Desktop bis zu diesen
+Daten durch? — wurde nie gestellt.
+
+Dieselbe Falle steht seit Langem in CLAUDE.md, nur mit anderen Namen: „`/` und
+`/api/products` waren durchgehend gesund, während `/admin` kaputt war." Hier
+waren es `/` und `/api/products` gegen `/api/avatar/device/*`. Der Satz galt
+schon, er wurde nur auf die falsche Route angewendet.
+
+**Und warum der Pet trotzdem harmlos aussah.** Der Ereignisabruf benutzt
+denselben Lookup und antwortet ebenfalls 503. Ein Pet ohne Ereignisse zeigt
+seine Leerlaufschleife. Genau dieselbe Verwechslung, die Phase 8 für die
+eBay-Quellen aufgelöst hat — „keine Nachrichten" gegen „keine Verbindung" —
+existierte hier noch eine Ebene tiefer, im Desktop-Client selbst: Ein Pet, das
+sich bewegt, sagt nichts darüber aus, ob es den Shop erreicht.
+
+**Der Fehler blieb stehen.** Eine Remote-Migration war in diesem Auftrag
+ausgeschlossen, und der Eingriff wäre eine Zeile gewesen. Die Versuchung, „das
+ist doch nur ein ALTER TABLE" zu denken, ist bei genau der Art Grenze am
+größten, die es zu respektieren gilt. Der Befehl steht im Übergabeprotokoll.
+
+**Stattdessen wurde der Beweis lokal geführt.** Alle vierzehn Migrationen in
+eine lokale D1, zwei Gerätetoken — einer mit `ASSISTANT_READ`, einer nur mit
+`EVENTS` —, Prüfdaten für jede geforderte Frage. Neun Fragen, neunmal 200,
+neunmal `ANSWERED`. Damit ist der Satz belegbar, auf den es ankommt: Es fehlen
+die Spalten, nicht die Funktion. Ein „müsste eigentlich gehen" wäre hier
+wertlos gewesen.
+
+**Der Datenschutznachweis wurde umgedreht.** Nicht „die Werkzeuge wählen keine
+Kundenspalten aus" (das lässt sich im Code nachlesen und beweist nichts über
+die Antwort), sondern: Die Prüfbestellung bekam eine E-Mail-Adresse, einen
+Namen, eine Straße, eine Postleitzahl und eine Telefonnummer in genau jene
+Spalten, und jede Antwort wurde gegen diese sechs Zeichenketten geprüft. Null
+Treffer. Dazu ein Test, der die Spaltennamen im Quelltext festnagelt — mit
+einer benannten Ausnahme: `sales.ts` wählt `avatarEvents.payload` aus, gibt ihn
+aber nur an `ebayEventQuantity` und übernimmt ihn in kein DTO. Eine Ausnahme,
+die im Test steht, ist eine Entscheidung; eine, die nur im Code steht, ist ein
+Zufall.
+
+**Zum Planer gab es wenig zu härten und viel zu belegen.** `OPENAI_API_KEY`
+fehlt produktiv, also lief nie etwas anderes als der deterministische Planer.
+Die Härtung besteht deshalb aus Fällen, in denen eine Modellantwort *fast*
+richtig aussieht: `arguments` als Objekt statt als String, `"null"`, `"[1,2]"`,
+ein `days` von 91 trotz `strict: true`, und Namen dicht neben echten —
+`New_Orders`, `" new_orders"`, `constructor`, `__proto__`. Der letzte Punkt ist
+der einzige mit echtem Zahn: `parseOpenAIPlannedTools` prüft gegen
+`ASSISTANT_TOOL_NAMES.includes`, nicht gegen Objektzugehörigkeit, sonst wäre
+`__proto__` ein gültiger Schlüssel gewesen.
+
+Bewusst *nicht* geändert wurde, dass `HybridAssistantPlanner` einen Modellfehler
+weiterreicht. Das Phase-5-Protokoll begründet es ausdrücklich: Die Route macht
+daraus ein 503 statt einer erfundenen Antwort. Ein Fehler, der als solcher
+ankommt, ist besser als einer, der zu einer Auskunft geglättet wird — und eine
+dokumentierte Entscheidung kippt man nicht nebenbei in einer Prüfphase.
+
+**Die Ratenbegrenzung brauchte zwei Anläufe.** Vierzehn Anfragen nacheinander
+liefen sämtlich durch, obwohl die Grenze bei zehn pro Minute liegt. Vierzig
+gleichzeitige ergaben 34 × 429. Cloudflares Zähler ist ausdrücklich als
+näherungsweise dokumentiert; bei langsamer Folge greift er unzuverlässig, unter
+Last greift er. Wer ihn mit einer Handvoll Anfragen prüft und dann „wirkungslos"
+notiert, hat das Gegenteil gemessen.
+
 ## 2026-08-16 - Phase 9: Warum ein Verkauf anders gespeichert wird als eine Aufrufzahl
 
 Phase 8 hat eine Bauweise etabliert, die gut funktioniert: abrufen, alles mit

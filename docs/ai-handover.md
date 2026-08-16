@@ -43,6 +43,127 @@ Keine laufenden Aufträge.
 
 ## Historie
 
+### 2026-08-16 - Phase 10: produktive Assistant-Verifikation und Planner-Härtung
+
+- Stand: **ABGESCHLOSSEN**, mit einem produktiven Befund, der außerhalb der
+  Auftragsgrenzen liegt und deshalb offen bleibt (siehe unten, „Offen").
+- Auftrag: (1) den Desktop-Pet produktiv gegen `https://shop.brandycards.de`
+  nachweisen, ausschließlich lesend; (2) klären, ob der modellbasierte Planer
+  produktiv aktiv ist oder weiterhin nur der deterministische Fallback läuft,
+  und den Planer gegen die bekannten Angriffs- und Fehlerfälle härten;
+  (3) Datenschutz- und Sicherheitsgrenzen prüfen; (4) nötige Regressionstests,
+  Prüfläufe und Dokumentation nachziehen.
+- Produktiv zu prüfende Fragen: letzter Verkauf; Umsatz und Verkäufe eines
+  Zeitraums; meistgesehene eBay-Angebote; ungelesene eBay-Nachrichten; offene
+  Käuferpreisvorschläge; neue Shop-Bestellungen; leere und nicht verfügbare
+  Daten; Spracheingabe mit mindestens zwei Fragen.
+- Planer-Prüffälle: gültige Werkzeuge, unbekannte Werkzeugnamen, fehlende und
+  falsche Argumente, mehrere Werkzeugaufrufe, leere Ergebnisse,
+  `UNAVAILABLE`-Ergebnisse, Timeout und Providerfehler, Prompt-Injection.
+- Grenzen dieses Auftrags: kein Deployment, kein Push, keine Remote-Migration,
+  keine Änderung an Cloudflare-Secrets oder eBay-Tokens, keine neuen
+  Schreiboperationen, keine Änderung an `NativePetOverlay`, Atlas oder
+  Pet-Positionierung. Produktive Aufrufe bleiben lesend; es werden keine
+  eBay-Angebote geändert, keine Nachrichten gesendet und keine Bestellungen
+  angefasst.
+- Abnahme: `npm test`, `npx tsc --noEmit`, `npm run lint`, WinUI-x64-Build; ein
+  eigener Commit nur für diese Phase.
+
+**Ergebnis Teil 1 — die produktive Verifikation ist fehlgeschlagen, und zwar
+sofort.** Alle sieben geforderten Fragen antworten unter
+`https://shop.brandycards.de/api/avatar/device/assistant` mit **HTTP 503**. Der
+Ereignisabruf `/api/avatar/device/events` ebenfalls. Beide Desktop-Pfade sind
+produktiv tot; die Startseite und `/api/products` antworten dabei durchgehend
+mit 200 — genau das Muster, vor dem CLAUDE.md warnt.
+
+Eingegrenzt: `GET` **ohne** Token liefert 401, `GET` **mit** Token 503. Der
+Fehler liegt also vor dem Orchestrator, im Token-Lookup. Ursache in der
+Produktionsdatenbank nachgewiesen:
+
+```
+PRAGMA table_info(avatar_device_tokens)
+→ id, token_hash, label, created_at, revoked_at
+```
+
+Es fehlen `scopes`, `pairing_id`, `created_by_user_id` und `expires_at` — die
+vier Spalten aus **Migration `0011_avatar_assistant_scope.sql`**. `0010` ist
+eingespielt (`avatar_device_pairings` existiert), `0011` nicht. Drizzle wählt
+`scopes` mit ab, D1 antwortet `no such column: scopes`, die Route macht daraus
+ihr generisches 503.
+
+**Der Fehler wurde nicht behoben:** Eine Remote-Migration ist in diesem Auftrag
+ausdrücklich ausgeschlossen. Der Eingriff ist eine Zeile und steht unten unter
+„Offen".
+
+**Ersatzprüfung statt Behauptung.** Weil produktiv nichts antwortet, wurde
+derselbe Codepfad lokal gegen eine D1 mit **vollständigem** Schema gefahren:
+alle 14 Migrationen eingespielt, zwei Gerätetoken (einer mit `ASSISTANT_READ`,
+einer nur mit `EVENTS`), Prüfdaten für jede Frage. Ergebnis: alle neun Fragen
+`HTTP 200`, `status ANSWERED`, `readOnly true`, jede mit Quelle und Datenstand.
+Die Zeilenzahlen vor und nach dem Durchlauf waren identisch — read-only ist
+gemessen, nicht zugesichert.
+
+Damit ist belegt: Es fehlen die Spalten, nicht die Funktion.
+
+**Ergebnis Teil 2 — der Planer.** `OPENAI_API_KEY` steht **nicht** in den
+produktiven Cloudflare-Secrets (`npx wrangler secret list`: zwölf Secrets, keins
+davon OpenAI). Produktiv läuft also ausschließlich der deterministische
+`RuleBasedAssistantPlanner`; `HybridAssistantPlanner` hat keinen Modellteil und
+meldet für unbekannte Formulierungen `MODEL_NOT_CONFIGURED`. Lokal live
+bestätigt. Es wurde **kein** Secret angelegt oder geändert.
+
+Zur Aktivierung fehlt genau zweierlei, beides Betriebssache:
+`npx wrangler secret put OPENAI_API_KEY` und — optional —
+`OPENAI_ASSISTANT_MODEL` (sonst gilt `gpt-5.6-luna`). Code, Werkzeugschema und
+Timeout stehen bereit.
+
+Geprüft und in `tests/assistant-phase10.test.mjs` festgehalten: kaputte und
+fehlende Modellargumente, `days` außerhalb der Schranke, Namen dicht neben einem
+echten Namen (`New_Orders`, `__proto__`, `constructor`, `new_orders;DROP TABLE`),
+strukturlose Modellantworten, Kappung bei sechs Werkzeugen, eine Modellantwort
+ganz ohne Werkzeugwahl, der Fallback ohne Anbieter über alle elf bekannten
+Fragen, acht Prompt-Injektionen und die Geschlossenheit der Registry.
+
+**Ergebnis Teil 3 — Datenschutz.** Die lokale Prüfbestellung trug absichtlich
+echte aussehende Kundendaten (`guest_email`, Name, Straße, PLZ, Telefon) in
+Spalten, die kein Werkzeug auswählen darf. Über alle Antworten hinweg:
+**0 Treffer.** Kein Token, keine E-Mail-Adresse, keine Anschrift, kein
+Webhook-Payload, keine interne Fehlermeldung. Ein absichtlich geworfener
+Werkzeugfehler erscheint als „interner Lesefehler", der Rohtext nicht.
+
+Abweisungen: `EVENTS`-Token → 401, erfundener `bcav_`-Token → 401, fremdes
+Tokenformat → 401, kein Token → 401. Eingabeprüfung produktiv nicht erreichbar,
+lokal vollständig: 400 (leer, Zusatzfeld, `tool` statt `message`, 1001 Zeichen,
+kaputtes JSON, `message` als Zahl, Array), 413 (über 4 KiB), 415 (falscher
+Content-Type). Ratenbegrenzung **produktiv** geprüft: 40 gleichzeitige Anfragen
+→ 34 × 429.
+
+**Prüfläufe:** `npm test` 516/516 (vorher 504, +12 neue), `npx tsc --noEmit`
+fehlerfrei, `npm run lint` 0 Fehler / 1 vorbestehende Warnung in
+`app/account/page.tsx`, WinUI-x64-Build 0 Warnungen / 0 Fehler.
+
+**Offen — und zwar nur diese Punkte:**
+
+1. **Migration `0011` produktiv einspielen.** Ohne sie bleibt der gesamte
+   Desktop-Pfad tot. Danach die vier Spalten nachsehen und eine Frage stellen:
+   ```
+   npx wrangler d1 execute brandycards-production --remote --file drizzle/0011_avatar_assistant_scope.sql
+   ```
+2. **Die sieben Fragen produktiv nachholen**, sobald 1 erledigt ist. Was sie
+   liefern werden, steht schon fest (aus D1 gelesen): 5 ungelesene von 248
+   eBay-Nachrichten, 0 offene Käufer-Preisvorschläge (leerer Fall, nicht
+   `UNAVAILABLE`), 276 Aufrufzeilen, 157 eBay-Verkaufsposten, 4 offene
+   Shop-Bestellungen, 0 neue Shop-Anfragen. Alle vier eBay-Lesequellen stehen
+   auf `OK` — es ist derzeit **nichts** `UNAVAILABLE`.
+3. **Spracheingabe live**, ebenfalls von 1 abhängig. Der Diktatpfad endet
+   nachweislich in derselben `SendAssistantMessageAsync`-Methode wie Text
+   (festgehalten in `tests/assistant-orchestrator.test.mjs`), aber zwei echte
+   gesprochene Fragen gegen Produktion konnten nicht gestellt werden.
+4. **Doppelte Bezeichnung in `UNAVAILABLE`-Antworten**, kosmetisch:
+   „eBay-Aufrufzahlen: Aufrufzahlen: eBay verweigert …". Der Formatierer setzt
+   das Label davor, die Meldung bringt ihr eigenes mit. Nicht angefasst, weil
+   außerhalb dieses Auftrags.
+
 ### 2026-08-16 - Die Verkaufsübersicht freischalten
 
 - Stand: **ABGESCHLOSSEN.**
