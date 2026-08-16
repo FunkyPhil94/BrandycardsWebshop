@@ -37,9 +37,15 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
+<!-- Fuer den naechsten Auftrag freihalten. -->
+
+Keine laufenden Aufträge.
+
+## Historie
+
 ### 2026-08-16 - Phase-8-Rollout nachtragen, veröffentlichen, Analytics-Scope vorbereiten
 
-- Stand: **LÄUFT.**
+- Stand: **ABGESCHLOSSEN.**
 - Anlass: Eine Statusabfrage hat zwei Lücken aufgedeckt. Erstens ist Phase 8
   **bereits in Produktion** — Worker-Version `fd9218f9` vom 2026-08-16 15:47 UTC,
   Migration `0012` angewendet, `ebay_read_syncs` gefüllt (`MESSAGES` und
@@ -65,7 +71,49 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
   Prüfung einer clientkonfigurationspflichtigen Seite, `git status --short`
   leer.
 
-## Historie
+**Ergebnis**
+
+1. **Richtiggestellt.** Der Phase-8-Eintrag unten trägt jetzt einen Nachtrag mit
+   Versionskennung und Uhrzeit des Rollouts.
+2. **Veröffentlicht.** `origin/main` steht auf `46f294e`; der Push war ein
+   Fast-Forward von `ef6f17a` über 99 Commits, es wurde nichts überschrieben.
+   `git rev-list --count origin/main..main` = 0.
+3. **Scope vorbereitet und ausgerollt.** `EBAY_OAUTH_CONSENT_SCOPES` steht in
+   `wrangler.toml` unter `[vars]` und ist im Worker gebunden (Deploy-Ausgabe
+   zeigt die Variable). Version `65d1e33a`.
+
+**Die Testprüfung wurde geändert, und zwar schärfer.**
+`tests/assistant-phase8.test.mjs` verlangte bis heute, dass die Variable in
+`wrangler.toml` **fehlt** — Phase 8 wollte damit eine stille Rechteausweitung
+verhindern. Da der Betreiber sie ausdrücklich angefordert hat, prüft die Stelle
+jetzt nicht mehr „nichts steht da", sondern „genau diese zwei Scopes stehen
+da" (`sell.inventory` + `sell.analytics.readonly`). Ein später angehängter
+dritter Scope fällt damit auf, was die alte Prüfung nicht mehr geleistet hätte.
+Der naheliegende Weg — die Variable als Cloudflare-Secret setzen, ohne Repo und
+Test zu berühren — wurde verworfen: Der Test wäre grün geblieben und hätte
+dabei etwas Falsches über die Produktion behauptet. Begründung ausführlich in
+[ai-agent-log.md](ai-agent-log.md).
+
+**Verifikation:** `npm test` 489/489, `npx tsc --noEmit` sauber, ESLint 0 Fehler
+(1 vorbestehende Warnung in `app/account/page.tsx`), `git diff --check` sauber.
+Build im Hauptverzeichnis mit `.env.local`; `dist/client/assets/i18n-Cf04_SOV.js`
+enthält die Supabase-Konfiguration, und **genau diese Datei** wird nach dem
+Deploy von `shop.brandycards.de` mit HTTP 200 ausgeliefert. `/`, `/admin`,
+`/account` und `/api/products` antworten mit 200 — `/admin` und `/account` sind
+die Seiten, die bei fehlender Client-Konfiguration brechen.
+
+**Offen und bewusst beim Kontoinhaber:** Die Aufrufzahlen melden weiterhin
+`SCOPE_NOT_GRANTED`, bis (a) im Adminbereich „eBay verbinden" erneut
+durchlaufen wird — die eBay-Anmeldung geht nur persönlich — und (b) der dabei
+ausgegebene **neue** Refresh-Token als Cloudflare-Secret hinterlegt wird
+(`npx wrangler secret put EBAY_REFRESH_TOKEN`). Der Token wurde hier weder
+gesehen noch angefasst; ein Geheimnis im Klartext geht nicht durch die KI. Der
+Lesesync versucht es nach einem Scope-Fehler alle 6 Stunden erneut
+(`EBAY_READ_SYNC_BLOCKED_BACKOFF_MS`), ein Deploy ist danach nicht nötig.
+
+**Nicht getan:** keine Änderung an Produktionsdaten, keine eBay-Zustimmung,
+keine Secrets angefasst, keine Remote-Migration (0012 lag bereits an), keine
+Änderung am Desktop-Projekt.
 
 ### 2026-08-16 - Phase 8 des Desktop-Assistenten: read-only-eBay-Datenintegration
 
