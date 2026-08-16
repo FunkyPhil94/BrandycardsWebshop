@@ -37,9 +37,15 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
+<!-- Fuer den naechsten Auftrag freihalten. -->
+
+Keine laufenden Aufträge.
+
+## Historie
+
 ### 2026-08-16 - Die Verkaufsübersicht freischalten
 
-- Stand: **LÄUFT.**
+- Stand: **ABGESCHLOSSEN.**
 - Vorgeschichte: Der Betreiber hat die dritte Zustimmungsrunde durchlaufen und
   den neuen `EBAY_REFRESH_TOKEN` hinterlegt. `SALES` steht seit dem Versuch um
   18:36:52 UTC auf `SCOPE_NOT_GRANTED` und wartet damit sechs Stunden.
@@ -54,7 +60,33 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 - Abnahme: `ebay_read_syncs` nach dem nächsten Lauf lesen; `SALES` muss `OK`
   melden oder einen anderen Grund als `SCOPE_NOT_GRANTED` nennen.
 
-## Historie
+**Ergebnis: alle vier Quellen auf `OK`.** Nach dem Secret-Wechsel (Version
+`744a789b`, 18:39:08 UTC) und dem Entfernen der Zustandszeile hat der nächste
+Lauf 157 Verkaufsposten geholt. `TRAFFIC` steht weiterhin auf `OK` (276) — der
+neue Token hat die Analytics-Rechte also mitgenommen, was bei einem
+Tokenwechsel nicht selbstverständlich ist und deshalb ausdrücklich geprüft
+wurde. `MESSAGES` (248) und `BEST_OFFERS` (0) unverändert.
+
+Erster echter Abruf gegen die Fulfillment-API, also die Probe, die bis dahin
+ausstand:
+
+| Fenster | eBay-Bestellungen | Karten | eBay-Bruttoumsatz | Shop |
+|---|---|---|---|---|
+| 30 Tage | 47 | 50 | 1 250,19 € | 4 Bestellungen, 15,82 € |
+| 90 Tage | 133 | 160 | 3 465,00 € | 4 Bestellungen, 15,82 € |
+
+Eine Währung, also entsteht eine Gesamtsumme: 1 266,01 € auf 30 Tage,
+3 480,82 € auf 90 Tage.
+
+**Der älteste geholte Verkauf datiert vom 19.05.** — knapp drei Monate vor dem
+09.08., an dem die Notification-Subscription anfing zu liefern. Das ist der
+Gewinn, den die Fulfillment-API gegenüber den gespeicherten Webhook-Meldungen
+hatte, und der Grund, warum die dritte Zustimmungsrunde die Mühe wert war: Aus
+den Webhooks allein wären es sechs Verkäufe gewesen, hier sind es 133.
+
+**Wichtig für später:** Diese Zeilen bleiben stehen, auch wenn sie aus dem
+90-Tage-Fenster fallen — die Tabelle wird nie leergeräumt. Die Historie wächst
+also über das Abfragefenster hinaus, solange der Sync läuft.
 
 ### 2026-08-16 - Phase 9: Verkaufsübersicht aus eBay, dritte Zustimmungsrunde
 
