@@ -37,9 +37,62 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-<!-- Fuer den naechsten Auftrag freihalten. -->
+### 2026-08-16 - Phase 7 des Desktop-Assistenten: Desktop-Stabilität
 
-Keine laufenden Aufträge.
+- Status: LÄUFT.
+- Ziel: Die drei Punkte, die Phase 6 ausdrücklich offen gelassen hat. Kein
+  neuer Funktionsumfang, keine Schreiboperation, keine Änderung an der
+  Sicherheitsgrenze des Orchestrators.
+- Ausgangslage: Dieser Arbeitszweig stand — wie schon der Phase-6-Zweig — auf
+  `75c3762` (= `main`) und damit vor der gesamten Phase-5-Arbeit. Erster
+  Schritt war deshalb ein reiner Fast-Forward auf den Phase-6-Stand `108add3`;
+  ohne ihn wäre gegen Code gearbeitet worden, den es in dieser Form nicht mehr
+  gibt. Der Zweig hatte keine eigenen Commits, es ging also nichts verloren.
+  Die Worktrees von Phase 5b und Phase 6 bleiben unberührt.
+
+**1. Per-Monitor-DPI-Wechsel**
+
+Der von Phase 6 benannte Rest des Mehrschirmthemas. `ToPhysicalPixels` rechnet
+mit der Skalierung des Bildschirms, auf dem das *Launcher*-Fenster gerade
+liegt; `PositionBesidePet` schiebt es danach auf den Bildschirm des *Pets*.
+Sind das zwei Monitore mit verschiedener Skalierung, entsteht die Größe mit
+dem falschen Faktor, und `WM_DPICHANGED` kommt erst hinterher. Zu prüfen sind
+beide Richtungen: verschobenes Pet und verschobener Launcher.
+
+Verwendet werden dürfen nur tatsächlich ermittelbare DPI-Werte (also am
+Zielmonitor bzw. am Fenster abgefragte), keine geratenen und kein veralteter
+Faktor.
+
+**Am Prüfgerät hängt genau ein Monitor.** Ein echter Zweischirmtest ist damit
+unmöglich und wird auch nicht behauptet. Stattdessen: Codeprüfung,
+Invariantenprüfung und Simulation der Rechenwege mit eingesetzten DPI-Werten;
+die Grenze wird dokumentiert.
+
+**2. Fehlernachrichten absichern**
+
+Der `HttpRequestException`-Pfad trägt laut Phase 6 weiterhin die
+Framework-Meldung im Anhang. Framework-Text, Stacktraces und interne
+technische Details dürfen nicht in der Oberfläche landen; stattdessen kurze,
+verständliche deutsche Sätze. Regressionstests dazu.
+
+**3. Pet-Größe**
+
+Größe und Atlas werden **nicht** geändert — es gibt kein höher aufgelöstes
+Ausgangsmaterial. Keine Interpolation, keine Änderung an `NativePetOverlay`
+ohne ausdrücklichen Folgeauftrag. Dokumentiert werden die Anforderungen an
+neues 2×-Material und die späteren Optionen.
+
+**4. Modell-Planer**
+
+Bleibt aus. Kein `OPENAI_API_KEY`, kein externer Aufruf, keine Änderung an
+`lib/assistant`.
+
+- Rahmen: keine Produktionsänderung, kein Deployment, kein Push zu `origin`,
+  keine Remote-Migration, keine eBay-Schreiboperation, keine Änderung an
+  Secrets, fremde Worktrees unangetastet.
+- Verifikation: `npm test`, `npx tsc --noEmit`, `npm run lint`,
+  WinUI-x64-Debug-Build, `git diff --check`, DPI- und Positionierungsprüfungen,
+  Offline-, Timeout- und HTTP-Fehlerpfade, Sichtprüfung des transparenten Pets.
 
 ## Historie
 
