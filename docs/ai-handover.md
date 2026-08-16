@@ -37,9 +37,49 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-<!-- Fuer den naechsten Auftrag freihalten. -->
+### 2026-08-16 - Variante 2: Domänengrammatik neben das Diktat
 
-Keine laufenden Aufträge.
+- Stand: **LÄUFT.**
+- Vorgeschichte: Variante 1 ist ausgerollt und **nachweislich scharf** — die
+  Prüfroute antwortet produktiv mit 401 statt 404. Der Betreiber hat danach
+  gesprochen geprüft: „absolut schrecklich, aber sie funktioniert prinzipiell".
+- **Was das beweist:** Die Auswahl kann nur unter dem wählen, was SAPI anbietet.
+  Ist die gemeinte Frage in keiner der fünf Lesarten enthalten, hilft kein
+  Schiedsrichter. Der Engpass liegt in der Erkennung, nicht in der Auswahl.
+  Variante 1 bleibt trotzdem sinnvoll — sie wird jetzt die zweite Schicht.
+- Auftrag: Variante 2 aus dem Arbeitsvorrat, vom Betreiber gewählt.
+
+**Bauweise.**
+
+Freies Diktat spannt die ganze deutsche Sprache auf; SAPI ist darin schwach und
+dafür auch nicht gebaut. Eine `Grammar` mit den tatsächlichen Fragemustern
+begrenzt den Suchraum auf das, was hier überhaupt gefragt wird — das ist der
+Betriebsfall, für den die Engine gemacht ist.
+
+- **Die Phrasen entstehen serverseitig**, nicht im Desktop. Eine zweite
+  Regelkopie in C# wäre die Doppelpflege, die Phase 4 beseitigt hat. Die
+  bestehende `GET`-Route liefert sie mit aus; ein neuer Pfad entsteht nicht.
+- **Ein Test hält die Grammatik am Planer fest:** Jede ausgelieferte Phrase muss
+  vom `RuleBasedAssistantPlanner` auf mindestens ein Werkzeug fallen. Damit kann
+  die Grammatik nicht von den Regeln wegdriften, ohne rot zu werden — und genau
+  das ist der Ersatz für die verbotene Kopie.
+- **Diktat bleibt geladen.** Die Grammatik allein presste jede ungewöhnliche
+  Formulierung in die nächstgelegene Phrase. Beide laufen nebeneinander; die
+  Grammatik gewinnt nur bei ausreichender Konfidenz, sonst greift der bisherige
+  Weg samt Variante-1-Vorauswahl.
+- **Rückfall:** Sind die Phrasen nicht erreichbar (kein Netz, alte Serverfassung),
+  läuft die Erkennung wie heute. Die Spracheingabe darf daran nicht scheitern.
+
+**Nebenbefund gleich mit:** `SelectRecognizer()` fällt heute stillschweigend auf
+einen englischen Erkenner zurück, wenn kein deutscher installiert ist. Eine
+deutsche Frage an eine englische Erkennung erklärt jede Ungenauigkeit. Künftig
+steht die verwendete Sprache in der Statusmeldung.
+
+**Abnahme:** `npm test`, `npx tsc --noEmit`, `npm run lint`, WinUI-x64-Build.
+Dazu der gesprochene Nachweis am Gerät — den kann nur der Betreiber führen.
+
+**Nicht Teil des Auftrags:** Produktionsdaten, Remote-Migrationen,
+eBay-Schreibvorgänge. `NativePetOverlay.cs` bleibt unberührt.
 
 ## Historie
 
