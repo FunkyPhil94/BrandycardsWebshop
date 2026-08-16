@@ -115,18 +115,30 @@
                          Background="{ThemeResource AvatarInputBrush}"
                          BorderBrush="{ThemeResource AvatarStrokeBrush}" />
 
-                <Grid Grid.Row="4" ColumnSpacing="10">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                        <ProgressRing x:Name="AssistantProgressRing" Width="18" Height="18" IsActive="False" Visibility="Collapsed" />
-                        <TextBlock x:Name="AssistantStatusTextBlock" AutomationProperties.LiveSetting="Polite" Text="Bereit" TextWrapping="Wrap" Foreground="{ThemeResource AvatarMutedBrush}" VerticalAlignment="Center" />
-                    </StackPanel>
-                    <Button x:Name="SendAssistantButton"
-                            Grid.Column="1"
-                            TabIndex="3"
+                    <Grid Grid.Row="4" ColumnSpacing="10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <ProgressRing x:Name="AssistantProgressRing" Width="18" Height="18" IsActive="False" Visibility="Collapsed" />
+                            <TextBlock x:Name="AssistantStatusTextBlock" AutomationProperties.LiveSetting="Polite" Text="Bereit" TextWrapping="Wrap" Foreground="{ThemeResource AvatarMutedBrush}" VerticalAlignment="Center" />
+                        </StackPanel>
+                        <Button x:Name="DictateAssistantButton"
+                                Grid.Column="1"
+                                TabIndex="3"
+                                Width="44"
+                                MinHeight="40"
+                                Click="DictateAssistantButton_Click"
+                                AutomationProperties.Name="Text diktieren"
+                                AutomationProperties.HelpText="Startet eine einmalige lokale Windows-Spracheingabe. Der erkannte Text wird wie eine geschriebene Frage an den Assistant übergeben."
+                                ToolTipService.ToolTip="Text lokal diktieren">
+                            <FontIcon Glyph="&#xE720;" />
+                        </Button>
+                        <Button x:Name="SendAssistantButton"
+                            Grid.Column="2"
+                            TabIndex="4"
                             Content="Senden"
                             Click="SendAssistantButton_Click"
                             AutomationProperties.Name="Nachricht senden"
@@ -137,7 +149,7 @@
 
                 <Button x:Name="ChangeConnectionButton"
                         Grid.Row="5"
-                        TabIndex="4"
+                        TabIndex="5"
                         Content="Verbindung ändern"
                         HorizontalAlignment="Left"
                         Click="ChangeConnectionButton_Click"

@@ -23,7 +23,9 @@ Nach erfolgreicher Kopplung bleiben zwei voneinander getrennte Fenster sichtbar:
 - Das bestehende per-pixel-transparente Desktop-Pet zeigt unverändert seine Animationen.
 - Links daneben öffnet der WinUI-Launcher auf Klick oder per Tastatur das Textpanel.
 
-Das Textpanel ist vollständig mit Tab, Umschalt+Tab, Enter/Leertaste und Escape bedienbar. Es ordnet natürlich formulierte Fragen lokal und deterministisch einer festen read-only Funktion der Assistant-API zu. Unterstützt werden Verkäufe, Listings, Bestellungen, Preisvorschläge, Bestandsprüfung, Shop-Anfragen, eBay-Datenverfügbarkeit, eBay-Sync und Statistiken. Unbekannte Fragen lösen keinen freien Modell- oder SQL-Aufruf aus, sondern zeigen die unterstützten Beispiele. Spracheingabe und freie Orchestrierung sind nicht Bestandteil dieser Phase.
+Das Textpanel ist vollständig mit Tab, Umschalt+Tab, Enter/Leertaste und Escape bedienbar. Es ordnet natürlich formulierte Fragen lokal und deterministisch einer festen read-only Funktion der Assistant-API zu. Unterstützt werden Verkäufe, Listings, Bestellungen, Preisvorschläge, Bestandsprüfung, Shop-Anfragen, eBay-Datenverfügbarkeit, eBay-Sync und Statistiken. Unbekannte Fragen lösen keinen freien Modell- oder SQL-Aufruf aus, sondern zeigen die unterstützten Beispiele.
+
+Der Mikrofon-Button startet eine einzelne Diktatsitzung über die lokale Windows-Desktop-Spracherkennung. Der erkannte Text wird als normale Frage durch dieselbe deterministische Zuordnung geleitet; die Antwort bleibt Text. Die App überträgt weder Audio noch ein Transkript an einen Sprachdienst und enthält keine Sprachausgabe oder freie Orchestrierung. Voraussetzung sind ein verfügbares Mikrofon, die Windows-Freigabe für Desktop-Apps sowie eine installierte Spracherkennung für die bevorzugte Windows-Sprache. Ist eine Voraussetzung nicht erfüllt, zeigt das Statusfeld eine konkrete, zugängliche Hinweisnachricht.
 
 ## Ereignisse
 

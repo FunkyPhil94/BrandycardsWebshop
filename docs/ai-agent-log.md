@@ -1,5 +1,45 @@
 # BrandyCards Agentenprotokoll
 
+## 2026-08-16 - Phase 3 des Desktop-Assistenten: lokale Windows-Spracheingabe
+
+Die bestehende App wird bewusst weiterhin unpackaged gestartet. Die aktuelle
+WinRT-`Windows.Media.SpeechRecognition`-API setzt Paketidentität voraus und
+würde damit den etablierten CLI-/Overlay-Startpfad verändern. Stattdessen nutzt
+der neue lokale `WindowsSpeechRecognitionService` die Windows Desktop Speech
+Recognition über `System.Speech`: Die einmalige in-process-Diktatsitzung lädt
+eine `DictationGrammar`, verwendet das Windows-Standardmikrofon und gibt nur
+den erkannten Text an den Launcher zurück. Audio und Transkript verlassen dabei
+nicht den lokalen Prozess.
+
+Der Mikrofon-Button ist ein Standard-WinUI-Button mit zugänglichem Namen und
+Hilfetext. Er liegt in der logischen Tab-Reihenfolge zwischen Texteingabe und
+Senden, kündigt „Windows hört zu …“ sowie Fehler über die vorhandene höfliche
+Live-Region an und deaktiviert Texteingabe, Mikrofon und Senden während einer
+laufenden Diktat- oder Datenabfrage. Nach Erfolg setzt der Handler den erkannten
+Text kurz in die normale Eingabe und ruft dann dieselbe
+`SendAssistantMessageAsync`-Methode auf wie eine Texteingabe. Folglich bleibt
+`AssistantConversationService.ResolveTool` der einzige natürliche
+Freitext-zu-Tool-Pfad; es gibt weder Modell-Orchestrierung noch Sprach- oder
+Realtime-Antworten.
+
+Die Fehlerzuordnung behandelt fehlende lokale Recognizer, gesperrte
+Mikrofonberechtigung, nicht unterstützte Plattformen, nicht initialisierbares
+Mikrofon und leere Diktate als konkrete Benutzerhinweise. Windows kann den
+Desktop-Datenschutzschalter jederzeit ändern; der Test verändert ihn deshalb
+nicht. Auf dem Prüfgerät waren die lokalen Erkenner Deutsch (Deutschland) und
+Englisch (Vereinigtes Königreich) installiert. Ein echter lokaler Aufruf ohne
+gesprochenen Text lief bis zum erwarteten leeren Ergebnis durch und stellte die
+Bedienelemente wieder her.
+
+Der x64-Debug-Build lief mit 0 Warnungen und 0 Fehlern. Die fokussierten
+Assistant-Tests bestanden 11/11, die Gesamtsuite 367/367, und TypeScript war
+fehlerfrei. Die interaktive UI-Automation bestätigte transparentes Pet und
+Launcher nebeneinander, die unveränderte effektive Panelgröße bei 150 % DPI
+sowie Namen, Fokusfähigkeit und Aktivierbarkeit des Mikrofon-Buttons. Weder
+`NativePetOverlay.cs`, Fensterpositionierung, Event-Polling noch Assistant-API
+wurden geändert; es gab keine Produktionsänderung, Remote-Migration oder
+Deployment.
+
 ## 2026-08-16 - Phase 2 des Desktop-Assistenten: zugänglicher WinUI-Launcher
 
 Das per-pixel-transparente native Pet bleibt ein eigenes, nicht aktivierendes

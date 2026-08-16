@@ -23,6 +23,7 @@ public sealed partial class MainPage : Page
     private readonly Queue<PendingAnimation> _animationQueue = new();
     private readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web);
     private readonly AssistantConversationService _assistantService;
+    private readonly WindowsSpeechRecognitionService _speechRecognitionService = new();
     private AvatarSettings _settings = new();
     private DeviceCursor? _cursor;
     private NativePetOverlay? _petOverlay;
@@ -32,6 +33,7 @@ public sealed partial class MainPage : Page
     private bool _initialized;
     private bool _assistantPanelExpanded;
     private bool _assistantRequestRunning;
+    private bool _speechRecognitionRunning;
     private bool _conversationInitialized;
 
     private static readonly IReadOnlyDictionary<string, AnimationSpec> Animations = new Dictionary<string, AnimationSpec>(StringComparer.OrdinalIgnoreCase)
@@ -241,7 +243,7 @@ public sealed partial class MainPage : Page
 
     private async void SendAssistantButton_Click(object sender, RoutedEventArgs e)
     {
-        if (_assistantRequestRunning) return;
+        if (_assistantRequestRunning || _speechRecognitionRunning) return;
 
         var message = AssistantInputTextBox.Text.Trim();
         if (message.Length == 0)
@@ -251,8 +253,42 @@ public sealed partial class MainPage : Page
             return;
         }
 
-        AddConversationMessage("Du", message, isUser: true);
         AssistantInputTextBox.Text = string.Empty;
+        await SendAssistantMessageAsync(message);
+    }
+
+    private async void DictateAssistantButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_assistantRequestRunning || _speechRecognitionRunning) return;
+
+        SetSpeechRecognitionBusy(true);
+        AssistantStatusTextBlock.Text = "Windows hört zu …";
+        try
+        {
+            var transcription = await _speechRecognitionService.TranscribeOnceAsync();
+            if (!transcription.Succeeded)
+            {
+                AssistantStatusTextBlock.Text = transcription.StatusMessage;
+                return;
+            }
+
+            var message = transcription.Text!;
+            AssistantInputTextBox.Text = message;
+            AssistantStatusTextBlock.Text = "Diktat erkannt; feste Abfrage wird zugeordnet …";
+            message = AssistantInputTextBox.Text.Trim();
+            AssistantInputTextBox.Text = string.Empty;
+            await SendAssistantMessageAsync(message);
+        }
+        finally
+        {
+            SetSpeechRecognitionBusy(false);
+            AssistantInputTextBox.Focus(FocusState.Programmatic);
+        }
+    }
+
+    private async Task SendAssistantMessageAsync(string message)
+    {
+        AddConversationMessage("Du", message, isUser: true);
         SetAssistantBusy(true);
         try
         {
@@ -274,7 +310,6 @@ public sealed partial class MainPage : Page
         finally
         {
             SetAssistantBusy(false);
-            AssistantInputTextBox.Focus(FocusState.Programmatic);
         }
     }
 
@@ -342,9 +377,22 @@ public sealed partial class MainPage : Page
         _assistantRequestRunning = isBusy;
         AssistantProgressRing.IsActive = isBusy;
         AssistantProgressRing.Visibility = isBusy ? Visibility.Visible : Visibility.Collapsed;
-        AssistantInputTextBox.IsEnabled = !isBusy;
-        SendAssistantButton.IsEnabled = !isBusy;
+        UpdateAssistantControlState();
         if (isBusy) AssistantStatusTextBlock.Text = "Assistant liest Daten …";
+    }
+
+    private void SetSpeechRecognitionBusy(bool isBusy)
+    {
+        _speechRecognitionRunning = isBusy;
+        UpdateAssistantControlState();
+    }
+
+    private void UpdateAssistantControlState()
+    {
+        var isBusy = _assistantRequestRunning || _speechRecognitionRunning;
+        AssistantInputTextBox.IsEnabled = !isBusy;
+        DictateAssistantButton.IsEnabled = !isBusy;
+        SendAssistantButton.IsEnabled = !isBusy;
     }
 
     private void Disconnect(string message, bool clearToken = true)

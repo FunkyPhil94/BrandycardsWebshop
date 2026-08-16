@@ -37,13 +37,21 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-- Status: LÄUFT.
-- Ziel: Ausschließlich Phase 3 des BrandyCards Personal Assistant implementieren: Der bestehende zugängliche WinUI-Launcher erhält eine lokale Windows-Spracheingabe, die Diktat als Text an die bereits vorhandene deterministische Phase-2-Zuordnung übergibt.
-- Rahmen: Keine Sprachausgabe, kein Realtime-Speech-to-Speech, kein freier Orchestrator und keine Änderung der Assistant-API. Das transparente Pet, `NativePetOverlay`, Event-Polling und Fensterpositionierung bleiben unverändert. Keine Produktionsdaten, Remote-Migrationen oder Deployments.
-- Umsetzung geplant: Ein zugänglicher Mikrofon-Button nutzt die lokale Windows-Desktop-Spracherkennung in einer einmaligen Diktatsitzung. Berechtigung, fehlendes Mikrofon, fehlende Windows-Spracherkennung, Abbruch und leeres Ergebnis werden als verständliche Live-Statusmeldungen behandelt. Der erkannte Text durchläuft anschließend unverändert `AssistantConversationService.ResolveTool`.
-- Prüfung geplant: x64-Build, fokussierte Tests und echter lokaler unpackaged Start mit Maus-, Tastatur-, Tab-, Screenreader-/UI-Automation- und Sichtprüfung. Die Prüfung hält die Einschränkungen der lokalen Windows-Sprachumgebung ausdrücklich fest.
+<!-- Fuer den naechsten Auftrag freihalten. -->
+
+Keine laufenden Aufträge.
 
 ## Historie
+
+### 2026-08-16 - Phase 3 des Desktop-Assistenten: lokale Windows-Spracheingabe
+
+- Status: ABGESCHLOSSEN.
+- Ergebnis: Der bestehende WinUI-Launcher besitzt jetzt einen zugänglichen Mikrofon-Button für eine einzelne lokale Windows-Diktatsitzung. Nur der erkannte Text wird danach als normale Nutzernachricht an die bestehende deterministische Freitext-Zuordnung übergeben; die Antwort bleibt ausschließlich Text.
+- Lokale Ausführung: `System.Speech` nutzt die installierte Windows Desktop Speech Recognition mit `DictationGrammar` und dem Standardmikrofon im lokalen App-Prozess. Weder Audio noch Transkript werden an einen Sprachdienst übertragen; es gibt keine Sprachausgabe, keine kontinuierliche Speech-to-Speech-Sitzung und keinen freien Orchestrator. Die Assistant-API bleibt unverändert.
+- Fehlerbehandlung und Zugänglichkeit: Nicht installierte Sprachfunktion, verweigerter Desktop-Mikrofonzugriff, nicht erreichbares Mikrofon, nicht unterstützte Plattform und leeres Diktat liefern konkrete höfliche Live-Statusmeldungen. Der Button hat Automation-Name und Hilfetext, liegt nach dem Textfeld vor Senden in der Tab-Reihenfolge und wird während Diktat oder Datenabfrage deaktiviert.
+- Prüfung: x64-Debug-Build erfolgreich mit 0 Warnungen und 0 Fehlern; fokussierte Assistant-Tests 11/11 sowie vollständiges `npm test` 367/367 bestanden; `npx tsc --noEmit` erfolgreich. Echte unpackaged Sichtprüfung in der interaktiven Windows-Sitzung: Pet und Launcher gleichzeitig sichtbar, Panel bei 150 % DPI 780×1020 physische (= 520×680 effektive) Pixel, UI-Automation bestätigt Mikrofon-Button mit Name, Fokusfähigkeit und Bedienbarkeit. Ein echter lokaler Diktataufruf ohne gesprochenen Inhalt meldete erwartungsgemäß „Es wurde kein Diktat erkannt …“ und reaktivierte den Button. Installierte Engines: Deutsch (Deutschland) und Englisch (Vereinigtes Königreich).
+- Einschränkung: Der Test konnte den bewusst nicht veränderten Windows-Datenschutzschalter nicht verweigern; dieser Pfad wird durch die explizite `UnauthorizedAccessException`-Meldung behandelt. Für produktive Nutzung bleibt außerdem die bereits bekannte HTTPS-/DPAPI-/Widerrufshärtung der Geräteverbindung offen.
+- Unverändert: `NativePetOverlay.cs`, Pet-Positionierung, Event-Polling, Assistant-API, Produktionsdaten, Remote-Migrationen, eBay-Schreibvorgänge und Deployments.
 
 ### 2026-08-16 - Phase 2 des Desktop-Assistenten: zugänglicher WinUI-Launcher
 
