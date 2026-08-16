@@ -37,9 +37,49 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-<!-- Fuer den naechsten Auftrag freihalten. -->
+### 2026-08-16 - Phase 9: Verkaufsübersicht aus eBay, dritte Zustimmungsrunde
 
-Keine laufenden Aufträge.
+- Stand: **LÄUFT.**
+- Auftrag des Betreibers: (1) die Zustimmung um den Fulfillment-Scope erweitern,
+  (2) eine Übersicht „meine Verkäufe der letzten x Tage".
+- Reihenfolge mit Absicht: Teil 1 zuerst ausrollen, damit der Betreiber die
+  Zustimmung durchlaufen kann, während Teil 2 entsteht. Teil 2 läuft ohne den
+  neuen Token in `SCOPE_NOT_GRANTED` — dieselbe Bauweise wie bei den
+  Aufrufzahlen in Phase 8, kein Sonderfall.
+
+**Teil 1 — Zustimmung**
+
+`EBAY_OAUTH_CONSENT_SCOPES` bekommt `sell.fulfillment.readonly` dazu. Belegt an
+der eBay-Dokumentation zu `getOrders`: `sell.fulfillment` oder
+`sell.fulfillment.readonly`; genommen wird die lesende Fassung, weil hier nichts
+geschrieben wird. Der Test, der die Liste festhält, wird von zwei auf drei
+Scopes nachgezogen — er bleibt eine Gleichheitsprüfung, damit ein vierter
+Scope weiterhin auffällt.
+
+**Teil 2 — Verkaufsübersicht**
+
+- Quelle: Sell **Fulfillment** API, `GET /sell/fulfillment/v1/order`. Sie
+  liefert das, was den bisherigen Quellen fehlt: Beträge und Verkäufe aus der
+  Zeit **vor** dem 09.08., als es die Notification-Subscription noch nicht gab.
+- „Meine ganzen Verkäufe" heißt beide Kanäle: eBay **und** die Shop-Bestellungen
+  aus `orders`. Eine Übersicht, die den eigenen Shop verschweigt, wäre falsch
+  beschriftet.
+- Bauweise wie Phase 8: Sync nach D1 (neue Tabelle `ebay_sales`, Migration
+  `0013`), eigener Eintrag in `ebay_read_syncs`, Fenstersemantik für
+  Idempotenz, Drosselung. Kein eBay-Aufruf im Anfragepfad des Assistenten.
+- Neues Werkzeug `sales_overview` mit Parameter `days` (Vorgabe 30, Obergrenze
+  90 — das ist das Fenster, das eBay je Abfrage zulässt).
+- **Mit Umsatz**, ausdrücklich nachgefordert. Ausgewiesen wird die Summe je
+  Kanal und gesamt, und zwar als **Bruttoumsatz vor eBay-Gebühren**: der
+  Betrag, den der Käufer gezahlt hat, inklusive der von ihm getragenen
+  Versandkosten. Was eBay davon einbehält, steht in der Fulfillment-Antwort
+  nicht vollständig — eine Zahl „nach Gebühren" wäre geraten. Der Assistent
+  muss die Bezugsgröße deshalb mitsagen, nicht bloß eine Zahl nennen.
+- Grenzen: keine Käuferdaten, keine Adressen, keine Schreibaufrufe an eBay.
+  Gespeichert werden Zeitpunkt, Artikelnummer, Titel, Menge, Betrag, Währung.
+- Abnahme: `npm test`, `npx tsc --noEmit`, ESLint, lokale Migration mit
+  Wiederholungslauf, Tests für leere/lückenhafte Antworten sowie Scope- und
+  Rate-Limit-Fehler.
 
 ## Historie
 
