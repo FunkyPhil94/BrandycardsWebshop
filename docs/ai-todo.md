@@ -24,19 +24,70 @@ benutzt `System.Speech` mit einer blanken `DictationGrammar()` — die alte
 SAPI-Desktop-Erkennung. Freies Diktat trifft Fachvokabular schlecht, und die
 Fragen bestehen genau daraus.
 
-Drei Ansätze, aufsteigend nach Aufwand:
+### Variante 1 — die ausgewählte. Beste Alternative statt der ersten
 
-1. **Die beste Alternative nehmen, nicht die erste.** `RecognitionResult`
-   liefert `Alternates`. Statt blind `result.Text` zu nehmen: die Alternativen
-   durchgehen und die erste verwenden, die der Regelplaner auf ein Werkzeug
-   abbildet. Die Domäne ist klein und geschlossen — der Planer ist damit der
-   natürliche Schiedsrichter über eine unsichere Erkennung. Kleinster Eingriff,
-   vermutlich größte Wirkung.
-2. **Eine Domänengrammatik neben das Diktat legen.** Ein `GrammarBuilder` mit
-   den tatsächlichen Fragemustern und ihren Schlüsselwörtern. Erkannt werden
-   muss nicht der ganze Satz, sondern nur das Wort, an dem der Planer hängt.
-3. **Auf `Windows.Media.SpeechRecognition` wechseln** (WinRT, ebenfalls
-   offline). Größerer Umbau, moderne Engine.
+**Vom Betreiber am 2026-08-16 als der Weg bestimmt, absichtlich noch nicht
+umgesetzt.** Hier steht alles, was zur Umsetzung nötig ist; der
+Gesprächsverlauf wird nicht gebraucht.
+
+**Die Idee.** `SpeechRecognitionEngine.Recognize()` liefert ein
+`RecognitionResult`, das neben `Text` auch `Alternates` trägt — eine nach
+Konfidenz sortierte Liste weiterer Lesarten desselben Diktats. Heute wird blind
+die erste genommen. Stattdessen: die Alternativen durchgehen und **die erste
+verwenden, die der Regelplaner auf mindestens ein Werkzeug abbildet.**
+
+Das funktioniert, weil die Domäne klein und geschlossen ist. Von zwölf
+Werkzeugen abgedeckte Fragen sind ein winziger Ausschnitt des Deutschen; eine
+Lesart, die dort landet, ist mit hoher Wahrscheinlichkeit die gemeinte. Der
+Planer wird damit zum Schiedsrichter über eine unsichere Erkennung, statt dass
+ein zweites Erkennungssystem danebengestellt wird.
+
+**Betroffene Stellen.**
+
+- [WindowsSpeechRecognitionService.cs](../avatar/BrandyCards.Desktop/WindowsSpeechRecognitionService.cs):
+  `TranscribeOnce()` gibt heute `SpeechTranscriptionResult(result.Text, …)`
+  zurück. Es muss **alle** Kandidaten herausreichen — `result.Text` zuerst,
+  danach `result.Alternates` nach Konfidenz — statt nur einen Text.
+- [MainPage.xaml.cs:308](../avatar/BrandyCards.Desktop/MainPage.xaml.cs)
+  (`transcription = await _speechRecognitionService.TranscribeOnceAsync()`):
+  Hier wird ausgewählt und anschließend wie bisher
+  `SendAssistantMessageAsync(message)` aufgerufen. Der gemeinsame Text- und
+  Diktatpfad **darf nicht aufgeteilt werden** — `tests/assistant-orchestrator.test.mjs`
+  hält fest, dass beide Eingabearten in derselben Methode enden.
+
+**Die Hürde, an der der naive Entwurf scheitert.** Der Planer liegt
+serverseitig in `lib/assistant/planner.ts`; der Desktop kennt ihn nicht und
+soll ihn auch nicht nachbauen — eine zweite Regelkopie in C# wäre genau die
+Doppelpflege, die Phase 4 beseitigt hat. Zwei gangbare Wege:
+
+- **Vorzugsweise:** die bestehende `GET`-Route
+  `/api/avatar/device/assistant` liefert bereits die Werkzeugliste. Eine
+  Erweiterung, die zu einem Text nur meldet, *ob* er zuordenbar ist (ohne die
+  Frage auszuführen), bliebe read-only und ließe die Regeln, wo sie sind.
+  Kosten: ein Aufruf je Kandidat, begrenzt auf die ersten drei bis fünf.
+- **Sonst:** den ersten Kandidaten wie bisher senden und bei `UNSUPPORTED`
+  automatisch den nächsten probieren. Ohne neue Route, dafür mit sichtbarer
+  Verzögerung und mehreren Anfragen — die Ratenbegrenzung liegt bei zehn
+  Anfragen je Minute, die Kandidatenzahl gehört also hart gedeckelt.
+
+**Abnahmekriterien.**
+
+1. Eine gesprochene Frage, deren beste Erkennung danebenliegt, deren zweite
+   oder dritte aber trifft, wird korrekt beantwortet.
+2. Liegt **keine** Alternative im Werkzeugraum, bleibt es beim ersten Kandidaten
+   und der bisherigen `UNSUPPORTED`-Antwort. Es wird nichts erraten.
+3. Der Diktatpfad endet weiterhin in `SendAssistantMessageAsync`; der
+   bestehende Test dazu bleibt unverändert grün.
+4. Die Zahl der Kandidaten ist gedeckelt und im Code begründet.
+5. `npm test`, `npx tsc --noEmit`, `npm run lint`, WinUI-x64-Build.
+
+### Weitere Ansätze, falls Variante 1 nicht reicht
+
+- **Eine Domänengrammatik neben das Diktat legen.** Ein `GrammarBuilder` mit
+  den tatsächlichen Fragemustern und ihren Schlüsselwörtern. Erkannt werden
+  muss nicht der ganze Satz, sondern nur das Wort, an dem der Planer hängt.
+- **Auf `Windows.Media.SpeechRecognition` wechseln** (WinRT, ebenfalls
+  offline). Größerer Umbau, moderne Engine.
 
 Unabhängig davon hilft dem SAPI-Erkenner das Windows-Sprachtraining
 (Systemsteuerung → Spracherkennung → „Sprachtraining starten") spürbar. Das ist
