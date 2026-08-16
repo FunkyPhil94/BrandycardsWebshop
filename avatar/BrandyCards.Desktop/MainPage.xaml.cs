@@ -16,6 +16,18 @@ public sealed partial class MainPage : Page
 {
     private const int FrameWidth = 192;
     private const int FrameHeight = 208;
+
+    /// <summary>
+    /// Zeitrahmen für Kopplung und Ereignisabruf — bewusst kurz.
+    ///
+    /// Der Abruf wiederholt sich alle drei Sekunden und darf nicht auf den
+    /// langen Assistant-Zeitrahmen warten; ein vorübergehend stummer Shop soll
+    /// binnen Sekunden als „nicht erreichbar" sichtbar werden. Der gemeinsame
+    /// <see cref="HttpClient"/> ist deshalb auf den *längsten* Fall eingestellt,
+    /// und die kurzen Pfade setzen ihre eigene Grenze je Aufruf.
+    /// </summary>
+    private static readonly TimeSpan ShopRequestTimeout = TimeSpan.FromSeconds(12);
+
     private readonly HttpClient _httpClient = new();
     private readonly DispatcherTimer _pollTimer;
     private readonly DispatcherTimer _animationTimer;
@@ -55,7 +67,11 @@ public sealed partial class MainPage : Page
         _animationTimer.Tick += AnimationTimer_Tick;
         _idleTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(160) };
         _idleTimer.Tick += IdleTimer_Tick;
-        _httpClient.Timeout = TimeSpan.FromSeconds(12);
+        // `HttpClient.Timeout` ist eine Obergrenze für den gesamten Client und
+        // lässt sich je Aufruf nicht verlängern, nur verkürzen. Deshalb steht
+        // hier der längste Fall — die Assistant-Anfrage — und die kurzen Pfade
+        // begrenzen sich selbst über `ShopRequestTimeout`.
+        _httpClient.Timeout = AssistantConversationService.RequestTimeout;
         _assistantService = new AssistantConversationService(_httpClient);
         SpriteImage.Source = new BitmapImage(new Uri(Path.Combine(AppContext.BaseDirectory, "Assets", "spritesheet.png")));
         ApplyFrame();
@@ -97,7 +113,8 @@ public sealed partial class MainPage : Page
             {
                 Content = new StringContent(JsonSerializer.Serialize(new { code }), Encoding.UTF8, "application/json"),
             };
-            using var response = await _httpClient.SendAsync(request);
+            using var timeout = new CancellationTokenSource(ShopRequestTimeout);
+            using var response = await _httpClient.SendAsync(request, timeout.Token);
             if (!response.IsSuccessStatusCode)
             {
                 throw new InvalidOperationException(await ReadApiErrorAsync(response));
@@ -114,6 +131,14 @@ public sealed partial class MainPage : Page
             _cursor = null;
             await SettingsStore.SaveAsync(_settings);
             await StartConnectedAsync();
+        }
+        catch (OperationCanceledException)
+        {
+            StatusTextBlock.Text = $"Der Shop hat innerhalb von {ShopRequestTimeout.TotalSeconds:0} Sekunden nicht geantwortet. Bitte Adresse prüfen und erneut versuchen.";
+        }
+        catch (HttpRequestException ex)
+        {
+            StatusTextBlock.Text = $"Der Shop ist unter dieser Adresse nicht erreichbar: {ex.Message}";
         }
         catch (Exception ex)
         {
@@ -155,7 +180,8 @@ public sealed partial class MainPage : Page
             if (query.Count > 0) eventsUrl += $"?{string.Join("&", query)}";
             using var request = new HttpRequestMessage(HttpMethod.Get, eventsUrl);
             request.Headers.Authorization = new("Bearer", _settings.DeviceToken);
-            using var response = await _httpClient.SendAsync(request);
+            using var timeout = new CancellationTokenSource(ShopRequestTimeout);
+            using var response = await _httpClient.SendAsync(request, timeout.Token);
             if (!response.IsSuccessStatusCode)
             {
                 if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
@@ -183,6 +209,12 @@ public sealed partial class MainPage : Page
             _cursor = feed.NextCursor;
             _settings.Cursor = _cursor;
             await SettingsStore.SaveAsync(_settings);
+        }
+        catch (OperationCanceledException)
+        {
+            // Der nächste Tick kommt in drei Sekunden; deshalb reicht hier ein
+            // Hinweis ohne die englische Framework-Meldung.
+            StatusTextBlock.Text = "Shop antwortet nicht; Verbindung wird erneut versucht …";
         }
         catch (Exception ex)
         {
@@ -311,6 +343,22 @@ public sealed partial class MainPage : Page
             var reply = await _assistantService.AskAsync(shopUrl, _settings.DeviceToken, message);
             AddConversationMessage("Assistant", reply, isUser: false);
             AssistantStatusTextBlock.Text = "Antwort empfangen";
+        }
+        catch (OperationCanceledException)
+        {
+            // Die einzige Abbruchquelle ist der Zeitrahmen des HttpClient; die
+            // Framework-Meldung dazu ist englisch und nennt eine Zahl, die der
+            // Nutzer nicht einordnen kann.
+            AddConversationMessage(
+                "Assistant",
+                $"Der Shop hat innerhalb von {AssistantConversationService.RequestTimeout.TotalSeconds:0} Sekunden nicht geantwortet. Die Frage wurde nicht beantwortet; bitte erneut stellen.",
+                isUser: false);
+            AssistantStatusTextBlock.Text = "Zeitüberschreitung";
+        }
+        catch (HttpRequestException ex)
+        {
+            AddConversationMessage("Assistant", $"Der Shop ist gerade nicht erreichbar: {ex.Message}", isUser: false);
+            AssistantStatusTextBlock.Text = "Shop nicht erreichbar";
         }
         catch (Exception ex)
         {

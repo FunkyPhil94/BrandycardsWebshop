@@ -37,9 +37,15 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
+<!-- Fuer den naechsten Auftrag freihalten. -->
+
+Keine laufenden Aufträge.
+
+## Historie
+
 ### 2026-08-16 - Phase 5b des Desktop-Assistenten: Produktionsvorbereitung
 
-- Status: LÄUFT.
+- Status: ABGESCHLOSSEN.
 - Ziel: Die beiden in Phase 5 ausdrücklich offen gelassenen Befunde schließen,
   soweit sie einer produktiven Kopplung im Weg stehen. Kein neuer Funktions-
   umfang, keine Schreiboperation, keine Änderung an der Sicherheitsgrenze des
@@ -76,7 +82,95 @@ ausgewiesen.
   WinUI-x64-Debug-Build, Sichtprüfung von Pet und Launcher, Timeout- und
   Abbruchverhalten ohne `OPENAI_API_KEY`, `git diff --check`.
 
-## Historie
+**Ergebnis 1: Zeitrahmen**
+
+- `AssistantConversationService.RequestTimeout` = **30 s**, dokumentiert gegen
+  `MODEL_TIMEOUT_MS` = 15 s. `_httpClient.Timeout` übernimmt diesen Wert, weil
+  `HttpClient.Timeout` clientweit gilt und sich je Aufruf nur verkürzen lässt.
+- `MainPage.ShopRequestTimeout` = **12 s**, unverändert für Kopplung und
+  Ereignisabruf, jetzt je Aufruf über eine eigene `CancellationTokenSource`.
+- Neue eigene Anzeigen: `OperationCanceledException` → „Der Shop hat innerhalb
+  von 30 Sekunden nicht geantwortet …" mit Status „Zeitüberschreitung";
+  `HttpRequestException` → „Der Shop ist gerade nicht erreichbar: …" mit Status
+  „Shop nicht erreichbar". Vorher stand dort die englische Framework-Meldung.
+- `tests/assistant-phase5b.test.mjs` liest beide Zahlen aus den echten
+  Quelldateien und erzwingt Client ≥ Server + 5 s Netzpuffer, Obergrenze
+  ≤ 60 s, kein `InfiniteTimeSpan`, kurze Pfade kürzer als der lange.
+
+**Ergebnis 2: Pet und Taskleiste**
+
+- `NativePetOverlay.Show()` ankert über `SPI_GETWORKAREA` statt
+  `SM_CXSCREEN`/`SM_CYSCREEN`. Ränder 32/48 unverändert, Fenstergröße
+  unverändert 260×300, Zeichenweg und Alpha-Pfad nicht berührt.
+- Gemessen am Prüfgerät (2160×1440, 144 dpi = 150 %, Taskleiste 72 px):
+  vorher Pet-Unterkante 1392 bei Arbeitsbereichsrand 1368 — **24 px
+  Überlappung**; nachher 1320 — **0 px**. Beides mit einem Wegwerf-Programm
+  gemessen, das genau diese Datei einbindet, gegen die alte und die neue
+  Fassung.
+- Am laufenden Fenster: Pet (1868,1020)–(2128,1320), Launcher
+  (1252,1164)–(1852,1320) — gleiche Unterkante, 16 px Abstand. Vorher standen
+  beide 24 px versetzt, weil `MainWindow.PositionBesidePet` längst gegen
+  `DisplayArea.Primary.WorkArea` rechnete.
+
+**Am laufenden Fenster geprüft (150 % DPI, ohne Produktionskontakt)**
+
+Die produktive `settings.json` wurde vorher gesichert, während der Prüfung auf
+einen toten bzw. hängenden lokalen Port gezeigt und danach **byte-gleich**
+wiederhergestellt (SHA256 vorher = nachher). Kein Aufruf ging an
+`shop.brandycards.de`.
+
+- Setup-Fenster beim Start: 780×1140 physisch = **520×760 effektiv**. Der
+  Phase-5-DPI-Fix greift also auch im Konstruktorpfad.
+- Launcher eingeklappt 600×156 physisch = 400×104 effektiv; Panel geöffnet
+  780×1020 physisch = 520×680 effektiv.
+- Pet transparent, Animation läuft, `WS_EX_LAYERED` gesetzt, keine
+  Taskleistenüberlappung — per Bildschirmaufnahme belegt.
+- **Timeout:** Gegen einen TCP-Server, der annimmt und nie antwortet, stand das
+  Panel 20 s nach dem Senden noch auf „Assistant liest Daten …" (mit den alten
+  12 s wäre es gescheitert) und meldete nach 30 s die Zeitüberschreitung; die
+  Bedienelemente wurden danach wieder freigegeben.
+- **Offline:** Gegen einen toten Port meldete das Panel „Der Shop ist gerade
+  nicht erreichbar: … Verbindung verweigerte. (127.0.0.1:9)".
+- Alles ohne gesetzten `OPENAI_API_KEY`; der Pfad ohne Schlüssel funktioniert
+  unverändert.
+
+**Messfalle, unbedingt merken**
+
+Ein Prüfskript ohne eigene DPI-Kennzeichnung bekommt von `GetWindowRect`
+virtualisierte Koordinaten. Das Pet erschien dadurch als 173×200, der Launcher
+als 400×104 und das Setup-Fenster als 520×760 — was fälschlich wie ein
+DPI-Fehler aussah. Erst `SetThreadDpiAwarenessContext(PER_MONITOR_AWARE_V2)`
+im **Beobachter** liefert echte Werte. Wer hier misst, muss das setzen.
+
+**Nicht geprüft / bewusst nicht geändert**
+
+- **Mehrschirmbetrieb weiterhin nicht real geprüft** — `SM_CMONITORS` meldet 1,
+  am Gerät hängt ein Monitor. Aus dem Code unverändert: Pet
+  (`SPI_GETWORKAREA` → Primärmonitor) und Launcher (`DisplayArea.Primary`)
+  ankern beide fest am Primärmonitor; ein auf einen zweiten Monitor gezogenes
+  Launcherfenster springt beim nächsten Öffnen oder Schließen zurück. Das
+  bleibt offen.
+- Die **Pet-Größe** bleibt bei 150 % effektiv 173×200. Sie zu ändern hieße,
+  Pixelgrafik zu skalieren, und berührt Transparenz und Erscheinungsbild —
+  eine eigene Entscheidung, nicht Teil dieses Auftrags.
+- Der **Serverfehlerpfad** (HTTP-Status vom Shop) wurde nicht live ausgelöst,
+  weil dafür ein laufender Shop nötig wäre; er ist unverändert aus Phase 5 und
+  im Test über die Quelldatei abgesichert.
+- Der Modell-Planer wurde erneut **nicht** live aufgerufen. Kein Test spricht
+  mit einem externen Anbieter.
+- README unverändert: Weder die Projekt- noch die Desktop-README dokumentiert
+  einen Timeout-Wert, es gab also nichts nachzuziehen.
+
+**Prüfläufe**
+
+- `npm test`: **404/404** bestanden (vorher 395; 9 neu in
+  `tests/assistant-phase5b.test.mjs`).
+- `npx tsc --noEmit`: fehlerfrei. `npm run lint`: 0 Fehler, weiterhin nur die
+  bekannte Hook-Warnung in `app/account/page.tsx`.
+- WinUI x64 Debug: 0 Warnungen, 0 Fehler. `git diff --check`: sauber.
+- Keine Produktionsänderung, keine Remote-Migration, kein Deployment, keine
+  Secrets angefasst, keine Schreiboperation im Assistant, Orchestrator-Grenze
+  unverändert.
 
 ### 2026-08-16 - Phase 5 des Desktop-Assistenten: Prüfung und Abnahme
 

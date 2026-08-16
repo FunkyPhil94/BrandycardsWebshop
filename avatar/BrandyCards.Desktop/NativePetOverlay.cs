@@ -23,6 +23,9 @@ internal sealed class NativePetOverlay : IDisposable
     private const byte AcSrcAlpha = 1;
     private const uint SmCxScreen = 0;
     private const uint SmCyScreen = 1;
+    private const uint SpiGetWorkArea = 0x0030;
+    private const int RightMargin = 32;
+    private const int BottomMargin = 48;
     private const uint WmNchittest = 0x0084;
     private const uint WmLbuttonDblclk = 0x0203;
     private const uint WmRbuttonUp = 0x0205;
@@ -80,11 +83,48 @@ internal sealed class NativePetOverlay : IDisposable
     public void Show()
     {
         ThrowIfDisposed();
-        var x = GetSystemMetrics(SmCxScreen) - WindowWidth - 32;
-        var y = GetSystemMetrics(SmCyScreen) - WindowHeight - 48;
+        var workArea = PrimaryWorkArea();
+        var x = workArea.Right - WindowWidth - RightMargin;
+        var y = workArea.Bottom - WindowHeight - BottomMargin;
         SetWindowPos(_windowHandle, new IntPtr(-1), x, y, WindowWidth, WindowHeight, SwpNoActivate | SwpShowWindow);
         ShowWindow(_windowHandle, SwShowNoActivate);
         SetFrame(0, 0);
+    }
+
+    /// <summary>
+    /// Rechte untere Ecke des Arbeitsbereichs auf dem Primärmonitor.
+    ///
+    /// Vorher ankerte das Fenster an `SM_CXSCREEN`/`SM_CYSCREEN`, also an der
+    /// *gesamten* Bildschirmfläche, und die 48 Pixel Abstand waren zugleich als
+    /// Platzhalter für die Taskleiste gedacht. Dafür reichen sie nicht: Auf dem
+    /// Prüfgerät ist die Taskleiste bei 150 % Skalierung 72 physische Pixel hoch
+    /// (2160×1440 Fläche, Arbeitsbereich bis 1368), das Fenster ragte also
+    /// gemessene 24 Pixel darunter. `SPI_GETWORKAREA` liefert die Fläche ohne
+    /// Taskleiste — unabhängig von deren Höhe und davon, an welcher Kante sie
+    /// klebt — und ist derselbe Bezug, den `MainWindow.PositionBesidePet` für
+    /// das danebenliegende Fenster längst verwendet. Erst dadurch stehen beide
+    /// tatsächlich auf einer Linie.
+    ///
+    /// Größe, Zeichenweg und Transparenz bleiben unberührt: Es ändert sich
+    /// ausschließlich der Startpunkt.
+    /// </summary>
+    private static Rect PrimaryWorkArea()
+    {
+        var workArea = new Rect();
+        if (SystemParametersInfo(SpiGetWorkArea, 0, ref workArea, 0))
+        {
+            return workArea;
+        }
+
+        // Ohne Arbeitsbereich lieber die alte Bildschirmfläche als gar keine
+        // Position: Das Fenster steht dann wie bisher, statt zu verschwinden.
+        return new Rect
+        {
+            Left = 0,
+            Top = 0,
+            Right = GetSystemMetrics(SmCxScreen),
+            Bottom = GetSystemMetrics(SmCyScreen),
+        };
     }
 
     public void Hide()
@@ -280,6 +320,9 @@ internal sealed class NativePetOverlay : IDisposable
 
     [DllImport("user32.dll")]
     private static extern int GetSystemMetrics(uint index);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool SystemParametersInfo(uint action, uint uiParam, ref Rect rect, uint winIni);
 
     [DllImport("user32.dll")]
     private static extern bool ShowWindow(IntPtr windowHandle, int command);

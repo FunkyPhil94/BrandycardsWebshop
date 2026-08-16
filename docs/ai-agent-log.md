@@ -1,5 +1,93 @@
 # BrandyCards Agentenprotokoll
 
+## 2026-08-16 - Phase 5b: die beiden offenen Punkte aus Phase 5 schließen
+
+Phase 5 hat zwei Befunde bewusst stehen lassen und im Übergabeprotokoll
+begründet, warum. Beide sind hier erledigt — und beide zeigen, dass die
+Begründung von damals richtig war, die Sache aber nicht auf sich beruhen
+konnte.
+
+**Der Zeitrahmen war in der falschen Richtung geordnet.** Der Client wartete
+zwölf Sekunden, der Modell-Planer darf fünfzehn laufen. Solange kein
+Modellzugang konfiguriert ist, fällt das nicht auf: Der lokale Planer antwortet
+in Millisekunden. Sobald er konfiguriert wird, hätte der Desktop bei jeder
+frei formulierten Frage drei Sekunden zu früh aufgegeben und einen Fehler
+gezeigt, während der Server noch an derselben Frage arbeitete — die schlechteste
+denkbare Fehlerart, weil sie erst in dem Moment auftritt, in dem das Feature
+scharf gestellt wird, und wie ein Serverfehler aussieht.
+
+Die naheliegende Korrektur — `_httpClient.Timeout` einfach hochsetzen — wäre
+falsch gewesen. Derselbe Client holt alle drei Sekunden Ereignisse ab; ein
+stummer Shop hätte den Abruf dann eine halbe Minute blockiert, statt binnen
+Sekunden „nicht erreichbar" zu melden. `HttpClient.Timeout` ist aber eine
+Obergrenze für den gesamten Client und lässt sich je Aufruf nur verkürzen,
+nicht verlängern. Also steht dort jetzt der *längste* Fall — die
+Assistant-Anfrage mit 30 s — und Kopplung wie Ereignisabruf begrenzen sich
+selbst über eine eigene `CancellationTokenSource` mit 12 s. Die 30 s sind
+nicht gegriffen: Sie lassen dem Serverpfad den doppelten Modellzeitrahmen
+plus Netzweg und bleiben eine harte Grenze; endlos wartet nichts.
+
+Dass die beiden Werte in verschiedenen Sprachen und Projekten liegen — C# hier,
+TypeScript dort — ist genau der Grund, warum ein Kommentar nicht reicht. Wer
+`MODEL_TIMEOUT_MS` anfasst, sieht die C#-Datei nicht. `tests/assistant-phase5b.test.mjs`
+liest deshalb beide Zahlen aus den echten Quelldateien und erzwingt die
+Ordnung samt Netzpuffer. Derselbe Test hält fest, dass die Grenze endlich
+bleibt und dass die kurzen Pfade kurz bleiben.
+
+Am Fenster wurde nachgeprüft, was der Nutzer davon sieht. Gegen einen
+TCP-Server, der Verbindungen annimmt und nie antwortet, stand das Panel
+zwanzig Sekunden nach dem Senden noch auf „Assistant liest Daten …" — mit den
+alten zwölf Sekunden wäre es da längst gescheitert — und meldete nach dreißig
+Sekunden „Der Shop hat innerhalb von 30 Sekunden nicht geantwortet." Ein
+Abbruch entsteht hier ausschließlich aus dem Zeitrahmen, deshalb bekommt
+`OperationCanceledException` einen eigenen Zweig; sonst stünde die englische
+Framework-Meldung samt einer Zahl im Panel, die niemand einordnen kann.
+Ebenso `HttpRequestException`: gegen einen toten Port meldet das Panel jetzt
+„Der Shop ist gerade nicht erreichbar …" statt „Die Anfrage konnte nicht
+ausgeführt werden".
+
+**Das Pet lag unter der Taskleiste.** Phase 5 hatte 24 Pixel gemessen und nicht
+angefasst, weil `NativePetOverlay.cs` unter Änderungsverbot stand. Die Ursache
+ist eine Zeile: Das Fenster ankerte an `SM_CXSCREEN`/`SM_CYSCREEN`, also an der
+*ganzen* Bildschirmfläche, und die 48 Pixel Abstand waren zugleich als
+Platzhalter für die Taskleiste gedacht. Bei 150 % ist die hier 72 Pixel hoch —
+der Platzhalter war schlicht zu klein, und bei einer seitlich angedockten
+Taskleiste hätte er gar nichts genützt.
+
+Bemerkenswert ist, dass `MainWindow.PositionBesidePet` für das danebenliegende
+Fenster längst `DisplayArea.Primary.WorkArea` verwendet, mit exakt denselben
+Rändern 32 und 48. Die beiden Fenster rechneten also gegen verschiedene
+Bezugssysteme und standen deshalb 24 Pixel versetzt, obwohl der Code so aussah,
+als wären sie bündig. `SPI_GETWORKAREA` im Overlay behebt beides in einem: Die
+Taskleiste ist ausgespart, unabhängig von Höhe und Kante, und die Unterkanten
+liegen tatsächlich auf einer Linie. Gemessen am laufenden Fenster:
+Pet (1868,1020)–(2128,1320), Launcher (1252,1164)–(1852,1320) — gleiche
+Unterkante, 16 Pixel Abstand, 48 Pixel über dem Arbeitsbereichsrand bei 1368.
+
+Größe und Zeichenweg blieben unberührt: Es ändert sich ausschließlich der
+Startpunkt in `Show()`. Der Nachweis lief über ein Wegwerf-Programm, das genau
+diese Datei einbindet und sonst nichts — kein Netz, keine Kopplung. Gegen die
+Fassung vor der Änderung meldete es 24 Pixel Überlappung, danach 0, bei
+unveränderten 260×300 und gesetztem `WS_EX_LAYERED`.
+
+**Zur Messfalle, die dabei fast zu einem Fehlbefund geführt hätte.** Ein
+Prüfskript ohne eigene DPI-Kennzeichnung bekommt von `GetWindowRect`
+virtualisierte Koordinaten: Das 260×300 große Pet erschien als 173×200, der
+Launcher als 400×104, das Setup-Fenster als 520×760 — was wie der bereits in
+Phase 5 behobene DPI-Fehler aussah. Erst mit
+`SetThreadDpiAwarenessContext(PER_MONITOR_AWARE_V2)` im *Beobachter* kamen die
+echten Werte: 780×1140 für das Setup-Fenster, also die beabsichtigten 520×760
+effektiv. Phase 5 hatte recht; das Messwerkzeug war schuld. Wer hier künftig
+misst, muss den Beobachter DPI-fähig machen, sonst misst er sein eigenes
+Skript.
+
+Nicht geändert wurde die Pet-*Größe*. Sie ist bei 150 % weiterhin nur 173×200
+effektive Pixel groß. Das zu beheben hieße, Pixelgrafik zu skalieren, und
+berührt damit Transparenz und Erscheinungsbild — eine andere Entscheidung als
+eine falsche Ankerkante, und keine, die nebenbei getroffen werden sollte.
+Mehrschirmbetrieb blieb ungeprüft, weil am Gerät weiterhin nur ein Monitor
+hängt; `SM_CMONITORS` meldet 1.
+
 ## 2026-08-16 - Phase 5 des Desktop-Assistenten: Abnahme statt Ausbau
 
 Phase 5 hat nichts hinzugefügt, sondern nachgewiesen. Der Prüfweg war
