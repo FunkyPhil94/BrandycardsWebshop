@@ -1,5 +1,93 @@
 # BrandyCards Agentenprotokoll
 
+## 2026-08-16 - Phase 8: drei eBay-Quellen, von denen eine nicht liefern darf
+
+Phase 8 sollte drei Fragen beantwortbar machen: Aufrufzahlen, neue
+eBay-Nachrichten, Käufer-Preisvorschläge. Zwei davon gehen. Die dritte geht
+nicht, und der Aufwand dieser Phase steckt zu einem guten Teil darin, dass sie
+das auch sagt, statt zu schweigen.
+
+**Zuerst nachgesehen, dann gebaut.** Die drei Datentypen liegen hinter drei
+verschiedenen eBay-Schnittstellen mit drei verschiedenen Rechtelagen:
+
+| Datentyp | Aufruf | Scope |
+|---|---|---|
+| Aufrufzahlen | Sell Analytics REST, `getTrafficReport` | `sell.analytics.readonly` |
+| Nachrichten | Trading XML, `GetMyMessages` | Basis-`api_scope` |
+| Preisvorschläge | Trading XML, `GetBestOffers` | Basis-`api_scope` |
+
+Der Befund, der alles Weitere bestimmt: `app/api/admin/ebay/oauth/start/route.ts`
+fordert bei der Zustimmung genau einen Scope an — `sell.inventory`. Damit
+enthält der gespeicherte Refresh-Token `sell.analytics.readonly` nicht, und ein
+Scope lässt sich einem ausgestellten Token nicht nachträglich anheften. Die
+Aufrufzahlen sind also nicht „noch nicht gebaut", sondern **bis zu einer neuen
+Zustimmung des Kontoinhabers nicht abrufbar**. Der Weg dorthin steht jetzt als
+auskommentierte `EBAY_OAUTH_CONSENT_SCOPES` in `.env.example`; die
+Voreinstellung fragt unverändert denselben einen Scope an, damit ein Klick auf
+„eBay verbinden" nicht mehr verlangt, als jemand wollte.
+
+**Eine leere Tabelle ist mehrdeutig — das ist der Kern der Phase.** „Postfach
+leer", „wir durften nie hineinsehen" und „wir haben noch nicht nachgesehen"
+sehen in D1 alle drei gleich aus: null Zeilen. Ohne eine vierte Tabelle wäre
+jede Antwort darauf geraten. `ebay_read_syncs` hält deshalb je Datentyp fest,
+wie der letzte Versuch ausging, und `lib/assistant/ebay-availability.ts` ist die
+einzige Stelle, an der daraus ein Satz wird — sechs unterscheidbare Gründe statt
+eines pauschalen „nicht verfügbar". Genau deshalb konnte Phase 8 die beiden
+alten Festwerte `DATA_NOT_CAPTURED` und `SOURCE_NOT_CONNECTED` nicht einfach
+durch `READY` ersetzen: Verfügbarkeit ist hier keine Eigenschaft des Werkzeugs,
+sondern des letzten Abrufs.
+
+**Datensparsamkeit als Bauweise, nicht als Vorsatz.** Das Postfach wird mit
+`DetailLevel ReturnHeaders` gelesen — eBay liefert den Nachrichtentext dann gar
+nicht erst. Was nicht ankommt, kann auch nicht versehentlich gespeichert werden;
+das ist stabiler als ein Vorsatz, es wegzulassen. Bei den Preisvorschlägen fehlt
+die Käuferkennung aus demselben Grund im Datentyp: Für „gibt es neue
+Vorschläge?" zählen Karte, Betrag und Frist. Wer geboten hat, steht bei eBay.
+
+**Drei Befunde entstanden erst beim Messen.**
+
+1. *Die Kennzahlen werden über den Antwortkopf zugeordnet, nicht über die
+   Position.* eBay liefert `metricValues` in der Reihenfolge von
+   `header.metrics`. Wäre die Position fest verdrahtet, vertauschte eine
+   Änderung dieser Reihenfolge Aufrufe und Einblendungen — lautlos, weil beides
+   Zahlen sind. Der Test dreht die Reihenfolge deshalb absichtlich um.
+2. *`Number(null)` ist 0.* Der erste Entwurf las eine fehlende Kennzahl als
+   „null Aufrufe" — genau die erfundene Zahl, die die `applicable`-Prüfung
+   darüber verhindern sollte. Der Test hat es gefunden, nicht das Lesen.
+3. *„Angebote" enthält „gebot".* Der Planer bekam kurzzeitig `gebot` als
+   Suchwort für Preisvorschläge und beantwortete damit die Frage nach den
+   *Aufrufen* nebenbei mit Preisvorschlägen — `containsAny` sucht
+   Teilzeichenketten, keine Wörter.
+
+**`BestOfferType` nennt keinen Eingangszeitpunkt.** Es gibt `ExpirationTime`,
+aber kein Gegenstück. Aus der 48-Stunden-Frist einen Eingang zurückzurechnen
+wäre geraten, also gibt es das Feld nicht; sortiert wird nach Ablauf, was
+ohnehin die nützlichere Ordnung ist — der Vorschlag, der zuerst verfällt,
+braucht zuerst eine Antwort.
+
+**Idempotenz durch Fensterschreibweise.** Ein Lauf stempelt alles, was er
+schreibt, mit derselben Uhrzeit und löscht danach, was einen anderen Stempel
+trägt. Zweimal derselbe eBay-Inhalt ergibt denselben Tabelleninhalt, auch nach
+einem Abbruch mittendrin; an lokalem D1 nachgemessen. Ein **fehlgeschlagener**
+Abruf schreibt und löscht nichts — sonst leerte ein eBay-Ausfall die Tabelle
+und der Assistant meldete „keine Nachrichten", wo „keine Verbindung" richtig
+wäre.
+
+**Der Takt ist die eigentliche Grenze, nicht die Technik.** Der Cron feuert alle
+drei Minuten. Zwei zusätzliche Trading-Aufrufe je Schlag wären 960 am Tag aus
+demselben 5 000er-Topf, aus dem die Bestandsprüfung an der Kasse bezahlt wird —
+und ein blockierter Checkout wiegt schwerer als ein 15 Minuten alter
+Nachrichtenstand. Der Lesesync drosselt sich deshalb selbst auf 15 Minuten
+(192 Aufrufe/Tag) und wartet nach einem Rechtefehler sechs Stunden, weil dagegen
+anzulaufen nichts bringt: Da hilft nur eine neue Zustimmung.
+
+Der Modell-Planer bleibt aus: kein `OPENAI_API_KEY`, kein externer Aufruf. Die
+drei neuen Fragen beantwortet der regelbasierte Planer. **Nicht geprüft:** ein
+echter Aufruf gegen eBay — alle Tests laufen gegen Fixtures, wie beauftragt.
+Ob das Konto tatsächlich Nachrichten und Preisvorschläge herausgibt, erweist
+sich erst im Betrieb; scheitert es, steht der Grund in `ebay_read_syncs.detail`
+und der Assistant sagt es.
+
 ## 2026-08-16 - Phase 7: zwei veraltete Zahlen und ein Text, der nicht uns gehört
 
 Phase 6 hat zwei Punkte ausdrücklich offen gelassen und dabei genau benannt,

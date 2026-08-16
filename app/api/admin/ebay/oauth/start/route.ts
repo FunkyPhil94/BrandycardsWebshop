@@ -15,6 +15,27 @@ async function sign(value: string) {
   return base64Url(new Uint8Array(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(value))));
 }
 
+/** Welche Rechte bei der Zustimmung angefragt werden.
+ *
+ * Bis Phase 8 war das dieselbe Zeichenkette wie der Schreib-Scope — und genau
+ * daran scheitern die Aufrufzahlen: `sell.analytics.readonly` war nie Teil der
+ * Zustimmung, und einem bereits ausgestellten Refresh-Token lässt sich ein
+ * Scope nicht nachträglich anheften. Der einzige Weg führt über eine neue
+ * Zustimmung mit erweiterter Liste.
+ *
+ * **Die Voreinstellung ändert nichts.** Ohne `EBAY_OAUTH_CONSENT_SCOPES` wird
+ * exakt derselbe eine Scope angefragt wie bisher; der bestehende Token bleibt
+ * gültig und muss nicht erneuert werden. Wer die Aufrufzahlen freischalten
+ * will, setzt die Variable auf beide Scopes, durchläuft die Zustimmung erneut
+ * und hinterlegt den neuen Refresh-Token — bewusst ein ausdrücklicher
+ * Handgriff des Kontoinhabers und keine stille Rechteausweitung.
+ */
+function consentScopes() {
+  const configured = process.env.EBAY_OAUTH_CONSENT_SCOPES?.trim();
+  if (configured) return configured.split(/\s+/u).join(" ");
+  return process.env.EBAY_WRITE_OAUTH_SCOPE || "https://api.ebay.com/oauth/api_scope/sell.inventory";
+}
+
 export async function GET(request: Request) {
   const auth = await requireAdmin(request, { recentAuthSeconds: 600 });
   if (auth.response) return auth.response;
@@ -27,7 +48,7 @@ export async function GET(request: Request) {
   url.searchParams.set("client_id", clientId);
   url.searchParams.set("redirect_uri", runame);
   url.searchParams.set("response_type", "code");
-  url.searchParams.set("scope", process.env.EBAY_WRITE_OAUTH_SCOPE || "https://api.ebay.com/oauth/api_scope/sell.inventory");
+  url.searchParams.set("scope", consentScopes());
   url.searchParams.set("state", state);
   url.searchParams.set("prompt", "login");
   await recordAdminAudit({ request, actorUserId: auth.user.id, action: "ebay.oauth_start", entityType: "ebay_oauth" });

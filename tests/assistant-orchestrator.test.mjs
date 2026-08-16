@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 const {
+  ASSISTANT_TOOL_NAMES,
   AssistantRequestError,
   availableAssistantResult,
   parseAssistantQuestionInput,
@@ -30,10 +31,13 @@ test("der lokale Planer routet die sechs Phase-4-Beispiele auf die geschlossene 
   const cases = [
     ["Welche Karte wurde zuletzt verkauft?", ["latest_sale"]],
     ["Welche Karte wurde zuletzt eingestellt?", ["latest_listing"]],
-    ["Welche offenen Preisvorschläge gibt es?", ["open_shop_offers"]],
+    // Seit Phase 8 gibt es Preisvorschläge an zwei Stellen. Wer ohne Angabe
+    // der Seite fragt, meint beide — nur eine zu beantworten verschwiege die
+    // andere stillschweigend.
+    ["Welche offenen Preisvorschläge gibt es?", ["open_shop_offers", "ebay_buyer_offers"]],
     ["Welche Bestellungen sind neu?", ["new_orders"]],
     ["Welche Lagerbestände sind kritisch?", ["inventory_review"]],
-    ["Welche eBay-Daten sind derzeit nicht verfügbar?", ["ebay_most_viewed", "ebay_messages"]],
+    ["Welche eBay-Daten sind derzeit nicht verfügbar?", ["ebay_most_viewed", "ebay_messages", "ebay_buyer_offers"]],
   ];
   for (const [question, expected] of cases) {
     const plan = await planner.plan(question);
@@ -46,14 +50,19 @@ test("zusammengesetzte Fragen wählen mehrere Werkzeuge genau einmal und überne
   const plan = await new RuleBasedAssistantPlanner().plan("Zeig mir die letzten 5 Bestellungen und die offenen Preisvorschläge sowie die Bestellungen.");
   assert.deepEqual(plan.tools, [
     { tool: "open_shop_offers", limit: 5 },
+    { tool: "ebay_buyer_offers", limit: 5 },
     { tool: "new_orders", limit: 5 },
   ]);
 });
 
 test("eBay-Käuferangebote werden nicht fälschlich als Shop-Preisvorschläge geroutet", async () => {
+  // Bis Phase 7 endete diese Frage ausdrücklich ohne Werkzeug: Es gab keine
+  // Quelle für eBay-Preisvorschläge, und sie auf die Shop-Tabelle umzubiegen
+  // hätte fremde Zahlen als eigene ausgegeben. Seit Phase 8 gibt es die Quelle.
+  // Die Zusicherung bleibt dieselbe — die Shop-Tabelle darf es nicht sein.
   const plan = await new RuleBasedAssistantPlanner().plan("Welche eBay-Preisvorschläge sind offen?");
-  assert.deepEqual(plan.tools, []);
-  assert.equal(plan.reason, "UNSUPPORTED");
+  assert.deepEqual(plan.tools, [{ tool: "ebay_buyer_offers", limit: 10 }]);
+  assert.equal(plan.reason, "READY");
 });
 
 test("der Hybridplaner nutzt das Modell nur für lokal nicht sicher zuordenbare Fragen", async () => {
@@ -105,7 +114,10 @@ test("der OpenAI-Planer stellt nur strikte Registry-Funktionen bereit und übern
   });
   assert.deepEqual(await planner.plan("Was ist knapp?"), { tools: [{ tool: "inventory_review", limit: 3 }], reason: "READY" });
   assert.equal(requestBody.store, false);
-  assert.equal(requestBody.tools.length, 10);
+  // Gegen die Registry gezählt, nicht gegen eine Zahl: Ein neues Werkzeug soll
+  // hier nichts brechen, ein am Modell vorbei angebotenes schon.
+  assert.equal(requestBody.tools.length, ASSISTANT_TOOL_NAMES.length);
+  assert.deepEqual(requestBody.tools.map((tool) => tool.name), [...ASSISTANT_TOOL_NAMES]);
   assert.ok(requestBody.tools.every((tool) => tool.strict === true && tool.parameters.additionalProperties === false));
   assert.ok(requestBody.tools.every((tool) => Object.keys(tool.parameters.properties).join(",") === "limit"));
 });

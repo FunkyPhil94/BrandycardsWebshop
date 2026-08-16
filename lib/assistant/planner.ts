@@ -76,6 +76,7 @@ export class RuleBasedAssistantPlanner implements AssistantPlanner {
     if (asksEbayAvailability) {
       add("ebay_most_viewed");
       add("ebay_messages");
+      add("ebay_buyer_offers");
     }
 
     if (containsAny(text, ["statistik", "kennzahl", "ubersicht", "shop status", "wie lauft der shop"])) {
@@ -84,7 +85,18 @@ export class RuleBasedAssistantPlanner implements AssistantPlanner {
     if (containsAny(text, ["sync", "abgleich", "rucknahme", "outbox", "ebay zustand", "ebay status"])) {
       add("ebay_sync_health");
     }
-    if (containsAny(text, ["aufruf", "views", "meistgesehen", "meist gesehen", "am haufigsten angesehen"])) {
+    if (containsAny(text, [
+      "aufruf",
+      "views",
+      "meistgesehen",
+      "meist gesehen",
+      "am haufigsten angesehen",
+      "angesehen",
+      "angeschaut",
+      "einblendung",
+      "impression",
+      "klicks",
+    ])) {
       add("ebay_most_viewed");
     }
     if (text.includes("ebay") && containsAny(text, ["nachricht", "postfach", "message"])) {
@@ -105,14 +117,25 @@ export class RuleBasedAssistantPlanner implements AssistantPlanner {
     ])) {
       add("inventory_review");
     }
-    if (!text.includes("ebay") && containsAny(text, [
+    // **Preisvorschläge gibt es an zwei Stellen**, und die Frage sagt meist
+    // nicht welche. „Gibt es neue Käufer-Preisvorschläge?" meint beides — wer
+    // nur eine Quelle beantwortet, verschweigt die andere, ohne es zu sagen.
+    // Nur eine ausdrücklich genannte Seite grenzt ein.
+    if (containsAny(text, [
       "preisvorschlag",
       "preisvorschlage",
       "offene angebote",
       "offenes angebot",
       "shop angebote",
+      // „gebot" stand hier kurzzeitig und traf „an**gebot**e" gleich mit —
+      // damit beantwortete die Frage nach den Aufrufen nebenbei die nach den
+      // Preisvorschlägen. `containsAny` sucht Teilzeichenketten, kein Wort.
+      "best offer",
     ])) {
-      add("open_shop_offers");
+      const nurEbay = text.includes("ebay");
+      const nurShop = !nurEbay && text.includes("shop");
+      if (!nurEbay) add("open_shop_offers");
+      if (!nurShop) add("ebay_buyer_offers");
     }
     if (containsAny(text, ["bestellung", "bestellungen", "order", "zu bearbeiten"])) {
       add("new_orders");

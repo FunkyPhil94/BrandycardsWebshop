@@ -36,13 +36,27 @@ test("gemischte D1-Zeitformate werden identisch normalisiert", () => {
   assert.equal(assistantTimestamp("kaputt"), null);
 });
 
-test("eBay-Aufrufe und eBay-Nachrichten behaupten keine nicht vorhandenen Daten", async () => {
+test("die eBay-Werkzeuge behaupten keine nicht vorhandenen Daten", async () => {
+  // Bis Phase 7 stand hier der feste Unverfuegbarkeitsgrund im Quelltext:
+  // Aufrufzahlen und Postfach waren schlicht nicht angebunden. Seit Phase 8
+  // sind sie es, und ob sie liefern, entscheidet sich erst beim Abruf. Die
+  // Zusicherung ist deshalb eine andere -- die Werkzeuge muessen den Zustand
+  // der Quelle mitlesen, statt Verfuegbarkeit anzunehmen.
   const [ebay, messages] = await Promise.all([
     read("lib/assistant/tools/ebay.ts"),
     read("lib/assistant/tools/messages.ts"),
   ]);
-  assert.match(ebay, /ebay_most_viewed[\s\S]*DATA_NOT_CAPTURED/u);
-  assert.match(messages, /ebay_messages[\s\S]*SOURCE_NOT_CONNECTED/u);
+  for (const [name, source] of [["ebay.ts", ebay], ["messages.ts", messages]]) {
+    assert.match(source, /ebayReadAvailability\(states\.get\("(TRAFFIC|MESSAGES|BEST_OFFERS)"\)/u, name);
+    assert.match(source, /if \(!availability\.available\)[\s\S]{0,200}unavailableAssistantResult/u,
+      `${name}: ein nicht abrufbarer Zustand muss vor der Abfrage abbiegen`);
+  }
+  // Und der Grund darf nicht pauschal sein: Alle sechs Codes muessen erreichbar
+  // bleiben, sonst waere die Unterscheidung wieder verloren.
+  const availability = await read("lib/assistant/ebay-availability.ts");
+  for (const code of ["NOT_SYNCED", "SOURCE_NOT_CONNECTED", "SCOPE_NOT_GRANTED", "RATE_LIMITED", "UPSTREAM_ERROR"]) {
+    assert.match(availability, new RegExp(`code: "${code}"`, "u"), code);
+  }
 });
 
 test("Nachfüllbedarf schließt inaktive, verkaufte und reservierte Handkarten aus", () => {

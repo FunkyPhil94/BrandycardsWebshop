@@ -13,6 +13,7 @@ export const ASSISTANT_TOOL_LABELS: Record<AssistantToolName, string> = {
   inventory_review: "Kritische Lagerbestände",
   ebay_most_viewed: "eBay-Aufrufzahlen",
   ebay_messages: "eBay-Nachrichten",
+  ebay_buyer_offers: "eBay-Preisvorschläge",
   new_shop_inquiries: "Neue Shop-Anfragen",
   ebay_sync_health: "eBay-Abgleich",
   assistant_statistics: "Shop-Übersicht",
@@ -21,6 +22,7 @@ export const ASSISTANT_TOOL_LABELS: Record<AssistantToolName, string> = {
 const SOURCE_LABELS: Record<AssistantDataSource, string> = {
   SHOP_DB: "Shop-Datenbank",
   EBAY_CACHE: "eBay-Abgleich",
+  EBAY_READ_API: "eBay-Leseschnittstelle",
   EBAY_WEBHOOK: "eBay-Ereignisse",
   SYSTEM: "Systemstatus",
 };
@@ -138,10 +140,66 @@ export function formatAssistantToolResult(result: AnyAssistantToolResult): strin
         `• Offene eBay-Aufträge: ${data.unresolvedEbayJobs}`,
       ].join("\n"), result);
     }
-    case "ebay_most_viewed":
-    case "ebay_messages":
-      return withSource(`${ASSISTANT_TOOL_LABELS[result.tool]} sind derzeit nicht verfügbar.`, result);
+    case "ebay_most_viewed": {
+      const listings = result.data.listings;
+      if (!listings.length) {
+        return withSource("eBay hat für den ausgewerteten Zeitraum zu keinem Angebot Aufrufzahlen gemeldet.", result);
+      }
+      const lines = listings.map((listing) => {
+        const title = listing.title ?? `eBay-Angebot ${listing.ebayItemId}`;
+        const views = listing.viewsTotal === null ? "nicht gemeldet" : `${listing.viewsTotal} Aufrufe`;
+        const impressions = listing.impressionsTotal === null ? "" : `, ${listing.impressionsTotal} Einblendungen`;
+        return `• ${title}: ${views}${impressions}`;
+      });
+      // Der Zeitraum gehört in den Satz. „412 Aufrufe" ohne Fenster ist keine
+      // Auskunft -- eBay liefert eine Summe, keinen Momentanwert.
+      return withSource(
+        `${formatRange(result.data.rangeStart, result.data.rangeEnd)} nach Aufrufen:\n${lines.join("\n")}`,
+        result,
+      );
+    }
+    case "ebay_messages": {
+      const messages = result.data.messages;
+      if (!messages.length) return withSource("Im abgerufenen Zeitraum liegen keine eBay-Nachrichten vor.", result);
+      const lines = messages.map((message) => {
+        const sender = message.sender ? ` von ${message.sender}` : "";
+        const state = message.read ? "gelesen" : "ungelesen";
+        return `• ${message.subject}${sender}, ${state}, eingegangen ${formatDate(message.receivedAt)}`;
+      });
+      const unread = result.data.unreadCount === 0
+        ? "Keine davon ist ungelesen."
+        : `Davon ungelesen: ${result.data.unreadCount}.`;
+      return withSource(`${messages.length} eBay-Nachricht(en). ${unread}\n${lines.join("\n")}`, result);
+    }
+    case "ebay_buyer_offers": {
+      const offers = result.data.offers;
+      if (!offers.length) return withSource("Es liegen aktuell keine offenen Käufer-Preisvorschläge bei eBay vor.", result);
+      const lines = offers.map((offer) => {
+        const title = offer.title ?? `eBay-Angebot ${offer.ebayItemId}`;
+        const amount = formatMoney(offer.amountCents, offer.currency) ?? "Betrag nicht gemeldet";
+        const listPrice = formatMoney(offer.listPriceAmountCents, offer.currency);
+        const gegen = listPrice ? ` gegen ${listPrice} Angebotspreis` : "";
+        const note = offer.hasBuyerMessage ? ", mit Käufernachricht" : "";
+        return `• ${title}: ${amount}${gegen}, Status ${offer.status}${note}, läuft ab ${formatDate(offer.expiresAt)}`;
+      });
+      return withSource(
+        `${offers.length} offene(r) Käufer-Preisvorschlag/-vorschläge bei eBay, der zuerst ablaufende zuerst:\n${lines.join("\n")}`,
+        result,
+      );
+    }
   }
+}
+
+/** Macht aus zwei `YYYYMMDD`-Werten einen lesbaren Zeitraum. */
+function formatRange(start: string | null, end: string | null): string {
+  const asDate = (value: string | null) => {
+    if (!value || !/^\d{8}$/u.test(value)) return null;
+    return `${value.slice(6, 8)}.${value.slice(4, 6)}.${value.slice(0, 4)}`;
+  };
+  const from = asDate(start);
+  const to = asDate(end);
+  if (!from || !to) return "Eigene eBay-Angebote";
+  return `Eigene eBay-Angebote vom ${from} bis ${to}`;
 }
 
 export function failedToolText(tool: AssistantToolName): string {

@@ -3,6 +3,7 @@ import { handleImageOptimization, DEFAULT_DEVICE_SIZES, DEFAULT_IMAGE_SIZES } fr
 import handler from "vinext/server/app-router-entry";
 import { lte } from "drizzle-orm";
 import { runEbaySync } from "../lib/ebay-sync";
+import { runEbayReadSync } from "../lib/ebay-read-sync";
 import { getDb } from "../db";
 import { ebayOauthClaims } from "../db/schema";
 import { cleanupOrphanedUploads, deleteExpiredCardSubmissions } from "../lib/card-submission-cleanup";
@@ -134,6 +135,13 @@ const worker = {
       ["eBay-Synchronisierung", runEbaySync()],
       ["Freigabe abgelaufener Reservierungen", releaseExpiredReservations(getDb(), now)],
       ["eBay-Rücknahmen", processEbayOutbox(getDb())],
+      // Aufrufzahlen, Postfach und Käufer-Preisvorschläge. **Drosselt sich
+      // selbst** auf EBAY_READ_SYNC_INTERVAL_MS und läuft deshalb nicht bei
+      // jedem Cron-Schlag mit: Zwei Trading-Aufrufe alle drei Minuten wären
+      // 960 am Tag aus demselben Kontingent, aus dem die Bestandsprüfung an
+      // der Kasse bezahlt wird. Der Aufruf hier ist billig, wenn nichts fällig
+      // ist — eine Abfrage auf `ebay_read_syncs`.
+      ["eBay-Lesedaten", runEbayReadSync(getDb())],
       ["Ablauf angenommener Preisvorschläge", expireLapsedOffers(getDb(), now)],
       // Aufbewahrungsfrist für abgeschlossene Kartenangebote. Gehört in den
       // geplanten Lauf, nicht in eine Admin-Schaltfläche: eine Löschfrist,

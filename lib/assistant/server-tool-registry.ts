@@ -1,5 +1,5 @@
 import { createAssistantToolRegistry, type AssistantToolHandlers } from "./tool-registry";
-import { getEbayMostViewed, getEbaySyncHealth } from "./tools/ebay";
+import { getEbayBuyerOffers, getEbayMostViewed, getEbaySyncHealth } from "./tools/ebay";
 import { getEbayMessages, listNewShopInquiries } from "./tools/messages";
 import { listOpenShopOffers } from "./tools/offers";
 import { getLatestSale } from "./tools/sales";
@@ -12,8 +12,9 @@ const handlers: AssistantToolHandlers = {
   new_orders: (input) => listNewOrders(input),
   open_shop_offers: (input) => listOpenShopOffers(input),
   inventory_review: (input) => getInventoryReview(input),
-  ebay_most_viewed: () => getEbayMostViewed(),
-  ebay_messages: () => getEbayMessages(),
+  ebay_most_viewed: (input) => getEbayMostViewed(input),
+  ebay_messages: (input) => getEbayMessages(input),
+  ebay_buyer_offers: (input) => getEbayBuyerOffers(input),
   new_shop_inquiries: (input) => listNewShopInquiries(input),
   ebay_sync_health: (input) => getEbaySyncHealth(input),
   assistant_statistics: () => getAssistantStatistics(),

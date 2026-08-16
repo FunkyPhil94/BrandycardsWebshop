@@ -37,9 +37,15 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
+<!-- Fuer den naechsten Auftrag freihalten. -->
+
+Keine laufenden Aufträge.
+
+## Historie
+
 ### 2026-08-16 - Phase 8 des Desktop-Assistenten: read-only-eBay-Datenintegration
 
-- Stand: **LÄUFT**.
+- Stand: **ABGESCHLOSSEN.**
 - Ziel: Drei bisher unbeantwortbare Fragen beantwortbar machen — Aufrufzahlen
   eigener Angebote, neue eBay-Nachrichten, Käufer-Preisvorschläge. Alles
   ausschließlich lesend, serverseitig zwischengespeichert, über die geschlossene
@@ -114,7 +120,59 @@ Scope- und Rate-Limit-Fehler, WinUI-x64-Build, `git diff --check`.
 kein Deployment, keine Änderung an `NativePetOverlay`, Atlas, Pet-Animation oder
 DPI-Positionierung.
 
-## Historie
+**Ergebnis**
+
+Zwei der drei Datentypen sind angebunden, der dritte ist ausdrücklich gesperrt:
+
+| Datentyp | Zustand | Grund |
+|---|---|---|
+| Nachrichten | angebunden | `GetMyMessages`, Basis-Scope genügt |
+| Preisvorschläge | angebunden | `GetBestOffers`, Basis-Scope genügt |
+| Aufrufzahlen | `SCOPE_NOT_GRANTED` | `sell.analytics.readonly` ist nicht Teil der bestehenden Zustimmung |
+
+„Angebunden" heißt hier: Code, Tabellen, Tests und Verdrahtung stehen. Ob das
+Konto die Daten tatsächlich herausgibt, ist **nicht** geprüft — es gab
+auftragsgemäß keinen Live-Aufruf gegen eBay. Der erste echte Lauf schreibt sein
+Ergebnis nach `ebay_read_syncs`; scheitert er, steht der Grund in `detail` und
+der Assistant nennt ihn, statt „keine Daten" zu melden.
+
+Geänderte Dateien — neu: `lib/ebay-read-api.ts`, `lib/ebay-read-sync.ts`,
+`lib/ebay-xml.ts`, `lib/assistant/ebay-availability.ts`,
+`drizzle/0012_ebay_read_insights.sql`, `tests/ebay-read-api.test.mjs`,
+`tests/assistant-phase8.test.mjs`. Geändert: `db/schema.ts`, `lib/ebay-client.ts`
+(XML-Griffe ausgelagert, Konfiguration und Token exportiert),
+`lib/assistant/{contracts,planner,response-formatter,server-tool-registry}.ts`,
+`lib/assistant/tools/{ebay,messages}.ts`, `worker/index.ts`,
+`app/api/admin/ebay/oauth/start/route.ts`, `.env.example`, `package.json`,
+`tests/assistant-{tools,orchestrator}.test.mjs`.
+
+Verifikation: `npm test` 488/488 (vorher 430), `npx tsc --noEmit` sauber, ESLint
+0 Fehler (1 vorbestehende Warnung in `app/account/page.tsx`, nicht berührt),
+WinUI x64 Debug 0/0, `git diff --check` sauber. Lokale D1-Migration: Kette
+`0000`–`0012` auf leerer Datenbank durchgelaufen, `0012` ein zweites Mal ohne
+Wirkung, beide CHECK-Bedingungen greifen nachweislich, Rückbau (vier
+`DROP TABLE`) lässt die übrigen 23 Tabellen unberührt, Wiederanwendung
+erfolgreich. Idempotenz an echtem SQL gemessen: zweimal derselbe Inhalt ergibt
+zwei Zeilen statt vier, ein Fensterwechsel ersetzt statt zu ergänzen, ein
+Vorschlag verschwindet, sobald eBay ihn nicht mehr als offen meldet.
+
+**Verbleibende Produktionsschritte** (keiner davon in diesem Auftrag ausgeführt):
+
+1. `0012` auf der Produktionsdatenbank anwenden — bis dahin melden alle drei
+   Werkzeuge `NOT_SYNCED`, weil `ebay_read_syncs` fehlt.
+2. Deployen; danach füllt der geplante Lauf Postfach und Preisvorschläge binnen
+   15 Minuten. Prüfen mit
+   `SELECT data_type, status, detail FROM ebay_read_syncs`.
+3. Für die Aufrufzahlen — nur wenn gewünscht: `EBAY_OAUTH_CONSENT_SCOPES` auf
+   beide Scopes setzen, Zustimmung erneut durchlaufen, den **neuen**
+   `EBAY_REFRESH_TOKEN` als Cloudflare-Secret hinterlegen. Ohne Schritt 3
+   bleiben die Aufrufzahlen dauerhaft und wahrheitsgemäß `SCOPE_NOT_GRANTED`.
+
+Nicht getan und bewusst so: kein Push, kein Deployment, keine Remote-Migration,
+keine Änderung an `.env` oder produktiven Tokens, kein Live-Aufruf gegen eBay,
+keine Änderung an Pet, Atlas, Animation oder DPI-Positionierung (ein Test hält
+deren Merkmale jetzt fest).
+
 
 ### 2026-08-16 - Phase 7 des Desktop-Assistenten: Desktop-Stabilität
 

@@ -6,13 +6,28 @@ export const ASSISTANT_TOOL_NAMES = [
   "inventory_review",
   "ebay_most_viewed",
   "ebay_messages",
+  "ebay_buyer_offers",
   "new_shop_inquiries",
   "ebay_sync_health",
   "assistant_statistics",
 ] as const;
 
 export type AssistantToolName = (typeof ASSISTANT_TOOL_NAMES)[number];
-export type AssistantDataSource = "SHOP_DB" | "EBAY_CACHE" | "EBAY_WEBHOOK" | "SYSTEM";
+export type AssistantDataSource = "SHOP_DB" | "EBAY_CACHE" | "EBAY_READ_API" | "EBAY_WEBHOOK" | "SYSTEM";
+
+/** Was über die Verfügbarkeit eines Werkzeugs **vorab** gesagt werden kann.
+ *
+ * `READY` heißt: liest die eigene Datenbank, kann immer antworten.
+ * `SOURCE_DEPENDENT` heißt: angeschlossen, aber die Antwort hängt an einer
+ * fremden Schnittstelle und kann zur Laufzeit `UNAVAILABLE` sein.
+ *
+ * Bis Phase 7 stand hier für die eBay-Werkzeuge der Unverfügbarkeitsgrund
+ * selbst (`DATA_NOT_CAPTURED`). Das war richtig, solange es die Quelle nicht
+ * gab — jetzt gibt es sie, und ob sie liefert, entscheidet sich erst beim
+ * Abruf. Ein festes `READY` wäre an dieser Stelle die Lüge, die Phase 8
+ * gerade vermeiden soll.
+ */
+export type AssistantToolAvailability = "READY" | "SOURCE_DEPENDENT";
 
 export const ASSISTANT_TOOL_DEFINITIONS = [
   { name: "latest_sale", description: "Zuletzt verkaufte Karte oder Bestellung", availability: "READY" },
@@ -20,15 +35,16 @@ export const ASSISTANT_TOOL_DEFINITIONS = [
   { name: "new_orders", description: "Bezahlte oder in Bearbeitung befindliche Shop-Bestellungen", availability: "READY" },
   { name: "open_shop_offers", description: "Offene Preisvorschläge aus dem BrandyCards-Shop", availability: "READY" },
   { name: "inventory_review", description: "Karten mit Nachfüll- oder Prüfbedarf", availability: "READY" },
-  { name: "ebay_most_viewed", description: "eBay-Angebot mit den meisten Aufrufen", availability: "DATA_NOT_CAPTURED" },
-  { name: "ebay_messages", description: "Neue Nachrichten aus dem eBay-Postfach", availability: "SOURCE_NOT_CONNECTED" },
+  { name: "ebay_most_viewed", description: "Eigene eBay-Angebote nach Aufrufen, absteigend", availability: "SOURCE_DEPENDENT" },
+  { name: "ebay_messages", description: "Neue Nachrichten aus dem eBay-Postfach", availability: "SOURCE_DEPENDENT" },
+  { name: "ebay_buyer_offers", description: "Offene Käufer-Preisvorschläge auf eigene eBay-Angebote", availability: "SOURCE_DEPENDENT" },
   { name: "new_shop_inquiries", description: "Neue Anfragen aus dem BrandyCards-Shop", availability: "READY" },
   { name: "ebay_sync_health", description: "Stand des eBay-Abgleichs und offener Rücknahmeaufträge", availability: "READY" },
   { name: "assistant_statistics", description: "Kompakte Shop- und Betriebsstatistik", availability: "READY" },
 ] as const satisfies readonly {
   name: AssistantToolName;
   description: string;
-  availability: "READY" | "DATA_NOT_CAPTURED" | "SOURCE_NOT_CONNECTED";
+  availability: AssistantToolAvailability;
 }[];
 
 export type AssistantToolInput<K extends AssistantToolName = AssistantToolName> = {
@@ -104,8 +120,45 @@ export type AssistantToolDataMap = {
       lastSyncedAt: string | null;
     }>;
   };
-  ebay_most_viewed: never;
-  ebay_messages: never;
+  ebay_most_viewed: {
+    /** Das ausgewertete Zeitfenster als `YYYYMMDD`. eBay liefert keine
+     *  Momentaufnahme, sondern eine Summe — ohne das Fenster wäre die Zahl
+     *  nicht einzuordnen. */
+    rangeStart: string | null;
+    rangeEnd: string | null;
+    listings: Array<{
+      ebayItemId: string;
+      title: string | null;
+      listingUrl: string | null;
+      viewsTotal: number | null;
+      impressionsTotal: number | null;
+    }>;
+  };
+  ebay_messages: {
+    unreadCount: number;
+    messages: Array<{
+      ebayMessageId: string;
+      sender: string | null;
+      subject: string;
+      ebayItemId: string | null;
+      receivedAt: string | null;
+      read: boolean;
+    }>;
+  };
+  ebay_buyer_offers: {
+    offers: Array<{
+      bestOfferId: string;
+      ebayItemId: string;
+      title: string | null;
+      amountCents: number | null;
+      listPriceAmountCents: number | null;
+      currency: string;
+      quantity: number | null;
+      status: string;
+      hasBuyerMessage: boolean;
+      expiresAt: string | null;
+    }>;
+  };
   new_shop_inquiries: {
     inquiries: Array<{
       id: string;
@@ -149,7 +202,29 @@ export type AssistantToolDataMap = {
   };
 };
 
-export type AssistantUnavailableCode = "DATA_NOT_CAPTURED" | "SOURCE_NOT_CONNECTED";
+/** Warum ein Werkzeug nichts liefern konnte.
+ *
+ * Die Liste ist absichtlich fein: „Es gibt nichts" ist eine Antwort, „ich darf
+ * nicht nachsehen" ist eine andere, und „ich habe noch nie nachgesehen" eine
+ * dritte. Alle drei sähen in der Datenbank gleich aus — als null Zeilen.
+ *
+ * - `DATA_NOT_CAPTURED` — eBay bietet diesen Datentyp gar nicht an.
+ * - `SOURCE_NOT_CONNECTED` — die Zugangsdaten für eBay fehlen im Server.
+ * - `SCOPE_NOT_GRANTED` — eBay verweigert das Recht; braucht neue Zustimmung.
+ * - `NOT_SYNCED` — angeschlossen, aber noch kein erfolgreicher Abruf.
+ * - `RATE_LIMITED` — eBays Tageskontingent war beim letzten Abruf erschöpft.
+ * - `UPSTREAM_ERROR` — eBay hat beim letzten Abruf anders versagt.
+ */
+export const ASSISTANT_UNAVAILABLE_CODES = [
+  "DATA_NOT_CAPTURED",
+  "SOURCE_NOT_CONNECTED",
+  "SCOPE_NOT_GRANTED",
+  "NOT_SYNCED",
+  "RATE_LIMITED",
+  "UPSTREAM_ERROR",
+] as const;
+
+export type AssistantUnavailableCode = (typeof ASSISTANT_UNAVAILABLE_CODES)[number];
 
 export type AssistantToolResult<K extends AssistantToolName = AssistantToolName> =
   | {

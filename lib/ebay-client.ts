@@ -1,8 +1,19 @@
 import { maxResolutionImageUrl } from "./ebay-images.ts";
+import {
+  parseEbayDate,
+  tradingErrorCodes,
+  xmlAttribute,
+  xmlBlock,
+  xmlBlocks,
+  xmlValue,
+  xmlValues,
+} from "./ebay-xml.ts";
 
-type EbayEnvironment = "production" | "sandbox";
+export { tradingErrorCodes };
 
-type EbayConfig = {
+export type EbayEnvironment = "production" | "sandbox";
+
+export type EbayConfig = {
   environment: EbayEnvironment;
   clientId: string;
   clientSecret: string;
@@ -10,6 +21,10 @@ type EbayConfig = {
   marketplaceId: string;
   siteId: string;
 };
+
+export function getEbayConfig(): EbayConfig {
+  return getConfig();
+}
 
 function getConfig(): EbayConfig {
   const environment = process.env.EBAY_ENVIRONMENT === "sandbox" ? "sandbox" : "production";
@@ -29,7 +44,7 @@ function getConfig(): EbayConfig {
   };
 }
 
-function apiBase(environment: EbayEnvironment) {
+export function apiBase(environment: EbayEnvironment) {
   return environment === "sandbox" ? "https://api.sandbox.ebay.com" : "https://api.ebay.com";
 }
 
@@ -58,12 +73,16 @@ function fetchTimeoutMs() {
  * Zahlung läuft, wartet ein Kunde auf die Antwort — dort sind 30 Sekunden zu
  * viel, im Importlauf dagegen richtig.
  */
-function fetchWithTimeout(input: string, init: RequestInit = {}, timeoutMs?: number) {
+export function fetchWithTimeout(input: string, init: RequestInit = {}, timeoutMs?: number) {
   const grenze = Number.isFinite(timeoutMs) && (timeoutMs ?? 0) > 0 ? (timeoutMs as number) : fetchTimeoutMs();
   return fetch(input, { ...init, signal: AbortSignal.timeout(grenze) });
 }
 
 export const EBAY_READ_SCOPE = "https://api.ebay.com/oauth/api_scope/sell.inventory.readonly";
+
+export async function getEbayAccessToken(config: EbayConfig, scope = EBAY_READ_SCOPE, timeoutMs?: number) {
+  return getAccessToken(config, scope, timeoutMs);
+}
 
 async function getAccessToken(config: EbayConfig, scope = EBAY_READ_SCOPE, timeoutMs?: number) {
   const form = new URLSearchParams({
@@ -91,31 +110,6 @@ async function getAccessToken(config: EbayConfig, scope = EBAY_READ_SCOPE, timeo
   return body.access_token;
 }
 
-function decodeXml(value: string) {
-  return value.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1")
-    .replace(/&lt;/g, "<").replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, "&").trim();
-}
-
-function xmlValues(xml: string, tag: string) {
-  const pattern = new RegExp(`<${tag}\\b[^>]*>([\\s\\S]*?)</${tag}>`, "gi");
-  return [...xml.matchAll(pattern)].map((match) => decodeXml(match[1] ?? ""));
-}
-
-function xmlValue(xml: string, tag: string) { return xmlValues(xml, tag)[0]; }
-
-function xmlAttribute(xml: string, tag: string, attribute: string) {
-  const match = xml.match(new RegExp(`<${tag}\\b([^>]*)>`, "i"));
-  return match?.[1]?.match(new RegExp(`${attribute}\\s*=\\s*["']([^"']*)["']`, "i"))?.[1];
-}
-
-function xmlBlocks(xml: string, tag: string) {
-  const pattern = new RegExp(`<${tag}\\b[^>]*>([\\s\\S]*?)</${tag}>`, "gi");
-  return [...xml.matchAll(pattern)].map((match) => match[0]);
-}
-
-function xmlBlock(xml: string, tag: string) { return xmlBlocks(xml, tag)[0]; }
-
 export type EbayActiveListing = {
   ebayItemId: string;
   sku?: string;
@@ -132,13 +126,6 @@ export type EbayActiveListing = {
   endAt: string | null;
   rawData: Record<string, unknown>;
 };
-
-/** eBay returns ISO timestamps; guard against malformed values. */
-function parseEbayDate(value: string | undefined) {
-  if (!value) return null;
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
-}
 
 function parseTradingResponse(xml: string, config: EbayConfig) {
   const ack = xmlValue(xml, "Ack")?.toUpperCase();
@@ -371,16 +358,6 @@ export async function checkEbayWriteAuth(): Promise<{ ok: boolean; scope: string
     const detail = error instanceof Error ? error.message : "Unbekannter eBay-Fehler.";
     return { ok: false, scope, detail: detail.slice(0, 300) };
   }
-}
-
-/** Reads the eBay error numbers out of a Trading response.
- *
- * eBay states the reason in `<ErrorCode>`, and only that number is stable —
- * `LongMessage` is prose and localized. The distinction matters because the
- * outbox must not keep retrying an error that will never pass.
- */
-export function tradingErrorCodes(xml: string): string[] {
-  return xmlValues(xml, "ErrorCode").map((code) => code.trim()).filter(Boolean);
 }
 
 /** eBay says the listing is already over — nothing left to do.

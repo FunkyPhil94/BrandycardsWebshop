@@ -406,6 +406,91 @@ export const ebayOutbox = sqliteTable("ebay_outbox", {
   check("ebay_outbox_status_check", sql`${table.status} IN ('PENDING', 'PROCESSING', 'RETRY_WAIT', 'SUCCEEDED', 'FAILED', 'CANCELLED')`),
 ]);
 
+export const ebayReadDataTypeValues = ["TRAFFIC", "MESSAGES", "BEST_OFFERS"] as const;
+export type EbayReadDataType = (typeof ebayReadDataTypeValues)[number];
+export const ebayReadSyncStatusValues = ["OK", "NOT_CONFIGURED", "SCOPE_NOT_GRANTED", "RATE_LIMITED", "UPSTREAM_ERROR"] as const;
+export type EbayReadSyncStatus = (typeof ebayReadSyncStatusValues)[number];
+
+/** Der Zustand je lesender eBay-Quelle — und der Grund, warum der Assistant
+ *  „nichts da" von „nicht abrufbar" unterscheiden kann.
+ *
+ * Ohne diese Tabelle sähen beide Fälle gleich aus: null Zeilen. Ein leeres
+ * Postfach und ein fehlender OAuth-Scope wären nicht zu trennen, und die
+ * ehrlichste mögliche Antwort wäre geraten. Eine Zeile je Datentyp, vom
+ * Lesesync gepflegt.
+ */
+export const ebayReadSyncs = sqliteTable("ebay_read_syncs", {
+  id: id(),
+  dataType: text("data_type", { enum: ebayReadDataTypeValues }).notNull(),
+  status: text("status", { enum: ebayReadSyncStatusValues }).notNull(),
+  lastAttemptAt: timestamp("last_attempt_at"),
+  lastSuccessAt: optionalTimestamp("last_success_at"),
+  recordCount: integer("record_count").notNull().default(0),
+  /** Gekürzte Fehlerbeschreibung. Nie ein Token, nie ein Nachrichtentext. */
+  detail: text("detail"),
+}, (table) => [
+  uniqueIndex("ebay_read_syncs_type_unique").on(table.dataType),
+  check("ebay_read_syncs_type_check", sql`${table.dataType} IN ('TRAFFIC', 'MESSAGES', 'BEST_OFFERS')`),
+  check("ebay_read_syncs_status_check", sql`${table.status} IN ('OK', 'NOT_CONFIGURED', 'SCOPE_NOT_GRANTED', 'RATE_LIMITED', 'UPSTREAM_ERROR')`),
+]);
+
+/** Aufrufzahlen je Angebot und Zeitfenster.
+ *
+ * Der Schlüssel enthält das Fenster, weil eBay keine Momentaufnahme liefert,
+ * sondern eine Summe über einen Zeitraum. Zwei Läufe im selben Fenster
+ * schreiben dieselbe Zeile fort statt eine zweite anzulegen.
+ */
+export const ebayListingTraffic = sqliteTable("ebay_listing_traffic", {
+  id: id(),
+  ebayItemId: text("ebay_item_id").notNull(),
+  rangeStart: text("range_start").notNull(),
+  rangeEnd: text("range_end").notNull(),
+  viewsTotal: integer("views_total"),
+  impressionsTotal: integer("impressions_total"),
+  collectedAt: timestamp("collected_at"),
+}, (table) => [
+  uniqueIndex("ebay_listing_traffic_window_unique").on(table.ebayItemId, table.rangeStart, table.rangeEnd),
+  index("ebay_listing_traffic_rank_idx").on(table.rangeEnd, table.viewsTotal),
+]);
+
+/** Kopfdaten des eBay-Postfachs. **Ohne Nachrichtentext** — der wird bei eBay
+ *  gar nicht erst angefordert, siehe `lib/ebay-read-api.ts`. */
+export const ebayInboxMessages = sqliteTable("ebay_inbox_messages", {
+  id: id(),
+  ebayMessageId: text("ebay_message_id").notNull(),
+  sender: text("sender"),
+  subject: text("subject").notNull(),
+  ebayItemId: text("ebay_item_id"),
+  receivedAt: optionalTimestamp("received_at"),
+  isRead: integer("is_read", { mode: "boolean" }).notNull().default(false),
+  collectedAt: timestamp("collected_at"),
+}, (table) => [
+  uniqueIndex("ebay_inbox_messages_id_unique").on(table.ebayMessageId),
+  index("ebay_inbox_messages_unread_idx").on(table.isRead, table.receivedAt),
+]);
+
+/** Offene Käufer-Preisvorschläge auf eigene eBay-Angebote.
+ *
+ * Bewusst **ohne Käuferkennung und ohne Nachrichtentext**: Für „gibt es neue
+ * Vorschläge?" zählen Karte, Betrag und Frist. Wer geboten hat, steht bei eBay
+ * und braucht hier keine zweite Ablage.
+ */
+export const ebayBuyerOffers = sqliteTable("ebay_buyer_offers", {
+  id: id(),
+  bestOfferId: text("best_offer_id").notNull(),
+  ebayItemId: text("ebay_item_id").notNull(),
+  amountCents: integer("amount_cents"),
+  currency: text("currency").notNull().default("EUR"),
+  quantity: integer("quantity"),
+  status: text("status").notNull(),
+  hasBuyerMessage: integer("has_buyer_message", { mode: "boolean" }).notNull().default(false),
+  expiresAt: optionalTimestamp("expires_at"),
+  collectedAt: timestamp("collected_at"),
+}, (table) => [
+  uniqueIndex("ebay_buyer_offers_id_unique").on(table.bestOfferId),
+  index("ebay_buyer_offers_expiry_idx").on(table.expiresAt),
+]);
+
 export const auditEvents = sqliteTable("audit_events", {
   id: id(),
   actorUserId: text("actor_user_id").references(() => users.id, { onDelete: "set null" }),
