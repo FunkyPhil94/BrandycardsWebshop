@@ -37,9 +37,33 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-<!-- Fuer den naechsten Auftrag freihalten. -->
+### 2026-08-16 - Phase-8-Rollout nachtragen, veröffentlichen, Analytics-Scope vorbereiten
 
-Keine laufenden Aufträge.
+- Stand: **LÄUFT.**
+- Anlass: Eine Statusabfrage hat zwei Lücken aufgedeckt. Erstens ist Phase 8
+  **bereits in Produktion** — Worker-Version `fd9218f9` vom 2026-08-16 15:47 UTC,
+  Migration `0012` angewendet, `ebay_read_syncs` gefüllt (`MESSAGES` und
+  `BEST_OFFERS` auf `OK`, letzter Lauf 17:09 UTC; 248 Nachrichten, davon 5
+  ungelesen; 0 Preisvorschläge) —, während der Phase-8-Eintrag unten diese
+  beiden Schritte noch als „nicht ausgeführt" führt. Zweitens liegen **97
+  Commits** der Phasen 1–8 nur lokal; `origin/main` steht auf `ef6f17a`.
+- Ziel:
+  1. Den Produktionsstand im Phase-8-Eintrag richtigstellen.
+  2. `main` nach `origin/main` pushen (Fast-Forward, nichts wird überschrieben).
+  3. Schritt 3 der Phase-8-Restliste so weit vorbereiten, wie es ohne den
+     Kontoinhaber geht: `EBAY_OAUTH_CONSENT_SCOPES` mit beiden Scopes in
+     `wrangler.toml` hinterlegen und ausrollen.
+- Ausdrücklich **nicht** Teil dieses Auftrags: die eBay-Zustimmung selbst und
+  das Hinterlegen des neuen `EBAY_REFRESH_TOKEN`. Beides verlangt die
+  eBay-Anmeldung des Kontoinhabers bzw. den Umgang mit einem Geheimnis im
+  Klartext; die Anleitung dazu geht an den Nutzer.
+- Risiko der Scope-Änderung: keine stille Rechteausweitung. Der bestehende
+  Refresh-Token bleibt unberührt und gültig; die Variable wirkt erst, wenn
+  jemand „eBay verbinden" erneut anklickt.
+- Abnahme: `npm test`, `npx tsc --noEmit`, `npm run lint`, Deploy aus dem
+  Hauptverzeichnis (nicht aus dem Worktree — `.env.local` fehlt dort),
+  Prüfung einer clientkonfigurationspflichtigen Seite, `git status --short`
+  leer.
 
 ## Historie
 
