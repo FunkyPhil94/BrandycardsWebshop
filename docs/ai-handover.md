@@ -192,6 +192,16 @@ Vorschlag verschwindet, sobald eBay ihn nicht mehr als offen meldet.
    `EBAY_REFRESH_TOKEN` als Cloudflare-Secret hinterlegen. Ohne Schritt 3
    bleiben die Aufrufzahlen dauerhaft und wahrheitsgemäß `SCOPE_NOT_GRANTED`.
 
+**Nachtrag 2026-08-16 (aus dem Folgeauftrag, siehe oben):** Schritt 1 und 2
+**sind erledigt** — sie geschahen nach dem Commit `1486501` und blieben hier
+zunächst unvermerkt. Beleg: Worker-Version `fd9218f9`, ausgerollt am
+2026-08-16 um 15:47 UTC; `ebay_read_syncs` trägt `MESSAGES` = `OK` und
+`BEST_OFFERS` = `OK` (Lauf um 17:09 UTC, 248 Nachrichten, davon 5 ungelesen,
+0 offene Preisvorschläge), `TRAFFIC` = `SCOPE_NOT_GRANTED` mit
+`invalid_scope` — also genau der vorhergesagte Zustand. Schritt 3 ist
+angefangen: die Rechteliste steht seit diesem Auftrag in `wrangler.toml`; die
+Zustimmung und der neue Refresh-Token bleiben beim Kontoinhaber.
+
 Nicht getan und bewusst so: kein Push, kein Deployment, keine Remote-Migration,
 keine Änderung an `.env` oder produktiven Tokens, kein Live-Aufruf gegen eBay,
 keine Änderung an Pet, Atlas, Animation oder DPI-Positionierung (ein Test hält

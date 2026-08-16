@@ -37,6 +37,23 @@ EBAY_ENVIRONMENT = "production"
 EBAY_MARKETPLACE_ID = "EBAY_DE"
 EBAY_WRITE_OAUTH_SCOPE = "https://api.ebay.com/oauth/api_scope/sell.inventory"
 EBAY_WRITE_ENABLED = "true"
+# Welche Rechte „eBay verbinden" anfragt. Phase 8 hat diese Zeile bewusst
+# weggelassen, damit niemand die Rechte *still* ausweitet; der Betreiber hat sie
+# am 2026-08-16 ausdrücklich angefordert, um die Aufrufzahlen freizuschalten.
+#
+# **Diese Zeile allein schaltet nichts frei.** Ein ausgestellter Refresh-Token
+# trägt die Scopes, mit denen er entstanden ist — nachträglich anheften lässt
+# sich keiner. Wirksam wird sie erst, wenn der Kontoinhaber die Zustimmung
+# erneut durchläuft und den **neuen** `EBAY_REFRESH_TOKEN` als Cloudflare-Secret
+# hinterlegt. Bis dahin bleibt der alte Token gültig, und die Aufrufzahlen
+# melden wahrheitsgemäß `SCOPE_NOT_GRANTED`.
+#
+# Kein Geheimnis: eine Rechteliste, kein Zugangsdatum. Der Token gehört zu den
+# Secrets, diese Liste bewusst hierher — sonst weiß niemand, was der Knopf
+# anfragt. `tests/assistant-phase8.test.mjs` hält den Inhalt auf genau diese
+# zwei Scopes fest; beide sind lesend bzw. der schon zuvor erteilte
+# Schreib-Scope.
+EBAY_OAUTH_CONSENT_SCOPES = "https://api.ebay.com/oauth/api_scope/sell.inventory https://api.ebay.com/oauth/api_scope/sell.analytics.readonly"
 EBAY_RUNAME = "BrandyCards_GbR-BrandyCa-Brandy-cqibopjv"
 EBAY_OAUTH_CALLBACK_URL = "https://shop.brandycards.de/api/admin/ebay/oauth/callback"
 EBAY_NOTIFICATION_ENDPOINT = "https://shop.brandycards.de/api/ebay/notifications"

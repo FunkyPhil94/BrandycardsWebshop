@@ -1,5 +1,44 @@
 # BrandyCards Agentenprotokoll
 
+## 2026-08-16 - Die Rechteliste sichtbar setzen, statt sie zu verstecken
+
+Phase 8 hat den Analytics-Scope bewusst *nicht* in `wrangler.toml` geschrieben,
+und `tests/assistant-phase8.test.mjs` hielt genau das fest: Die Variable durfte
+dort nicht vorkommen. Der Betreiber hat die Freischaltung heute ausdrücklich
+angefordert — damit ist die Bedingung des Tests erfüllt, aber seine Prüfung
+falsch geworden.
+
+**Der naheliegende Weg wäre der schlechtere gewesen.** `wrangler secret put
+EBAY_OAUTH_CONSENT_SCOPES` hätte sofort gewirkt, keinen Deploy gebraucht und
+keinen Test angefasst. Der Test wäre grün geblieben *und hätte gelogen*: Er
+behauptet etwas über die Produktionskonfiguration, das er an `wrangler.toml`
+allein nicht mehr sehen kann. Eine Rechteliste ist außerdem kein Geheimnis —
+der Token ist eins. Sie zu den Secrets zu legen, hieße: Niemand kann mehr
+nachlesen, was der Knopf „eBay verbinden" eigentlich anfragt.
+
+Also steht die Liste jetzt sichtbar in `[vars]`, und die Prüfung wurde
+**schärfer statt weicher**: nicht mehr „die Variable fehlt", sondern „sie
+enthält genau diese zwei Scopes". Das alte `doesNotMatch` hätte einen dritten,
+später angehängten Scope nur so lange bemerkt, wie überhaupt keiner dastand;
+die neue Gleichheitsprüfung bemerkt ihn immer. Der eigentliche Schutz — keine
+*stille* Ausweitung — bleibt damit erhalten, obwohl die Ausweitung stattfand.
+
+**Wirksam ist die Zeile noch nicht, und das ist keine Nachlässigkeit.** Ein
+ausgestellter Refresh-Token trägt die Scopes seiner Entstehung; anheften lässt
+sich keiner. Bis der Kontoinhaber die Zustimmung erneut durchläuft, bleibt der
+alte Token gültig und die Aufrufzahlen melden weiter `SCOPE_NOT_GRANTED` — die
+richtige Antwort, nicht ein Fehler.
+
+**Nebenbefund, der die eigentliche Lehre trägt:** Die Prüfung an der
+Produktionsdatenbank zeigte Phase 8 als ausgerollt — Migration `0012`
+angewendet, `ebay_read_syncs` mit `OK` für Postfach und Preisvorschläge —,
+während das Übergabeprotokoll dieselben Schritte noch als „nicht ausgeführt"
+führte. Der Deploy geschah nach dem letzten Commit und wurde nirgends
+nachgetragen. Ein Protokoll, das hinter der Wirklichkeit zurückbleibt, ist
+schlimmer als keines: Es lädt die nächste Sitzung dazu ein, einen bereits
+erledigten Schritt noch einmal zu tun. Deshalb steht der Rollout jetzt im
+Phase-8-Eintrag, mit Versionskennung und Uhrzeit.
+
 ## 2026-08-16 - Phase 8: drei eBay-Quellen, von denen eine nicht liefern darf
 
 Phase 8 sollte drei Fragen beantwortbar machen: Aufrufzahlen, neue

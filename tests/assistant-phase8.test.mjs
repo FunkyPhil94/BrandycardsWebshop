@@ -331,7 +331,7 @@ test("Pet-Darstellung und DPI-Positionierung bleiben unberuehrt", async () => {
   assert.match(overlay, /FrameHeight = 208/u);
 });
 
-test("die Zustimmung fragt ohne ausdrueckliche Einstellung keine neuen Rechte an", async () => {
+test("die Zustimmung fragt genau die zwei benannten Rechte an, keines mehr", async () => {
   const [route, beispiel, wrangler] = await Promise.all([
     read("app/api/admin/ebay/oauth/start/route.ts"),
     read(".env.example"),
@@ -342,10 +342,21 @@ test("die Zustimmung fragt ohne ausdrueckliche Einstellung keine neuen Rechte an
   // ein Klick auf "eBay verbinden" mehr verlangen als der Betreiber wollte.
   assert.match(route, /process\.env\.EBAY_OAUTH_CONSENT_SCOPES/u);
   assert.match(route, /return process\.env\.EBAY_WRITE_OAUTH_SCOPE \|\| "https:\/\/api\.ebay\.com\/oauth\/api_scope\/sell\.inventory"/u);
-  assert.doesNotMatch(wrangler, /EBAY_OAUTH_CONSENT_SCOPES/u,
-    "in der Produktionskonfiguration bleibt die Variable ungesetzt");
-  // Dokumentiert, aber auskommentiert: der Weg steht da, begangen wird er von
-  // Hand -- ein neuer Refresh-Token gehoert nicht in einen Commit.
+  // **Seit dem 2026-08-16 ist die Variable gesetzt** -- auf ausdrueckliche
+  // Anforderung des Betreibers, um die Aufrufzahlen freizuschalten. Bis dahin
+  // pruefte diese Stelle, dass sie *fehlt*. Der Zweck bleibt derselbe und wird
+  // jetzt schaerfer geprueft: nicht "nichts steht da", sondern "genau diese
+  // zwei stehen da". Ein spaeter angehaengter dritter Scope -- etwa
+  // sell.account oder ein Schreibrecht -- faellt hier auf, statt beim naechsten
+  // Zustimmungsklick unbemerkt mitzulaufen.
+  const gesetzt = wrangler.match(/^EBAY_OAUTH_CONSENT_SCOPES = "([^"]+)"/mu);
+  assert.ok(gesetzt, "die Produktionskonfiguration benennt die angefragten Rechte");
+  assert.deepEqual(gesetzt[1].split(/\s+/u), [
+    "https://api.ebay.com/oauth/api_scope/sell.inventory",
+    "https://api.ebay.com/oauth/api_scope/sell.analytics.readonly",
+  ]);
+  // Dokumentiert, aber auskommentiert: ein Refresh-Token gehoert nicht in einen
+  // Commit. Die Rechteliste oben ist keiner -- der Token ist ein Secret.
   assert.match(beispiel, /^# EBAY_OAUTH_CONSENT_SCOPES=.*sell\.analytics\.readonly$/mu);
   assert.doesNotMatch(beispiel, /^EBAY_OAUTH_CONSENT_SCOPES=/mu);
 });
