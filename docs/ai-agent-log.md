@@ -108,6 +108,30 @@ Claim-Pfad schreibt `scopes`, `pairing_id`, `created_by_user_id` und
 Ausfall versucht hätte, das Problem durch Neukoppeln zu lösen, hätte ein
 zweites 503 bekommen — und vermutlich den Desktop verdächtigt.
 
+**Der produktive Durchlauf fand dann noch einen Fehler — im Prüfskript, und
+dahinter einen echten.** Nach dem Neukoppeln kamen fünf der sieben Fragen sauber
+zurück, zwei als `UNSUPPORTED`. Der erste Verdacht war der Planer; die Ursache
+war, dass ich „Verkaeufe" und „Preisvorschlaege" ohne Umlaute in die Fragedatei
+getippt hatte. Beide Fragen mit Umlaut nachgestellt: beantwortet.
+
+Damit hätte man es auf sich beruhen lassen können. Die Gegenprobe war trotzdem
+die Mühe wert, denn sie zeigt einen Befund, den ich sonst als eigenen Fehler
+abgehakt hätte: `normalizeQuestion` zerlegt nach NFD und entfernt Diakritika,
+macht also aus `ä` ein `a`. Die deutsche Ersatzschreibung `ae` ist aber keine
+Diakritik, sondern zwei Buchstaben — „verkaeufe" enthält kein „verkauf" und
+trifft kein einziges Schlüsselwort. Wer ohne deutsche Tastatur tippt, bekommt
+vom Assistenten ein Achselzucken.
+
+Das wiegt schwerer, als es klingt, weil der Regelplaner mangels
+`OPENAI_API_KEY` derzeit der *einzige* Planer ist. Ein Modell hätte „Verkaeufe"
+mühelos verstanden; der Fallback muss jede Formulierung selbst treffen. Genau
+deshalb ist die naheliegende Reparatur auch die falsche: `ue → u` würde „neue"
+zu „nu" machen, und „neue anfrage" träfe nicht mehr. Die gefaltete Fassung
+gehört *neben* die ursprüngliche, nicht an ihre Stelle — dann kann eine
+Ersetzung nur Treffer hinzufügen und keinen wegnehmen. Nicht umgesetzt, weil
+der Auftrag an dieser Stelle lautete, Fragen zu stellen, nicht den Planer
+umzubauen.
+
 **Die Ratenbegrenzung brauchte zwei Anläufe.** Vierzehn Anfragen nacheinander
 liefen sämtlich durch, obwohl die Grenze bei zehn pro Minute liegt. Vierzig
 gleichzeitige ergaben 34 × 429. Cloudflares Zähler ist ausdrücklich als

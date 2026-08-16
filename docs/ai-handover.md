@@ -201,17 +201,30 @@ fehlerfrei, `npm run lint` 0 Fehler / 1 vorbestehende Warnung in
 
 **Offen — und zwar nur diese Punkte:**
 
-1. **Migration `0011` produktiv einspielen.** Ohne sie bleibt der gesamte
-   Desktop-Pfad tot. Danach die vier Spalten nachsehen und eine Frage stellen:
-   ```
-   npx wrangler d1 execute brandycards-production --remote --file drizzle/0011_avatar_assistant_scope.sql
-   ```
-2. **Die sieben Fragen produktiv nachholen**, sobald 1 erledigt ist. Was sie
-   liefern werden, steht schon fest (aus D1 gelesen): 5 ungelesene von 248
-   eBay-Nachrichten, 0 offene Käufer-Preisvorschläge (leerer Fall, nicht
-   `UNAVAILABLE`), 276 Aufrufzeilen, 157 eBay-Verkaufsposten, 4 offene
-   Shop-Bestellungen, 0 neue Shop-Anfragen. Alle vier eBay-Lesequellen stehen
-   auf `OK` — es ist derzeit **nichts** `UNAVAILABLE`.
+1. ~~Migration `0011` produktiv einspielen.~~ **Erledigt am 2026-08-16** nach
+   Freigabe des Betreibers; eigener Eintrag weiter oben in dieser Datei.
+2. ~~Die sieben Fragen produktiv nachholen.~~ **Erledigt am 2026-08-16, 21:50**,
+   nachdem der Betreiber das Gerät neu gekoppelt hatte (neue Tokenzeile
+   `["EVENTS","ASSISTANT_READ"]`, gültig bis 14.11.2026). Ergebnis: **7 von 7
+   beantwortet**, alle `HTTP 200`, `readOnly true`, jede mit Quelle und
+   Datenstand, Antwortzeiten 42–197 ms.
+
+   | Frage | Werkzeug | Ergebnis |
+   |---|---|---|
+   | Letzter Verkauf | `latest_sale` | eBay, Marcelo Flamenco Flare Patch, 15.08. |
+   | Umsatz 30 Tage | `sales_overview` | Shop 4 / 15,82 € · eBay 47 / 1 250,19 € · gesamt 1 266,01 € |
+   | Verkäufe 7 Tage | `sales_overview` + `latest_sale` | 13 Karten, 429,37 € |
+   | Meistgesehene Angebote | `ebay_most_viewed` | 17.07.–15.08., Spitze 92 Aufrufe / 2 034 Einblendungen |
+   | eBay-Nachrichten | `ebay_messages` | 10 gezeigt, davon 5 ungelesen |
+   | Käufer-Preisvorschläge | `ebay_buyer_offers` | leer — „keine offenen", **nicht** `UNAVAILABLE` |
+   | Neue Bestellungen | `new_orders` | 4 offene, älteste vom 06.08. |
+
+   Die Zahlen decken sich mit der Vorhersage aus D1. **Nichts ist
+   `UNAVAILABLE`** — alle vier eBay-Lesequellen stehen auf `OK`. Der
+   Datenschutzbefund hält auch produktiv: In den Antworten stehen
+   eBay-Pseudonyme aus dem eigenen Postfach (`vichernand85`, `cosmonauto`) und
+   Bestellnummern, aber keine E-Mail-Adresse, keine Anschrift und kein
+   Nachrichtentext.
 3. **Spracheingabe live**, ebenfalls von 1 abhängig. Der Diktatpfad endet
    nachweislich in derselben `SendAssistantMessageAsync`-Methode wie Text
    (festgehalten in `tests/assistant-orchestrator.test.mjs`), aber zwei echte
@@ -220,6 +233,32 @@ fehlerfrei, `npm run lint` 0 Fehler / 1 vorbestehende Warnung in
    „eBay-Aufrufzahlen: Aufrufzahlen: eBay verweigert …". Der Formatierer setzt
    das Label davor, die Meldung bringt ihr eigenes mit. Nicht angefasst, weil
    außerhalb dieses Auftrags.
+5. **Umlaute ohne Umlaut: der Planer versteht „Verkaeufe" nicht.** Beim
+   produktiven Durchlauf am 2026-08-16 kamen zwei der sieben Fragen zunächst als
+   `UNSUPPORTED` zurück — weil sie im Prüfskript ohne Umlaute getippt waren.
+   Mit Umlaut beantwortet, ohne Umlaut nicht; die Gegenprobe ist eindeutig:
+
+   | Frage | Ergebnis |
+   |---|---|
+   | „Wie viele **Verkäufe** hatte ich in den letzten 7 Tagen?" | `ANSWERED` |
+   | „Wie viele **Verkaeufe** hatte ich in den letzten 7 Tagen?" | `UNSUPPORTED` |
+   | „Gibt es offene **Preisvorschläge** von **Käufern** bei eBay?" | `ANSWERED` |
+   | „Gibt es offene **Preisvorschlaege** von **Kaeufern** bei eBay?" | `UNSUPPORTED` |
+
+   Ursache: `normalizeQuestion` in [lib/assistant/planner.ts](../lib/assistant/planner.ts)
+   zerlegt nach NFD und entfernt Diakritika, macht also aus `ä` ein `a`. Die
+   deutsche Ersatzschreibung `ae`/`oe`/`ue` ist eine andere Umformung und wird
+   nicht gefaltet — „verkaeufe" enthält schlicht kein „verkauf".
+
+   Solange kein Modell-Planer konfiguriert ist, ist der Regelplaner der
+   **einzige** Planer; eine Formulierung, die er verfehlt, ist unbeantwortbar.
+   Das trifft jeden, der ohne deutsche Tastatur tippt.
+
+   **Vorschlag, nicht umgesetzt:** die gefaltete Fassung *zusätzlich* prüfen,
+   nicht ersetzen. Ein naives `ue → u` wäre falsch — „neue" enthält „ue" und
+   würde zu „nu", womit „neue anfrage" nicht mehr träfe. Wird gegen beide
+   Fassungen gesucht, kann eine Ersetzung nur Treffer hinzufügen und keinen
+   entfernen.
 
 ### 2026-08-16 - Die Verkaufsübersicht freischalten
 

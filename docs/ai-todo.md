@@ -11,7 +11,43 @@ dabei, damit niemand den Gesprächsverlauf braucht.
 
 ---
 
-## Zuerst: Desktop einmal neu koppeln
+## Zuerst: Der Planer versteht „Verkaeufe" nicht
+
+**Kleiner Eingriff, spürbare Wirkung.** Am 2026-08-16 produktiv gemessen:
+„Wie viele **Verkäufe** hatte ich in den letzten 7 Tagen?" wird beantwortet,
+„Wie viele **Verkaeufe** …" nicht. Dasselbe bei „Preisvorschlaege" und
+„Kaeufern".
+
+**Ursache:** `normalizeQuestion` in [lib/assistant/planner.ts](../lib/assistant/planner.ts)
+zerlegt nach NFD und entfernt Diakritika (`ä` → `a`). Die deutsche
+Ersatzschreibung `ae`/`oe`/`ue` ist eine andere Umformung und wird nicht
+gefaltet.
+
+**Warum es zählt:** Ohne `OPENAI_API_KEY` ist der Regelplaner der einzige
+Planer. Was er verfehlt, ist unbeantwortbar — und ohne deutsche Tastatur tippt
+man genau so.
+
+**Umsetzung:** Die gefaltete Fassung *zusätzlich* prüfen, nicht ersetzen.
+`containsAny` sucht gegen beide Fassungen. Ein reines `ue → u` wäre falsch:
+„neue" enthält „ue" und würde zu „nu", womit „neue anfrage" nicht mehr träfe.
+Gegen beide Fassungen gesucht, kann eine Ersetzung nur Treffer hinzufügen.
+
+**Abnahme:** Regressionstest in `tests/assistant-phase10.test.mjs` mit beiden
+Schreibweisen je Frage; die bestehenden elf Fragen des Fallback-Tests müssen
+unverändert grün bleiben.
+
+---
+
+## Danach: Spracheingabe produktiv belegen
+
+Zwei gesprochene Fragen über den Desktop stellen. Der Diktatpfad endet
+nachweislich in derselben `SendAssistantMessageAsync`-Methode wie Text
+(festgehalten in `tests/assistant-orchestrator.test.mjs`), ist aber nie
+produktiv gesprochen worden. Der letzte offene Punkt aus Phase 10.
+
+---
+
+## Erledigt am 2026-08-16: Desktop neu koppeln
 
 **Handgriff des Betreibers, kein Entwicklungsschritt** — aber alles Weitere am
 Assistenten hängt daran.
@@ -22,23 +58,18 @@ eingespielt war und dadurch vier Spalten in `avatar_device_tokens` fehlten.
 Die Migration ist am selben Tag nach ausdrücklicher Freigabe eingespielt
 worden; der Ereignisabruf antwortet seitdem wieder mit 200.
 
-**Was offen ist:** Der Assistant antwortet **401**. Die beiden produktiven
-Tokenzeilen stammen vom 2026-08-15 und tragen nach der Migration die Vorgabe
-`["EVENTS"]` — so gewollt, ein alter Ereignistoken soll keinen Zugriff auf
-Geschäftsdaten erben.
+Danach antwortete der Assistant noch mit **401**: Die beiden alten Tokenzeilen
+tragen nach der Migration die Vorgabe `["EVENTS"]` — so gewollt, ein alter
+Ereignistoken soll keinen Zugriff auf Geschäftsdaten erben. Der Betreiber hat
+das Gerät am selben Tag um 19:46 neu gekoppelt; die neue Zeile trägt
+`["EVENTS","ASSISTANT_READ"]` und läuft am 14.11.2026 ab.
 
-**Schritte:** Im Adminbereich einen Pairing-Code erzeugen, ihn im Desktop unter
-„Verbindung ändern" eingeben. Der Claim-Pfad vergibt dann
-`["EVENTS","ASSISTANT_READ"]` und 90 Tage Gültigkeit.
+**Abnahme erfüllt:** Alle sieben Fragen produktiv beantwortet, `HTTP 200`,
+42–197 ms, nichts `UNAVAILABLE`. Einzelheiten in
+[ai-handover.md](ai-handover.md) unter Phase 10.
 
-**Abnahme danach:** Die sieben Fragen aus Phase 10 produktiv stellen. Erwartete
-Werte (aus D1 gelesen, Stand 2026-08-16): 5 ungelesene von 248 eBay-Nachrichten,
-0 offene Käufer-Preisvorschläge, 276 Aufrufzeilen, 157 eBay-Verkaufsposten,
-4 offene Shop-Bestellungen. Alle vier eBay-Lesequellen stehen auf `OK` — es
-sollte nichts `UNAVAILABLE` sein. Zusätzlich die Spracheingabe mit zwei
-gesprochenen Fragen belegen.
-
-**Optional danach:** den Modell-Planer über `OPENAI_API_KEY` scharf schalten.
+**Optional, weiterhin offen:** den Modell-Planer über `OPENAI_API_KEY` scharf
+schalten.
 Bis dahin läuft ausschließlich der deterministische Planer, der alle bekannten
 Fragen beantwortet und für unbekannte Formulierungen ausdrücklich sagt, dass
 der freie Planer nicht konfiguriert ist.
