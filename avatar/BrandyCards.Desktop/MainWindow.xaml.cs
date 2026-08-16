@@ -1,3 +1,5 @@
+using System.Runtime.InteropServices;
+using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Windows.Graphics;
@@ -14,6 +16,8 @@ public sealed partial class MainWindow : Window
     private const int LauncherHeight = 104;
     private const int AssistantWidth = 520;
     private const int AssistantHeight = 680;
+    private const int SetupWidth = 520;
+    private const int SetupHeight = 760;
 
     public MainWindow()
     {
@@ -26,7 +30,7 @@ public sealed partial class MainWindow : Window
     public void ConfigureSetupWindow()
     {
         AppWindow.Show();
-        AppWindow.Resize(new SizeInt32(520, 760));
+        AppWindow.Resize(new SizeInt32(ToPhysicalPixels(SetupWidth), ToPhysicalPixels(SetupHeight)));
 
         if (AppWindow.Presenter is OverlappedPresenter presenter)
         {
@@ -57,9 +61,27 @@ public sealed partial class MainWindow : Window
 
     private int ToPhysicalPixels(int effectivePixels)
     {
-        var scale = RootFrame.XamlRoot?.RasterizationScale ?? 1.0;
-        return (int)Math.Round(effectivePixels * scale);
+        return (int)Math.Round(effectivePixels * RasterizationScale());
     }
+
+    /// <summary>
+    /// Skalierungsfaktor des Monitors, auf dem dieses Fenster gerade liegt.
+    ///
+    /// `ConfigureSetupWindow` läuft schon im Konstruktor, also bevor der
+    /// Frame navigiert ist und ein `XamlRoot` existiert. Ohne den DPI-Rückfall
+    /// blieb das Setup-Fenster deshalb bei 520x760 *physischen* Pixeln und war
+    /// bei 150 % nur 347x507 effektive Pixel groß.
+    /// </summary>
+    private double RasterizationScale()
+    {
+        var scale = RootFrame.XamlRoot?.RasterizationScale ?? 0;
+        if (scale > 0) return scale;
+        var dpi = GetDpiForWindow(Win32Interop.GetWindowFromWindowId(AppWindow.Id));
+        return dpi > 0 ? dpi / 96.0 : 1.0;
+    }
+
+    [DllImport("user32.dll")]
+    private static extern uint GetDpiForWindow(IntPtr windowHandle);
 
     private void PositionBesidePet(int width, int height)
     {

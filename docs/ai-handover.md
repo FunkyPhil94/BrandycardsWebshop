@@ -37,25 +37,139 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-### 2026-08-16 - Phase 5 des Desktop-Assistenten: Prüfung und Abnahme
+<!-- Fuer den naechsten Auftrag freihalten. -->
 
-- Status: LÄUFT.
-- Ziel: Die in Phase 1 bis 4 gebaute Assistentenkette prüfen, nicht erweitern.
-  Geprüft werden End-to-End-Verhalten, Sicherheit, DPI und Mehrschirmbetrieb,
-  Tastatur- und Screenreader-Bedienbarkeit, Text- und Spracheingabe sowie
-  Fehler-, Timeout- und `UNAVAILABLE`-Pfade.
-- Rahmen: Anwendungscode wird nur bei einem konkret nachgewiesenen Fehler
-  geändert. Keine Produktionsdaten, keine Remote-Migration, kein Deployment.
-  `NativePetOverlay.cs` und das transparente Pet bleiben unverändert.
-- Umsetzung: Neue Prüftests unter `tests/`, ein echter lokaler HTTP-Lauf gegen
-  `npm run dev` mit lokaler D1 und kurzlebigem Testtoken, ein WinUI-x64-Build
-  mit UI-Automation-Prüfung sowie abschließend `npm test`, `npx tsc --noEmit`
-  und `npm run lint`.
-- Risiko bei Abbruch: Ein lokal angelegtes Gerätetoken/Pairing und ein
-  laufender Dev-Server könnten zurückbleiben. Beides ist rein lokal
-  (`.wrangler/state`), muss aber beim Wiederaufnehmen entfernt werden.
+Keine laufenden Aufträge.
 
 ## Historie
+
+### 2026-08-16 - Phase 5 des Desktop-Assistenten: Prüfung und Abnahme
+
+- Status: ABGESCHLOSSEN.
+- Ziel: Die in Phase 1 bis 4 gebaute Kette prüfen, nicht erweitern. Anwendungs-
+  code nur bei nachgewiesenem Fehler ändern.
+
+**Zwei konkrete Fehler gefunden und behoben**
+
+1. *Die Kopplung war gegen einen lokalen Dev-Server unmöglich.*
+   `ConnectButton_Click` verwendete `PostAsJsonAsync`. `JsonContent` kennt
+   seine Länge nicht und sendet chunked; die Worker-Laufzeit antwortet auf
+   einen Body ohne Längenangabe mit **411**, sichtbar als „Die Anfrage muss
+   ihre Größe angeben." Gefunden beim echten Tastaturlauf, nicht durch
+   Codelesen. Behoben mit `StringContent` — genauso, wie es
+   `AssistantConversationService` in Phase 4 bereits macht. Danach lief die
+   Kopplung durch und erzeugte ein Token mit `["EVENTS","ASSISTANT_READ"]`.
+   Produktion war davon nicht betroffen: Cloudflare akzeptiert chunked, die
+   vorhandene produktive Kopplung besteht.
+2. *Das Setup-Fenster ignorierte die Bildschirmskalierung.*
+   `ConfigureSetupWindow` rief `AppWindow.Resize(520, 760)` mit **physischen**
+   Pixeln auf, während `ConfigureLauncherWindow` über `ToPhysicalPixels`
+   umrechnet. Gemessen bei 144 dpi: 520×760 physisch = **347×507 effektive**
+   statt 520×760. `ToPhysicalPixels` konnte dort auch nicht greifen, weil
+   `ConfigureSetupWindow` schon im Konstruktor läuft und `XamlRoot` dann noch
+   `null` ist — der Faktor wäre auf 1.0 gefallen. Behoben mit einem
+   DPI-Rückfall über `GetDpiForWindow`. Nachgemessen: 780×1140 physisch =
+   520×760 effektiv, auch auf dem Rückweg nach einem Widerruf.
+
+**Echter HTTP-Durchlauf: 45 von 45 Fällen bestanden**
+
+Gegen `npm run dev` mit lokaler D1 und vier kurzlebigen Testtoken. Der
+Rate-Limit-Schlüssel wurde je Fall über `cf-connecting-ip` getrennt.
+
+- Abgewiesen wurden: kein Header, Token ohne `bcav_`-Präfix, erfundenes Token,
+  reines `EVENTS`-Token ohne `ASSISTANT_READ`, abgelaufenes Token, widerrufenes
+  Token. `GET` ohne Token ebenso; `DELETE` ist 405.
+- Eingabe: falscher Content-Type 415, kaputtes JSON 400, Zusatzfeld `sql` 400,
+  Phase-1-Direktwahl `{tool,limit}` 400, leere Frage 400, über 1000 Zeichen
+  400, `message` ohne Text 400, Array-Body 400, über 4 KiB 413, Body ohne
+  Längenangabe 411, unsinnige `content-length` 400.
+- Antworten: beide nicht verfügbaren eBay-Quellen einzeln mit Grund; leere
+  Bestellungen, leere Preisvorschläge, fehlender Sync-Lauf und fehlender
+  Verkauf jeweils ausdrücklich als leer statt erfunden; Statistik mit
+  gezählten Werten; zusammengesetzte Frage nutzt zwei Werkzeuge genau einmal;
+  unbekannte Formulierung endet als `UNSUPPORTED` mit dem Hinweis auf den
+  nicht konfigurierten Modell-Planer, ohne Werkzeug und ohne Quelle.
+- Vier Prompt-Injektionen (Löschbefehl, Rollenwechsel, Kundendaten,
+  Geheimnisse) lieferten weder Token noch Schlüssel noch E-Mail-Adressen.
+- Rate-Limit: greift nach zehn Anfragen je Minute mit `retry-after: 60`, auch
+  bei durchgehend ungültigem Token — also vor dem D1-Lookup.
+- Keine Antwort enthielt SQL-, Drizzle- oder Stacktrace-Details.
+- **Read-only belegt:** Zeilenzahlen vor und nach dem Lauf identisch
+  (5 Produkte, 0 Bestellungen, 0 Preisvorschläge, 0 Ereignisse, 0 Outbox).
+
+**Bedienung, DPI und Sprache am laufenden Fenster geprüft**
+
+- Tastatur ohne Maus vollständig: Kopplung über Tab → Tab → Enter, Launcher
+  mit Enter geöffnet, Frage getippt, über Mikrofon zum Senden getabbt, mit
+  Enter gesendet, mit Escape geschlossen. Der Fokus sprang beim Öffnen ins
+  Eingabefeld und beim Schließen zurück auf den Launcher.
+- Screenreader-Baum: alle sechs Bedienelemente benannt und fokussierbar, die
+  Unterhaltung als benannter Bereich, jede Nachricht als eigenes benanntes
+  Element inklusive der vollständigen Antwort, zwei höfliche Live-Regionen.
+- DPI bei 144 dpi gemessen: Launcher 600×156 physisch = 400×104 effektiv,
+  geöffnetes Panel 780×1020 physisch = 520×680 effektiv, Abstand zum Pet
+  exakt 16 Pixel.
+- Text: Die Frage nach nicht verfügbaren eBay-Daten lief über die echte
+  localhost-API und lieferte beide `UNAVAILABLE`-Begründungen mit Quelle.
+- Sprache: echte lokale Diktatsitzung ohne gesprochenen Inhalt endete mit
+  „Es wurde kein Diktat erkannt …"; währenddessen waren Eingabefeld,
+  Mikrofon und Senden gesperrt und danach wieder frei.
+- Fehlerfall: Bei gestopptem Shop meldete das Panel „Die Anfrage konnte nicht
+  ausgeführt werden … Verbindung verweigert" und den Status „Anfrage
+  fehlgeschlagen"; die Bedienelemente wurden wieder freigegeben.
+- Widerruf: Nach `revoked_at` in der lokalen D1 fiel die App binnen weniger
+  Sekunden in die Setup-Ansicht mit „Die Desktop-Kopplung ist nicht mehr
+  gültig." zurück und blendete das Pet aus.
+
+**Beobachtungen, die bewusst nicht geändert wurden**
+
+- Das Pet wird in physischen Pixeln gezeichnet und ist bei 150 % nur 173×200
+  effektive Pixel groß. Es ankert außerdem an `SM_CYSCREEN` statt am
+  Arbeitsbereich und ragt dadurch 24 Pixel in die Taskleiste. Das transparente
+  Pet und `NativePetOverlay.cs` standen unter Änderungsverbot.
+- **Mehrschirmbetrieb konnte nicht real geprüft werden — am Prüfgerät hängt
+  nur ein Monitor.** Aus dem Code: Launcher (`DisplayArea.Primary`) und Pet
+  (`GetSystemMetrics`) ankern beide fest am Primärmonitor. Ein vom Nutzer auf
+  einen zweiten Monitor gezogenes Launcherfenster springt beim nächsten
+  Öffnen oder Schließen des Panels dorthin zurück. Das ist konsistent mit dem
+  Pet, ließe sich aber nur zusammen mit der Pet-Positionierung ändern.
+- Der HTTP-Timeout des Clients liegt bei 12 s, der Modell-Timeout des Servers
+  bei 15 s. Sobald `OPENAI_API_KEY` gesetzt wird, bricht der Desktop vor dem
+  Server ab. Nicht geändert, weil der Modellpfad ohne Schlüssel unerreichbar
+  ist; vor dem Setzen des Schlüssels muss einer der beiden Werte angepasst
+  werden.
+- „Verbindung ändern" bleibt während Diktat und laufender Abfrage bedienbar.
+- Die Antwort selbst wird nicht als Live-Region angesagt, nur der Kurzstatus
+  „Antwort empfangen". Der Text ist im Baum vorhanden und lesbar.
+- Der vinext-Dev-Server lauscht ausschließlich auf `::1`. `HttpClient` löst
+  `localhost` bevorzugt nach IPv4 auf, deshalb braucht der lokale Testlauf die
+  Adresse `http://[::1]:3000`. Kein Anwendungsfehler.
+
+**Nicht geprüft**
+
+- Der Modell-Planer wurde nicht live aufgerufen; es gibt keinen Schlüssel und
+  es wurde bewusst keine Frage an einen externen Anbieter gesendet. Sein
+  Fehler- und Timeout-Verhalten ist offline mit einem Fetch-Doppel abgedeckt.
+- Der Windows-Datenschutzschalter für Mikrofone wurde nicht verändert.
+- High Contrast wurde nur anhand der Theme-Dictionaries beurteilt, die
+  Systemeinstellung blieb unangetastet.
+
+**Prüfläufe und Aufräumen**
+
+- `npm test`: 395/395 bestanden (vorher 383, davon 12 neu in
+  `tests/assistant-phase5.test.mjs`). `npx tsc --noEmit` fehlerfrei.
+  `npm run lint`: 0 Fehler, nur die bekannte Hook-Warnung in
+  `app/account/page.tsx`. WinUI-x64-Debug-Build: 0 Warnungen, 0 Fehler.
+- Die Migrationen `0003`–`0011` wurden **ausschließlich lokal** angewendet;
+  die lokale D1 dieses Worktrees hing noch auf Stand `0002`.
+- Alle Testtoken, das Test-Pairing und der lokale Testbenutzer wurden entfernt
+  (jeweils 0 Zeilen übrig). Die produktive Desktop-Einstellung wurde
+  byte-gleich zur Sicherung wiederhergestellt; der Dev-Server ist gestoppt.
+- Keine Produktionsdaten, keine Remote-Migration, kein Deployment, keine
+  eBay-Schreiboperation. `NativePetOverlay.cs` hat keinen Diff.
+- Anmerkung: In diesem Worktree fehlt `.env.local`. Für die Prüfung ohne
+  Belang, für ein Deployment aus diesem Verzeichnis wäre es die bekannte
+  Falle.
 
 ### 2026-08-16 - Phase 4 des Desktop-Assistenten: zentraler Read-only-Orchestrator
 

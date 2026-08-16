@@ -1,4 +1,5 @@
 using System.Net.Http.Json;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.UI.Dispatching;
@@ -87,7 +88,16 @@ public sealed partial class MainPage : Page
                 throw new InvalidOperationException("Bitte zuerst einen gültigen Pairing-Code eingeben.");
             }
 
-            using var response = await _httpClient.PostAsJsonAsync($"{shopUrl}/api/avatar/device/claim", new { code });
+            // PostAsJsonAsync kennt die Body-Länge nicht und sendet deshalb
+            // chunked. Ein Worker-Laufzeitsystem beantwortet einen Body ohne
+            // Längenangabe mit 411 — die Kopplung gegen `npm run dev` schlug
+            // genau daran fehl. StringContent setzt content-length, wie im
+            // AssistantConversationService auch.
+            using var request = new HttpRequestMessage(HttpMethod.Post, $"{shopUrl}/api/avatar/device/claim")
+            {
+                Content = new StringContent(JsonSerializer.Serialize(new { code }), Encoding.UTF8, "application/json"),
+            };
+            using var response = await _httpClient.SendAsync(request);
             if (!response.IsSuccessStatusCode)
             {
                 throw new InvalidOperationException(await ReadApiErrorAsync(response));

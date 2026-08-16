@@ -1,5 +1,69 @@
 # BrandyCards Agentenprotokoll
 
+## 2026-08-16 - Phase 5 des Desktop-Assistenten: Abnahme statt Ausbau
+
+Phase 5 hat nichts hinzugefügt, sondern nachgewiesen. Der Prüfweg war
+bewusst der echte: ein laufender Dev-Server mit lokaler D1, echte
+HTTP-Anfragen, ein gebautes WinUI-Fenster und UI-Automation statt Codelesen.
+Genau daran hängt der Wert der beiden Befunde — beide waren durch Lesen des
+Codes unsichtbar und zeigten sich erst am laufenden System.
+
+Der erste Befund kam aus dem Tastaturlauf. Die Kopplung gegen `npm run dev`
+scheiterte mit „Die Anfrage muss ihre Größe angeben." — HTTP 411. Ursache ist
+`PostAsJsonAsync`: `JsonContent` kann seine Länge nicht vorab berechnen und
+sendet deshalb chunked, was die Worker-Laufzeit ablehnt. Phase 4 hatte dieses
+Problem für den Assistant-Endpunkt bereits gelöst und den Grund im Code
+notiert, die Kopplung aber nicht mitgezogen. Die Korrektur überträgt exakt
+dieselbe Lösung. In Produktion war der Weg nie kaputt, weil Cloudflare
+chunked akzeptiert; die Lücke betraf ausschließlich die in der README
+beschriebene lokale Inbetriebnahme. Die neue Prüfung in
+`tests/assistant-phase5.test.mjs` verbietet `PostAsJsonAsync` deshalb für den
+gesamten Client, nicht nur für die eine Zeile.
+
+Der zweite Befund kam aus der Messung. `ConfigureSetupWindow` übergab
+`AppWindow.Resize` rohe 520×760, während `ConfigureLauncherWindow` seit Phase 2
+über `ToPhysicalPixels` skaliert. Bei 144 dpi ergab das ein Fenster von
+347×507 effektiven Pixeln statt 520×760. Der naheliegende Fix — einfach
+`ToPhysicalPixels` auch hier aufrufen — hätte nichts geändert:
+`ConfigureSetupWindow` läuft im Konstruktor, `RootFrame.XamlRoot` ist dort noch
+`null`, und der bisherige Rückfall auf 1.0 hätte still weiter falsch
+gerechnet. Deshalb liefert `RasterizationScale()` jetzt einen zweiten Weg über
+`GetDpiForWindow` auf dem Fenster-Handle. Die Nachmessung ergab 780×1140
+physisch, also die beabsichtigten 520×760 effektiv — auch auf dem Rückweg,
+wenn ein Widerruf die App in die Setup-Ansicht zurückwirft.
+
+Die Serverseite hielt allen 45 HTTP-Fällen stand. Sechs verschiedene Gründe
+führen zu 401, darunter der wichtigste: ein Token mit ausschließlich `EVENTS`
+erreicht den Assistant nicht. Elf Eingabefälle decken Content-Type, kaputtes
+JSON, Zusatzfelder, die alte Phase-1-Direktwahl, leere und zu lange Fragen
+sowie drei verschiedene Wege, einen zu großen oder längenlosen Body zu
+schicken. Vier Prompt-Injektionen — Löschbefehl, Rollenwechsel, Kundendaten,
+Geheimnisse — lieferten nichts davon; der Planer kennt schlicht kein Werkzeug
+dafür, und die Antwort entsteht ohnehin deterministisch aus typisierten DTOs.
+Der entscheidende Beleg steht am Ende: die Zeilenzahlen der Datenbank waren
+vor und nach dem Durchlauf identisch. Read-only ist damit nicht behauptet,
+sondern gemessen.
+
+Beim Timeout wurde bewusst nicht der echte Anbieter angerufen. Ein
+Fetch-Doppel, das nie antwortet, belegt stattdessen, dass die Modellplanung
+unter einem Abbruchsignal läuft und nach fünfzehn Sekunden endet — der einzige
+Test der Suite, der echte Wartezeit kostet, und der einzige, der beweist, dass
+ein hängender Anbieter eine Geräteanfrage nicht endlos offen hält. Dass
+`HybridAssistantPlanner` einen Modellfehler weiterreicht statt ihn zu
+verschlucken, ist die Voraussetzung dafür, dass die Route daraus ein 503 mit
+generischem Text macht, statt eine Antwort zu erfinden.
+
+Drei Dinge bleiben offen und stehen ausdrücklich als solche im
+Übergabeprotokoll. Der Mehrschirmbetrieb ließ sich nicht real prüfen, weil am
+Prüfgerät nur ein Monitor hängt; aus dem Code ankern Launcher und Pet beide
+fest am Primärmonitor, was sich nur zusammen mit der Pet-Positionierung ändern
+ließe — und die stand unter Änderungsverbot. Der Client-Timeout von zwölf
+Sekunden liegt unter dem Modell-Timeout von fünfzehn; das fällt erst auf, wenn
+`OPENAI_API_KEY` gesetzt wird, und wurde deshalb nicht eigenmächtig
+verschoben. Und das Pet selbst zeichnet in physischen Pixeln, wirkt bei 150 %
+entsprechend klein und ragt 24 Pixel in die Taskleiste — festgehalten, nicht
+angefasst.
+
 ## 2026-08-16 - Phase 4 des Desktop-Assistenten: zentraler Read-only-Orchestrator
 
 Phase 4 verschiebt die gesamte Frageverarbeitung vom WinUI-Client auf einen
