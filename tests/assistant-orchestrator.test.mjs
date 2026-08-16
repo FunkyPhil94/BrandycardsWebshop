@@ -119,7 +119,12 @@ test("der OpenAI-Planer stellt nur strikte Registry-Funktionen bereit und übern
   assert.equal(requestBody.tools.length, ASSISTANT_TOOL_NAMES.length);
   assert.deepEqual(requestBody.tools.map((tool) => tool.name), [...ASSISTANT_TOOL_NAMES]);
   assert.ok(requestBody.tools.every((tool) => tool.strict === true && tool.parameters.additionalProperties === false));
-  assert.ok(requestBody.tools.every((tool) => Object.keys(tool.parameters.properties).join(",") === "limit"));
+  // Seit Phase 9 zwei Parameter: `limit` (Ergebniszahl) und `days` (Zeitraum,
+  // nur von sales_overview ausgewertet). Beide sind Zahlen mit Schranken --
+  // die Liste ist hier festgenagelt, damit kein Freitextfeld dazukommt, ueber
+  // das eine Abfrage von aussen hereinkaeme.
+  assert.ok(requestBody.tools.every((tool) => Object.keys(tool.parameters.properties).join(",") === "limit,days"));
+  assert.ok(requestBody.tools.every((tool) => tool.parameters.properties.days.maximum === 90));
 });
 
 test("der Orchestrator erzeugt Antworten nur aus Tool-Daten und nennt Quelle sowie Datenstand", async () => {

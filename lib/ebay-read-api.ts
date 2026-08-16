@@ -470,3 +470,176 @@ export async function fetchEbayBuyerOffers(): Promise<EbayBuyerOffer[]> {
     + `</GetBestOffersRequest>`;
   return parseBestOffers(await tradingCall(config, "GetBestOffers", request));
 }
+
+// ---------------------------------------------------------------------------
+// 4. Verkaufshistorie — Sell Fulfillment API, getOrders
+// ---------------------------------------------------------------------------
+
+/** Der Scope, den die Verkaufshistorie verlangt.
+ *
+ * eBay nennt für `getOrders` `sell.fulfillment` oder die lesende Fassung.
+ * Genommen wird die lesende: Der Shop liest hier Bestellungen und verschickt
+ * nichts über eBay. Der Scope kam am 2026-08-16 in die Zustimmungsliste; bis
+ * zur nächsten Zustimmung des Kontoinhabers trägt ihn kein Token, und der
+ * Abruf endet erwartbar mit `SCOPE_NOT_GRANTED`.
+ */
+export const EBAY_FULFILLMENT_READ_SCOPE = "https://api.ebay.com/oauth/api_scope/sell.fulfillment.readonly";
+
+/** Wie weit die Übersicht höchstens zurückreicht.
+ *
+ * 90 Tage ist das Fenster, das eBay je Abfrage zulässt. Was älter ist, bleibt
+ * trotzdem in der eigenen Tabelle stehen — sie wird nie leergeräumt, siehe
+ * `db/schema.ts`. Die Historie wächst also über das Abfragefenster hinaus,
+ * solange regelmäßig abgerufen wird.
+ */
+export const EBAY_SALES_WINDOW_DAYS = 90;
+
+/** Wie viele Bestellungen je Seite. eBay deckelt `limit` bei 200. */
+export const EBAY_SALES_PAGE_SIZE = 200;
+
+/** Notbremse gegen eine Antwort, die nie endet. 40 Seiten sind 8 000
+ *  Bestellungen — weit jenseits dessen, was dieser Shop erzeugt. */
+const EBAY_SALES_MAX_PAGES = 40;
+
+export type EbaySaleRecord = {
+  ebayOrderId: string;
+  lineItemId: string;
+  ebayItemId: string | null;
+  title: string | null;
+  quantity: number;
+  amountCents: number | null;
+  orderTotalCents: number | null;
+  currency: string;
+  soldAt: string | null;
+};
+
+const MAX_SALE_TITLE_LENGTH = 200;
+
+/** Wandelt einen eBay-Geldbetrag in Cent.
+ *
+ * eBay liefert Beträge als Zeichenkette (`"12.50"`), nicht als Zahl. `Number`
+ * allein reichte nicht: `Number(null)` ist 0, und eine fehlende Summe als
+ * „null Euro" zu übernehmen wäre eine erfundene Zahl — genau der Fehler, den
+ * Phase 8 bei den Kennzahlen schon einmal gemacht hat.
+ */
+export function moneyToCents(value: unknown): number | null {
+  const raw = asRecord(value);
+  const amount = raw?.value ?? value;
+  if (amount === null || amount === undefined || amount === "") return null;
+  const parsed = typeof amount === "number" ? amount : Number(amount);
+  if (!Number.isFinite(parsed)) return null;
+  return Math.round(parsed * 100);
+}
+
+function moneyCurrency(value: unknown, fallback: string): string {
+  const raw = asRecord(value);
+  const currency = typeof raw?.currency === "string" ? raw.currency.trim().toUpperCase() : "";
+  return /^[A-Z]{3}$/u.test(currency) ? currency : fallback;
+}
+
+/** Zerlegt eine `getOrders`-Antwort in einzelne verkaufte Posten.
+ *
+ * Eine Bestellung kann mehrere Karten enthalten. Der Gesamtbetrag der
+ * Bestellung wird auf jedem Posten wiederholt statt aufgeteilt: Aufteilen
+ * hieße, Versand und Steuern nach einem Schlüssel zu verteilen, den eBay nicht
+ * mitliefert. Wer summiert, summiert deshalb über *verschiedene* Bestellungen.
+ */
+export function parseSalesOrders(payload: unknown, fallbackCurrency = "EUR"): EbaySaleRecord[] {
+  const root = asRecord(payload);
+  if (!root) throw new EbayReadError("UPSTREAM_ERROR", "Die eBay-Bestellliste ist kein Objekt.");
+
+  const records: EbaySaleRecord[] = [];
+  const orders = Array.isArray(root.orders) ? root.orders : [];
+  for (const value of orders) {
+    const order = asRecord(value);
+    const ebayOrderId = typeof order?.orderId === "string" ? order.orderId.trim() : "";
+    if (!ebayOrderId) continue;
+
+    const pricing = asRecord(order?.pricingSummary);
+    const orderTotalCents = moneyToCents(pricing?.total);
+    const currency = moneyCurrency(pricing?.total, fallbackCurrency);
+    const soldAt = parseEbayDate(typeof order?.creationDate === "string" ? order.creationDate : undefined);
+
+    const lineItems = Array.isArray(order?.lineItems) ? order.lineItems : [];
+    for (const [index, lineValue] of lineItems.entries()) {
+      const line = asRecord(lineValue);
+      // Ohne eigene Postenkennung bleibt der Index — sonst fielen zwei Posten
+      // derselben Bestellung im Schluessel zusammen und einer ginge verloren.
+      const lineItemId = typeof line?.lineItemId === "string" && line.lineItemId.trim()
+        ? line.lineItemId.trim()
+        : `${ebayOrderId}-${index}`;
+      const quantity = typeof line?.quantity === "number" ? line.quantity : Number(line?.quantity);
+      const legacyItemId = typeof line?.legacyItemId === "string" ? line.legacyItemId.replace(/[^0-9]/gu, "") : "";
+
+      records.push({
+        ebayOrderId,
+        lineItemId,
+        ebayItemId: legacyItemId || null,
+        title: boundedText(typeof line?.title === "string" ? line.title : null, MAX_SALE_TITLE_LENGTH),
+        quantity: Number.isSafeInteger(quantity) && quantity > 0 ? quantity : 1,
+        amountCents: moneyToCents(line?.total) ?? moneyToCents(line?.lineItemCost),
+        orderTotalCents,
+        currency: moneyCurrency(line?.total, currency),
+        soldAt,
+      });
+    }
+  }
+  return records;
+}
+
+async function fulfillmentToken(config: EbayConfig): Promise<string> {
+  try {
+    return await getEbayAccessToken(config, EBAY_FULFILLMENT_READ_SCOPE);
+  } catch (error) {
+    const detail = boundedDetail(error);
+    const status = Number(detail.match(/\((\d{3})\)/u)?.[1] ?? "0");
+    throw new EbayReadError(classifyTokenFailure(status, detail), detail);
+  }
+}
+
+export function salesWindowStart(now: Date = new Date(), days = EBAY_SALES_WINDOW_DAYS): string {
+  return new Date(now.getTime() - days * 24 * 60 * 60 * 1000).toISOString();
+}
+
+/** Holt die Verkäufe der letzten `days` Tage, über alle Seiten hinweg. */
+export async function fetchEbaySales(
+  now: Date = new Date(),
+  days = EBAY_SALES_WINDOW_DAYS,
+): Promise<EbaySaleRecord[]> {
+  const config = getEbayConfig();
+  const accessToken = await fulfillmentToken(config);
+  // eBay verlangt den Zeitraum in eckigen Klammern mit zwei Punkten dazwischen.
+  // Das offene Ende laesst eBay die Gegenwart einsetzen -- ein selbst gesetztes
+  // "jetzt" wuerde bei Uhrenversatz die juengste Bestellung verschlucken.
+  const filter = `creationdate:[${salesWindowStart(now, days)}..]`;
+
+  const records: EbaySaleRecord[] = [];
+  for (let page = 0; page < EBAY_SALES_MAX_PAGES; page += 1) {
+    const url = `${apiBase(config.environment)}/sell/fulfillment/v1/order`
+      + `?filter=${encodeURIComponent(filter)}&limit=${EBAY_SALES_PAGE_SIZE}&offset=${page * EBAY_SALES_PAGE_SIZE}`;
+    const response = await fetchWithTimeout(url, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: "application/json",
+        "X-EBAY-C-MARKETPLACE-ID": config.marketplaceId,
+      },
+    });
+    if (!response.ok) {
+      const body = await response.text();
+      throw new EbayReadError(
+        classifyRestFailure(response.status, body),
+        `eBay-Bestellabruf fehlgeschlagen (${response.status}): ${boundedDetail(body)}`,
+      );
+    }
+    const payload = await response.json();
+    records.push(...parseSalesOrders(payload, "EUR"));
+
+    const root = asRecord(payload);
+    const orders = Array.isArray(root?.orders) ? root.orders : [];
+    if (orders.length < EBAY_SALES_PAGE_SIZE) break;
+  }
+
+  // Dieselbe Bestellung kann ueber Seitengrenzen hinweg zweimal auftauchen,
+  // wenn waehrend des Abrufs eine neue dazukommt und alles verschiebt.
+  return [...new Map(records.map((record) => [`${record.ebayOrderId}:${record.lineItemId}`, record])).values()];
+}

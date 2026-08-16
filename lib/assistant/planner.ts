@@ -50,6 +50,25 @@ function requestedLimit(text: string): number {
   return Math.min(20, Math.max(1, Number(match[1])));
 }
 
+/** Der Zeitraum aus der Frage, in Tagen.
+ *
+ * **Nicht dieselbe Zahl wie `limit`.** „Verkäufe der letzten 30 Tage" nennt
+ * einen Zeitraum, keine Ergebnisanzahl — `requestedLimit` würde daraus 20
+ * machen (die Obergrenze) und die Übersicht auf drei Wochen verkürzen. Wochen
+ * und Monate werden umgerechnet, weil danach genauso gefragt wird.
+ */
+export function requestedDays(text: string): number | undefined {
+  const tage = text.match(/\b(\d{1,3})\s*(tage|tagen|tag)\b/u);
+  if (tage) return Number(tage[1]);
+  const wochen = text.match(/\b(\d{1,2})\s*(wochen|woche)\b/u);
+  if (wochen) return Number(wochen[1]) * 7;
+  const monate = text.match(/\b(\d{1,2})\s*(monate|monaten|monat)\b/u);
+  if (monate) return Number(monate[1]) * 30;
+  if (/\b(diese|letzte)\s*woche\b/u.test(text)) return 7;
+  if (/\b(diesen|letzten)\s*monat\b/u.test(text)) return 30;
+  return undefined;
+}
+
 function uniqueInputs(inputs: AssistantToolInput[]): AssistantToolInput[] {
   const names = new Set<AssistantToolName>();
   return inputs.filter((input) => {
@@ -143,7 +162,18 @@ export class RuleBasedAssistantPlanner implements AssistantPlanner {
     if (containsAny(text, ["eingestellt", "listing", "gelistet", "inseriert", "neueste karte", "zuletzt hinzugefugt"])) {
       add("latest_listing");
     }
-    if (containsAny(text, ["verkauft", "verkauf", "sale", "letzter kauf", "ging zuletzt weg"])) {
+    // **Vor `latest_sale`, und das ist der Punkt.** „Was habe ich in den
+    // letzten 30 Tagen verkauft?" enthält „verkauft" und liefe sonst auf die
+    // Frage nach dem *einen* letzten Verkauf hinaus — eine Antwort, die zur
+    // Frage passt wie eine Zahl zu einer Liste. Der Zeitraum oder das Wort
+    // „Umsatz" ist das Unterscheidungsmerkmal.
+    const zeitraum = requestedDays(text);
+    const fragtNachUmsatz = containsAny(text, ["umsatz", "einnahmen", "eingenommen", "verdient", "erlos"]);
+    const fragtNachVerkaufen = containsAny(text, ["verkauft", "verkauf", "sale", "abgesetzt"]);
+    if (fragtNachUmsatz || (fragtNachVerkaufen && (zeitraum !== undefined || containsAny(text, ["ubersicht", "bilanz", "insgesamt", "wie viele"])))) {
+      tools.push({ tool: "sales_overview", limit, ...(zeitraum === undefined ? {} : { days: zeitraum }) });
+    }
+    if (fragtNachVerkaufen || containsAny(text, ["letzter kauf", "ging zuletzt weg"])) {
       add("latest_sale");
     }
 
@@ -215,6 +245,7 @@ export class OpenAIResponsesAssistantPlanner implements AssistantPlanner {
           "Erfinde keine Funktion. Schreibe keine Antwort. Erzeuge kein SQL und fordere keine Schreiboperation an.",
           "Wenn die Frage nicht mit den angebotenen Shop- oder eBay-Lesewerkzeugen beantwortbar ist, rufe keine Funktion auf.",
           "limit ist die gewünschte Ergebniszahl von 1 bis 20; verwende 10, wenn keine Zahl genannt wurde.",
+          "days ist der Zeitraum in Tagen von 1 bis 90 und zählt nur für sales_overview; verwende 30, wenn kein Zeitraum genannt wurde. Ein genannter Zeitraum gehört nach days, nicht nach limit.",
         ].join(" "),
         input: [{ role: "user", content: message }],
         tools: ASSISTANT_TOOL_DEFINITIONS.map((tool) => ({
@@ -226,8 +257,12 @@ export class OpenAIResponsesAssistantPlanner implements AssistantPlanner {
             type: "object",
             properties: {
               limit: { type: "integer", minimum: 1, maximum: 20, description: "Maximale Ergebniszahl." },
+              days: { type: "integer", minimum: 1, maximum: 90, description: "Zeitraum in Tagen; nur sales_overview wertet ihn aus." },
             },
-            required: ["limit"],
+            // `strict: true` verlangt, dass jede Eigenschaft in `required`
+            // steht. Der Zeitraum ist deshalb Pflicht im Schema und bekommt
+            // seine Vorgabe erst dahinter -- siehe `boundedOverviewDays`.
+            required: ["limit", "days"],
             additionalProperties: false,
           },
         })),

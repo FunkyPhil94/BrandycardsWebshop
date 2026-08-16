@@ -10,6 +10,7 @@ export const ASSISTANT_TOOL_NAMES = [
   "new_shop_inquiries",
   "ebay_sync_health",
   "assistant_statistics",
+  "sales_overview",
 ] as const;
 
 export type AssistantToolName = (typeof ASSISTANT_TOOL_NAMES)[number];
@@ -41,6 +42,11 @@ export const ASSISTANT_TOOL_DEFINITIONS = [
   { name: "new_shop_inquiries", description: "Neue Anfragen aus dem BrandyCards-Shop", availability: "READY" },
   { name: "ebay_sync_health", description: "Stand des eBay-Abgleichs und offener Rücknahmeaufträge", availability: "READY" },
   { name: "assistant_statistics", description: "Kompakte Shop- und Betriebsstatistik", availability: "READY" },
+  // `SOURCE_DEPENDENT`, obwohl das Werkzeug nur die eigene Datenbank liest: Die
+  // Shop-Hälfte kann es immer beantworten, die eBay-Hälfte nur so gut, wie der
+  // Lesesync sie geholt hat. Ein `READY` verspräche eine Vollständigkeit, für
+  // die dieses Werkzeug nicht geradestehen kann.
+  { name: "sales_overview", description: "Verkäufe und Umsatz der letzten Tage, Shop und eBay", availability: "SOURCE_DEPENDENT" },
 ] as const satisfies readonly {
   name: AssistantToolName;
   description: string;
@@ -50,6 +56,41 @@ export const ASSISTANT_TOOL_DEFINITIONS = [
 export type AssistantToolInput<K extends AssistantToolName = AssistantToolName> = {
   tool: K;
   limit: number;
+  /** Zeitraum in Tagen — nur `sales_overview` liest ihn. Bleibt er weg, gilt
+   *  `SALES_OVERVIEW_DEFAULT_DAYS`. */
+  days?: number;
+};
+
+/** Vorgabe und Obergrenze für den Zeitraum der Verkaufsübersicht.
+ *
+ * 90 Tage ist keine gewählte Zahl, sondern die Grenze, bis zu der eBay
+ * Bestellungen je Abfrage zurückgibt. Wer mehr verlangt, bekäme eine Übersicht,
+ * die im hinteren Teil unvollständig wäre, ohne es zu sagen.
+ */
+export const SALES_OVERVIEW_DEFAULT_DAYS = 30;
+export const SALES_OVERVIEW_MAX_DAYS = 90;
+
+export function boundedOverviewDays(value: unknown): number {
+  const raw = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(raw)) return SALES_OVERVIEW_DEFAULT_DAYS;
+  return Math.min(SALES_OVERVIEW_MAX_DAYS, Math.max(1, Math.floor(raw)));
+}
+
+/** Ein Verkaufskanal in der Übersicht.
+ *
+ * `available: false` ist kein Fehler, sondern eine Aussage: Der Kanal konnte
+ * nicht gelesen werden, und der Grund steht dabei. Ohne dieses Feld wäre „eBay:
+ * 0 Verkäufe" nicht von „eBay: nicht nachgesehen" zu unterscheiden — derselbe
+ * Unterschied, für den Phase 8 `ebay_read_syncs` eingeführt hat.
+ */
+export type AssistantSalesChannel = {
+  available: boolean;
+  orderCount: number;
+  itemCount: number;
+  revenueCents: number | null;
+  currency: string;
+  unavailableCode: AssistantUnavailableCode | null;
+  unavailableMessage: string | null;
 };
 
 export type AssistantSaleItem = {
@@ -190,6 +231,33 @@ export type AssistantToolDataMap = {
       availableAt: string | null;
     }>;
   };
+  sales_overview: {
+    days: number;
+    /** Ab wann gezählt wurde — damit die Zahl nachprüfbar ist. */
+    since: string;
+    /** **Woran sich der Umsatz bemisst.** Ein Betrag ohne Bezugsgröße ist keine
+     *  Auskunft: Brutto vor Gebühren liest sich anders als das, was am Ende
+     *  ankommt. Der Satz geht mit in die Antwort. */
+    revenueBasis: string;
+    currency: string;
+    channels: {
+      shop: AssistantSalesChannel;
+      ebay: AssistantSalesChannel;
+    };
+    /** `null`, sobald eine der beiden Hälften fehlt — eine Gesamtsumme aus
+     *  einer halben Grundlage wäre schlimmer als keine. */
+    totalRevenueCents: number | null;
+    totalItemCount: number | null;
+    sales: Array<{
+      channel: "SHOP" | "EBAY";
+      reference: string;
+      title: string | null;
+      quantity: number;
+      amountCents: number | null;
+      currency: string;
+      soldAt: string | null;
+    }>;
+  };
   assistant_statistics: {
     generatedAt: string;
     sellableCards: number;
@@ -304,7 +372,7 @@ export function parseAssistantToolInput(value: unknown): AssistantToolInput {
   }
 
   const input = value as Record<string, unknown>;
-  const allowedFields = new Set(["tool", "limit"]);
+  const allowedFields = new Set(["tool", "limit", "days"]);
   const unexpected = Object.keys(input).filter((field) => !allowedFields.has(field));
   if (unexpected.length) {
     throw new AssistantRequestError(`Nicht unterstützte Felder: ${unexpected.join(", ")}.`);
@@ -317,6 +385,19 @@ export function parseAssistantToolInput(value: unknown): AssistantToolInput {
   const limit = input.limit === undefined ? 10 : input.limit;
   if (typeof limit !== "number" || !Number.isSafeInteger(limit) || limit < 1 || limit > 20) {
     throw new AssistantRequestError("limit muss eine ganze Zahl zwischen 1 und 20 sein.");
+  }
+
+  // Der Zeitraum wird hier **abgewiesen statt zurechtgebogen**, wenn er
+  // unsinnig ist -- anders als `boundedOverviewDays`, das eine schon
+  // akzeptierte Zahl in die Schranken weist. Eine Anfrage mit `days: 4000` ist
+  // ein Fehler des Aufrufers und soll als solcher zurückkommen, nicht
+  // stillschweigend als 90 durchgehen.
+  if (input.days !== undefined) {
+    const days = input.days;
+    if (typeof days !== "number" || !Number.isSafeInteger(days) || days < 1 || days > SALES_OVERVIEW_MAX_DAYS) {
+      throw new AssistantRequestError(`days muss eine ganze Zahl zwischen 1 und ${SALES_OVERVIEW_MAX_DAYS} sein.`);
+    }
+    return { tool: input.tool as AssistantToolName, limit, days };
   }
 
   return { tool: input.tool as AssistantToolName, limit };

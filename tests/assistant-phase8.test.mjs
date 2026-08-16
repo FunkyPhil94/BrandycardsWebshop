@@ -295,7 +295,13 @@ test("der Lesesync schreibt nichts, wenn der Abruf fehlschlaegt", async () => {
   }
   // Idempotenz: geschrieben wird mit einem Stempel, geloescht wird alles
   // andere. Zweimal derselbe eBay-Inhalt ergibt denselben Tabelleninhalt.
-  assert.equal(source.match(/onConflictDoUpdate/gu).length, 4, "drei Datentabellen und die Zustandstabelle");
+  assert.equal(source.match(/onConflictDoUpdate/gu).length, 5, "vier Datentabellen und die Zustandstabelle");
+  // **Die Verkaufstabelle wird als einzige nicht abgeraeumt.** Bei den drei
+  // Quellen oben heisst "meldet eBay nicht mehr" auch "gilt nicht mehr"; ein
+  // Verkauf dagegen ist eine Tatsache, die nur aus dem Abfragefenster rutscht.
+  // Ein delete auf ebaySales wuerde die Historie bei jedem Lauf mitschrumpfen.
+  assert.doesNotMatch(source, /db\.delete\(ebaySales\)/u, "Verkaufshistorie wird nie geloescht");
+  assert.ok(source.indexOf("fetchEbaySales") < source.indexOf("db.insert(ebaySales)"), "erst holen, dann schreiben");
   assert.equal(source.match(/ne\(ebay\w+\.collectedAt, stamp\)/gu).length, 3);
 });
 

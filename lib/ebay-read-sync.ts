@@ -22,6 +22,7 @@ import {
   ebayInboxMessages,
   ebayListingTraffic,
   ebayReadSyncs,
+  ebaySales,
   ebayListings,
   type EbayReadDataType,
   type EbayReadSyncStatus,
@@ -33,9 +34,11 @@ import {
   fetchEbayBuyerOffers,
   fetchEbayInboxMessages,
   fetchEbayListingTraffic,
+  fetchEbaySales,
   trafficWindow,
   type EbayBuyerOffer,
   type EbayInboxMessage,
+  type EbaySaleRecord,
   type EbayTrafficReport,
 } from "./ebay-read-api.ts";
 import { parseDbTimestamp } from "./retention.ts";
@@ -235,10 +238,57 @@ async function syncBuyerOffers(db: Db, _now: Date, stamp: string): Promise<numbe
   return rows.length;
 }
 
+/** Die Verkaufshistorie — **der einzige Schritt, der nichts löscht.**
+ *
+ * Die drei Schritte darüber räumen ab, was eBay nicht mehr meldet, weil dort
+ * „nicht mehr gemeldet" gleichbedeutend mit „nicht mehr aktuell" ist. Bei
+ * Verkäufen heißt es „aus dem Abfragefenster gerutscht", und ein Verkauf hört
+ * dadurch nicht auf, stattgefunden zu haben. Ein `delete … where collected_at
+ * <> stamp` würde hier bei jedem Lauf die Historie auf das Fenster kürzen.
+ *
+ * Posten ohne Verkaufszeitpunkt fallen weg statt einen erfundenen zu bekommen:
+ * Eine Übersicht „letzte x Tage" könnte sie ohnehin nirgends einordnen.
+ */
+async function syncSales(db: Db, now: Date, stamp: string): Promise<number> {
+  const sales: EbaySaleRecord[] = await fetchEbaySales(now);
+  const rows = sales
+    .filter((sale) => sale.soldAt !== null)
+    .map((sale) => ({
+      ebayOrderId: sale.ebayOrderId,
+      lineItemId: sale.lineItemId,
+      ebayItemId: sale.ebayItemId,
+      title: sale.title,
+      quantity: sale.quantity,
+      amountCents: sale.amountCents,
+      orderTotalCents: sale.orderTotalCents,
+      currency: sale.currency,
+      soldAt: sale.soldAt as string,
+      collectedAt: stamp,
+    }));
+
+  await insertChunked(rows, 10, (chunk) => db.insert(ebaySales).values(chunk).onConflictDoUpdate({
+    target: [ebaySales.ebayOrderId, ebaySales.lineItemId],
+    set: {
+      // Titel und Beträge können sich bei einer Stornierung oder Korrektur bei
+      // eBay noch ändern; der Schlüssel bleibt derselbe.
+      ebayItemId: sql`excluded.ebay_item_id`,
+      title: sql`excluded.title`,
+      quantity: sql`excluded.quantity`,
+      amountCents: sql`excluded.amount_cents`,
+      orderTotalCents: sql`excluded.order_total_cents`,
+      currency: sql`excluded.currency`,
+      soldAt: sql`excluded.sold_at`,
+      collectedAt: stamp,
+    },
+  }));
+  return rows.length;
+}
+
 const SYNC_STEPS = [
   ["TRAFFIC", syncTraffic],
   ["MESSAGES", syncMessages],
   ["BEST_OFFERS", syncBuyerOffers],
+  ["SALES", syncSales],
 ] as const satisfies ReadonlyArray<readonly [EbayReadDataType, (db: Db, now: Date, stamp: string) => Promise<number>]>;
 
 const EBAY_READ_DATA_TYPES: EbayReadDataType[] = SYNC_STEPS.map(([dataType]) => dataType);

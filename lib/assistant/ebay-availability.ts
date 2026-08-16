@@ -22,15 +22,17 @@ export type EbayReadAvailability =
   | { available: false; code: AssistantUnavailableCode; message: string };
 
 /** Wie die Quelle in der Antwort heißen soll — für einen lesbaren Satz. */
-export type EbayReadSourceLabel = "Aufrufzahlen" | "eBay-Postfach" | "Käufer-Preisvorschläge";
+export type EbayReadSourceLabel = "Aufrufzahlen" | "eBay-Postfach" | "Käufer-Preisvorschläge" | "eBay-Verkäufe";
 
 const SCOPE_HINT: Record<EbayReadSourceLabel, string> = {
-  // Nur bei den Aufrufzahlen ist der fehlende Scope der erwartete Zustand und
-  // der Weg heraus bekannt: Die Zustimmung fordert heute nur `sell.inventory`
-  // an. Bei den anderen beiden wäre derselbe Satz eine Vermutung.
+  // Bei Aufrufzahlen und Verkäufen ist der fehlende Scope ein erwartbarer
+  // Zustand mit bekanntem Ausweg — beide hängen an einem Recht, das erst mit
+  // einer erneuten Zustimmung in den Token kommt. Bei den anderen beiden wäre
+  // derselbe Satz eine Vermutung.
   "Aufrufzahlen": " Dafür ist der Scope sell.analytics.readonly nötig; die vorhandene eBay-Zustimmung deckt ihn nicht ab und muss vom Kontoinhaber erneuert werden.",
   "eBay-Postfach": " Die vorhandene eBay-Zustimmung reicht dafür nicht aus.",
   "Käufer-Preisvorschläge": " Die vorhandene eBay-Zustimmung reicht dafür nicht aus.",
+  "eBay-Verkäufe": " Dafür ist der Scope sell.fulfillment.readonly nötig; er kam am 2026-08-16 in die Zustimmungsliste, wirkt aber erst mit einem danach ausgestellten Refresh-Token.",
 };
 
 export function ebayReadAvailability(

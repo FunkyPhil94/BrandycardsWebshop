@@ -17,6 +17,7 @@ export const ASSISTANT_TOOL_LABELS: Record<AssistantToolName, string> = {
   new_shop_inquiries: "Neue Shop-Anfragen",
   ebay_sync_health: "eBay-Abgleich",
   assistant_statistics: "Shop-Übersicht",
+  sales_overview: "Verkaufsübersicht",
 };
 
 const SOURCE_LABELS: Record<AssistantDataSource, string> = {
@@ -128,6 +129,40 @@ export function formatAssistantToolResult(result: AnyAssistantToolResult): strin
         ? `Der letzte eBay-Abgleich hat den Status ${latest.status}; beendet ${formatDate(latest.finishedAt ?? latest.startedAt)}.`
         : "Es wurde noch kein eBay-Abgleich protokolliert.";
       return withSource(`${latestText} Offene Rücknahmeaufträge: ${result.data.unresolvedOutboxCount}.`, result);
+    }
+    case "sales_overview": {
+      const data = result.data;
+      const shop = data.channels.shop;
+      const ebay = data.channels.ebay;
+      const zeilen = [`Verkäufe der letzten ${data.days} Tage:`];
+
+      const shopUmsatz = formatMoney(shop.revenueCents, shop.currency) ?? "Betrag nicht verfügbar";
+      zeilen.push(`• Shop: ${shop.orderCount} Bestellung(en), ${shop.itemCount} Karte(n), ${shopUmsatz}`);
+
+      if (ebay.available) {
+        const ebayUmsatz = formatMoney(ebay.revenueCents, ebay.currency) ?? "Betrag nicht verfügbar";
+        zeilen.push(`• eBay: ${ebay.orderCount} Bestellung(en), ${ebay.itemCount} Karte(n), ${ebayUmsatz}`);
+      } else {
+        // Kein „0 Verkäufe": Der Kanal wurde nicht gelesen, und das ist etwas
+        // anderes als „dort war nichts". Der Grund steht dabei.
+        zeilen.push(`• eBay: ${ebay.unavailableMessage ?? "Diese Zahlen liegen nicht vor."}`);
+      }
+
+      const gesamt = formatMoney(data.totalRevenueCents, data.currency);
+      zeilen.push(gesamt
+        ? `• Gesamt: ${data.totalItemCount ?? 0} Karte(n), ${gesamt}`
+        : "• Gesamt: nicht ausgewiesen, weil eine der beiden Hälften fehlt.");
+      zeilen.push(data.revenueBasis);
+
+      if (data.sales.length) {
+        zeilen.push("Einzeln:");
+        for (const verkauf of data.sales) {
+          const betrag = formatMoney(verkauf.amountCents, verkauf.currency) ?? "Betrag nicht gemeldet";
+          const titel = verkauf.title ?? `Verkauf ${verkauf.reference}`;
+          zeilen.push(`• ${formatDate(verkauf.soldAt)} · ${verkauf.channel === "EBAY" ? "eBay" : "Shop"} · ${titel}: ${betrag}`);
+        }
+      }
+      return withSource(zeilen.join("\n"), result);
     }
     case "assistant_statistics": {
       const data = result.data;

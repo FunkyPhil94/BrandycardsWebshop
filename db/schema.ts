@@ -406,7 +406,7 @@ export const ebayOutbox = sqliteTable("ebay_outbox", {
   check("ebay_outbox_status_check", sql`${table.status} IN ('PENDING', 'PROCESSING', 'RETRY_WAIT', 'SUCCEEDED', 'FAILED', 'CANCELLED')`),
 ]);
 
-export const ebayReadDataTypeValues = ["TRAFFIC", "MESSAGES", "BEST_OFFERS"] as const;
+export const ebayReadDataTypeValues = ["TRAFFIC", "MESSAGES", "BEST_OFFERS", "SALES"] as const;
 export type EbayReadDataType = (typeof ebayReadDataTypeValues)[number];
 export const ebayReadSyncStatusValues = ["OK", "NOT_CONFIGURED", "SCOPE_NOT_GRANTED", "RATE_LIMITED", "UPSTREAM_ERROR"] as const;
 export type EbayReadSyncStatus = (typeof ebayReadSyncStatusValues)[number];
@@ -430,7 +430,7 @@ export const ebayReadSyncs = sqliteTable("ebay_read_syncs", {
   detail: text("detail"),
 }, (table) => [
   uniqueIndex("ebay_read_syncs_type_unique").on(table.dataType),
-  check("ebay_read_syncs_type_check", sql`${table.dataType} IN ('TRAFFIC', 'MESSAGES', 'BEST_OFFERS')`),
+  check("ebay_read_syncs_type_check", sql`${table.dataType} IN ('TRAFFIC', 'MESSAGES', 'BEST_OFFERS', 'SALES')`),
   check("ebay_read_syncs_status_check", sql`${table.status} IN ('OK', 'NOT_CONFIGURED', 'SCOPE_NOT_GRANTED', 'RATE_LIMITED', 'UPSTREAM_ERROR')`),
 ]);
 
@@ -489,6 +489,44 @@ export const ebayBuyerOffers = sqliteTable("ebay_buyer_offers", {
 }, (table) => [
   uniqueIndex("ebay_buyer_offers_id_unique").on(table.bestOfferId),
   index("ebay_buyer_offers_expiry_idx").on(table.expiresAt),
+]);
+
+/** Verkaufte Posten aus der eBay-Verkaufshistorie (Fulfillment API).
+ *
+ * **Diese Tabelle wird nie leergeräumt — anders als die drei aus Phase 8.**
+ * Aufrufzahlen, Postfach und Preisvorschläge sind Momentaufnahmen: Was eBay
+ * nicht mehr meldet, gilt dort als vorbei, und der Lauf löscht es. Ein Verkauf
+ * ist das Gegenteil, nämlich eine Tatsache. Er fällt irgendwann aus dem
+ * Abfragefenster heraus, ohne aufzuhören, stattgefunden zu haben. Würde hier
+ * dieselbe Fensterschreibweise gelten, verlöre der Shop bei jedem Lauf die
+ * Verkäufe, die älter als das Fenster sind — und die Übersicht „letzte 90 Tage"
+ * schrumpfte still auf „letzte 90 Tage minus das, was eBay gerade zurückgibt".
+ *
+ * Deshalb: einfügen und fortschreiben, nie löschen. Der Schlüssel aus
+ * Bestellung und Posten macht das wiederholbar.
+ *
+ * Bewusst **ohne Käuferdaten** — kein Name, keine Anschrift, keine Kennung.
+ * Für „was habe ich verkauft und für wie viel?" braucht es niemanden.
+ */
+export const ebaySales = sqliteTable("ebay_sales", {
+  id: id(),
+  ebayOrderId: text("ebay_order_id").notNull(),
+  lineItemId: text("line_item_id").notNull(),
+  ebayItemId: text("ebay_item_id"),
+  title: text("title"),
+  quantity: integer("quantity").notNull().default(1),
+  /** Der Posten selbst. */
+  amountCents: integer("amount_cents"),
+  /** Was der Käufer für die **ganze** Bestellung gezahlt hat, auf jedem Posten
+   *  derselben Bestellung wiederholt. Der Umsatz summiert über *verschiedene*
+   *  Bestellungen — sonst zählte eine Bestellung mit drei Karten dreifach. */
+  orderTotalCents: integer("order_total_cents"),
+  currency: text("currency").notNull().default("EUR"),
+  soldAt: timestamp("sold_at"),
+  collectedAt: timestamp("collected_at"),
+}, (table) => [
+  uniqueIndex("ebay_sales_line_unique").on(table.ebayOrderId, table.lineItemId),
+  index("ebay_sales_sold_idx").on(table.soldAt),
 ]);
 
 export const auditEvents = sqliteTable("audit_events", {

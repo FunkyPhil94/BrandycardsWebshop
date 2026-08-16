@@ -2,7 +2,7 @@ import { createAssistantToolRegistry, type AssistantToolHandlers } from "./tool-
 import { getEbayBuyerOffers, getEbayMostViewed, getEbaySyncHealth } from "./tools/ebay";
 import { getEbayMessages, listNewShopInquiries } from "./tools/messages";
 import { listOpenShopOffers } from "./tools/offers";
-import { getLatestSale } from "./tools/sales";
+import { getLatestSale, getSalesOverview } from "./tools/sales";
 import { getInventoryReview, getLatestListing, listNewOrders } from "./tools/shop";
 import { getAssistantStatistics } from "./tools/statistics";
 
@@ -18,6 +18,7 @@ const handlers: AssistantToolHandlers = {
   new_shop_inquiries: (input) => listNewShopInquiries(input),
   ebay_sync_health: (input) => getEbaySyncHealth(input),
   assistant_statistics: () => getAssistantStatistics(),
+  sales_overview: (input) => getSalesOverview(input),
 };
 
 export const assistantToolRegistry = createAssistantToolRegistry(handlers);
