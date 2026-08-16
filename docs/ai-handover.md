@@ -37,9 +37,23 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-<!-- Fuer den naechsten Auftrag freihalten. -->
+### 2026-08-16 - Phase 5 des Desktop-Assistenten: Prüfung und Abnahme
 
-Keine laufenden Aufträge.
+- Status: LÄUFT.
+- Ziel: Die in Phase 1 bis 4 gebaute Assistentenkette prüfen, nicht erweitern.
+  Geprüft werden End-to-End-Verhalten, Sicherheit, DPI und Mehrschirmbetrieb,
+  Tastatur- und Screenreader-Bedienbarkeit, Text- und Spracheingabe sowie
+  Fehler-, Timeout- und `UNAVAILABLE`-Pfade.
+- Rahmen: Anwendungscode wird nur bei einem konkret nachgewiesenen Fehler
+  geändert. Keine Produktionsdaten, keine Remote-Migration, kein Deployment.
+  `NativePetOverlay.cs` und das transparente Pet bleiben unverändert.
+- Umsetzung: Neue Prüftests unter `tests/`, ein echter lokaler HTTP-Lauf gegen
+  `npm run dev` mit lokaler D1 und kurzlebigem Testtoken, ein WinUI-x64-Build
+  mit UI-Automation-Prüfung sowie abschließend `npm test`, `npx tsc --noEmit`
+  und `npm run lint`.
+- Risiko bei Abbruch: Ein lokal angelegtes Gerätetoken/Pairing und ein
+  laufender Dev-Server könnten zurückbleiben. Beides ist rein lokal
+  (`.wrangler/state`), muss aber beim Wiederaufnehmen entfernt werden.
 
 ## Historie
 
