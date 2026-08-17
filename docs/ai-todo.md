@@ -11,25 +11,39 @@ dabei, damit niemand den Gesprächsverlauf braucht.
 
 ---
 
-## Zuerst: Treffsicherheit der Spracheingabe
+## ~~Treffsicherheit der Spracheingabe~~ — ERLEDIGT und ABGENOMMEN am 2026-08-17
 
-**Die Spracheingabe funktioniert** — am 2026-08-16 vom Betreiber gesprochen
-geprüft. Gemeldet wurde, sie sei „etwas ungenau"; vermutet wurde das Mikrofon.
-Geprüft und ausgeschlossen: Die Sprachwahl greift, auf dem Gerät sind `de-DE`
-und `en-GB` installiert und `CurrentUICulture` ist `de-DE`.
+**Urteil des Betreibers nach dem Umstieg auf Azure Speech: „es funktioniert
+perfekt."** Drei Anläufe, und der dritte trug.
 
-Was übrig bleibt, liegt im Code, nicht in der Hardware:
-[WindowsSpeechRecognitionService.cs](../avatar/BrandyCards.Desktop/WindowsSpeechRecognitionService.cs)
-benutzt `System.Speech` mit einer blanken `DictationGrammar()` — die alte
-SAPI-Desktop-Erkennung. Freies Diktat trifft Fachvokabular schlecht, und die
-Fragen bestehen genau daraus.
+Die Diagnose stand am Anfang falsch. Vermutet wurde das Mikrofon; ausgeschlossen
+wurde es über die installierten Erkenner und `CurrentUICulture`. Verdächtigt
+wurde dann die *Ansteuerung* der Erkennung — daraus wurden Variante 1 (beste
+Alternative statt erster) und Variante 2 (Domänengrammatik). Beide sind gebaut,
+ausgerollt und gesprochen geprüft worden, und beide brachten kaum etwas.
 
-**Stand 2026-08-16:** Variante 1 ist ausgerollt und **gesprochen geprüft** — das
-Urteil des Betreibers: „absolut schrecklich, aber sie funktioniert
-prinzipiell". Damit ist belegt, dass die Auswahl nicht der Engpass ist, sondern
-das, was SAPI überhaupt anbietet. **Variante 2 ist daraufhin gebaut** (siehe
-unten) und wartet auf Rollout und gesprochenen Nachweis. Der Nebenbefund zur
-Erkennersprache ist mit erledigt.
+**Der Befund, der es entschieden hat, kostete eine halbe Minute:** Der Betreiber
+diktierte dieselbe Frage ins selbe Textfeld, aber über Windows' eigene
+Diktierfunktion (Win+H) — und es lief gut. Damit waren Mikrofon, Aufnahmeweg und
+Aussprache in einem Zug erledigt, und die Engine war überführt: `Microsoft
+Speech Recognizer 8.0`, SAPI aus Windows-7-Zeiten, kein neuronales Modell.
+Win+H wiederum läuft über **Azure Speech** — der Dienst war damit an dieser
+Stimme, diesem Mikrofon und diesem Vokabular belegt, bevor eine Zeile Code
+entstand.
+
+> **Die Lehre für die nächste Sitzung:** Diese Probe hätte *vor* Variante 1
+> stehen müssen. Zwei Ausbaustufen optimierten die Nutzung einer Engine, die
+> selbst die Grenze war. Wenn eine Erkennung, eine Übertragung oder ein Import
+> schlecht arbeitet, zuerst mit einem fremden, funktionierenden Werkzeug an
+> derselben Stelle gegenprüfen — das trennt Ursache von Symptom in Minuten.
+
+**Variante 1 und 2 sind trotzdem nicht verloren.** Sie sind die Korrekturschicht
+über der neuen Engine geworden: Die 16 Phrasen spannen die Azure-Erkennung als
+Phrase List vor, und über deren N-Best-Liste entscheidet weiter der Planer. Die
+lokale SAPI-Erkennung bleibt als Rückfall ohne Netz.
+
+Umgesetzt in drei Schritten; Einzelheiten je Variante unten, die Begründungen in
+[ai-agent-log.md](ai-agent-log.md).
 
 ### ~~Variante 1 — Beste Alternative statt der ersten~~ — ERLEDIGT am 2026-08-16
 
@@ -147,16 +161,41 @@ Serverseite hier nicht. Danach der gesprochene Nachweis. Die Schwelle
 `MinimumDomainConfidence = 0.5` ist ein Startwert und gehört am Gerät
 nachjustiert.
 
-### Bleibt, falls auch Variante 2 nicht reicht
+### ~~Variante 3 — Azure Speech statt SAPI~~ — ERLEDIGT und ABGENOMMEN am 2026-08-17
 
-- **Auf `Windows.Media.SpeechRecognition` wechseln** (WinRT, ebenfalls
-  offline). Größerer Umbau, moderne Engine. **Achtung:** Sie setzt
-  Paketidentität voraus — genau deshalb wurde sie in Phase 3 verworfen, weil
-  der unpackaged Startpfad mit Pet-Overlay umgebaut werden müsste.
+Worker-Version `4c2820c3`, Region **`swedencentral`** (West Europe hatte kein
+F0-Kontingent frei). Das Speech SDK läuft **unpackaged** — der Pet-Overlay- und
+Startpfad blieb unberührt. Der Abonnementschlüssel bleibt im Worker; der Desktop
+bekommt über `POST /api/avatar/device/assistant/speech-token` nur kurzlebige
+Autorisierungstoken.
 
-Unabhängig davon hilft dem SAPI-Erkenner das Windows-Sprachtraining
-(Systemsteuerung → Spracherkennung → „Sprachtraining starten") spürbar. Das ist
-Betreibersache und kostet ein paar Minuten.
+**Verworfen, mit hartem Grund — damit es niemand erneut aufgreift:**
+
+- **`Windows.Media.SpeechRecognition`** (stand hier lange als der nächste
+  Schritt): **doppelt tot.** Sie verlangt Paketidentität, *und* Microsoft hat
+  die Windows-Spracherkennung abgekündigt und durch Voice Access ersetzt.
+- **NVIDIA Canary-1B-v2:** gutes Modell, Lizenz CC-BY-4.0 also unproblematisch,
+  ~8,4 % WER Deutsch. Aber NVIDIA rät von CPU-Betrieb ab, und im Gerät des
+  Betreibers steckt eine Intel Iris Xe ohne CUDA. Die GGUF-Portierung liefe auf
+  der CPU, nennt aber Linux als unterstütztes System.
+- **ElevenLabs / OpenAI / Deepgram:** technisch möglich und teils genauer in
+  Fremdbenchmarks, aber auf diesem Gerät ungemessen. Azure war der einzige
+  Dienst mit einem echten Beleg.
+
+**Offen bleibt nur eines, und es ist ein Termin, keine Aufgabe:** Die
+Azure-Testversion läuft um den **2026-09-16** ab. Ohne Umstellung auf
+„Nutzungsbasierte Bezahlung" deaktiviert Azure das Abonnement, und die
+Spracherkennung fällt **stillschweigend** auf SAPI zurück — sichtbar nur an der
+Statuszeile „lokale Erkennung, eingeschränkte Genauigkeit". Die Umstellung
+kostet nichts; F0 bleibt kostenlos mit 5 Audiostunden im Monat. Wird ab
+September gemeldet, die Erkennung sei wieder schlecht: **das hier ist der erste
+Verdacht**, nicht das Mikrofon.
+
+### ~~Enter sendet, Alt+Enter bricht die Zeile~~ — ERLEDIGT am 2026-08-17
+
+Nachgereichter Wunsch des Betreibers. `PreviewKeyDown` am Nachrichtenfeld, weil
+die bubbelnde Fassung zu spät käme; der Umbruch wird als `\r` an der
+Einfügemarke gesetzt. Knopf und Eingabetaste laufen über denselben Sendeweg.
 
 **~~Nebenbefund~~ — ERLEDIGT am 2026-08-16 mit Variante 2:**
 `SelectRecognizer()` fiel notfalls auf `installedRecognizers.FirstOrDefault()`
