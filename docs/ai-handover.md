@@ -9454,3 +9454,7 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 - Prüfkette: 692 Tests grün, `npx tsc --noEmit` sauber, Lint mit der bekannten
   Vorwarnung in `app/account/page.tsx`.
 - Status: ABGESCHLOSSEN.
+
+## Nachtrag 2026-08-17: Deploy der Bildvergrößerung
+- Version `617cecdb-cb89-4bad-92de-fa8d9419227b`. `/`, `/admin`, `/verkaufen`,
+  `/api/products` je 200.
