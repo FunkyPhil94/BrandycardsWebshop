@@ -1082,7 +1082,7 @@ Betrag, den die Bestellung anschließend berechnet.
 
 ---
 
-## 6. eBay-Schreibpfad — ABGENOMMEN am 2026-08-08, ein Rest bleibt
+## 6. ~~eBay-Schreibpfad~~ — VOLLSTÄNDIG ABGENOMMEN am 2026-08-17
 
 **Der Schreibpfad ist scharf und an echten Daten belegt.** Der Refresh-Token
 trägt `sell.inventory` (geprüft über den Adminknopf, ohne ein Angebot
@@ -1092,28 +1092,39 @@ Anmeldung, Anfrageformat, Fehlerzuordnung und Outbox-Lauf nachgewiesen.
 `EBAY_WRITE_ENABLED` steht auf `true` und wird von einem Test dort gehalten —
 ein Rückfall auf `false` wäre **lautlos**.
 
-**Stand 2026-08-17:** Rest 2 ist geschlossen, Rest 1 ist vorbereitet. Die
-Produktion zeigte an dem Tag zwei Outbox-Aufträge, beide `SUCCEEDED`, neuester
-vom 08.08. — seither hat kein Shop-Verkauf den Pfad berührt.
+**Beide Reste sind am 2026-08-17 geschlossen.**
 
-**Ein Rest bleibt offen, und er ist klein:**
+**Rest 1 — bewiesen, an einem echten laufenden Angebot.** Am Angebot
+`398292430657` („Topps Premier League Mega Tin", Menge 6): auf 5 gesetzt,
+zurückgelesen — **Menge 5, Status `Active`** —, sofort auf 6 wiederhergestellt
+und erneut geprüft. `ReviseInventoryStatus` wirkt also wirklich auf ein
+laufendes Angebot; der Test vom 08.08. konnte das nicht zeigen, weil er ein
+bereits beendetes traf. Nachkontrolle: `quantity_sold` blieb 0, die Sync-Läufe
+meldeten `updated_count: 0`.
 
-1. **Der Erfolgsfall ist unbewiesen.** Dass die Menge eines *laufenden*
-   Angebots wirklich auf 0 fällt, hat niemand gesehen — der Test lief gegen ein
-   beendetes. Dafür bräuchte es ein Wegwerf-Angebot (siehe Warnung unten).
-   **Der nächste echte Verkauf beweist es ohnehin**, und dann steht es im
-   Protokoll.
+> **Der Weg dorthin war zweimal falsch geplant, und das ist die Lehre.** Ein
+> **Wegwerf-Angebot** ist keine kleine Sache: Es gibt kein `AddItem` im Code,
+> der Scope `sell.inventory` deckt kein Einstellen, und ein echter Käufer könnte
+> zugreifen — ein vom Verkäufer stornierter Kauf schlägt auf den
+> eBay-Verkäuferstatus durch. Und ein laufendes Angebot auf **0** zu setzen wäre
+> **irreversibel**: eBay beendet es dann, und ohne `AddItem` gibt es keinen
+> Rückweg. Wer diesen Beweis wiederholen will, nimmt ein Angebot mit Menge > 1
+> und ändert um eins nach unten und zurück.
 
-   **Seit dem 2026-08-17 beweist er es von allein:** Nach einem `REVISED` liest
-   `lib/ebay-outbox-readback.ts` die Menge zurück und protokolliert sie. Und der
-   Gegenfall — eBay meldet Erfolg, die Menge steht aber nicht auf 0 — löst
-   dauerhaft einen Betriebsalarm aus. Das ist der stille Doppelverkauf, den
-   dieser Punkt verhindern soll, und er wäre ohne Nachlesen unsichtbar geblieben.
+**Rest 1 beweist sich künftig ohnehin von allein:** Nach einem `REVISED` liest
+`lib/ebay-outbox-readback.ts` die Menge zurück und protokolliert sie. Und der
+Gegenfall — eBay meldet Erfolg, die Menge steht aber nicht auf 0 — löst dauerhaft
+einen Betriebsalarm aus. Das ist der stille Doppelverkauf, den dieser Punkt
+verhindern soll, und er wäre ohne Nachlesen unsichtbar geblieben.
 
-   > **Achtung bei der Auswertung:** Die *positive* Protokollzeile ist flüchtig.
-   > Ohne Logpush zeigt `wrangler tail` nur laufenden Verkehr. Der **Alarm** im
-   > Gegenfall kommt per E-Mail und überlebt; das Ausbleiben eines Alarms ist
-   > aber kein Beweis, weil es auch bei fehlgeschlagenem Nachlesen ausbleibt.
+**Nicht bewiesen und bewusst nicht angefasst:** dass die Menge **0** ein Angebot
+beendet. Der Zweig ist irreversibel; bewiesen ist der Mechanismus, nicht dieser
+eine Zahlenwert.
+
+> **Achtung bei der Auswertung:** Die *positive* Protokollzeile ist flüchtig.
+> Ohne Logpush zeigt `wrangler tail` nur laufenden Verkehr. Der **Alarm** im
+> Gegenfall kommt per E-Mail und überlebt; das Ausbleiben eines Alarms ist
+> aber kein Beweis, weil es auch bei fehlgeschlagenem Nachlesen ausbleibt.
 2. ~~**`ALREADY_ENDED_CODES` sind geraten.**~~ **Bestätigt am 2026-08-08.** Das
    Worker-Protokoll meldet für den Testauftrag
    `[ebay-outbox] Auftrag erledigt. { ergebnis: 'ALREADY_ENDED' }` — eBay

@@ -1,5 +1,66 @@
 # BrandyCards Agentenprotokoll
 
+## 2026-08-17 - Rest 1: Zwei falsche Pläne, bevor der richtige übrig blieb
+
+Der Betreiber beauftragte das Wegwerf-Angebot — auf meinen eigenen Vorschlag hin.
+Zwischen Vorschlag und Ausführung lag eine Prüfung, und sie widerlegte beide
+Entwürfe, die ich für naheliegend gehalten hatte.
+
+**Erstens: Das Wegwerf-Angebot ist keine kleine Sache.** Im Code existiert kein
+`AddItem`/`AddFixedPriceItem`; der Schreibpfad kann ausschließlich Mengen
+bestehender Angebote ändern. Es hätte eine komplette neue Schreibfähigkeit
+gebraucht — Kategorie, Zustand, Artikelmerkmale, Versand- und
+Rücknahmerichtlinien —, dazu eine weitere OAuth-Zustimmung, weil
+`sell.inventory` kein Einstellen deckt. Und es wäre ein echtes öffentliches
+Angebot gewesen, das ein echter Käufer in den Minuten seiner Existenz kaufen
+kann; ein vom Verkäufer stornierter Kauf schlägt bei eBay auf den
+Verkäuferstatus durch. Ich hatte das als „würde es sofort beweisen" angeboten,
+ohne diese Kette zu prüfen. **Ein Vorschlag ist erst dann einer, wenn seine
+Kosten geprüft sind — sonst ist er eine Einladung zu einem Fehler, für die man
+selbst die Zustimmung eingeholt hat.**
+
+**Zweitens: Der naheliegende Ersatz wäre irreversibel gewesen.** Ein laufendes
+Angebot auf 0 setzen und zurücksetzen — klingt sauber, funktioniert aber nicht:
+eBay beendet ein Festpreisangebot bei Menge 0, und ein beendetes Angebot lässt
+sich nicht revidieren. Genau diesen Zweig behandelt der Code als
+`ALREADY_ENDED`. Ohne `AddItem` wäre eines von 291 echten Angeboten dauerhaft
+verloren gewesen — und zwar aufgefallen wäre das erst *nach* dem Schreiben.
+
+**Der dritte Entwurf entstand aus einer Zahl, die ich vorher nicht kannte.** Die
+Annahme „alle Karten sind Einzelstücke" stimmt fast, aber nicht ganz: sieben
+Angebote haben Menge 2, zwei haben 3, und eines hat 6. Damit war ein
+nicht-destruktiver Beweis möglich — 6 → 5 → 6 an einem Angebot, das dabei
+durchgehend `Active` bleibt und die eBay-Aktivliste nie verlässt. Damit entfiel
+auch die Sync-Sorge, die ich zwei Nachrichten vorher noch selbst genannt hatte:
+Sie galt nur für die Variante mit Menge 0.
+
+**Der erste Lauf brach ab, und die Reihenfolge war der Grund, dass es harmlos
+blieb.** Der lokale `EBAY_REFRESH_TOKEN` stammte von vor der dritten
+Zustimmungsrunde und wurde mit `invalid_grant` abgewiesen. Weil der Ablauf mit
+dem **Lesen** der Ausgangsmenge beginnt und nicht mit dem Schreiben, war
+gewiss — nicht bloß wahrscheinlich —, dass nichts verändert wurde. Bei
+umgekehrter Reihenfolge wäre das Ergebnis dasselbe gewesen, aber die Aussage
+darüber nur eine Vermutung.
+
+**Der zweite Lauf zeigte es:** Menge 5 bei Status `Active`, danach sauber auf 6
+zurück. Nachkontrolle an der Datenbank: `quantity_sold` unverändert 0, und die
+Sync-Läufe melden `updated_count: 0` — eBay und Datenbank stimmen überein. Der
+Nulldurchgang wäre auch hier sichtbar geworden: Hätte die Wiederherstellung
+versagt, hätte der Sync eine 5 geschrieben und der Zähler wäre gestiegen.
+
+**Was bewusst unbewiesen bleibt**, und das gehört zur Redlichkeit dieses
+Ergebnisses: dass Menge 0 ein Angebot beendet. Bewiesen ist der Mechanismus,
+nicht dieser eine Zahlenwert. In der Produktion ist das Beenden die gewünschte
+Wirkung, und der Outbox-Lauf liest die Menge seit heute nach jedem `REVISED`
+zurück — der erste echte Verkauf trägt den Rest nach.
+
+**Eine verworfene Abkürzung, die genannt sein soll:** Die einzige Stelle mit
+gültigem Token war der Worker. Eine Adminroute, die beliebige eBay-Mengen
+setzen kann, hätte den Beweis in Minuten geliefert — und wäre dauerhaft
+gefährlicher gewesen als der Beweis wert ist. Produktionscode für einen Testlauf
+einzubauen und wieder zu entfernen ist der falsche Handel; den Token in eine
+ignorierte lokale Datei zu tragen, war der richtige.
+
 ## 2026-08-17 - Punkt 6: Was nicht beweisbar ist, kann man wenigstens bezeugen lassen
 
 Der eBay-Schreibpfad war seit dem 2026-08-08 abgenommen, mit zwei kleinen

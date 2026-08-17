@@ -37,9 +37,15 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
+<!-- Fuer den naechsten Auftrag freihalten. -->
+
+Keine laufenden Aufträge.
+
+## Historie
+
 ### 2026-08-17 - Rest 1 beweisen: Menge eines LAUFENDEN eBay-Angebots ändern
 
-- Stand: **LÄUFT.**
+- Stand: **ABGESCHLOSSEN. Rest 1 ist bewiesen, das Angebot wiederhergestellt.**
 - **Schreibzugriff auf eBay, vom Betreiber ausdrücklich beauftragt.** Er wählte
   aus drei vorgelegten Wegen den hier beschriebenen.
 
@@ -135,7 +141,39 @@ produktiven Secrets sind auseinandergelaufen. Für den Build ist das ohne Belang
 gegen echte eBay-Daten aber eine Stolperfalle, die sich als „eBay antwortet
 nicht" tarnt.
 
-## Historie
+**Zweiter Lauf nach dem Nachtragen des Tokens: BEWIESEN.**
+
+| Schritt | Ergebnis |
+|---|---|
+| Ausgangslage lesen | Menge **6**, Status `Active` |
+| `reviseEbayItemQuantity(…, 5)` | `REVISED` |
+| **Zurücklesen** | Menge **5**, Status `Active` ← **der Beweis** |
+| `reviseEbayItemQuantity(…, 6)` | `REVISED` |
+| Wiederherstellung prüfen | Menge **6**, Status `Active` |
+
+Damit ist belegt, was seit dem 2026-08-08 offenstand: `ReviseInventoryStatus`
+ändert die Menge eines **laufenden** Angebots wirklich, und die Änderung ist an
+eBay selbst nachlesbar. Der Test vom 08.08. konnte das nicht zeigen, weil er ein
+bereits beendetes Angebot traf.
+
+**Nachkontrolle an der Produktion, lesend:** `398292430657` steht auf
+`quantity 6`, `quantity_sold 0`, `ACTIVE` — im Zeitfenster wurde nichts gekauft.
+Die Sync-Läufe um 08:09 und 08:12 melden `updated_count: 0`, sehen also keine
+Abweichung zwischen eBay und Datenbank. Wäre die Wiederherstellung
+fehlgeschlagen, hätte der Sync eine 5 geschrieben und der Zähler wäre gestiegen.
+
+**Was dieser Beweis ausdrücklich NICHT zeigt:** dass die Menge **0** ein
+Angebot beendet. Dieser Zweig wurde bewusst gemieden, weil er irreversibel ist —
+ein beendetes Angebot lässt sich ohne `AddItem` nicht wiederherstellen. Bewiesen
+ist der Mechanismus, nicht dieser eine Zahlenwert. In der Produktion ist das
+Beenden ohnehin die gewünschte Wirkung, und seit heute liest der Outbox-Lauf die
+Menge nach jedem `REVISED` zurück und alarmiert, wenn sie nicht 0 ist.
+
+**Aufräumen, das beim Betreiber liegt:** In `.env.local` dieses Worktrees liegt
+jetzt ein **gültiger produktiver** eBay-Refresh-Token — eine zweite Kopie eines
+Geheimnisses neben dem Hauptverzeichnis. Die Datei ist ignoriert und verlässt das
+Gerät nicht; wer den Worktree später entfernt, sollte sie bewusst mitlöschen.
+
 
 ### 2026-08-17 - Punkt 6: die zwei Reste am eBay-Schreibpfad
 
