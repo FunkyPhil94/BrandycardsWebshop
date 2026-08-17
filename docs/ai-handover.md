@@ -9475,3 +9475,21 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 - Risiko und wie es begrenzt wird: Die Kundenseite wird angefasst, ohne dass
   sich dort etwas ändern soll. Sie ist öffentlich und daher **im Browser
   nachprüfbar** — das passiert vor dem Deploy.
+
+## Auftrag 2026-08-17: 1:1-Ansicht — abgeschlossen
+- `app/lightbox.tsx` ist neu und wird von `app/karten/[id]/page.tsx` **und**
+  `app/admin/requests-panel.tsx` benutzt. Escape und Scrollsperre stehen jetzt
+  einmal darin statt zweimal daneben.
+- Zustand über `key={src}` zurückgesetzt, nicht über einen Effekt mit
+  `setState` — ESLint (`react-hooks/set-state-in-effect`) hat den ersten
+  Entwurf zu Recht abgelehnt.
+- Version `58d7a6b9-6b84-4e46-bbf9-2feeae603048`.
+- **In Produktion nachgemessen, Kundenseite (`/karten/5cc79340…`):** Lightbox
+  öffnet, `.lightbox-zoom` und `.lightbox-buehne` sind dort **nicht** vorhanden
+  (`zoombar` aus), Escape schließt, `body.overflow` wird wieder freigegeben.
+  Also unverändert — genau das war die Bedingung für den Umbau.
+- **1:1-Ansicht im Browser gemessen** (Bühne im Seitenkontext nachgebaut):
+  Bild bleibt bei 1536×1536 (`max-width: none` greift), `overflow: auto`,
+  `cursor: grab`, Scrollbereich 925×825 und tatsächlich verschoben.
+- `/`, `/admin`, `/karten`, `/verkaufen` je 200. 692 Tests grün, `tsc` sauber.
+- Status: ABGESCHLOSSEN.
