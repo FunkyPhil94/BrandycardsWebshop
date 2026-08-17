@@ -113,17 +113,35 @@ test("eine Metrik zur Zeit — niemals zwei y-Achsen", () => {
   const html = rendereStatistikAnsicht({ verkauf: verkauf() });
   assert.match(html, /data-metrik="umsatz"/u);
   assert.match(html, /data-metrik="stueck"/u);
-  // Es gibt genau eine Skala im Zeichencode.
-  assert.equal((html.match(/function obergrenze\(/gu) ?? []).length, 1);
+  // Jede Ansicht ist eine eigene, fertig gezeichnete Gruppe mit **einer** Skala.
+  // Zwei Skalen in einer Gruppe kann es damit gar nicht geben.
+  assert.match(html, /data-sicht="7-umsatz"/u);
+  assert.match(html, /data-sicht="7-stueck"/u);
   assert.doesNotMatch(html, /y2Achse|rechteAchse|secondAxis/u);
 });
 
-test("die Verdichtungsschwelle existiert genau einmal", () => {
-  // Sie steht im Server und wird ins Dokument uebergeben. Zwei Kopien liefen
-  // auseinander, und dann zeigte „7 Tage" ploetzlich Wochensaeulen.
+test("die Verdichtungsschwelle verlässt den Server gar nicht", () => {
+  // Seit alle Ansichten serverseitig gezeichnet werden, wird die Schwelle nur
+  // noch hier angewandt -- sie steht genau einmal, in statistics-series.ts, und
+  // reist nicht mit. Zwei Kopien liefen auseinander, und dann zeigte „7 Tage"
+  // ploetzlich Wochensaeulen.
+  assert.equal(typeof MAX_TAGES_SAEULEN, "number");
   const html = rendereStatistikAnsicht({ verkauf: verkauf() });
-  assert.match(html, new RegExp(`const MAX_TAGES_SAEULEN = ${MAX_TAGES_SAEULEN};`, "u"));
-  assert.equal((html.match(/MAX_TAGES_SAEULEN = \d+/gu) ?? []).length, 1);
+  assert.doesNotMatch(html, /MAX_TAGES_SAEULEN/u);
+});
+
+test("das Skript zeichnet nichts — ohne JavaScript steht das Diagramm trotzdem", () => {
+  // **Der Befund vom 2026-08-17**: Eine Vorschau ohne Skript zeigte Kacheln und
+  // Kartenrahmen, aber einen leeren Diagrammbereich. Seitdem sind alle Ansichten
+  // fertig gerendert; das Skript schaltet nur um.
+  const html = rendereStatistikAnsicht({ verkauf: verkauf() });
+  const skript = html.slice(html.indexOf("<script>"));
+  assert.doesNotMatch(skript, /createElementNS|appendChild\(el\(|new Path2D/u,
+    "im Skript darf keine Zeichenlogik stehen");
+  assert.match(skript, /Das Skript zeichnet nichts/u);
+  // Vor dem Skript stehen bereits Saeulen im Dokument.
+  const vorSkript = html.slice(0, html.indexOf("<script>"));
+  assert.ok((vorSkript.match(/<rect /gu) ?? []).length > 3, "die Saeulen sind schon da");
 });
 
 test("das Dokument lädt nichts aus dem Netz und trägt eine CSP", () => {
@@ -138,7 +156,7 @@ test("das Dokument lädt nichts aus dem Netz und trägt eine CSP", () => {
 test("Gitterlinien sind durchgezogene Haarlinien, keine gestrichelten", () => {
   const html = rendereStatistikAnsicht({ verkauf: verkauf() });
   assert.doesNotMatch(html, /stroke-dasharray/u);
-  assert.match(html, /"stroke-width": 1/u);
+  assert.match(html, /stroke="var\(--grid\)" stroke-width="1"/u);
 });
 
 test("beide Farbmodi sind gesetzt, keiner ist ein automatischer Umschlag", () => {
@@ -156,10 +174,12 @@ test("beide Farbmodi sind gesetzt, keiner ist ein automatischer Umschlag", () =>
 test("Text trägt Textfarben, nie die Serienfarbe", () => {
   const html = rendereStatistikAnsicht({ verkauf: verkauf() });
   // Achsen- und Wertbeschriftungen greifen auf Ink-Rollen zu.
-  assert.match(html, /fill: "var\(--muted\)"/u);
-  assert.match(html, /fill: "var\(--ink\)"/u);
-  // Und nirgends wird Text in eine Serienfarbe gesetzt.
+  assert.match(html, /<text [^>]*fill="var\(--muted\)"/u);
+  assert.match(html, /<text [^>]*fill="var\(--ink\)"/u);
+  // Und nirgends trägt Text eine Serienfarbe — Identität kommt vom farbigen
+  // Plättchen daneben, nie von eingefärbter Schrift.
   assert.doesNotMatch(html, /color: var\(--s-(shop|ebay)\)/u);
+  assert.doesNotMatch(html, /<text [^>]*fill="var\(--s-/u);
 });
 
 test("Fremdtext wird maskiert und kann das Dokument nicht verlassen", () => {

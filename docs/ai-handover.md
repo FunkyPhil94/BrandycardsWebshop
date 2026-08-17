@@ -94,6 +94,30 @@ der Assistent voll benutzbar.
 der Schritt, den das Verfahren ausdrücklich verlangt: **die Ausgabe ansehen** —
 als eigenständige Datei mit echten Zahlen, vor dem Einbau.
 
+**Zwischenstand 1 — Serverseite gebaut, 600 Tests grün, angesehen.** Gemessen an
+der gerenderten Ausgabe mit echten Zahlen: kein waagerechter Überlauf, 13
+Wochensäulen bei 90 Tagen, genau ein direktes Label am Spitzenwert, keine
+Kollision der Achsenbeschriftungen, im Dunkelmodus 3,22 und 3,02 Kontrast gegen
+die Fläche.
+
+**Befund aus der Vorschau beim Betreiber — und er wiegt schwerer als die
+Messungen.** Seine Vorschaufläche führt keine Skripte aus. Ergebnis: Leitzahl,
+Kacheln, Umschalter, Legende und Kartenrahmen erscheinen, **das Diagramm bleibt
+leer**, und die Umschalter zeigen keinen gedrückten Zustand.
+
+Im WebView2 liefe das Skript, das Diagramm wäre da. Darauf berufen wäre trotzdem
+falsch: **Ein Diagramm, das ohne Skript nicht existiert, hat keinen Rückfall** —
+und ein Screenshot zeigt, wie das aussieht.
+
+**Umbau, ohne die Zeichenlogik zu verdoppeln:** Der Server zeichnet **alle sechs
+Ansichten** (drei Zeitfenster × zwei Kennzahlen) fertig als SVG-Gruppen; das
+Skript schaltet nur noch Sichtbarkeit um und legt den Tooltip darüber. Damit
+bleibt es bei **einer** Zeichenimplementierung — die naheliegende Alternative,
+serverseitig vorzuzeichnen *und* im Skript neu zu zeichnen, hätte dieselbe
+Grafik zweimal beschrieben und wäre auseinandergelaufen.
+
+Kosten: ein größeres Dokument. Wird gemessen, nicht geschätzt.
+
 ## Historie
 
 ### 2026-08-17 - Messen, welche Fragen der Assistent nicht versteht
