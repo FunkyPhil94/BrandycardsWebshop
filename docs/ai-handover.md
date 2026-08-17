@@ -37,9 +37,59 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-<!-- Fuer den naechsten Auftrag freihalten. -->
+### 2026-08-17 - Geräteverbindung härten (der Rest aus Phase 2)
 
-Keine laufenden Aufträge.
+- Stand: **LÄUFT.**
+- Auftrag des Betreibers: Punkt 2 der offenen Assistant-Themen — die seit
+  Phase 2 als „vor produktiver Assistant-Nutzung offen" notierte Härtung. Die
+  Voraussetzung ist eingetreten: Der Assistent ist seit dem 2026-08-17
+  produktiv in Nutzung.
+
+**Erhoben, statt der alten Notiz zu glauben.** Sie nannte drei Punkte
+(HTTPS-Zielprüfung, DPAPI, Widerruf/Rotation). Zwei davon sind längst da:
+
+- **Rotation gibt es:** `claim/route.ts` setzt `expiresAt` auf 90 Tage,
+  `authenticateAvatarDevice` prüft es, und Tokens liegen serverseitig nur als
+  SHA-256-Hash.
+- **Widerruf greift:** `revoked_at` wirkt, und die App trennt bei 401 und
+  verlangt eine neue Kopplung.
+
+**Was wirklich offen ist:**
+
+1. **Das Token liegt im Klartext** in
+   `%LOCALAPPDATA%\BrandyCards\DesktopAvatar\settings.json`. Wer die Datei
+   liest, kann Geschäftsdaten abfragen — **und seit heute Azure-Sprachtoken auf
+   Kosten des Betreibers ausstellen.** Diese zweite Angriffsfläche gab es zur
+   Zeit der Phase-2-Notiz noch nicht.
+2. **`NormalizeShopUrl` akzeptiert `http://` für jeden Host.** Damit ginge das
+   Token im Klartext über die Leitung, wenn die Adresse einmal falsch
+   eingetragen ist.
+3. **Beim Nachsehen gefunden, nicht beauftragt:** Die App speichert das
+   `expiresAt` aus der Kopplung nicht. Am 90. Tag verlangt sie ohne Vorwarnung
+   eine neue Kopplung. Das ist dasselbe Muster wie die Azure-Testversion —
+   etwas hört still auf zu funktionieren, und niemand weiß warum. Wird
+   mitgemacht, weil es klein ist und genau in diese Aufgabe gehört.
+
+**Bauweise.**
+
+- **DPAPI** über `ProtectedData` mit `DataScope.CurrentUser`. Gespeichert wird
+  Base64 in einem neuen Feld; das alte Klartextfeld wird beim Laden **migriert**
+  und geleert. Ein erneutes Koppeln darf nicht nötig werden — der Betreiber hat
+  eine laufende Verbindung, und die Härtung darf sie nicht kosten.
+- Ist das Entschlüsseln nicht möglich (Datei von einem anderen Konto oder
+  Rechner), gilt das als „nicht gekoppelt" und nicht als Fehler. Das ist der
+  gewünschte Effekt von DPAPI, kein Defekt.
+- **HTTPS wird verlangt**, mit Ausnahme von Loopback — sonst wäre die
+  Entwicklung gegen `npm run dev` auf `http://localhost:3000` nicht mehr
+  möglich, und das ist der dokumentierte Weg im README.
+- **Ablaufwarnung** im Panel, sobald die Verbindung in wenigen Tagen endet.
+
+**Abnahme:** `npm test`, `npx tsc --noEmit`, `npm run lint`, WinUI-x64-Build.
+Dazu ein echter Nachweis, dass die vorhandene Verbindung die Migration
+übersteht, ohne neu gekoppelt zu werden.
+
+**Nicht Teil des Auftrags:** Produktionsdaten, Deployment, Spracherkennung.
+Rein im Desktop; kein Serverdeploy nötig.
 
 ## Historie
 
