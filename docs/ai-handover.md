@@ -9582,3 +9582,11 @@ selbst; die Schrittfolge samt Nachprüfung steht in
   angemeldet, steht jetzt statt des falschen Kastens ein Fehler mit Wiederholung
   da — und der nächste Bericht sagt, welcher Aufruf scheitert.
 - Status: ABGESCHLOSSEN, mit dieser Rückfrage.
+
+## Nachtrag 2026-08-17: Rückfrage beantwortet
+- Der Betreiber sieht jetzt „Für diese Karte hast du alle Vorschläge genutzt".
+- Damit ist die Ursache belegt: Er **war** angemeldet, die Leseabfrage scheiterte
+  vorübergehend, und der `catch` deutete das in „nicht angemeldet" um. Der
+  Anmeldekasten war also tatsächlich falsch — kein abgelaufenes Konto.
+- Kein weiterer Handlungsbedarf an dieser Stelle. Offen bleibt allein der
+  Nebenbefund zur Ratengrenze, er steht in `docs/ai-todo.md`.
