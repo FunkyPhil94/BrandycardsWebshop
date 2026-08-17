@@ -1386,7 +1386,7 @@ Hygiene:**
    eine unbemerkte Nebenwirkung der Importform. Wer es ändern will: `getDb`
    injizierbar machen oder den Verzeichnisimport auflösen. Kein Notfall, der
    Pfad ist an echten Daten belegt.
-1. **Ein dreizehntes Assistant-Werkzeug: „Welche Fragen verstehst du nicht?"**
+2. **Ein dreizehntes Assistant-Werkzeug: „Welche Fragen verstehst du nicht?"**
    Liest `assistant_unanswered` (seit 2026-08-17 produktiv) und nennt die
    häufigsten unbeantworteten Fragen samt Verteilung nach Grund. Wäre ein
    Werkzeug wie die anderen — eigene Datenbank, also `READY`, Quelle `SHOP_DB`,
@@ -1403,7 +1403,7 @@ Hygiene:**
    eine SQL-Abfrage (steht im Übergabeprotokoll). Der Reiz liegt darin, dass der
    Assistent über seine eigenen Lücken spricht, ohne Terminal.
 
-2. **`.env.local` und die produktiven Secrets laufen auseinander.** Am
+3. **`.env.local` und die produktiven Secrets laufen auseinander.** Am
    2026-08-17 war der lokale `EBAY_REFRESH_TOKEN` älter als die dritte
    Zustimmungsrunde und wurde mit `invalid_grant` abgewiesen. Für Builds
    folgenlos (dort zählen nur die `NEXT_PUBLIC_SUPABASE_*`-Werte), für jede
