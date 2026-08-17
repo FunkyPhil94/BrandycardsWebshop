@@ -15,7 +15,7 @@ import { SiteFooter, SiteHeader } from "../site-chrome";
 type Dashboard = {
   user: { email: string; role: string };
   counts: { products: number; inquiries: number; cardSubmissions: number; orders: number };
-  recentSubmissions: Array<{ id: string; email: string; name: string | null; title: string; status: string; createdAt: string; assets: Array<{ id: string; originalName: string; mimeType: string; byteSize: number }> }>;
+  recentSubmissions: Array<{ id: string; email: string; name: string | null; title: string; text: string | null; requestedAmountCents: number | null; status: string; createdAt: string; assets: Array<{ id: string; originalName: string; mimeType: string; byteSize: number }> }>;
 };
 
 export default function AdminPage() {

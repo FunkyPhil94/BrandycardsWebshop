@@ -3,7 +3,7 @@ import type { getDb } from "../../db";
 import { orderItems, orders, priceOffers, products, users } from "../../db/schema";
 import { getEmailConfig } from "./config.ts";
 import { protokolliereVersand, sendEmail, versucheVersand } from "./send.ts";
-import { accountDeleted, cardSubmissionReceived, inquiryReceived, offerAccepted, offerRejected, orderConfirmation, orderRefunded, orderShipped, sellerOrderNotification } from "./templates.ts";
+import { accountDeleted, cardSubmissionReceived, inquiryReceived, offerAccepted, offerRejected, orderConfirmation, orderRefunded, orderShipped, sellerEventNotification, sellerOrderNotification, type VerkaeuferEreignisDaten } from "./templates.ts";
 import { notifyOperationalAlert } from "../ops-alerts.ts";
 import { shippingCarrierLabel, trackingUrl } from "../shipping";
 import type { Locale } from "../i18n";
@@ -280,6 +280,33 @@ export async function notifyInquiryReceived(empfaenger: string, gesucht: string,
 export async function notifyCardSubmissionReceived(empfaenger: string, karte: string, locale: Locale = "de"): Promise<void> {
   await versucheVersand("Ankaufbestätigung", async () => {
     await sendeMitBetriebsalarm("Ankaufbestätigung", empfaenger, cardSubmissionReceived({ title: karte, shopUrl: shopUrl(), locale }), "card-submission");
+  });
+}
+
+/** Sagt dem Betreiber, dass im Shop etwas passiert ist.
+ *
+ * **Der Gegenpart zur Eingangsbestätigung.** Bis zum 2026-08-17 bekam bei
+ * Anfragen, Ankaufsangeboten und Preisvorschlägen nur der *Kunde* eine
+ * Nachricht; der Betreiber erfuhr davon erst, wenn er von sich aus in den
+ * Adminbereich sah. Bezahlte Bestellungen hatten diesen Weg schon
+ * (`notifyOrderPaid` → Verkäufernachricht), alles andere nicht.
+ *
+ * Reißt den Aufrufer nicht: liegt in `versucheVersand`, und ein misslungener
+ * Versand endet als Betriebsalarm. Eine gespeicherte Anfrage darf nicht daran
+ * scheitern, dass die Benachrichtigung nicht rausgeht — der Kunde hätte sonst
+ * einen Fehler vor sich, obwohl alles angekommen ist.
+ */
+export async function notifySellerEvent(
+  ereignis: VerkaeuferEreignisDaten["ereignis"],
+  titel: string,
+  zeilen: VerkaeuferEreignisDaten["zeilen"],
+  kennung: string,
+): Promise<void> {
+  await versucheVersand(`Betreiberhinweis ${ereignis}`, async () => {
+    const ziel = getEmailConfig()?.sellerEmail;
+    if (!ziel) return;
+    const nachricht = sellerEventNotification({ ereignis, titel, zeilen, shopUrl: shopUrl() });
+    await sendeMitBetriebsalarm(`Betreiberhinweis ${ereignis}`, ziel, nachricht, `seller:${kennung}`);
   });
 }
 

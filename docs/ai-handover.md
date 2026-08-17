@@ -7389,3 +7389,21 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 - Deploy-Verifikation: `/` antwortet mit 200; `/admin` zeigt „Nicht authentifiziert" statt „Supabase ist noch nicht konfiguriert" — die Seite, die Client-Konfiguration braucht, ist also gesund. Der erste echte Aufruf steht in der Produktion: `/` mit `view_count = 1`. Der anschließende Besuch von `/admin` erzeugte **keine** Zeile, die Ausnahme greift also auch produktiv.
 - Design-Hook: Die vier `border-left`-Akzente in `app/globals.css` bleiben auf Wunsch des Betreibers; der Ignore ist in `.impeccable/config.json` auf diese Datei begrenzt.
 - Status: ABGESCHLOSSEN.
+
+## Auftrag 2026-08-17: „Die Anfrage konnte nicht gesendet werden" beim Kartenankauf
+- Status: LÄUFT.
+- Befund: `/api/card-submissions` antwortet ab **1 MB** Anfragegröße mit `413 Payload Too Large` als **Klartext**. Reproduziert: 200/500/900 KB → 201, 1100 KB → 413. Ein Handyfoto reißt die Grenze sofort; die Seite verspricht 10 MB je Bild.
+- Ursache: vinext hält jede POST-Anfrage mit `multipart/form-data` **ohne** Action-Kennung für eine progressive Server Action (`isProgressiveServerActionRequest` in `node_modules/vinext/dist/server/app-server-action-execution.js`) und wendet die Server-Action-Grenze an — Standard 1 MB. Die Route selbst kommt gar nicht zum Zug, deshalb steht auch nichts in der Datenbank.
+- Zweiter Befund: Weil die Antwort Klartext ist und nicht `{error:{message}}`, verschluckt `postMultipart` in `app/forms.tsx` den Grund und zeigt den Ersatztext. Der Betreiber sah deshalb „Die Anfrage konnte nicht gesendet werden" statt „zu groß".
+- **Nicht** durch den heutigen Deploy verursacht: Die Grenze ist ein vinext-Standard, `package.json` wurde nicht angefasst.
+- Umsetzung: `experimental.serverActions.bodySizeLimit` in `next.config.ts` auf die Grenze heben, die die Route ohnehin schon durchsetzt (52 MB); `postMultipart` gibt bei Antworten ohne JSON eine Meldung nach Statuscode aus.
+- Prüfung: erneut gegen die Produktion hochladen, danach die Diagnosezeilen wieder entfernen.
+
+## Auftrag 2026-08-17: Uploadgrenze, fehlender Preis, Angebotskasten, Betreiberhinweise — abgeschlossen
+- **Uploadgrenze (der eigentliche Fehler):** `experimental.serverActions.bodySizeLimit` in `next.config.ts` auf 52 MB. Nachgewiesen: dieselbe 2-MB-Anfrage, die vorher `413 Payload Too Large` bekam, antwortet jetzt mit 201. Zusätzlich gibt `errorMessage` in `app/forms.tsx` bei Antworten ohne JSON eine Meldung nach Statuscode aus (413/429/403), statt den Grund zu verschlucken.
+- **Fehlender Preis:** `app/api/admin/dashboard/route.ts` las `requested_amount_cents` und den Nachrichtentext nie aus, obwohl beides gespeichert wird. Beides wird jetzt gelesen und in `requests-panel.tsx` angezeigt, „keine Preisvorstellung" ausgeschrieben. Nachgewiesen an der Testeinsendung: 20000 Cent gespeichert und geliefert.
+- **Angebotskasten „Anmelden oder registrieren" trotz Anmeldung:** `offer-form.tsx` fragte den Anmeldestand genau einmal beim Seitenaufbau. Lag die Supabase-Sitzung da noch nicht vor, blieb es dauerhaft bei „nicht angemeldet". Jetzt hängt ein `onAuthStateChange`-Lauscher daran, der die Prüfung wiederholt. **Nicht abschließend belegt**, dass das der Fall des Betreibers war — sein Konto (PB2, xjok3y@googlemail.com) ist seit 18:20 bestätigt vorhanden, der Zeitpunkt der Meldung ist unklar.
+- **Betreiberhinweise:** Neue Vorlage `sellerEventNotification` und `notifySellerEvent`; verdrahtet in Anfragen, Vormerkungen, Kartenangebote (beide Wege) und Preisvorschläge. Bezahlte Bestellungen hatten den Weg schon. Sechs neue Tests in `tests/email.test.mjs` prüfen unter anderem, dass die Benachrichtigung **hinter** dem Speichern steht.
+- Prüfung: `npm test` 533/533, `npm run lint` fehlerfrei (eine vorbestehende Warnung), `npx tsc --noEmit` sauber. Deploys: `04dfc2d1` (Uploadgrenze, Preis, Angebotskasten) und `24f9591b` (Betreiberhinweise).
+- **Offen für den Betreiber:** Fünf Testeinsendungen von mir stehen in der Produktion (Diagnose, Grenztest200/500/900, Nachweis 2MB) samt Bildern in R2. Das Löschen der R2-Objekte wurde mir verweigert; über „Löschen" im Adminbereich verschwinden Zeile und Bild gemeinsam. Ebenso steht dort eine Testanfrage „Nachweis Benachrichtigung".
+- Status: ABGESCHLOSSEN.

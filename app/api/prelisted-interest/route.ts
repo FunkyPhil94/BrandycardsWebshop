@@ -11,6 +11,7 @@ import {
   requiredString,
 } from "../../../lib/public-form";
 import { enforcePublicRateLimit } from "../../../lib/rate-limit";
+import { notifySellerEvent } from "../../../lib/email/notify.ts";
 
 export async function POST(request: Request) {
   try {
@@ -26,6 +27,13 @@ export async function POST(request: Request) {
       guestEmail: email,
       message: formMetadata(product.title, message),
     }).returning({ id: inquiries.id });
+    // Auch eine Vormerkung ist eine Anfrage: Sie landet in derselben Liste im
+    // Adminbereich und bliebe ohne diesen Hinweis genauso still liegen.
+    await notifySellerEvent("Kartenanfrage", product.title, [
+      { label: "Von", wert: email },
+      { label: "Anlass", wert: "Vormerkung für eine Vorverkaufskarte" },
+      { label: "Nachricht", wert: message },
+    ], `prelisted:${row?.id ?? "unbekannt"}`);
     return NextResponse.json({ ok: true, inquiryId: row?.id }, { status: 201 });
   } catch (error) {
     return jsonError(error);

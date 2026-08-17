@@ -379,6 +379,9 @@ export const ENGLISH: Record<string, string> = {
 
 const ENGLISH_EXTRA: Record<string, string> = {
   "Sprache": "Language",
+  "Die Daten sind zu groß. Bitte kleinere oder weniger Bilder wählen.": "The data is too large. Please choose smaller or fewer pictures.",
+  "Zu viele Anfragen. Bitte einen Moment warten und erneut versuchen.": "Too many requests. Please wait a moment and try again.",
+  "Die Anfrage wurde abgewiesen. Bitte die Seite neu laden und erneut versuchen.": "The request was rejected. Please reload the page and try again.",
   "Sprache des Kontos": "Account language",
   "Diese Auswahl gilt auch auf anderen Geräten und für deine Kundenmails.": "This choice also applies on other devices and to your customer emails.",
   "English": "English",

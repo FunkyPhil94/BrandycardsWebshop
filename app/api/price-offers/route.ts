@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { getDb } from "../../../db";
 import { ebayListings, priceOffers, products } from "../../../db/schema";
 import { getAuthenticatedAppUser } from "../../../lib/app-user";
+import { notifySellerEvent } from "../../../lib/email/notify.ts";
 import { avatarEventInsert } from "../../../lib/avatar-events";
 import { MAX_OFFERS_PER_PRODUCT, MIN_DISCOUNT_CENTS, offerAttempts } from "../../../lib/price-offers";
 import { jsonError, optionalPrice, optionalString, PublicFormError, readJsonBody, requiredString } from "../../../lib/public-form";
@@ -102,6 +103,19 @@ export async function POST(request: Request) {
         payload: { productId, amountCents: amount },
       }),
     ]);
+
+    // Erst nach dem Speichern. Ein Vorschlag, der in der Datenbank steht, darf
+    // nicht daran scheitern, dass die Benachrichtigung nicht rausgeht.
+    const waehrung = manuell ? row.product.priceCurrency : row.listing?.priceCurrency ?? "EUR";
+    const geld = (cents: number) => new Intl.NumberFormat("de-DE", { style: "currency", currency: waehrung }).format(cents / 100);
+    await notifySellerEvent("Preisvorschlag", row.product.title, [
+      { label: "Von", wert: appUser.email },
+      { label: "Vorschlag", wert: geld(amount) },
+      // Ohne den Listenpreis daneben sagt der Betrag allein nichts darüber,
+      // ob der Vorschlag verhandelbar ist.
+      { label: "Listenpreis", wert: listPrice === null ? "keiner hinterlegt" : geld(listPrice) },
+      ...(message ? [{ label: "Nachricht", wert: message }] : []),
+    ], `price-offer:${priceOfferId}`);
 
     return NextResponse.json({
       ok: true,

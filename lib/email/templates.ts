@@ -616,3 +616,50 @@ export function accountDeleted(daten: { bestellungen: number; shopUrl: string; l
 
   return { subject: sanitizeSubject("Dein BrandyCards-Konto wurde gelöscht"), text, html };
 }
+
+export type VerkaeuferEreignisDaten = {
+  /** Was passiert ist — steht so in der Betreffzeile. */
+  ereignis: "Kartenanfrage" | "Kartenangebot" | "Preisvorschlag";
+  /** Worum es geht: die gesuchte, angebotene oder verhandelte Karte. */
+  titel: string;
+  /** Beschriftung und Wert, in der Reihenfolge, in der sie dastehen sollen. */
+  zeilen: Array<{ label: string; wert: string }>;
+  shopUrl: string;
+};
+
+/** Die Nachricht an den Betreiber, wenn im Shop etwas passiert ist.
+ *
+ * **Nur auf Deutsch, anders als die Kundennachrichten.** Die geht an genau
+ * eine Adresse, und die liest ein deutschsprachiger Betreiber; eine zweite
+ * Sprachfassung wäre Aufwand für einen Empfänger, den es nicht gibt.
+ *
+ * Der Betreff trägt den Anlass **und** die Karte, damit ein Postfach voller
+ * dieser Nachrichten noch sortierbar ist. Der Text bleibt kurz: Er soll zum
+ * Adminbereich führen, nicht ihn ersetzen — dort steht der Vorgang mit Bildern,
+ * Verlauf und den Schaltflächen, die ihn weiterbringen.
+ */
+export function sellerEventNotification(daten: VerkaeuferEreignisDaten): Nachricht {
+  const text = [
+    `Neu im Shop: ${daten.ereignis}`,
+    ``,
+    daten.titel,
+    ``,
+    ...daten.zeilen.map((zeile) => `${zeile.label}: ${zeile.wert}`),
+    ``,
+    `Bearbeiten: ${daten.shopUrl}/admin`,
+    fussText(daten.shopUrl),
+  ].join("\n");
+
+  const html = rahmen([
+    `<p style="margin:0 0 6px;color:#7c7770;font-size:13px">Neu im Shop</p>`,
+    `<h1 style="font-size:22px;margin:0 0 16px">${escapeHtml(daten.ereignis)}</h1>`,
+    `<p style="margin:0 0 18px;font-weight:bold;font-size:16px">${escapeHtml(daten.titel)}</p>`,
+    `<table style="width:100%;border-collapse:collapse;font-size:14px;border-top:1px solid #e4e0d8">`,
+    daten.zeilen.map((zeile) => `<tr><td style="padding:6px 0;color:#7c7770">${escapeHtml(zeile.label)}</td>`
+      + `<td style="padding:6px 0;text-align:right">${escapeHtml(zeile.wert)}</td></tr>`).join(""),
+    `</table>`,
+    `<p style="margin:20px 0 0"><a href="${escapeHtml(daten.shopUrl)}/admin" style="color:#111112">Im Adminbereich bearbeiten →</a></p>`,
+  ].join(""), daten.shopUrl);
+
+  return { subject: sanitizeSubject(`Neu: ${daten.ereignis} — ${daten.titel}`), text, html };
+}

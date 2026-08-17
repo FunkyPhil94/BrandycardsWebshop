@@ -35,7 +35,19 @@ function datum(wert: string | null) {
   return Number.isNaN(zeit.getTime()) ? wert : zeit.toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" });
 }
 
-export type Submission = { id: string; email: string; name: string | null; title: string; status: string; createdAt: string; assets: Array<{ id: string }> };
+export type Submission = { id: string; email: string; name: string | null; title: string; text?: string | null; requestedAmountCents?: number | null; status: string; createdAt: string; assets: Array<{ id: string }> };
+
+const EURO = new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" });
+
+/** Die Preisvorstellung des Anbieters — oder der ausdrückliche Hinweis, dass
+ *  keine genannt wurde.
+ *
+ * „Keine Preisvorstellung" muss dastehen und darf nicht einfach fehlen: Das
+ * Feld ist im Formular freiwillig, und eine leere Stelle wäre nicht von einem
+ * Anzeigefehler zu unterscheiden — was sie bis zum 2026-08-17 auch war. */
+function preis(cents: number | null | undefined) {
+  return typeof cents === "number" && Number.isFinite(cents) ? EURO.format(cents / 100) : "keine Preisvorstellung";
+}
 
 /** Anfragen und Kartenangebote bearbeiten statt nur zählen (ai-todo Punkt 12.4). */
 export function RequestsPanel({ submissions, assetUrls, onSubmissionDeleted }: {
@@ -148,7 +160,8 @@ export function RequestsPanel({ submissions, assetUrls, onSubmissionDeleted }: {
                 <strong>{angebot.title}</strong>
                 <span>{datum(angebot.createdAt)}</span>
               </div>
-              <p className="admin-request-from">{angebot.email}{angebot.name ? ` · ${angebot.name}` : ""} · {angebot.assets.length} Bild(er)</p>
+              <p className="admin-request-from">{angebot.email}{angebot.name ? ` · ${angebot.name}` : ""} · {angebot.assets.length} Bild(er) · <strong>{preis(angebot.requestedAmountCents)}</strong></p>
+              {angebot.text && <p className="admin-request-text">{angebot.text}</p>}
               <div className="admin-submission-images">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 {angebot.assets.map((asset) => assetUrls[asset.id] ? <img key={asset.id} src={assetUrls[asset.id]} alt={`Eingesendetes Bild zu ${angebot.title}`} loading="lazy" /> : null)}
