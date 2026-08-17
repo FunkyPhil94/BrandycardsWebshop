@@ -37,9 +37,15 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
+<!-- Fuer den naechsten Auftrag freihalten. -->
+
+Keine laufenden Aufträge.
+
+## Historie
+
 ### 2026-08-17 - Enter sendet, Alt+Enter bricht die Zeile
 
-- Stand: **LÄUFT.**
+- Stand: **ABGESCHLOSSEN.**
 - Vorgeschichte: **Variante 3 ist abgenommen.** Der Betreiber hat nach dem
   Setzen der Secrets gesprochen geprüft: „es funktioniert perfekt". Damit ist
   die Spracherkennung nach drei Anläufen erledigt.
@@ -62,7 +68,27 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 **Nicht Teil des Auftrags:** Produktionsdaten, Deployment, Spracherkennung.
 Kein Serverdeploy nötig — die Änderung ist rein im Desktop.
 
-## Historie
+**Ergebnis: umgesetzt, `npm test` 551/551, TypeScript fehlerfrei, ESLint 0
+Fehler, WinUI-x64-Build 0 Warnungen und 0 Fehler.** Fünf neue Tests in
+`tests/assistant-input-keys.test.mjs`.
+
+Umgesetzt wie geplant: `PreviewKeyDown` am Feld, `e.Handled` vor der
+Verzweigung, Alt über `e.KeyStatus.IsMenuKeyDown`. Der Umbruch wird an der
+Einfügemarke als `\r` gesetzt — WinUI führt Zeilenumbrüche in `TextBox.Text` so,
+ein `\n` käme beim Auslesen anders zurück. Eine markierte Auswahl wird dabei
+ersetzt, und `MaxLength` wird geprüft: Die Grenze gilt nur für *getippte*
+Zeichen, gesetzter Text umgeht sie sonst.
+
+`SendAssistantButton_Click` und die Eingabetaste laufen beide über die neue
+`SendTypedMessageAsync`; damit gibt es weiterhin genau einen Sendeweg, und die
+Zusicherung aus Phase 4 (getippt wie diktiert endet in
+`SendAssistantMessageAsync`) gilt unverändert.
+
+**Zweimal dieselbe Sperre:** Der Build scheiterte erneut an der laufenden App
+(PID 10096), diesmal an der Fassung, die der Betreiber gerade benutzte. Sie
+wurde beendet, gebaut und anschließend wieder gestartet. Wer hier weiterarbeitet:
+**Vor einem WinUI-Build prüfen, ob die App läuft** — die Fehlermeldung nennt die
+PID, aber erst nach zehn Wiederholungsversuchen.
 
 ### 2026-08-17 - Variante 3: Azure Speech statt SAPI
 

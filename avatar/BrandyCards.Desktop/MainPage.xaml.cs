@@ -285,7 +285,62 @@ public sealed partial class MainPage : Page
         }
     }
 
-    private async void SendAssistantButton_Click(object sender, RoutedEventArgs e)
+    private async void SendAssistantButton_Click(object sender, RoutedEventArgs e) => await SendTypedMessageAsync();
+
+    /// <summary>
+    /// Eingabetaste sendet, Alt+Eingabetaste bricht die Zeile um.
+    ///
+    /// **`PreviewKeyDown`, nicht `KeyDown`.** Das Feld nimmt Zeilenumbrüche an
+    /// (`AcceptsReturn`), und die TextBox verarbeitet die Eingabetaste selbst.
+    /// Ein bubbelnder Handler käme erst danach an die Reihe — die Zeile wäre
+    /// dann schon eingefügt und ließe sich nur noch nachträglich entfernen.
+    /// Die tunnelnde Fassung kommt vorher dran und kann das unterbinden.
+    ///
+    /// `e.KeyStatus.IsMenuKeyDown` ist die Alt-Taste. Sie hier abzufragen ist
+    /// verlässlicher als ein späterer Blick auf den Tastaturzustand, denn sie
+    /// beschreibt die Lage **zum Zeitpunkt dieses Anschlags**.
+    /// </summary>
+    private async void AssistantInputTextBox_PreviewKeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (e.Key != VirtualKey.Enter) return;
+
+        // In beiden Zweigen behandelt: Sonst fügte die TextBox zusätzlich zu
+        // dem, was hier geschieht, noch ihren eigenen Umbruch ein.
+        e.Handled = true;
+
+        if (e.KeyStatus.IsMenuKeyDown)
+        {
+            InsertNewlineAtCaret();
+            return;
+        }
+
+        await SendTypedMessageAsync();
+    }
+
+    /// <summary>
+    /// Setzt den Umbruch selbst, weil das unterdrückte Standardverhalten ihn
+    /// nicht mehr erzeugt. Eine markierte Auswahl wird dabei ersetzt, wie man
+    /// es von jedem Textfeld erwartet.
+    ///
+    /// WinUI führt Zeilenumbrüche in `TextBox.Text` als `\r`; ein `\n` würde
+    /// hier zwar angezeigt, käme beim Auslesen aber anders zurück.
+    /// </summary>
+    private void InsertNewlineAtCaret()
+    {
+        var start = AssistantInputTextBox.SelectionStart;
+        var laenge = AssistantInputTextBox.SelectionLength;
+        var text = AssistantInputTextBox.Text;
+
+        // `MaxLength` gilt für getippte Zeichen, nicht für gesetzten Text --
+        // ohne diese Prüfung ließe sich die Grenze mit Umbrüchen überschreiten.
+        if (text.Length - laenge >= AssistantInputTextBox.MaxLength) return;
+
+        AssistantInputTextBox.Text = text.Remove(start, laenge).Insert(start, "\r");
+        AssistantInputTextBox.SelectionStart = start + 1;
+        AssistantInputTextBox.SelectionLength = 0;
+    }
+
+    private async Task SendTypedMessageAsync()
     {
         if (_assistantRequestRunning || _speechRecognitionRunning) return;
 
