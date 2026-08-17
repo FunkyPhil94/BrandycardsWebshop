@@ -312,6 +312,15 @@ footer { background:var(--ink); color:#fff; padding:52px max(48px,calc((100vw - 
 .section-nav a { border-bottom:2px solid transparent; color:var(--muted); font-size:10px; font-weight:800; letter-spacing:.09em; padding:0 0 9px; text-transform:uppercase; }
 .section-nav a:hover { color:var(--ink); }
 .section-nav a.is-active { border-bottom-color:var(--red); color:var(--ink); }
+/* Die Einstiegskacheln des Kontos: eine Reihe auf dem Telefon, zwei ab Tablet.
+   Ganze Flächen sind anklickbar, nicht nur die Überschrift — ein Ziel von
+   Fingerbreite statt eines Wortes. */
+.account-tiles { display:grid; gap:12px; grid-template-columns:1fr; margin:26px 0 0; }
+.account-tiles a { background:#ebe8e1; display:flex; flex-direction:column; gap:6px; padding:20px; }
+.account-tiles a:hover { background:#e3dfd6; }
+.account-tiles strong { font-size:15px; letter-spacing:-.01em; }
+.account-tiles span { color:var(--muted); font-size:11px; line-height:1.55; }
+@media (min-width:620px) { .account-tiles { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 .admin-session { color:var(--muted); font-family:'DM Mono',monospace; font-size:10px; letter-spacing:.04em; margin:-16px 0 26px; }
 .admin-session-mfa { color:#3f7d4f; }
 /* Eine Aktion je Zeile: Bezeichnung, ein Satz dazu, Schaltfläche rechts.
