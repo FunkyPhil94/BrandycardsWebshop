@@ -9663,3 +9663,15 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 - **Nicht geprüft, weil kein angemeldetes Konto zur Verfügung stand:** die
   Ansichten hinter der Anmeldung. Der Betreiber klickt sie durch.
 - Status: ABGESCHLOSSEN.
+
+## Auftrag 2026-08-17: U2 — Preisvorschläge und Kartenangebote im Konto
+- Status: LÄUFT.
+- Zu bauen: zwei Ansichten, zwei Leseendpunkte, ein Bildabruf für die eigenen
+  Uploads, und kundentaugliche Statusnamen an genau einer Stelle.
+- `/api/account/offers` bleibt unangetastet — daran hängt der Kassenpreis.
+- Eigentümerschaft nach derselben Regel wie im Datenexport: Konto-ID **oder**
+  E-Mail-Adresse (`lib/account-data.ts`), damit Gasteinsendungen von vorher
+  sichtbar bleiben. Die Regel wird exportiert statt kopiert.
+- Der Titel eines Kartenangebots steckt als JSON in `card_submissions.message`.
+  Das Auslesen stand bisher nur inline in `app/api/admin/dashboard/route.ts` —
+  es wandert zu `formMetadata` in `lib/public-form.ts`, wo es hingehört.
