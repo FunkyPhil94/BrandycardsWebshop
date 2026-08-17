@@ -2,6 +2,37 @@
 
 import { getSupabaseBrowserClient } from "../../lib/supabase-browser";
 
+/** Ein Aufruf in den Adminbereich, der den Authenticator **nur dann** verlangt,
+ *  wenn der Server ihn verlangt.
+ *
+ * Vorher rief jede schreibende Stelle `authHeaders(…, true)` und löste damit die
+ * Code-Abfrage aus, *bevor* jemand geprüft hatte, ob sie nötig ist — auch wenn
+ * die letzte Bestätigung zehn Sekunden alt war. Der Code stand dann zwanzigmal
+ * am Tag im Weg, und ein Schutz, den man reflexhaft wegtippt, schützt nichts.
+ *
+ * Jetzt entscheidet **eine** Stelle, nämlich `requireAdmin` auf dem Server: Erst
+ * wird gesendet, und nur bei `428` mit `RECENT_MFA_REQUIRED` wird der Code
+ * geholt und der Aufruf einmal wiederholt. Wer innerhalb der Frist arbeitet,
+ * wird gar nicht gefragt. Welche Aktionen die Nachfrage auslösen, steht in
+ * `lib/admin-access.ts` — hier steht kein zweites Regelwerk daneben.
+ *
+ * `MFA_REQUIRED` (die Sitzung ist überhaupt nicht auf `aal2`) läuft durch
+ * denselben Weg: Eine bestandene TOTP-Prüfung hebt die Sitzung an.
+ */
+export async function adminFetch(input: string, init: RequestInit & { json?: boolean } = {}) {
+  const { json = false, headers: zusatz, ...rest } = init;
+  const senden = async (frisch: boolean) => fetch(input, {
+    ...rest,
+    headers: { ...(await authHeaders(json, frisch)), ...(zusatz as Record<string, string> | undefined) },
+  });
+
+  const antwort = await senden(false);
+  if (antwort.status !== 428) return antwort;
+  const grund = await antwort.clone().json().catch(() => null) as { code?: string } | null;
+  if (grund?.code !== "RECENT_MFA_REQUIRED" && grund?.code !== "MFA_REQUIRED") return antwort;
+  return senden(true);
+}
+
 export async function authHeaders(json = false, freshMfa = false): Promise<HeadersInit> {
   const supabase = getSupabaseBrowserClient();
   if (freshMfa) {

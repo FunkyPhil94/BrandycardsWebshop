@@ -47,7 +47,7 @@ export async function GET(request: Request) {
  * price from this row. Deliberately no stock reservation: the card stays on
  * sale here and on eBay, so nothing is blocked behind a pending decision. */
 export async function POST(request: Request) {
-  const guard = await requireAdmin(request, { recentAuthSeconds: 600 });
+  const guard = await requireAdmin(request);
   if (guard.response) return guard.response;
 
   try {

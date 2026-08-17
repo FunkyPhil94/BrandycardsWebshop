@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { authHeaders } from "./admin-auth";
+import { adminFetch, authHeaders } from "./admin-auth";
 import { Lightbox } from "../lightbox";
 
 type Inquiry = {
@@ -101,7 +101,7 @@ export function RequestsPanel({ submissions, assetUrls, onSubmissionDeleted }: {
     setBusy(id);
     setNote("");
     try {
-      const response = await fetch("/api/admin/inquiries", { method: "PATCH", headers: await authHeaders(true, true), body: JSON.stringify({ id, status }) });
+      const response = await adminFetch("/api/admin/inquiries", { method: "PATCH", json: true, body: JSON.stringify({ id, status }) });
       const data = await response.json() as { error?: string };
       if (!response.ok) throw new Error(data.error ?? "Fehlgeschlagen.");
       setInquiries((current) => current?.map((eintrag) => eintrag.id === id ? { ...eintrag, status } : eintrag) ?? current);
@@ -117,7 +117,7 @@ export function RequestsPanel({ submissions, assetUrls, onSubmissionDeleted }: {
     setBusy(submissionId);
     setNote("");
     try {
-      const response = await fetch("/api/admin/card-submissions", { method: "PATCH", headers: await authHeaders(true, true), body: JSON.stringify({ submissionId, status }) });
+      const response = await adminFetch("/api/admin/card-submissions", { method: "PATCH", json: true, body: JSON.stringify({ submissionId, status }) });
       const data = await response.json() as { error?: string };
       if (!response.ok) throw new Error(data.error ?? "Fehlgeschlagen.");
       setStati((current) => ({ ...current, [submissionId]: status }));
@@ -135,7 +135,7 @@ export function RequestsPanel({ submissions, assetUrls, onSubmissionDeleted }: {
     if (!window.confirm("Dieses Kartenangebot und alle zugehörigen Bilder endgültig löschen?")) return;
     setBusy(submissionId);
     try {
-      const response = await fetch(`/api/admin/card-submissions?submissionId=${encodeURIComponent(submissionId)}`, { method: "DELETE", headers: await authHeaders(false, true) });
+      const response = await adminFetch(`/api/admin/card-submissions?submissionId=${encodeURIComponent(submissionId)}`, { method: "DELETE" });
       const data = await response.json() as { error?: string };
       if (!response.ok) throw new Error(data.error ?? "Löschen fehlgeschlagen.");
       onSubmissionDeleted(submissionId);

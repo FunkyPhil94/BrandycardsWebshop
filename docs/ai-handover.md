@@ -9520,3 +9520,17 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 - Tests werden auf die neue Einteilung umgeschrieben, **in beide Richtungen**:
   Die sensiblen Routen müssen `recentAuthSeconds` tragen, die Alltagsrouten
   dürfen es nicht. Sonst wandert die Regel beim nächsten Umbau zurück.
+
+## Auftrag 2026-08-17: MFA-Neueinteilung — abgeschlossen
+- Client: `adminFetch` in `app/admin/admin-auth.ts`. Alle fünfzehn Stellen, die
+  vorher `authHeaders(…, true)` riefen, nutzen ihn. Die Code-Abfrage entsteht
+  jetzt **nur** als Antwort auf ein 428 des Servers.
+- Server: `recentAuthSeconds` steht noch an sechs Stellen — eBay-OAuth `start`
+  und `claim`, `avatar/pairing`, `orders/refund`, `card-submissions` DELETE,
+  `card-submissions/cleanup`. Überall sonst entfernt.
+- Ein neuer Test hält die Gegenrichtung fest: Die Alltagsrouten dürfen
+  `recentAuthSeconds` **nicht** tragen, und kein Panel darf
+  `authHeaders(…, true)` aufrufen. 693 Tests grün, `tsc` sauber.
+- Was sich **nicht** ändert: Der Adminbereich bleibt vollständig hinter `aal2`.
+  Wer sich anmeldet, braucht weiterhin den zweiten Faktor.
+- Status: ABGESCHLOSSEN.

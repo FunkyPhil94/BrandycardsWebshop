@@ -36,7 +36,7 @@ export async function DELETE(request: Request) {
  * auch in der Oberfläche daneben.
  */
 export async function PATCH(request: Request) {
-  const access = await requireAdmin(request, { recentAuthSeconds: 600 });
+  const access = await requireAdmin(request);
   if (access.response) return access.response;
 
   try {

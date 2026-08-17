@@ -11,7 +11,7 @@ import { releaseOrderReservations } from "../../../../../lib/paypal/settle-order
  * auseinanderlaufen lassen. Bestand wird bei einer offenen Reservierung
  * freigegeben, ein eBay-Angebot wird nicht künstlich reaktiviert. */
 export async function POST(request: Request) {
-  const guard = await requireAdmin(request, { recentAuthSeconds: 600 });
+  const guard = await requireAdmin(request);
   if (guard.response) return guard.response;
 
   try {

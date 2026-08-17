@@ -5,7 +5,7 @@ import { runEbaySync } from "../../../../lib/ebay-sync";
 
 export async function POST(request: Request) {
   try {
-    const access = await requireAdmin(request, { recentAuthSeconds: 600 });
+    const access = await requireAdmin(request);
     if (access.response) return access.response;
     const result = await runEbaySync();
     await recordAdminAudit({ request, actorUserId: access.user.id, action: "ebay.sync", entityType: "ebay_sync", metadata: { imported: result.importedCount ?? 0, updated: result.updatedCount ?? 0, skipped: result.skippedCount ?? 0 } });

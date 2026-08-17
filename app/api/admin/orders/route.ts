@@ -126,7 +126,7 @@ export async function GET(request: Request) {
 }
 
 export async function PATCH(request: Request) {
-  const guard = await requireAdmin(request, { recentAuthSeconds: 600 });
+  const guard = await requireAdmin(request);
   if (guard.response) return guard.response;
 
   try {

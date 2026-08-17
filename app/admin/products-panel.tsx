@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { authHeaders } from "./admin-auth";
+import { adminFetch, authHeaders } from "./admin-auth";
 import { formatPrice } from "../site-chrome";
 
 type AdminProduct = {
@@ -63,7 +63,7 @@ export function ProductsPanel() {
       if (manuell) {
         rumpf.quantity = Number(formular.get("menge") ?? 0);
       }
-      const response = await fetch("/api/admin/products", { method: "PATCH", headers: await authHeaders(true, true), body: JSON.stringify(rumpf) });
+      const response = await adminFetch("/api/admin/products", { method: "PATCH", json: true, body: JSON.stringify(rumpf) });
       const data = await response.json() as { error?: string };
       if (!response.ok) throw new Error(data.error ?? "Speichern fehlgeschlagen.");
       setNote(manuell
@@ -80,7 +80,7 @@ export function ProductsPanel() {
   async function markierungLoesen(product: AdminProduct, feld: string) {
     setBusy(product.id);
     try {
-      const response = await fetch(`/api/admin/products?id=${product.id}&feld=${feld}`, { method: "DELETE", headers: await authHeaders(false, true) });
+      const response = await adminFetch(`/api/admin/products?id=${product.id}&feld=${feld}`, { method: "DELETE" });
       const data = await response.json() as { error?: string };
       if (!response.ok) throw new Error(data.error ?? "Fehlgeschlagen.");
       setNote(`„${FELDNAMEN[feld] ?? feld}“ folgt wieder eBay.`);
@@ -105,9 +105,7 @@ export function ProductsPanel() {
       upload.set("description", String(formular.get("description") ?? ""));
       upload.set("quantity", String(formular.get("menge") ?? ""));
       for (const bild of bilder) upload.append("images", bild);
-      const response = await fetch("/api/admin/products", {
-        method: "POST", headers: await authHeaders(false, true), body: upload,
-      });
+      const response = await adminFetch("/api/admin/products", { method: "POST", body: upload });
       const data = await response.json() as { error?: string };
       if (!response.ok) throw new Error(data.error ?? "Anlegen fehlgeschlagen.");
       setNote("Karte angelegt. Sie steht ab sofort im Vorverkauf.");

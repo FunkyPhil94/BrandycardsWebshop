@@ -95,7 +95,7 @@ export async function GET(request: Request) {
  * Punkt 11.
  */
 export async function POST(request: Request) {
-  const guard = await requireAdmin(request, { recentAuthSeconds: 600 });
+  const guard = await requireAdmin(request);
   if (guard.response) return guard.response;
 
   try {
@@ -248,7 +248,7 @@ async function readManualImage(file: File): Promise<UploadedManualImage> {
  * auch nicht und hält die Regel einheitlich.
  */
 export async function PATCH(request: Request) {
-  const guard = await requireAdmin(request, { recentAuthSeconds: 600 });
+  const guard = await requireAdmin(request);
   if (guard.response) return guard.response;
 
   try {
@@ -355,7 +355,7 @@ export async function PATCH(request: Request) {
  *  dieses Feld wieder. Ohne diesen Weg wäre jede einmal gesetzte Markierung
  *  endgültig — und der Katalog driftete still von eBay weg. */
 export async function DELETE(request: Request) {
-  const guard = await requireAdmin(request, { recentAuthSeconds: 600 });
+  const guard = await requireAdmin(request);
   if (guard.response) return guard.response;
 
   try {

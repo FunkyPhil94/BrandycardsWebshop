@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { authHeaders } from "./admin-auth";
+import { adminFetch, authHeaders } from "./admin-auth";
 import { formatPrice } from "../site-chrome";
 
 type AdminOrder = {
@@ -89,9 +89,9 @@ export function OrdersPanel() {
     setNote("");
     try {
       const draft = shippingDrafts[orderId] ?? { carrier: "", trackingNumber: "" };
-      const response = await fetch("/api/admin/orders", {
+      const response = await adminFetch("/api/admin/orders", {
         method: "PATCH",
-        headers: await authHeaders(true, true),
+        json: true,
         body: JSON.stringify({ orderId, status: "SHIPPED", shippingCarrier: draft.carrier || undefined, trackingNumber: draft.trackingNumber || undefined }),
       });
       const data = await response.json() as { status?: string; shippedAt?: string; error?: string };
@@ -108,7 +108,7 @@ export function OrdersPanel() {
     setUpdatingOrder(orderId);
     setNote("");
     try {
-      const response = await fetch(endpoint, { method: "POST", headers: await authHeaders(true, true), body: JSON.stringify({ orderId, ...body }) });
+      const response = await adminFetch(endpoint, { method: "POST", json: true, body: JSON.stringify({ orderId, ...body }) });
       const data = await response.json() as { status?: string; error?: string };
       if (!response.ok) throw new Error(data.error ?? "Bestellung konnte nicht aktualisiert werden.");
       setOrders((current) => current?.map((order) => order.id === orderId ? { ...order, status: data.status ?? successStatus } : order) ?? current);

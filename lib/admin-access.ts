@@ -3,6 +3,26 @@ import { getSupabaseAccessTokenClaims, type SupabaseAccessTokenClaims } from "./
 
 type AdminAccessOptions = {
   requireMfa?: boolean;
+  /** Verlangt eine **erneute** Bestätigung mit dem Authenticator-Code, wenn die
+   *  letzte länger als so viele Sekunden zurückliegt.
+   *
+   * **Sparsam einsetzen.** Der ganze Adminbereich steht ohnehin hinter einer
+   * Zwei-Faktor-Anmeldung (`aal2`, siehe unten); diese Option ist die
+   * *zusätzliche* Nachfrage mitten in der Arbeit. Bis zum 2026-08-17 trug sie
+   * fast jede schreibende Route — auch das Ablehnen eines Preisvorschlags und
+   * das Umstellen eines Angebotsstatus. Damit wurde der Code zum Türsteher vor
+   * der Alltagsarbeit, und ein Schutz, den man zwanzigmal am Tag wegtippt,
+   * schützt nichts mehr: Er erzieht dazu, den Code reflexhaft einzugeben, ohne
+   * hinzusehen, wofür.
+   *
+   * **Sie gehört an Aktionen, die Zugang verschaffen, Geld bewegen oder Daten
+   * endgültig vernichten** — eBay-OAuth, Gerätekopplung, Erstattung, das
+   * Löschen von Kartenangeboten samt Bildern. Dort ist die Nachfrage selten
+   * genug, dass man beim Tippen noch überlegt.
+   *
+   * Alles andere kommt ohne aus: Statusänderungen, Produktpflege, Sync-Läufe.
+   * Sie sind nachvollziehbar (`recordAdminAudit`) und umkehrbar.
+   */
   recentAuthSeconds?: number;
 };
 

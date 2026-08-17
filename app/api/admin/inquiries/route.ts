@@ -66,7 +66,7 @@ export async function GET(request: Request) {
  * beantwortet die Liste die eigentliche Frage nicht — „seit wann liegt das
  * hier?" — und genau die stellt sich, wenn mehrere Anfragen offen sind. */
 export async function PATCH(request: Request) {
-  const guard = await requireAdmin(request, { recentAuthSeconds: 600 });
+  const guard = await requireAdmin(request);
   if (guard.response) return guard.response;
 
   try {

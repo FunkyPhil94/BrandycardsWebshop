@@ -426,20 +426,63 @@ test("kritische Adminaktionen verlangen frische MFA und schreiben Auditspuren", 
   const audit = await read("lib/admin-audit.ts");
   assert.match(audit, /auditEvents/u);
   assert.match(audit, /ipHash/u, "IP-Adressen dürfen nur gehasht, nicht roh gespeichert werden");
+  // Die erneute Code-Abfrage gehört an Aktionen, die Zugang verschaffen, Geld
+  // bewegen oder Daten endgültig vernichten. Bis zum 2026-08-17 trug sie fast
+  // jede schreibende Route — auch das Ablehnen eines Preisvorschlags. Ein
+  // Schutz, den man zwanzigmal am Tag wegtippt, schützt nichts mehr.
   for (const path of [
-    "app/api/admin/products/route.ts",
-    "app/api/admin/orders/route.ts",
-    "app/api/admin/offers/route.ts",
-    "app/api/admin/card-submissions/route.ts",
-    "app/api/admin/ebay-sync/route.ts",
-    "app/api/admin/ebay/outbox/run/route.ts",
     "app/api/admin/ebay/oauth/start/route.ts",
+    "app/api/admin/ebay/oauth/claim/route.ts",
+    "app/api/admin/avatar/pairing/route.ts",
+    "app/api/admin/orders/refund/route.ts",
+    "app/api/admin/card-submissions/cleanup/route.ts",
   ]) {
     const route = await read(path);
-    assert.match(route, /recentAuthSeconds: 600/u, `${path} muss vor kritischen Aktionen eine frische MFA verlangen`);
+    assert.match(route, /recentAuthSeconds: 600/u, `${path} muss vor der Aktion eine frische MFA verlangen`);
   }
+  // Löschen ja, Status ändern nein — beides steht in derselben Datei.
+  const submissions = await read("app/api/admin/card-submissions/route.ts");
+  assert.match(submissions.split("export async function PATCH")[0], /DELETE[\s\S]*recentAuthSeconds: 600/u,
+    "das endgültige Löschen eines Kartenangebots samt Bildern verlangt frische MFA");
+  assert.doesNotMatch(submissions.split("export async function PATCH")[1], /recentAuthSeconds/u,
+    "ein Statuswechsel ist Alltagsarbeit und darf nicht erneut nach dem Code fragen");
   assert.match(await read("app/api/admin/ebay-sync/route.ts"), /recordAdminAudit/u);
   assert.match(await read("app/api/admin/offers/route.ts"), /recordAdminAudit/u);
+});
+
+test("Alltagsarbeit im Admin fragt nicht erneut nach dem Authenticator-Code", async () => {
+  // Der Adminbereich steht als Ganzes hinter `aal2` — das prüft `requireAdmin`
+  // weiterhin bei jedem dieser Aufrufe. Was hier fehlen muss, ist allein die
+  // *zusätzliche* Nachfrage mitten in der Arbeit.
+  for (const path of [
+    "app/api/admin/inquiries/route.ts",
+    "app/api/admin/offers/route.ts",
+    "app/api/admin/orders/route.ts",
+    "app/api/admin/orders/cancel/route.ts",
+    "app/api/admin/products/route.ts",
+    "app/api/admin/ebay-sync/route.ts",
+    "app/api/admin/ebay/outbox/run/route.ts",
+  ]) {
+    const route = await read(path);
+    assert.match(route, /requireAdmin\(/u, `${path} muss die zentrale Adminprüfung behalten`);
+    assert.doesNotMatch(route, /recentAuthSeconds/u, `${path} ist Alltagsarbeit und darf nicht erneut nach dem Code fragen`);
+  }
+
+  // Und der Client darf die Abfrage nicht von sich aus auslösen: Er sendet
+  // zuerst und holt den Code erst, wenn der Server mit 428 antwortet. Sonst
+  // stünde die Regel an zwei Stellen und liefe auseinander.
+  const auth = await read("app/admin/admin-auth.ts");
+  assert.match(auth, /RECENT_MFA_REQUIRED/u, "adminFetch reagiert auf die Antwort des Servers");
+  for (const path of [
+    "app/admin/page.tsx",
+    "app/admin/offers-panel.tsx",
+    "app/admin/orders-panel.tsx",
+    "app/admin/products-panel.tsx",
+    "app/admin/requests-panel.tsx",
+  ]) {
+    assert.doesNotMatch(await read(path), /authHeaders\([^)]*true\s*\)/u,
+      `${path} darf die MFA-Abfrage nicht vorab erzwingen, sondern nutzt adminFetch`);
+  }
 });
 
 test("Admin-Dashboard zeigt den aktiven MFA-Schutz sichtbar an", async () => {

@@ -44,8 +44,13 @@ test("N5-Bestellpfade schützen Eigentümer und Adminaktionen", async () => {
     "app/api/admin/orders/refund/route.ts",
   ]) {
     assert.match(await read(route), /requireAdmin/);
-    assert.match(await read(route), /recentAuthSeconds: 600/);
   }
+  // Nur die Erstattung fragt erneut nach dem Code: Dort verlässt Geld das Haus.
+  // Ein Storno greift ausschließlich bei noch unbezahlten Bestellungen und
+  // bewegt nichts; „versendet" und „abgeschlossen" sind tägliche Arbeit.
+  assert.match(await read("app/api/admin/orders/refund/route.ts"), /recentAuthSeconds: 600/);
+  assert.doesNotMatch(await read("app/api/admin/orders/cancel/route.ts"), /recentAuthSeconds/);
+  assert.doesNotMatch(await read("app/api/admin/orders/route.ts"), /recentAuthSeconds/);
 });
 
 test("die Auftragstabelle besitzt die Nachverfolgungs- und Abschlusszeitpunkte", async () => {

@@ -22,7 +22,7 @@ import { processEbayOutbox } from "../../../../../../lib/ebay-outbox";
  * aus wie „nichts zu tun", während in Wahrheit der Schalter aus ist.
  */
 export async function POST(request: Request) {
-  const access = await requireAdmin(request, { recentAuthSeconds: 600 });
+  const access = await requireAdmin(request);
   if (access.response) return access.response;
 
   const writeEnabled = process.env.EBAY_WRITE_ENABLED === "true";

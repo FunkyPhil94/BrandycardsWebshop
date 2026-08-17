@@ -8,7 +8,7 @@ import { ProductsPanel } from "./products-panel";
 import { RequestsPanel } from "./requests-panel";
 import { ViewsPanel } from "./views-panel";
 import Link from "next/link";
-import { authHeaders } from "./admin-auth";
+import { adminFetch, authHeaders } from "./admin-auth";
 import { MfaPanel } from "./mfa-panel";
 import { SiteFooter, SiteHeader } from "../site-chrome";
 
@@ -89,10 +89,9 @@ export default function AdminPage() {
     let cancelled = false;
     void (async () => {
       try {
-        const headers = await authHeaders(false, true);
-        const response = await fetch("/api/admin/ebay/oauth/claim", {
+        const response = await adminFetch("/api/admin/ebay/oauth/claim", {
           method: "POST",
-          headers: { ...headers, "Content-Type": "application/json" },
+          json: true,
           body: JSON.stringify({ claimId }),
         });
         const body = await response.json() as { refreshToken?: string; error?: string };
@@ -109,7 +108,7 @@ export default function AdminPage() {
     setSyncBusy(true);
     setSyncMessage("");
     try {
-      const response = await fetch("/api/admin/ebay-sync", { method: "POST", headers: await authHeaders(false, true) });
+      const response = await adminFetch("/api/admin/ebay-sync", { method: "POST" });
       const body = await response.json() as { error?: string; detail?: string; importedCount?: number; updatedCount?: number; skippedCount?: number; unchangedCount?: number; mergedCount?: number };
       if (!response.ok) throw new Error(body.detail ? `${body.error ?? "eBay-Synchronisierung fehlgeschlagen."} (${body.detail})` : body.error ?? "eBay-Synchronisierung fehlgeschlagen.");
       // „unverändert" gehört sichtbar dazu: Seit der Sync nur noch echte
@@ -140,7 +139,7 @@ export default function AdminPage() {
     setWriteCheckBusy(true);
     setSyncMessage("");
     try {
-      const response = await fetch("/api/admin/ebay/write-check", { headers: await authHeaders(false, true) });
+      const response = await adminFetch("/api/admin/ebay/write-check");
       const body = await response.json() as { ok?: boolean; detail?: string; writeEnabled?: boolean; error?: string };
       if (body.error) throw new Error(body.error);
       if (body.ok) {
@@ -165,7 +164,7 @@ export default function AdminPage() {
     setOutboxBusy(true);
     setSyncMessage("");
     try {
-      const response = await fetch("/api/admin/ebay/outbox/run", { method: "POST", headers: await authHeaders(false, true) });
+      const response = await adminFetch("/api/admin/ebay/outbox/run", { method: "POST" });
       const body = await response.json() as { processed?: number; writeEnabled?: boolean; error?: string; detail?: string };
       if (!response.ok) throw new Error(body.detail ? `${body.error ?? "Fehlgeschlagen."} (${body.detail})` : body.error ?? "Fehlgeschlagen.");
       // Ohne den Schalterhinweis läse sich „0 abgearbeitet" wie „nichts zu tun",
@@ -184,7 +183,7 @@ export default function AdminPage() {
     setOauthBusy(true);
     setSyncMessage("");
     try {
-      const response = await fetch("/api/admin/ebay/oauth/start", { headers: await authHeaders(false, true) });
+      const response = await adminFetch("/api/admin/ebay/oauth/start");
       const body = await response.json() as { url?: string; error?: string };
       if (!response.ok || !body.url) throw new Error(body.error ?? "eBay OAuth konnte nicht gestartet werden.");
       window.location.assign(body.url);
@@ -199,7 +198,7 @@ export default function AdminPage() {
     setDesktopPairingCode(null);
     setDesktopPairingExpiresAt(null);
     try {
-      const response = await fetch("/api/admin/avatar/pairing", { method: "POST", headers: await authHeaders(false, true) });
+      const response = await adminFetch("/api/admin/avatar/pairing", { method: "POST" });
       const body = await response.json() as { code?: string; expiresAt?: string; error?: string };
       if (!response.ok || !body.code) throw new Error(body.error ?? "Desktop-Avatar-Kopplung konnte nicht erstellt werden.");
       setDesktopPairingCode(body.code);

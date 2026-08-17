@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { authHeaders } from "./admin-auth";
+import { adminFetch, authHeaders } from "./admin-auth";
 import { formatPrice } from "../site-chrome";
 
 type AdminOffer = {
@@ -48,9 +48,9 @@ export function OffersPanel() {
     setBusy(offerId);
     setNote("");
     try {
-      const response = await fetch("/api/admin/offers", {
+      const response = await adminFetch("/api/admin/offers", {
         method: "POST",
-        headers: await authHeaders(true, true),
+        json: true,
         body: JSON.stringify({ offerId, action }),
       });
       const data = await response.json().catch(() => ({}));
