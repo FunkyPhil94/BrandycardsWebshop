@@ -116,7 +116,44 @@ bleibt es bei **einer** Zeichenimplementierung — die naheliegende Alternative,
 serverseitig vorzuzeichnen *und* im Skript neu zu zeichnen, hätte dieselbe
 Grafik zweimal beschrieben und wäre auseinandergelaufen.
 
-Kosten: ein größeres Dokument. Wird gemessen, nicht geschätzt.
+Kosten: ein größeres Dokument. Gemessen: **61,7 KiB statt 21,5.**
+
+**Richtungswechsel am 2026-08-17, vom Betreiber ausgelöst.** Er will kein
+WebView2: „ich möchte nicht, dass eine externe Seite oder einfach der Browser mit
+einer HTML-Seite geöffnet wird." Das beruhte teils auf einem Missverständnis —
+WebView2 ist ein eingebettetes Steuerelement, kein Browserfenster —, aber der
+Einwand dahinter bleibt gültig: Web-Technik im Programm ist eine Abhängigkeit,
+die man nicht haben muss.
+
+Er brachte außerdem die tragende Idee: **vorgefertigte Diagramme, beim Abruf mit
+Daten gefüllt.** Genau das ist die Vorlage bereits; festgehalten sei die Grenze,
+an die „Vorlage" bei Diagrammen stößt: Platzhalter tragen nur Text, die
+**Geometrie** hängt an den Daten und muss gerechnet werden. Fest ist das Layout,
+gerechnet werden Säulenhöhe, Säulenzahl und Achsenende.
+
+**Neuer Weg: SVG als natives Bild.** `SvgImageSource` in einem `Image`; die
+Umschalter sind echte WinUI-Knöpfe daneben und tauschen das mitgelieferte Bild
+aus. Keine Web-Komponente, keine neue Abhängigkeit.
+
+**Drei Festlegungen, die daraus folgen:**
+
+1. **Leitzahl und Kacheln kommen mit ins Bild.** Würde WinUI sie als eigene
+   Elemente setzen, formatierte der Client wieder Daten — genau das hat Phase 4
+   entfernt. Ein SVG enthält alles; der Client zeigt nur an.
+2. **Kein `<style>`, keine CSS-Variablen, keine Media-Queries.** Was
+   `SvgImageSource` davon unterstützt, ist ungewiss; darauf zu bauen hieße raten.
+   Die Farben stehen als Attribute direkt an den Formen. Damit entfällt das
+   Messen, weil das Risiko entfällt.
+3. **Das Thema entscheidet der Server**, weil ein Bild nicht auf
+   `prefers-color-scheme` reagieren kann. Der Desktop schickt sein aktuelles
+   Thema mit der Frage. Das ist Darstellungskontext, keine Formatierung — die
+   Trennung aus Phase 4 bleibt gewahrt.
+
+**Was dabei verloren geht, und es sei benannt:** der Tooltip beim Überfahren
+einzelner Säulen, und die ausklappbare Tabelle. Ein Bild hat keine
+Trefferflächen. Die Werte bleiben über Achse, direktes Label am Spitzenwert und
+**die Textantwort** erreichbar — Letztere trägt sie ohnehin und bleibt neben der
+Grafik stehen, auch für Screenreader.
 
 ## Historie
 
