@@ -9356,3 +9356,10 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 - Prüfkette: 692 Tests grün, `npx tsc --noEmit` sauber, `npm run lint` mit einer
   bereits vorher bestehenden Warnung in `app/account/page.tsx`.
 - Status: ABGESCHLOSSEN.
+
+## Nachtrag 2026-08-17: Deploy der Bildkorrektur
+- Ausgerollt aus dem Hauptverzeichnis (dort liegt `.env.local`), Version
+  `c048497e-ee85-440b-ac3c-23247fc33552`. Vorher `git pull --ff-only` auf
+  `ffea718`, im Build geprüft, dass Supabase im Client-Bundle steht.
+- Verifikation in Produktion: `/admin` liefert jetzt
+  `img-src 'self' data: blob: …`. `/`, `/admin`, `/api/products` je 200.
