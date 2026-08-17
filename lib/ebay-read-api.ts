@@ -242,6 +242,28 @@ export function trafficWindow(now: Date = new Date()): { start: string; end: str
   return { start: trafficDateStamp(start), end: trafficDateStamp(end) };
 }
 
+/** Wie viele zurückliegende Tage je Lauf nachgeholt werden.
+ *
+ * **Nicht nur der gestrige.** Aufrufzahlen hinken bei eBay nach; ein einmal
+ * geholter Tag kann sich noch ändern. Drei Tage überschreiben sich gegenseitig
+ * und korrigieren die Nachzügler, ohne nennenswert mehr zu kosten.
+ */
+export const EBAY_TRAFFIC_NACHHOLTAGE = 3;
+
+/** Die Tage, für die Tageswerte geholt werden — jüngster zuerst.
+ *
+ * Der **laufende** Tag fehlt bewusst: Er ist bei eBay noch nicht ausgezählt, und
+ * ein Wert dafür wäre systematisch zu niedrig. Genau dieselbe Überlegung wie bei
+ * `trafficWindow`.
+ */
+export function trafficTage(now: Date = new Date(), tage = EBAY_TRAFFIC_NACHHOLTAGE): string[] {
+  const liste: string[] = [];
+  for (let versatz = 1; versatz <= tage; versatz += 1) {
+    liste.push(trafficDateStamp(new Date(now.getTime() - versatz * 24 * 60 * 60 * 1000)));
+  }
+  return liste;
+}
+
 async function analyticsToken(config: EbayConfig): Promise<string> {
   try {
     return await getEbayAccessToken(config, EBAY_ANALYTICS_READ_SCOPE);
@@ -262,13 +284,19 @@ async function analyticsToken(config: EbayConfig): Promise<string> {
 export async function fetchEbayListingTraffic(
   ebayItemIds: string[],
   now: Date = new Date(),
+  fenster?: { start: string; end: string },
 ): Promise<EbayTrafficReport> {
   const ids = [...new Set(ebayItemIds.map((value) => value.replace(/[^0-9]/gu, "")).filter(Boolean))];
   if (!ids.length) return { records: [], lastUpdatedAt: null };
 
   const config = getEbayConfig();
   const accessToken = await analyticsToken(config);
-  const { start, end } = trafficWindow(now);
+  // **Das Fenster ist einsetzbar, und darin liegt der ganze Zweck.** Mit
+  // `start === end` liefert derselbe Aufruf die Aufrufe **eines Tages** je
+  // Karte — die Grundlage für eine echte Historie. Die Differenz zweier
+  // rollierender 30-Tage-Stände wäre das ausdrücklich **nicht**: Am hinteren
+  // Ende fällt so viel heraus, wie vorn hinzukommt.
+  const { start, end } = fenster ?? trafficWindow(now);
 
   const records: EbayListingTrafficRecord[] = [];
   let lastUpdatedAt: string | null = null;

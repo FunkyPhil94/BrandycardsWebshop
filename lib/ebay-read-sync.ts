@@ -15,12 +15,13 @@
  *    vermerkt nur, dass er alt ist.
  */
 
-import { eq, inArray, ne, sql } from "drizzle-orm";
+import { desc, eq, inArray, ne, sql } from "drizzle-orm";
 import type { getDb } from "../db/index.ts";
 import {
   ebayBuyerOffers,
   ebayInboxMessages,
   ebayListingTraffic,
+  ebayListingTrafficDaily,
   ebayReadSyncs,
   ebaySales,
   ebayListings,
@@ -35,6 +36,7 @@ import {
   fetchEbayInboxMessages,
   fetchEbayListingTraffic,
   fetchEbaySales,
+  trafficTage,
   trafficWindow,
   type EbayBuyerOffer,
   type EbayInboxMessage,
@@ -174,7 +176,79 @@ async function syncTraffic(db: Db, now: Date, stamp: string): Promise<number> {
   // Räumt sowohl das vorige Zeitfenster ab als auch Angebote, für die eBay
   // diesmal nichts mehr meldet. Beides ist derselbe Fall: nicht mehr aktuell.
   await db.delete(ebayListingTraffic).where(ne(ebayListingTraffic.collectedAt, stamp));
+
+  // Die Historie hängt hier mit dran, aber mit eigenem Riegel: Sie darf nicht
+  // im 15-Minuten-Takt mitlaufen.
+  await sammleTagesaufrufe(db, listings.map((listing) => listing.ebayItemId), now, stamp);
   return rows.length;
+}
+
+/** Wie lange nach dem letzten Historienlauf nicht erneut geholt wird.
+ *
+ * Der Lesesync läuft alle 15 Minuten. Ein ungebremster Zusatzabruf wären rund
+ * 576 Aufrufe am Tag gegen ein geteiltes Kontingent — für Zahlen, die sich
+ * einmal täglich ändern. 20 Stunden lassen Raum für Verschiebungen im
+ * Tageslauf, ohne dass ein Tag ausfällt.
+ */
+export const EBAY_TRAFFIC_HISTORIE_ABSTAND_MS = 20 * 60 * 60_000;
+
+/** Ist ein Historienlauf fällig?
+ *
+ * Rein und ohne Datenbank, damit der Riegel ohne D1 prüfbar ist — dieselbe
+ * Bauweise wie `isEbayReadSyncDue`. Ein unlesbarer Zeitstempel gilt als „lange
+ * her": Lieber ein Abruf zu viel als eine Historie, die wegen eines kaputten
+ * Werts nie wieder wächst.
+ */
+export function istTagesaufrufLaufFaellig(
+  letzterLauf: string | null | undefined,
+  now: Date = new Date(),
+  abstandMs: number = EBAY_TRAFFIC_HISTORIE_ABSTAND_MS,
+): boolean {
+  if (!letzterLauf) return true;
+  const zeit = parseDbTimestamp(letzterLauf);
+  if (zeit === null) return true;
+  return now.getTime() - zeit >= abstandMs;
+}
+
+/** Holt die Aufrufe je Karte für die letzten Tage und schreibt sie fort.
+ *
+ * **Ein eigener Abruf je Tag**, weil eBay pro Anfrage nur eine Dimension
+ * zulässt: `dimension=LISTING` mit `start === end` liefert Tageswerte je Karte.
+ * Die Differenz zweier rollierender 30-Tage-Stände wäre keine Tageszahl — am
+ * hinteren Ende fällt so viel heraus, wie vorn hinzukommt.
+ *
+ * Nachgeholt werden mehrere Tage, weil eBays Zahlen nachhinken; der Schlüssel
+ * (Karte, Tag) macht das Wiederholen unschädlich.
+ */
+async function sammleTagesaufrufe(db: Db, ebayItemIds: string[], now: Date, stamp: string): Promise<void> {
+  if (!ebayItemIds.length) return;
+
+  const juengster = await db.select({ collectedAt: ebayListingTrafficDaily.collectedAt })
+    .from(ebayListingTrafficDaily)
+    .orderBy(desc(ebayListingTrafficDaily.collectedAt))
+    .limit(1);
+  if (!istTagesaufrufLaufFaellig(juengster[0]?.collectedAt, now)) return;
+
+  for (const tag of trafficTage(now)) {
+    const report = await fetchEbayListingTraffic(ebayItemIds, now, { start: tag, end: tag });
+    const rows = report.records.map((record) => ({
+      ebayItemId: record.ebayItemId,
+      day: tag,
+      viewsTotal: record.viewsTotal,
+      impressionsTotal: record.impressionsTotal,
+      collectedAt: stamp,
+    }));
+    if (!rows.length) continue;
+
+    await insertChunked(rows, 5, (chunk) => db.insert(ebayListingTrafficDaily).values(chunk).onConflictDoUpdate({
+      target: [ebayListingTrafficDaily.ebayItemId, ebayListingTrafficDaily.day],
+      set: {
+        viewsTotal: sql`excluded.views_total`,
+        impressionsTotal: sql`excluded.impressions_total`,
+        collectedAt: stamp,
+      },
+    }));
+  }
 }
 
 async function syncMessages(db: Db, now: Date, stamp: string): Promise<number> {

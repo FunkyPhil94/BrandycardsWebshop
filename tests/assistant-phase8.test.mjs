@@ -295,7 +295,11 @@ test("der Lesesync schreibt nichts, wenn der Abruf fehlschlaegt", async () => {
   }
   // Idempotenz: geschrieben wird mit einem Stempel, geloescht wird alles
   // andere. Zweimal derselbe eBay-Inhalt ergibt denselben Tabelleninhalt.
-  assert.equal(source.match(/onConflictDoUpdate/gu).length, 5, "vier Datentabellen und die Zustandstabelle");
+  // Seit dem 2026-08-17 kommt die Aufruf-Historie als fuenfte Datentabelle
+  // dazu; sie schreibt ueber (Karte, Tag) fort, damit das Nachholen derselben
+  // Tage korrigiert statt doppelt. Die Gleichheitspruefung bleibt: Eine
+  // ungeschuetzte Schreibstelle faellt weiterhin auf.
+  assert.equal(source.match(/onConflictDoUpdate/gu).length, 6, "fuenf Datentabellen und die Zustandstabelle");
   // **Die Verkaufstabelle wird als einzige nicht abgeraeumt.** Bei den drei
   // Quellen oben heisst "meldet eBay nicht mehr" auch "gilt nicht mehr"; ein
   // Verkauf dagegen ist eine Tatsache, die nur aus dem Abfragefenster rutscht.

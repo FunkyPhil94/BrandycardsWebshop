@@ -453,6 +453,32 @@ export const ebayListingTraffic = sqliteTable("ebay_listing_traffic", {
   index("ebay_listing_traffic_rank_idx").on(table.rangeEnd, table.viewsTotal),
 ]);
 
+/** Aufrufe je Karte und **Tag** — die Historie.
+ *
+ * **Warum neben `ebay_listing_traffic` und nicht statt ihr.** Jene Tabelle hält
+ * einen rollierenden 30-Tage-Stand und wird bei jedem Lauf überschrieben; sie
+ * beantwortet „was ist gerade gefragt". Diese hier sammelt Tageswerte und wird
+ * **nie geleert**: Ein Tageswert ist eine Tatsache, kein Momentanstand.
+ *
+ * **Warum die Differenz zweier Tagesstände nicht gereicht hätte.** eBay liefert
+ * ein rollierendes Fenster; zwischen zwei Abrufen fällt am hinteren Ende so viel
+ * heraus, wie vorn hinzukommt. Wer daraus Tageswerte rechnet, erfindet sie.
+ * Deshalb wird je Tag ein eigenes Ein-Tages-Fenster abgefragt.
+ */
+export const ebayListingTrafficDaily = sqliteTable("ebay_listing_traffic_daily", {
+  id: id(),
+  ebayItemId: text("ebay_item_id").notNull(),
+  /** Der Tag als `YYYYMMDD`, so wie eBay ihn im Filter erwartet. */
+  day: text("day").notNull(),
+  viewsTotal: integer("views_total"),
+  impressionsTotal: integer("impressions_total"),
+  collectedAt: timestamp("collected_at"),
+}, (table) => [
+  uniqueIndex("ebay_listing_traffic_daily_unique").on(table.ebayItemId, table.day),
+  // „Welche Karte in Zeitraum X" liest über den Tag und summiert je Karte.
+  index("ebay_listing_traffic_daily_day_idx").on(table.day, table.viewsTotal),
+]);
+
 /** Kopfdaten des eBay-Postfachs. **Ohne Nachrichtentext** — der wird bei eBay
  *  gar nicht erst angefordert, siehe `lib/ebay-read-api.ts`. */
 export const ebayInboxMessages = sqliteTable("ebay_inbox_messages", {
