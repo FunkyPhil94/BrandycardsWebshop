@@ -335,6 +335,7 @@ footer { background:var(--ink); color:#fff; padding:52px max(48px,calc((100vw - 
 .admin-submission span { color:var(--muted); font-size:11px; margin-top:4px; overflow-wrap:anywhere; }
 .admin-submission-images { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
 .admin-submission-images img { border:1px solid var(--line); height:56px; object-fit:cover; width:56px; }
+.admin-submission-thumb { background:none; border:0; cursor:zoom-in; display:block; line-height:0; padding:0; }
 .admin-submission-image-broken { align-items:center; border:1px dashed var(--line); color:var(--muted); display:flex; font-size:9px; height:56px; line-height:1.15; padding:4px; text-align:center; width:56px; }
 .admin-submission-meta { flex:0 0 auto; text-align:right; }
 .admin-submission-meta button { background:none; border:0; border-bottom:1px solid currentColor; color:var(--red); font-size:9px; font-weight:800; letter-spacing:.07em; margin-top:10px; padding:0 0 3px; text-transform:uppercase; }

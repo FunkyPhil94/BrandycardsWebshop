@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { authHeaders } from "./admin-auth";
 
 type Inquiry = {
@@ -68,6 +68,27 @@ export function RequestsPanel({ submissions, assetUrls, onSubmissionDeleted }: {
    * zugleich lagen fünf Testdateien ohne Bilddaten im Speicher. Steht der Grund
    * dabei, ist das beim nächsten Mal in einer Sekunde entschieden. */
   const [unlesbar, setUnlesbar] = useState<Record<string, true>>({});
+  /** Das Bild, das gerade groß angezeigt wird — oder keines.
+   *
+   * Dieselbe Lightbox wie auf der Kartendetailseite (`app/karten/[id]/page.tsx`,
+   * Klassen `.lightbox` / `.lightbox-close`). Bewusst keine zweite Lösung: Zwei
+   * Vergrößerungen für dasselbe Problem wären doppelte Pflege und liefen beim
+   * nächsten Umbau auseinander. */
+  const [grossbild, setGrossbild] = useState<{ url: string; alt: string } | null>(null);
+
+  // Schließen muss ohne Maus gehen — wie auf der Detailseite. Solange das Bild
+  // offen ist, steht der Hintergrund still; sonst scrollt die Liste darunter weg.
+  const grossbildSchliessen = useCallback(() => setGrossbild(null), []);
+  useEffect(() => {
+    if (!grossbild) return;
+    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") grossbildSchliessen(); };
+    document.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+  }, [grossbild, grossbildSchliessen]);
 
   useEffect(() => {
     let cancelled = false;
@@ -175,9 +196,15 @@ export function RequestsPanel({ submissions, assetUrls, onSubmissionDeleted }: {
                 {angebot.assets.map((asset) => {
                   if (!assetUrls[asset.id]) return <span key={asset.id} className="admin-submission-image-broken">Bild nicht abrufbar</span>;
                   if (unlesbar[asset.id]) return <span key={asset.id} className="admin-submission-image-broken">Datei ist kein Bild</span>;
-                  // eslint-disable-next-line @next/next/no-img-element
-                  return <img key={asset.id} src={assetUrls[asset.id]} alt={`Eingesendetes Bild zu ${angebot.title}`} loading="lazy"
-                    onError={() => setUnlesbar((current) => ({ ...current, [asset.id]: true }))} />;
+                  const alt = `Eingesendetes Bild zu ${angebot.title}`;
+                  // Eine Schaltfläche, kein anklickbares Bild: So ist die
+                  // Vergrößerung auch mit der Tastatur erreichbar.
+                  return <button key={asset.id} type="button" className="admin-submission-thumb"
+                    onClick={() => setGrossbild({ url: assetUrls[asset.id], alt })} aria-label={`${alt} vergrößern`}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={assetUrls[asset.id]} alt={alt} loading="lazy"
+                      onError={() => setUnlesbar((current) => ({ ...current, [asset.id]: true }))} />
+                  </button>;
                 })}
               </div>
               <div className="admin-request-actions">
@@ -191,5 +218,17 @@ export function RequestsPanel({ submissions, assetUrls, onSubmissionDeleted }: {
             </article>;
           })}
         </div>}
+
+    {grossbild && <div
+      className="lightbox"
+      role="dialog"
+      aria-modal="true"
+      aria-label={grossbild.alt}
+      onClick={grossbildSchliessen}
+    >
+      <button type="button" className="lightbox-close" onClick={grossbildSchliessen} aria-label="Schließen">✕</button>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={grossbild.url} alt={grossbild.alt} onClick={(event) => event.stopPropagation()} />
+    </div>}
   </section>;
 }

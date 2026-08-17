@@ -9443,3 +9443,14 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 - Vorher geprüft (echtes Foto vom Betreiber, `acf91b90…`): 2 767 422 Byte in R2,
   identisch zur Datenbank, echtes PNG mit Bilddaten, 1024×1536. Die Anzeige im
   Admin funktioniert damit — die Kette Formular → R2 → Admin ist bewiesen.
+
+## Auftrag 2026-08-17: Bilder im Admin vergrößern — abgeschlossen
+- Umgesetzt in `app/admin/requests-panel.tsx`: Klick oder Tastatur auf ein
+  Vorschaubild öffnet dieselbe Lightbox wie die Kartendetailseite. Schließen per
+  Klick daneben, per ✕ oder mit Escape; der Hintergrund scrollt solange nicht.
+- Kein neues Aussehen erfunden: Die Klassen `.lightbox` und `.lightbox-close`
+  gab es bereits. Neu ist nur `.admin-submission-thumb` — die Schaltfläche um
+  das Vorschaubild, damit es ohne Maus erreichbar ist.
+- Prüfkette: 692 Tests grün, `npx tsc --noEmit` sauber, Lint mit der bekannten
+  Vorwarnung in `app/account/page.tsx`.
+- Status: ABGESCHLOSSEN.
