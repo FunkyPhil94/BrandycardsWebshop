@@ -356,8 +356,19 @@ export type AnyAssistantToolResult = {
 
 export const MAX_ASSISTANT_QUESTION_LENGTH = 1_000;
 
+/** Für welche Oberfläche gezeichnet wird.
+ *
+ * **Darstellungskontext, keine Formatierung.** Ein Bild kann nicht auf
+ * `prefers-color-scheme` reagieren, also muss der Server wissen, gegen welche
+ * Fläche er zeichnet. Die Trennung aus Phase 4 bleibt gewahrt: Der Client sagt,
+ * wie es bei ihm aussieht — was daraus wird, entscheidet der Server.
+ */
+export const ASSISTANT_THEMEN = ["hell", "dunkel"] as const;
+export type AssistantThema = (typeof ASSISTANT_THEMEN)[number];
+
 export type AssistantQuestionInput = {
   message: string;
+  thema: AssistantThema;
 };
 
 /** Wie viele Lesarten desselben Diktats höchstens geprüft werden.
@@ -397,6 +408,19 @@ export type AssistantOrchestratorToolSummary = {
   freshness: string | null;
 };
 
+/** Ein fertig gezeichnetes Bild zu einer Antwort.
+ *
+ * Der Desktop **zeigt** es an und schaltet zwischen den Schlüsseln um; er
+ * zeichnet nichts und rechnet nichts. Genau deshalb liegen Titel und Hinweis
+ * hier mit dabei statt im Client zusammengesetzt zu werden.
+ */
+export type AssistantVisual = {
+  schluessel: string;
+  titel: string;
+  hinweis: string;
+  svg: string;
+};
+
 export type AssistantOrchestratorResponse = {
   status: "ANSWERED" | "PARTIAL" | "FAILED" | "UNSUPPORTED";
   readOnly: true;
@@ -404,6 +428,9 @@ export type AssistantOrchestratorResponse = {
   tools: AssistantOrchestratorToolSummary[];
   sources: AssistantDataSource[];
   freshness: string | null;
+  /** Leer, wenn zur Frage kein Bild gehört. Der Text steht **immer** und trägt
+   *  die Zahlen auch dann, wenn kein Bild dabei ist. */
+  visuals: AssistantVisual[];
 };
 
 export class AssistantRequestError extends Error {
@@ -476,7 +503,8 @@ export function parseAssistantQuestionInput(value: unknown): AssistantQuestionIn
   }
 
   const input = value as Record<string, unknown>;
-  const unexpected = Object.keys(input).filter((field) => field !== "message");
+  const erlaubt = new Set(["message", "thema"]);
+  const unexpected = Object.keys(input).filter((field) => !erlaubt.has(field));
   if (unexpected.length) {
     throw new AssistantRequestError(`Nicht unterstützte Felder: ${unexpected.join(", ")}.`);
   }
@@ -484,6 +512,16 @@ export function parseAssistantQuestionInput(value: unknown): AssistantQuestionIn
   if (typeof input.message !== "string") {
     throw new AssistantRequestError("message muss Text enthalten.");
   }
+
+  // Ein unbekanntes Thema wird **abgewiesen, nicht zurechtgebogen**: Es kommt
+  // aus dem Client, und ein stiller Rückfall auf „hell" ließe einen dunklen
+  // Desktop dauerhaft falsch gezeichnete Bilder anzeigen, ohne dass jemand
+  // erfährt, warum. Fehlt das Feld ganz, ist „hell" die Vorgabe — ältere
+  // Desktop-Fassungen schicken es nicht.
+  if (input.thema !== undefined && !(ASSISTANT_THEMEN as readonly string[]).includes(String(input.thema))) {
+    throw new AssistantRequestError(`thema muss ${ASSISTANT_THEMEN.join(" oder ")} sein.`);
+  }
+  const thema = (input.thema === undefined ? "hell" : input.thema) as AssistantThema;
 
   const message = input.message.trim();
   if (!message) {
@@ -493,7 +531,7 @@ export function parseAssistantQuestionInput(value: unknown): AssistantQuestionIn
     throw new AssistantRequestError(`Die Frage darf höchstens ${MAX_ASSISTANT_QUESTION_LENGTH} Zeichen lang sein.`);
   }
 
-  return { message };
+  return { message, thema };
 }
 
 export function parseAssistantCandidateProbeInput(value: unknown): AssistantCandidateProbeInput {

@@ -35,11 +35,16 @@ internal sealed class AssistantConversationService(HttpClient httpClient)
     /// mit zwei Millionen Zeichen kam ungebremst durch. Zwischen Desktop und
     /// Shop steht im Ernstfall ein fremder Zwischenknoten (Proxy, Portalseite,
     /// Fehlerseite des Betreibers); dessen Antwortlänge bestimmt sonst der
-    /// Absender. 64 KiB liegen weit über der längsten Antwort, die der
-    /// Orchestrator erzeugen kann (sechs Werkzeuge à höchstens zwanzig
-    /// Einträgen), und weit unter allem, was dem Fenster gefährlich wird.
+    /// Absender.
+    ///
+    /// **Am 2026-08-17 von 64 KiB auf 512 KiB erhöht, und die alte Begründung
+    /// stimmt nicht mehr.** Sie lautete „weit über der längsten Textantwort" —
+    /// seit Statistikfragen fertig gezeichnete SVG-Bilder mitbringen, ist die
+    /// Textantwort nicht mehr das Längste. Sechs Ansichten wogen gemessen
+    /// 43,9 KiB; mit weiteren Vorlagen wächst das. 512 KiB lassen Raum dafür und
+    /// bleiben weit unter allem, was dem Fenster gefährlich wird.
     /// </summary>
-    internal const int MaxResponseBytes = 64 * 1024;
+    internal const int MaxResponseBytes = 512 * 1024;
 
     /// <summary>
     /// Obergrenze für den angezeigten Antworttext. Deutlich über der längsten
@@ -60,7 +65,19 @@ internal sealed class AssistantConversationService(HttpClient httpClient)
     /// Vorher gab diese Klasse in beiden Fällen nur einen Text zurück. Die
     /// Kurzstatuszeile meldete deshalb auch bei HTTP 503 „Antwort empfangen".
     /// </summary>
-    internal readonly record struct AssistantAnswer(bool Succeeded, string Text);
+    internal readonly record struct AssistantAnswer(bool Succeeded, string Text, IReadOnlyList<AssistantVisual> Visuals)
+    {
+        public AssistantAnswer(bool succeeded, string text) : this(succeeded, text, []) { }
+    }
+
+    /// <summary>
+    /// Ein fertig gezeichnetes Bild zur Antwort.
+    ///
+    /// **Der Desktop zeichnet nichts.** Titel und Hinweis kommen mit, statt hier
+    /// zusammengesetzt zu werden — sonst formatierte der Client wieder Daten,
+    /// und genau das hat Phase 4 entfernt.
+    /// </summary>
+    internal readonly record struct AssistantVisual(string Schluessel, string Titel, string Hinweis, string Svg);
 
     /// <summary>
     /// Holt ein kurzlebiges Token für die Online-Spracherkennung.
@@ -210,13 +227,19 @@ internal sealed class AssistantConversationService(HttpClient httpClient)
         }
     }
 
-    public async Task<AssistantAnswer> AskAsync(string shopUrl, string deviceToken, string message, CancellationToken cancellationToken = default)
+    /// <param name="thema">
+    /// „hell" oder „dunkel" — für welche Fläche der Server zeichnet. Ein
+    /// serverseitig erzeugtes Bild kann nicht auf `prefers-color-scheme`
+    /// reagieren, deshalb muss die Oberfläche es sagen. Das ist
+    /// Darstellungskontext, keine Formatierung.
+    /// </param>
+    public async Task<AssistantAnswer> AskAsync(string shopUrl, string deviceToken, string message, string thema, CancellationToken cancellationToken = default)
     {
         using var request = new HttpRequestMessage(HttpMethod.Post, $"{shopUrl}/api/avatar/device/assistant")
         {
             // StringContent kennt die Byte-Länge vor dem Senden. Damit passiert
             // die Anfrage auch den serverseitigen Body-Guard ohne chunked Body.
-            Content = new StringContent(JsonSerializer.Serialize(new { message }), Encoding.UTF8, "application/json"),
+            Content = new StringContent(JsonSerializer.Serialize(new { message, thema }), Encoding.UTF8, "application/json"),
         };
         request.Headers.Authorization = new("Bearer", deviceToken);
 
@@ -262,7 +285,7 @@ internal sealed class AssistantConversationService(HttpClient httpClient)
             // HTML-Körper ist genau der Fall, den ein Portal oder ein
             // fehlkonfigurierter Proxy erzeugt.
             FieldKind.NotJson => new AssistantAnswer(false, "Der Shop hat auf diese Frage keine lesbare Antwort geschickt (kein gültiges JSON). Die Frage wurde nicht beantwortet; bitte erneut stellen."),
-            FieldKind.Found when !string.IsNullOrWhiteSpace(field.Value) => new AssistantAnswer(true, Shorten(field.Value!.Trim(), MaxAnswerCharacters)),
+            FieldKind.Found when !string.IsNullOrWhiteSpace(field.Value) => new AssistantAnswer(true, Shorten(field.Value!.Trim(), MaxAnswerCharacters), ReadVisuals(body.Text)),
             _ => new AssistantAnswer(false, "Der Assistant hat keine lesbare Textantwort geliefert."),
         };
     }
@@ -323,6 +346,50 @@ internal sealed class AssistantConversationService(HttpClient httpClient)
     /// fallen weg; die Zahl ist begrenzt, weil aus dieser Liste eine Grammatik
     /// gebaut wird und deren Größe die Erkennung bremst.
     /// </summary>
+    /// <summary>
+    /// Liest die mitgelieferten Bilder.
+    ///
+    /// **Fehlt das Feld, ist das kein Fehler**, sondern eine Antwort ohne Bild —
+    /// oder eine ältere Serverfassung. Ein unvollständiger Eintrag wird
+    /// übersprungen statt halb angezeigt.
+    /// </summary>
+    private static IReadOnlyList<AssistantVisual> ReadVisuals(string body)
+    {
+        var bilder = new List<AssistantVisual>();
+        try
+        {
+            using var document = JsonDocument.Parse(body);
+            if (document.RootElement.ValueKind != JsonValueKind.Object) return bilder;
+            if (!document.RootElement.TryGetProperty("visuals", out var liste) || liste.ValueKind != JsonValueKind.Array) return bilder;
+
+            foreach (var eintrag in liste.EnumerateArray())
+            {
+                if (bilder.Count == MaxVisuals) break;
+                if (eintrag.ValueKind != JsonValueKind.Object) continue;
+                var svg = Feld(eintrag, "svg");
+                var schluessel = Feld(eintrag, "schluessel");
+                if (string.IsNullOrWhiteSpace(svg) || string.IsNullOrWhiteSpace(schluessel)) continue;
+                // Nur SVG wird angezeigt. Alles andere waere ein Inhalt, den
+                // dieser Client nicht angefordert hat.
+                if (!svg.TrimStart().StartsWith("<svg", StringComparison.OrdinalIgnoreCase)) continue;
+                bilder.Add(new AssistantVisual(schluessel, Feld(eintrag, "titel") ?? schluessel, Feld(eintrag, "hinweis") ?? string.Empty, svg));
+            }
+        }
+        catch (JsonException)
+        {
+            return [];
+        }
+
+        return bilder;
+
+        static string? Feld(JsonElement element, string name) =>
+            element.TryGetProperty(name, out var wert) && wert.ValueKind == JsonValueKind.String ? wert.GetString() : null;
+    }
+
+    /// <summary>Obergrenze für die Zahl der Bilder je Antwort — heute sind es
+    ///  sechs; die Grenze hält eine unerwartet lange Liste vom Panel fern.</summary>
+    internal const int MaxVisuals = 24;
+
     private static IReadOnlyList<string> ReadStringArray(string body, string field)
     {
         var werte = new List<string>();

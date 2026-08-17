@@ -1,3 +1,4 @@
+using System.IO;
 using System.Net.Http.Json;
 using System.Security.Cryptography;
 using System.Text;
@@ -8,6 +9,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using VirtualKey = Windows.System.VirtualKey;
 
@@ -476,8 +478,13 @@ public sealed partial class MainPage : Page
             }
 
             var shopUrl = NormalizeShopUrl(_settings.ShopUrl);
-            var reply = await _assistantService.AskAsync(shopUrl, _settings.DeviceToken, message);
+            // Das Thema geht mit: Ein serverseitig gezeichnetes Bild kann nicht
+            // auf die Systemeinstellung reagieren, also muss die Oberfläche
+            // sagen, gegen welche Fläche gezeichnet wird.
+            var thema = ActualTheme == ElementTheme.Dark ? "dunkel" : "hell";
+            var reply = await _assistantService.AskAsync(shopUrl, _settings.DeviceToken, message, thema);
             AddConversationMessage("Assistant", reply.Text, isUser: false);
+            AddConversationVisuals(reply.Visuals);
             // Eine Absage des Shops ist keine empfangene Antwort. Vorher stand
             // auch bei HTTP 503 „Antwort empfangen" in der Statuszeile.
             AssistantStatusTextBlock.Text = reply.Succeeded ? "Antwort empfangen" : "Shop meldet einen Fehler";
@@ -603,6 +610,96 @@ public sealed partial class MainPage : Page
         ConversationPanel.Children.Add(messageBorder);
         ConversationScrollViewer.UpdateLayout();
         ConversationScrollViewer.ChangeView(null, ConversationScrollViewer.ScrollableHeight, null);
+    }
+
+    /// <summary>
+    /// Hängt die mitgelieferten Bilder unter die Antwort.
+    ///
+    /// **Der Desktop zeigt nur an.** Er zeichnet nichts, rechnet nichts und
+    /// setzt keine Beschriftung zusammen — Titel und Hinweis kommen fertig vom
+    /// Server. Umgeschaltet wird zwischen bereits gelieferten Bildern; das
+    /// kostet keine zweite Anfrage.
+    ///
+    /// **Der Text bleibt darüber stehen.** Ein Bild hat keine Trefferflächen und
+    /// ist für einen Screenreader stumm; die Zahlen stehen deshalb weiterhin in
+    /// der Textantwort.
+    /// </summary>
+    private void AddConversationVisuals(IReadOnlyList<AssistantConversationService.AssistantVisual> bilder)
+    {
+        if (bilder.Count == 0) return;
+
+        var bild = new Image
+        {
+            Stretch = Stretch.Uniform,
+            HorizontalAlignment = HorizontalAlignment.Left,
+            MaxWidth = 460,
+        };
+        var hinweis = new TextBlock
+        {
+            Style = (Style)Application.Current.Resources["ConversationBodyTextStyle"],
+            TextWrapping = TextWrapping.Wrap,
+        };
+
+        var inhalt = new StackPanel { Spacing = 6 };
+
+        // Umschalter nur, wenn es etwas umzuschalten gibt. Ein einzelner Knopf
+        // waere eine Bedienung, die nichts bewirkt.
+        if (bilder.Count > 1)
+        {
+            var leiste = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 };
+            AutomationProperties.SetName(leiste, "Ansicht der Statistik");
+            foreach (var eintrag in bilder)
+            {
+                var knopf = new Button { Content = eintrag.Titel, MinHeight = 30 };
+                AutomationProperties.SetName(knopf, $"Ansicht {eintrag.Titel}");
+                knopf.Click += (_, _) => Zeige(eintrag, leiste);
+                leiste.Children.Add(knopf);
+            }
+            inhalt.Children.Add(leiste);
+        }
+
+        inhalt.Children.Add(bild);
+        inhalt.Children.Add(hinweis);
+
+        var rahmen = new Border
+        {
+            Style = (Style)Application.Current.Resources["AssistantMessageBorderStyle"],
+            HorizontalAlignment = HorizontalAlignment.Left,
+            Child = inhalt,
+        };
+        ConversationPanel.Children.Add(rahmen);
+
+        Zeige(bilder[0], inhalt.Children.OfType<StackPanel>().FirstOrDefault());
+        ConversationScrollViewer.UpdateLayout();
+        ConversationScrollViewer.ChangeView(null, ConversationScrollViewer.ScrollableHeight, null);
+
+        async void Zeige(AssistantConversationService.AssistantVisual eintrag, StackPanel? leiste)
+        {
+            // **Auf das Laden wird gewartet, und das ist kein Formalismus.**
+            // Ohne `await` verlässt der Strom seinen Gültigkeitsbereich, bevor
+            // `SvgImageSource` ihn gelesen hat — das Bild bliebe dann leer, und
+            // zwar nur manchmal, je nachdem wer schneller ist.
+            //
+            // Das Bild kommt aus dem Speicher, nicht von einer Adresse: Es wird
+            // nichts geladen und nichts aufgelöst.
+            var quelle = new SvgImageSource();
+            using (var strom = new MemoryStream(Encoding.UTF8.GetBytes(eintrag.Svg)))
+            {
+                await quelle.SetSourceAsync(strom.AsRandomAccessStream());
+            }
+            bild.Source = quelle;
+            AutomationProperties.SetName(bild, $"{eintrag.Titel}. {eintrag.Hinweis}");
+            hinweis.Text = eintrag.Hinweis;
+
+            if (leiste is null) return;
+            foreach (var knopf in leiste.Children.OfType<Button>())
+            {
+                // Der gewählte Knopf wird auch angesagt, nicht nur eingefärbt.
+                var gewaehlt = (knopf.Content as string) == eintrag.Titel;
+                knopf.IsEnabled = !gewaehlt;
+                AutomationProperties.SetName(knopf, gewaehlt ? $"Ansicht {eintrag.Titel}, ausgewählt" : $"Ansicht {knopf.Content}");
+            }
+        }
     }
 
     private void SetAssistantBusy(bool isBusy)

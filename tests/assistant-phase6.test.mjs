@@ -32,7 +32,7 @@ test("der Antwortkörper wird gestreamt und begrenzt gelesen", async () => {
   const client = await read(CLIENT);
   assert.match(client, /HttpCompletionOption\.ResponseHeadersRead/u,
     "ohne ResponseHeadersRead puffert SendAsync den ganzen Körper vorab");
-  assert.match(client, /MaxResponseBytes = 64 \* 1024/u);
+  assert.match(client, /MaxResponseBytes = 512 \* 1024/u);
   assert.doesNotMatch(codeOnly(client), /ReadFromJsonAsync/u,
     "ReadFromJsonAsync liest unbegrenzt und wirft bei kaputtem JSON");
   // Ein Byte mehr als erlaubt: sonst ist „genau voll" nicht von „zu groß"
@@ -94,7 +94,7 @@ test("Steuerzeichen fliegen raus, Zeilenumbrüche bleiben", async () => {
 
 test("eine Absage des Shops ist keine empfangene Antwort", async () => {
   const [client, page] = await Promise.all([read(CLIENT), read(PAGE)]);
-  assert.match(client, /record struct AssistantAnswer\(bool Succeeded, string Text\)/u);
+  assert.match(client, /record struct AssistantAnswer\(bool Succeeded, string Text, IReadOnlyList<AssistantVisual> Visuals\)/u);
   assert.match(client, /Task<AssistantAnswer> AskAsync/u);
   // Vorher meldete die Statuszeile auch bei HTTP 503 „Antwort empfangen".
   assert.match(page, /reply\.Succeeded \? "Antwort empfangen" : "Shop meldet einen Fehler"/u);

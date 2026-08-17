@@ -227,8 +227,14 @@ test("jeder angezeigte Satz ist deutsch, begrenzt und einzeilig", async () => {
 test("der Antwortpfad aus Phase 6 bleibt unangetastet", async () => {
   // Die neue Übersetzung darf die dort gesetzten Grenzen nicht ersetzen: Der
   // Antworttext ist mehrzeilig und hat seine eigene, viel größere Grenze.
+  //
+  // **Die Körpergrenze wurde am 2026-08-17 auf 512 KiB erhöht**, weil
+  // Statistikantworten fertig gezeichnete SVG-Bilder mitbringen — sechs
+  // Ansichten wogen gemessen 43,9 KiB. Geprüft wird weiter, dass es **eine**
+  // Grenze gibt und der Körper gestreamt gelesen wird; nur der Wert hat sich
+  // geändert, nicht die Zusicherung.
   const client = await read(CLIENT);
-  assert.match(client, /MaxResponseBytes = 64 \* 1024/u);
+  assert.match(client, /MaxResponseBytes = 512 \* 1024/u);
   assert.match(client, /MaxAnswerCharacters = 20_000/u);
   assert.match(client, /HttpCompletionOption\.ResponseHeadersRead/u);
   assert.doesNotMatch(client, /DesktopErrorMessages/u,

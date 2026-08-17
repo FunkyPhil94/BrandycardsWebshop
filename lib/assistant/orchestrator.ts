@@ -4,7 +4,9 @@ import type {
   AssistantOrchestratorResponse,
   AssistantQuestionInput,
   AssistantToolInput,
+  AssistantVisual,
 } from "./contracts.ts";
+import { rendereStatistikBilder, type StatistikAnsicht } from "./statistics-visual.ts";
 import type { AssistantPlanner } from "./planner.ts";
 import { type UnansweredQuestionRecorder, zeichneUnbeantworteteFrageAuf } from "./question-log.ts";
 import { failedToolText, formatAssistantToolResult, toolSummary } from "./response-formatter.ts";
@@ -23,6 +25,22 @@ function newestFreshness(values: Array<string | null>): string | null {
 
 function uniqueSources(values: AssistantDataSource[][]): AssistantDataSource[] {
   return [...new Set(values.flat())];
+}
+
+/** Sucht in den Ergebnissen die Daten, aus denen sich ein Bild zeichnen lässt.
+ *
+ * **Nur `AVAILABLE` zählt.** Ein `UNAVAILABLE`-Ergebnis trägt `data: null`; ein
+ * Bild daraus wäre eine leere Fläche, die aussieht wie „nichts verkauft" statt
+ * „nicht nachgesehen". Dieselbe Linie wie überall hier.
+ */
+function statistikAnsicht(ergebnisse: AnyAssistantToolResult[]): StatistikAnsicht {
+  const ansicht: StatistikAnsicht = {};
+  for (const ergebnis of ergebnisse) {
+    if (ergebnis.status !== "AVAILABLE") continue;
+    if (ergebnis.tool === "sales_overview") ansicht.verkauf = ergebnis.data;
+    if (ergebnis.tool === "assistant_statistics") ansicht.kennzahlen = ergebnis.data;
+  }
+  return ansicht;
 }
 
 export class AssistantOrchestrator {
@@ -66,13 +84,14 @@ export class AssistantOrchestrator {
           tools: [],
           sources: [],
           freshness: null,
+          visuals: [],
         };
       }
 
       const answer = plan.reason === "MODEL_NOT_CONFIGURED"
         ? "Diese Formulierung konnte keinem lokalen Lesewerkzeug sicher zugeordnet werden. Der freie Modell-Planer ist serverseitig noch nicht konfiguriert. Frage zum Beispiel nach Verkäufen, Einstellungen, Bestellungen, Preisvorschlägen, Lagerbestand, Shop-Anfragen, eBay-Daten oder Statistiken."
         : "Dazu gibt es kein passendes registriertes Read-only-Werkzeug. Ich kann Fragen zu Verkäufen, Einstellungen, Bestellungen, Preisvorschlägen, Lagerbestand, Shop-Anfragen, eBay-Daten und Statistiken beantworten.";
-      return { status: "UNSUPPORTED", readOnly: true, answer, tools: [], sources: [], freshness: null };
+      return { status: "UNSUPPORTED", readOnly: true, answer, tools: [], sources: [], freshness: null, visuals: [] };
     }
 
     const executions: ToolExecution[] = await Promise.all(plan.tools.map(async (tool): Promise<ToolExecution> => {
@@ -92,10 +111,19 @@ export class AssistantOrchestrator {
     const sources = uniqueSources(fulfilled.map((item) => item.result.sources));
     const freshness = newestFreshness(fulfilled.map((item) => item.result.status === "AVAILABLE" ? item.result.freshness : null));
 
+    // **Das Bild tritt neben den Text, nie an seine Stelle.** Der Text trägt die
+    // Zahlen auch dann, wenn kein Bild entsteht -- und für einen Screenreader ist
+    // er die einzige Quelle, weil ein Bild keine Trefferflächen hat.
+    const visuals: AssistantVisual[] = rendereStatistikBilder(
+      statistikAnsicht(fulfilled.map((item) => item.result)),
+      input.thema === "dunkel" ? "dunkel" : "hell",
+    ).map((bild) => ({ schluessel: bild.schluessel, titel: bild.titel, hinweis: bild.hinweis, svg: bild.svg }));
+
     return {
       status: failed.length === 0 ? "ANSWERED" : fulfilled.length ? "PARTIAL" : "FAILED",
       readOnly: true,
       answer,
+      visuals,
       tools: executions.map((item) => "result" in item
         ? toolSummary(item.result)
         : { tool: item.input.tool, status: "ERROR", sources: [], freshness: null }),

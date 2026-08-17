@@ -19,7 +19,15 @@ const { AssistantOrchestrator } = await import("../lib/assistant/orchestrator.ts
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 
 test("freie Assistant-Fragen akzeptieren ausschließlich ein begrenztes message-Feld", () => {
-  assert.deepEqual(parseAssistantQuestionInput({ message: "  Welche Bestellungen sind neu?  " }), { message: "Welche Bestellungen sind neu?" });
+  // Seit dem 2026-08-17 kommt das Darstellungsthema mit, weil ein serverseitig
+  // gezeichnetes Bild nicht auf `prefers-color-scheme` reagieren kann. Fehlt es,
+  // gilt „hell" — ältere Desktop-Fassungen schicken es nicht.
+  assert.deepEqual(parseAssistantQuestionInput({ message: "  Welche Bestellungen sind neu?  " }), { message: "Welche Bestellungen sind neu?", thema: "hell" });
+  assert.deepEqual(parseAssistantQuestionInput({ message: "Bestellungen", thema: "dunkel" }), { message: "Bestellungen", thema: "dunkel" });
+  // Ein unbekanntes Thema wird abgewiesen, nicht zurechtgebogen: Ein stiller
+  // Rückfall auf „hell" ließe einen dunklen Desktop dauerhaft falsch gezeichnete
+  // Bilder zeigen, ohne dass jemand erfährt, warum.
+  assert.throws(() => parseAssistantQuestionInput({ message: "Bestellungen", thema: "bunt" }), /thema muss hell oder dunkel sein/u);
   assert.throws(() => parseAssistantQuestionInput({ tool: "latest_sale" }), AssistantRequestError);
   assert.throws(() => parseAssistantQuestionInput({ message: "Bestellungen", sql: "SELECT * FROM orders" }), /Nicht unterstützte Felder/u);
   assert.throws(() => parseAssistantQuestionInput({ message: " " }), /nicht leer/u);
@@ -230,7 +238,11 @@ test("Text und Diktat enden im Desktop-Client am selben Orchestrator-Aufruf", as
     read("avatar/BrandyCards.Desktop/AssistantConversationService.cs"),
     read("avatar/BrandyCards.Desktop/MainPage.xaml.cs"),
   ]);
-  assert.match(service, /new StringContent\(JsonSerializer\.Serialize\(new \{ message \}\), Encoding\.UTF8, "application\/json"\)/u);
+  // Seit dem 2026-08-17 geht das Darstellungsthema mit: Ein serverseitig
+  // gezeichnetes Bild kann nicht auf `prefers-color-scheme` reagieren. Geprüft
+  // bleibt das Wesentliche -- ein Körper mit bekannter Länge, und die Frage
+  // selbst als einziges fachliches Feld.
+  assert.match(service, /new StringContent\(JsonSerializer\.Serialize\(new \{ message, thema \}\), Encoding\.UTF8, "application\/json"\)/u);
   assert.doesNotMatch(service, /ResolveTool|FormatLatestSale|FormatStatistics/u);
   assert.ok((page.match(/await SendAssistantMessageAsync\(message\)/gu) ?? []).length >= 2);
   assert.match(page, /transcription\.Text![\s\S]*SendAssistantMessageAsync\(message\)/u);
