@@ -59,6 +59,15 @@ export function RequestsPanel({ submissions, assetUrls, onSubmissionDeleted }: {
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [stati, setStati] = useState<Record<string, string>>({});
+  /** Bilder, die der Browser nicht darstellen konnte.
+   *
+   * Das Ersatzsymbol des Browsers sagt nicht, *warum* nichts zu sehen ist — es
+   * sieht bei einer blockierten Adresse genauso aus wie bei einer Datei, die
+   * gar kein Bild enthält. Am 2026-08-17 hat genau diese Ununterscheidbarkeit
+   * eine lange Fehlersuche gekostet: Die CSP verbot `blob:` (behoben), und
+   * zugleich lagen fünf Testdateien ohne Bilddaten im Speicher. Steht der Grund
+   * dabei, ist das beim nächsten Mal in einer Sekunde entschieden. */
+  const [unlesbar, setUnlesbar] = useState<Record<string, true>>({});
 
   useEffect(() => {
     let cancelled = false;
@@ -163,8 +172,13 @@ export function RequestsPanel({ submissions, assetUrls, onSubmissionDeleted }: {
               <p className="admin-request-from">{angebot.email}{angebot.name ? ` · ${angebot.name}` : ""} · {angebot.assets.length} Bild(er) · <strong>{preis(angebot.requestedAmountCents)}</strong></p>
               {angebot.text && <p className="admin-request-text">{angebot.text}</p>}
               <div className="admin-submission-images">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                {angebot.assets.map((asset) => assetUrls[asset.id] ? <img key={asset.id} src={assetUrls[asset.id]} alt={`Eingesendetes Bild zu ${angebot.title}`} loading="lazy" /> : null)}
+                {angebot.assets.map((asset) => {
+                  if (!assetUrls[asset.id]) return <span key={asset.id} className="admin-submission-image-broken">Bild nicht abrufbar</span>;
+                  if (unlesbar[asset.id]) return <span key={asset.id} className="admin-submission-image-broken">Datei ist kein Bild</span>;
+                  // eslint-disable-next-line @next/next/no-img-element
+                  return <img key={asset.id} src={assetUrls[asset.id]} alt={`Eingesendetes Bild zu ${angebot.title}`} loading="lazy"
+                    onError={() => setUnlesbar((current) => ({ ...current, [asset.id]: true }))} />;
+                })}
               </div>
               <div className="admin-request-actions">
                 <select value={status} disabled={busy === angebot.id} onChange={(event) => void angebotSetzen(angebot.id, event.target.value)}>

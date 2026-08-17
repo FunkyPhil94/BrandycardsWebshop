@@ -3504,3 +3504,38 @@ hinaustragen), bleibt unverändert versperrt.
 Die Regel steht ab jetzt in `tests/hardening.test.mjs`, mit dem Fehlerbild als
 Begründung daneben. Ohne den Test sähe `blob:` beim nächsten Aufräumen der CSP
 wie überflüssiger Ballast aus — und `/admin` wäre wieder blind.
+
+## 2026-08-17 — Warum trotz reparierter CSP kein Bild kam
+
+Nach der `blob:`-Korrektur blieb das Ersatzsymbol stehen. Der zweite Grund lag
+nicht im Code, sondern im Datenbestand: **Keine der fünf eingesendeten Dateien
+enthält ein Bild.** Aus R2 geholt und aufgemacht:
+
+| Angebot | Datei | Aufbau |
+|---|---|---|
+| Nachweis 2MB | 2 000 022 B | JFIF-Kopf (20 B), dann Zufallsbytes, am Ende `ffd9` |
+| Grenztest900 | 921 622 B | dito |
+| Grenztest500 | 512 022 B | dito |
+| Grenztest200 | 204 822 B | dito |
+| (PNG) | 14 B | PNG-Signatur, dahinter das Wort `KAPUTT` |
+
+Den vier JPEG-Dateien fehlen `SOF0` und `SOS` — also Bildgröße und Bilddaten.
+Was bleibt, ist ein Umschlag ohne Inhalt. Die Größen verraten die Herkunft:
+200/500/900 KB und 2 MB, jeweils plus 22 Byte Kopf. Das sind Prüfdateien aus
+einem Test der Upload-Grenzen, keine Fotos.
+
+**Warum sie überhaupt angenommen wurden:** Der Upload prüft die ersten Bytes —
+und die stimmen. Ein gültiger Dateikopf ist aber kein Beweis für ein
+decodierbares Bild. Das ist eine bewusste Grenze der Prüfung und kein Fehler:
+Vollständiges Decodieren im Worker kostet Rechenzeit und Speicher an einer
+Stelle, die jeder Fremde ohne Anmeldung erreicht.
+
+**Was daraus folgt, unabhängig von diesen Testdateien:** Das Ersatzsymbol des
+Browsers sieht bei einer blockierten Adresse genauso aus wie bei einer Datei
+ohne Bilddaten. Diese Ununterscheidbarkeit hat die Suche in die falsche Richtung
+gelenkt — erst zur CSP, die tatsächlich kaputt war, aber eben nur die halbe
+Geschichte. `app/admin/requests-panel.tsx` schreibt jetzt hin, was los ist:
+„Bild nicht abrufbar" (der Abruf scheiterte) oder „Datei ist kein Bild" (der
+Browser konnte nichts daraus machen). Dieselbe Überlegung wie bei „keine
+Preisvorstellung": Eine leere Stelle ist von einem Anzeigefehler nicht zu
+unterscheiden.

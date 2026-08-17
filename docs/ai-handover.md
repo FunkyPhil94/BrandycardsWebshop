@@ -9363,3 +9363,21 @@ selbst; die Schrittfolge samt Nachprüfung steht in
   `ffea718`, im Build geprüft, dass Supabase im Client-Bundle steht.
 - Verifikation in Produktion: `/admin` liefert jetzt
   `img-src 'self' data: blob: …`. `/`, `/admin`, `/api/products` je 200.
+
+## Auftrag 2026-08-17: Bilder im Admin, zweiter Durchgang
+- Anlass: Nach der CSP-Korrektur meldete der Nutzer weiterhin das Ersatzsymbol.
+- Zweite, davon unabhängige Ursache — aus R2 geholt und geprüft: **Keine der
+  fünf Dateien enthält Bilddaten.** Vier JPEGs sind JFIF-Kopf plus Zufallsbytes
+  ohne `SOF0`/`SOS` (204 822 / 512 022 / 921 622 / 2 000 022 Byte — Prüfdateien
+  aus einem Test der Upload-Grenzen), die fünfte ist eine 14-Byte-PNG mit dem
+  Wort `KAPUTT`. Der Browser kann daraus nichts anzeigen.
+- Die CSP-Korrektur bleibt richtig und nötig: Ein echtes Foto wäre ebenso
+  unsichtbar geblieben. In Produktion nachgewiesen, dass `blob:` jetzt lädt.
+- Umsetzung: `app/admin/requests-panel.tsx` zeigt statt des stummen
+  Ersatzsymbols den Grund an („Bild nicht abrufbar" / „Datei ist kein Bild"),
+  dazu ein Kasten in `app/globals.css`.
+- Offen und beim Betreiber: Die fünf Testangebote stehen weiter in Produktion.
+  Löschen ist ein schreibender Eingriff und wurde **nicht** vorgenommen.
+- Prüfkette: 692 Tests grün, `npx tsc --noEmit` sauber, Lint mit der bekannten
+  Vorwarnung in `app/account/page.tsx`.
+- Status: ABGESCHLOSSEN.
