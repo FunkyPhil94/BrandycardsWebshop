@@ -9071,3 +9071,33 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 - Abnahme: `npm test`, `npx tsc --noEmit`, `npm run lint`, Migration eingespielt,
   nach einem Lauf in Produktion nachgezählt, wie viele Angebote eine Kategorie
   bekommen haben.
+
+## Auftrag 2026-08-17: Historie mitschreiben statt wegwerfen — abgeschlossen
+- Ergebnis: Beide beauftragten Änderungen laufen in Produktion.
+  - **Postenpreis ohne Versand** (`item_price_cents` aus `lineItemCost`): 155 von
+    158 Verkäufen gefüllt — der Verkaufs-Sync sammelt das ganze Fenster neu ein
+    und hat damit rückwirkend nachgetragen. Die drei Lücken sind alle vom
+    19.05., dem ersten Verkaufstag, außerhalb dessen was eBay noch herausgibt.
+    Über die 155 Verkäufe stecken **618,77 € Versand** in den Beträgen, mit
+    denen bisher gerechnet wurde. `amount_cents` blieb unverändert.
+  - **Momentaufnahme des Angebots**: 52 Verkäufe tragen ihren Angebotspreis —
+    exakt die noch zuordenbaren. Die 106 verwaisten bleiben leer; rückwirkend
+    ist da nichts zu retten. Ab jetzt geht keiner mehr verloren.
+  - **Preisprotokoll**: Tabelle steht, 0 Zeilen — korrekt, sie schreibt nur bei
+    echter Änderung.
+- **Was nicht funktioniert hat:** Kategorie und Zustand bleiben leer. Über
+  **sieben Messungen und vier erfolgreiche Sync-Läufe** (17:26–17:34) durchgehend
+  0 von 535. `GetMyeBaySelling` liefert in der Aktivliste einen beschnittenen
+  Datensatz ohne `PrimaryCategory` und `ConditionID`. Die Auslesung bleibt im
+  Code — sie greift, falls eBay die Felder je mitschickt, und kostet nichts.
+  Die Entscheidung über einen anderen Weg (`GetItem` je Angebot, ~535 Aufrufe
+  gegen das geteilte Tageskontingent, oder Ableitung aus dem Titel) liegt beim
+  Betreiber und steht im Arbeitsvorrat.
+- Vorbestehender Nebenbefund: Der Lauf um 17:21 scheiterte mit
+  „eBay-Aktivliste unvollständig: 200 von 276 Angeboten geladen." Nicht durch
+  diese Änderung verursacht — dasselbe am 2026-08-13. Die Sicherung greift
+  richtig und bricht ab, statt 76 Angebote als verschwunden zu löschen.
+- Prüfung: 652 Tests grün, `npx tsc --noEmit` sauber, Lint bei der einen
+  bekannten Vorwarnung. Migration `0016` eingespielt (6 Abfragen, 8 Zeilen
+  geschrieben). Deploy `032fced5`; `/`, `/admin`, `/api/products` mit 200.
+- Status: ABGESCHLOSSEN.

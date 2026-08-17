@@ -11,6 +11,36 @@ dabei, damit niemand den Gesprächsverlauf braucht.
 
 ---
 
+## Kategorie und Zustand: eBay liefert sie nicht, Entscheidung offen
+
+**Befund vom 2026-08-17, gemessen statt vermutet.** Für die Frage „welche *Art*
+Karte läuft besser" braucht es Kategorie und Zustand. Die Spalten
+`ebay_listings.category_id` und `condition_id` gab es längst und waren für alle
+535 Angebote leer. Die Auslesung wurde gebaut und über **sieben Messungen und
+vier erfolgreiche Sync-Läufe** nachgeprüft: weiterhin 0 von 535.
+`GetMyeBaySelling` liefert in der Aktivliste einen beschnittenen `ItemType` ohne
+`PrimaryCategory` und `ConditionID`.
+
+Der Auslesecode bleibt im Repository (`lib/ebay-client.ts`, `digitsOrNull`). Er
+greift sofort, falls eBay die Felder je mitschickt, und kostet nichts.
+
+**Die offene Entscheidung — sie gehört dem Betreiber, nicht der KI**, weil beide
+Wege etwas kosten:
+
+- **`GetItem` je Angebot.** Liefert beides zuverlässig. Einmalig ~535 Aufrufe,
+  danach nur für neue Angebote. Kostet aus demselben Tageskontingent von 5 000,
+  aus dem sich auch Kasse, Beschreibungsabfrage und Rücknahme bedienen — siehe
+  `tests/ebay-stock-check.test.mjs`. Muss gedrosselt laufen, nicht in einem Rutsch.
+- **Aus dem Titel ableiten.** Kostet keinen Aufruf, schätzt aber statt zu wissen.
+  Für eine Auswertung, auf die hin Preise geändert werden, ist das schwächer,
+  als es aussieht.
+
+**Abnahme:** Entweder tragen die Angebote eine belastbare Kategorie, oder es
+steht schriftlich fest, dass darauf verzichtet wird — und die Auswertungen sagen
+dann ausdrücklich, dass sie nach Kategorie nicht aufschlüsseln können.
+
+---
+
 ## Der eBay-Webhook meldet nur einen Bruchteil der Verkäufe
 
 **Befund vom 2026-08-17**, aufgefallen beim Beheben von „letzter Verkauf zeigt
