@@ -37,9 +37,62 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-<!-- Fuer den naechsten Auftrag freihalten. -->
+### 2026-08-17 - Freie Formulierungen: den Modell-Planer betriebsfertig machen
 
-Keine laufenden Aufträge.
+- Stand: **LÄUFT.**
+- Auftrag: Punkt 1 der offenen Assistant-Themen. Produktiv läuft nur der
+  Regelplaner; unbekannte Formulierungen enden in `UNSUPPORTED`. Seit die
+  Spracherkennung fehlerfrei arbeitet, ist **das** die Obergrenze des
+  Assistenten.
+- Der Code steht seit Phase 4 und ist getestet. Es fehlt `OPENAI_API_KEY`, und
+  das kann nur der Betreiber setzen.
+
+**Vorflugprüfung gegen die heutige API, statt dem Code zu glauben.** Beides
+bestätigt, nichts zu ändern:
+
+- `gpt-5.6-luna` ist ein gültiges Modell, unterstützt `reasoning.effort` und
+  Funktionsaufrufe über die Responses-API. Kosten 0,20 $ / 1,20 $ je Million
+  Token — für einen Planer, der nur Werkzeugnamen wählt, praktisch nichts. Die
+  kostenoptimierte Variante ist hier die sachlich richtige Wahl.
+- Die Responses-API erwartet **flache** Tool-Definitionen ohne verschachteltes
+  `function`-Feld, und Ausgaben als `function_call` mit `name`/`arguments` —
+  genau die Form, die `planner.ts` sendet und `parseOpenAIPlannedTools` liest.
+
+**Die Lücke, die dabei auffiel — und sie ist ein Rückschritt in Wartestellung.**
+`HybridAssistantPlanner` ruft `modelPlanner.plan()` **ohne** Auffangnetz. Ein
+falscher Schlüssel, ein erschöpftes Guthaben oder ein Zeitablauf wirft damit
+durch den Orchestrator bis in die Route und endet als generisches
+503 „Der freie Assistant ist gerade nicht verfügbar."
+
+Heute, **ohne** Schlüssel, bekommt der Nutzer bei einer unbekannten Frage eine
+hilfreiche Auskunft. Mit einem **falsch gesetzten** Schlüssel bekäme er weniger
+als vorher — und der Betreiber keinen Hinweis, ob Schlüssel, Guthaben oder
+Modellname schuld ist. Dieselbe Falle wie beim Azure-Token, nur umgekehrt: Hier
+verschlechtert die Aktivierung das Verhalten, wenn sie schiefgeht.
+
+**Bauweise.**
+
+- Neuer Grund `MODEL_FAILED` neben `MODEL_NOT_CONFIGURED`. Ein Fehlschlag des
+  Modells fällt damit auf dieselbe ehrliche `UNSUPPORTED`-Antwort zurück, statt
+  die ganze Anfrage zu versenken.
+- **Bekannte Fragen bleiben unberührt** — der Regelplaner läuft zuerst und
+  kommt bei ihnen gar nicht bis zum Modell. Das gilt schon heute und wird
+  durch einen Test festgehalten.
+- Der Grund wird serverseitig protokolliert, damit der Betreiber Schlüssel,
+  Guthaben und Modellname unterscheiden kann. In der Antwort an den Desktop
+  steht **kein** Anbieterdetail und kein Statuscode.
+
+**Zu dokumentieren, weil es eine Entscheidung ist:** Mit gesetztem Schlüssel geht
+der **Fragetext** an OpenAI, sobald der Regelplaner nicht greift. Antworttexte
+und Geschäftsdaten nicht — die entstehen weiter deterministisch aus den
+Werkzeug-DTOs, und das Modell wählt ausschließlich Werkzeugnamen. Nach der
+Freigabe für Azure-Audio ist das die kleinere Erweiterung, gehört aber benannt.
+
+**Abnahme:** `npm test`, `npx tsc --noEmit`, `npm run lint`, Deploy. Der
+Durchstich mit echtem Schlüssel bleibt beim Betreiber.
+
+**Nicht Teil des Auftrags:** Ein Schlüssel wird nicht angelegt und nicht
+gesetzt. Keine Produktionsdaten, keine Migration.
 
 ## Historie
 
