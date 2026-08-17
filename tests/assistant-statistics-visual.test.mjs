@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-const { baueTagesreihe, MAX_TAGES_SAEULEN } = await import("../lib/assistant/statistics-series.ts");
+const { baueTagesreihe } = await import("../lib/assistant/statistics-series.ts");
 const { kuerzeAufWortgrenze, rendereStatistikBilder } = await import("../lib/assistant/statistics-visual.ts");
 
 const JETZT = new Date("2026-08-17T12:00:00.000Z");
