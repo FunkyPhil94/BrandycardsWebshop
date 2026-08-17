@@ -37,9 +37,16 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
+<!-- Fuer den naechsten Auftrag freihalten. -->
+
+Keine laufenden Aufträge.
+
+## Historie
+
 ### 2026-08-17 - Variante 3: Azure Speech statt SAPI
 
-- Stand: **LÄUFT.**
+- Stand: **ABGESCHLOSSEN**, gebaut, geprüft, Serverseite ausgerollt.
+  **Wartet auf zwei Secrets des Betreibers.**
 - **Der Befund, der alles entschieden hat:** Der Betreiber hat auf Vorschlag
   Windows-Diktat (Win+H) im selben Textfeld getestet — „lief erstaunlich gut".
   Damit sind Mikrofon, Aufnahmeweg und Aussprache als Ursache ausgeschlossen;
@@ -99,7 +106,55 @@ Der gesprochene Nachweis am Gerät bleibt Sache des Betreibers.
 **Nicht Teil des Auftrags:** Produktionsdaten, Remote-Migrationen,
 eBay-Schreibvorgänge. `NativePetOverlay.cs` bleibt unberührt.
 
-## Historie
+**Ergebnis: gebaut, alle vier Prüfungen grün, Serverseite ausgerollt.**
+
+| Prüfung | Ergebnis |
+|---|---|
+| `npm test` | 546/546 |
+| `npx tsc --noEmit` | fehlerfrei |
+| `npm run lint` | 0 Fehler (bekannte Hook-Warnung bleibt) |
+| WinUI x64 Debug | 0 Warnungen, 0 Fehler |
+
+Worker-Version **`4c2820c3-d302-4266-ac9b-97e8179a5c05`**. Die Region ist
+**`swedencentral`** — West Europe hatte kein F0-Kontingent frei. Sie steht
+nirgends im Code, sondern kommt aus dem Secret.
+
+`POST /api/avatar/device/assistant/speech-token` antwortet produktiv mit 401
+ohne Gerätetoken, `GET` mit 405. Elf neue Tests in
+`tests/assistant-speech-token.test.mjs`.
+
+**Der Wächtertest aus Phase 8 ist zum zweiten Mal nachgezogen**, wieder als
+Gleichheitsprüfung: drei ausgehende Pfade statt zwei. Ein vierter fällt auf.
+
+**Zwischenfall beim Bauen, harmlos:** Der WinUI-Build scheiterte zunächst, weil
+die zum Test gestartete App ihre eigene `.exe` sperrte (PID 6516, aus genau
+diesem Worktree). Sie wurde beendet — sie hätte für die Änderung ohnehin neu
+starten müssen. Danach lief der Build durch.
+
+**Was der Betreiber tun muss, damit es wirkt:**
+
+```
+npx wrangler secret put AZURE_SPEECH_KEY      # aus der Speech-Ressource
+npx wrangler secret put AZURE_SPEECH_REGION   # swedencentral
+```
+
+Secrets wirken sofort, ohne erneuten Deploy. Danach die Desktop-App neu starten.
+
+**Was offen bleibt:**
+
+1. **Der gesprochene Nachweis.** Bis die Secrets liegen, gibt die Route 503 mit
+   dem fehlenden Secret-Namen zurück, der Desktop bekommt kein Token und
+   erkennt lokal weiter — sichtbar an der Statuszeile „lokale Erkennung,
+   eingeschränkte Genauigkeit". Das ist der Zustand von vorher, nicht ein
+   Fehler.
+2. **Die Azure-Testversion läuft in 30 Tagen ab.** Ohne Umstellung auf
+   nutzungsbasierte Bezahlung wird das Abonnement deaktiviert, und die
+   Spracherkennung hört still auf zu antworten. Steht auch in `.env.example`,
+   damit es nicht nur hier steht. F0 selbst bleibt kostenlos, 5 Audiostunden
+   im Monat.
+3. **Die lokale SAPI-Erkennung bleibt im Code.** Nicht aus Anhänglichkeit,
+   sondern weil ein Knopf, der ohne Netz gar nichts tut, schlechter ist als
+   einer, der schlecht erkennt.
 
 ### 2026-08-16 - Variante 2: Domänengrammatik neben das Diktat
 

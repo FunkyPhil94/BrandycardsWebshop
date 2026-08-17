@@ -1,5 +1,74 @@
 # BrandyCards Agentenprotokoll
 
+## 2026-08-17 - Variante 3: Der Test, der 30 Sekunden kostete und drei Wege sparte
+
+Zwei Ausbaustufen hatten die Spracherkennung nicht gerettet. Bevor eine dritte
+gebaut wurde, stand deshalb eine andere Frage an: **Ist die Engine schuld oder
+das Mikrofon?** Beides hätte dieselben Symptome erzeugt, und für die eine
+Antwort wäre jeder Modellwechsel sinnlos gewesen.
+
+Die Probe kostete den Betreiber eine halbe Minute: dieselbe Frage, ins selbe
+Textfeld, aber über die Windows-Diktierfunktion (Win+H). Sie lief gut. Damit
+waren Mikrofon, Aufnahmeweg und Aussprache in einem Zug ausgeschlossen, und die
+Engine war überführt.
+
+**Der Fund lag im zweiten Schritt.** Win+H nutzt nicht die lokale Erkennung,
+sondern Azure Speech. Der Test hatte also nicht nur eine Ursache
+ausgeschlossen, sondern nebenbei einen Dienst validiert — an dieser Stimme,
+diesem Mikrofon, diesem Vokabular. Das ist eine Güte von Beleg, die keine
+Anbieterbenchmark liefert: Dort steht, wie ein System auf fremden Testdaten
+abschneidet, hier stand, wie es bei diesem Nutzer abschneidet.
+
+Am Gerät ausgelesen, was bis dahin arbeitete: `Microsoft Speech Recognizer 8.0
+for Windows (German - Germany)`, die SAPI-Engine aus Windows-7-Zeiten. Kein
+neuronales Modell, kein Training an modernen Daten. Rückblickend erklärt das,
+warum Variante 2 nichts brachte, obwohl eine geschlossene Grammatik die
+Paradedisziplin solcher Engines ist: Wenn selbst die stärkste Maßnahme für eine
+Technik nichts bewirkt, ist die Technik das Problem.
+
+**Drei Wege wurden geprüft und zwei verworfen**, jeweils aus einem harten Grund
+statt aus Geschmack:
+
+- `Windows.Media.SpeechRecognition` — die frühere „Variante 3" — verlangt
+  Paketidentität und ist abgekündigt; Microsoft hat die Windows-Spracherkennung
+  durch Voice Access ersetzt. Meine eigene frühere Empfehlung dazu war falsch.
+- NVIDIA Canary-1B-v2 ist ein gutes Modell mit unproblematischer Lizenz und
+  ~8,4 % WER auf Deutsch. Aber NVIDIA rät von CPU-Betrieb ab, und in diesem
+  Notebook steckt eine Intel Iris Xe. Die GGUF-Portierung liefe zwar auf der
+  CPU, nennt aber Linux als unterstütztes System.
+
+Azure blieb übrig — und zwar als der einzige Kandidat mit einem Beleg.
+
+**Zwei Dinge machen den Umbau kleiner, als er klingt.** Das Speech SDK braucht
+keine Paketidentität; der Blocker, an dem die WinRT-Variante scheiterte,
+existiert hier nicht, und der unpackaged Startpfad mit Pet-Overlay bleibt
+unberührt. Und `RecognizeOnceAsync()` ist fast formgleich mit dem bisherigen
+`Recognize()`, sodass `SpeechTranscriptionResult` seine Form behält.
+
+**Damit tragen beide Vorstufen weiter, statt ersetzt zu werden.** Die 16
+Phrasen aus Variante 2 spannen die Erkennung als Phrase List vor — hier
+allerdings als Gewichtung statt als geschlossene Grammatik, weshalb die
+Konfidenzschwelle entfällt, die es lokal brauchte. Das ausführliche
+Ausgabeformat liefert eine N-Best-Liste, über die die Vorauswahl aus Variante 1
+unverändert entscheidet. Aus zwei Stufen, die für sich wenig brachten, wird die
+Korrekturschicht über einer Engine, die endlich trägt.
+
+**Der Schlüssel bleibt im Worker.** Azure stellt zu einem Abonnementschlüssel
+kurzlebige Token aus; der Desktop bekommt nur diese. Das ist dieselbe Trennung
+wie beim Modell-Planer aus Phase 4 — der Client kennt weder Zugangsdaten noch
+Abrechnung, sondern ein Papier, das von allein verfällt.
+
+**Zwei Entscheidungen, die im Zweifel gegen Bequemlichkeit fielen.** Die Wahl
+zwischen online und lokal fällt *vor* dem Zuhören: Ein Rückfall danach nähme
+nichts zurück, weil das Gesagte verklungen ist und ohnehin wiederholt werden
+müsste. Und ein abgelehntes Token wird als Betreiberproblem benannt, nicht als
+Mikrofonfehler — sonst sucht jemand am Headset, während ein Secret falsch steht.
+
+**Aufgegeben wurde dabei eine Zusage aus Phase 3:** Audio verlässt jetzt das
+Gerät. Der Betreiber hat das ausdrücklich freigegeben, weil das Projekt privat
+läuft und Genauigkeit vorgeht. Das gehört als Entscheidung protokolliert, nicht
+als Detail verschwiegen — wer später Datenschutztexte schreibt, muss es wissen.
+
 ## 2026-08-16 - Variante 2: die Grammatik gehört dorthin, wo die Regeln stehen
 
 Variante 1 war ausgerollt und nachweislich scharf, als der Betreiber sprechend
