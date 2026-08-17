@@ -9564,3 +9564,21 @@ selbst; die Schrittfolge samt Nachprüfung steht in
   `RATE_LIMITER` auf 10 pro 60 Sekunden steht; im `wrangler tail` erschien
   **kein** `[rate-limit] Binding … fehlt`, die Bindung ist also da. Gehört in
   die Todo, nicht in diesen Auftrag.
+
+## Auftrag 2026-08-17: Anmeldekasten nach drei Vorschlägen — abgeschlossen
+- `app/karten/[id]/offer-form.tsx` kennt jetzt vier Zustände. Ein `401` gilt als
+  abgemeldet, jeder andere Fehlschlag als Fehler — mit Hinweis und „Erneut
+  versuchen". Zwei englische Texte in `lib/i18n.ts` ergänzt.
+- Version `90c07123-800d-4c86-801f-73210e08a6c1`. 693 Tests grün, `tsc` sauber.
+- **Im Browser gegen die laufende Seite geprüft:** Die angemeldete Sitzung
+  bekommt `signedIn: true`, `attemptsLeft: 3` und sieht das Formular. Zählung
+  geprüft: `offerAttempts` (Senden) und `active.length` (Anzeigen) zählen beide
+  alles außer `WITHDRAWN` — sie können nicht auseinanderlaufen.
+- **Offen und beim Betreiber zu klären:** Ob er beim Auftreten des Fehlers
+  überhaupt angemeldet war. Ist er es nicht, war der Anmeldekasten **richtig** —
+  Vorschläge hängen am Konto, und für einen abgemeldeten Besucher ist nicht
+  feststellbar, dass seine drei verbraucht sind. Der Satz „keine weiteren
+  Vorschläge möglich" kann dann grundsätzlich nicht erscheinen. War er
+  angemeldet, steht jetzt statt des falschen Kastens ein Fehler mit Wiederholung
+  da — und der nächste Bericht sagt, welcher Aufruf scheitert.
+- Status: ABGESCHLOSSEN, mit dieser Rückfrage.
