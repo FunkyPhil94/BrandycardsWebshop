@@ -9,7 +9,8 @@
  *
  * Derived from what the shop actually uses:
  * - `img-src`  eBay's CDN serves every card photo; `data:` covers the
- *              sanitiser's allowance for inline images in descriptions
+ *              sanitiser's allowance for inline images in descriptions;
+ *              `blob:` covers the admin console — siehe unten
  * - `connect-src` Supabase Auth is called straight from the browser
  * - `style-src` allows only the per-response nonce on inline style blocks;
  *              style attributes are not used by the shop
@@ -24,7 +25,17 @@ export function contentSecurityPolicy(supabaseUrl: string | undefined, nonce?: s
     "object-src 'none'",
     "frame-ancestors 'none'",
     "form-action 'self'",
-    "img-src 'self' data: https://i.ebayimg.com https://*.ebayimg.com https://funkyphil94.github.io",
+    // `blob:` ist kein Zugeständnis nach außen: Solche Adressen entstehen nur im
+    // Browser selbst, aus Daten, die diese Seite bereits geladen hat. Die
+    // Adminkonsole braucht sie, weil die eingesendeten Kartenbilder hinter einer
+    // angemeldeten Abfrage liegen (`/api/admin/card-submissions/assets` verlangt
+    // den Adminkopf). Ein `<img src="/api/…">` käme dort unangemeldet an, also
+    // holt `app/admin/page.tsx` das Bild per `fetch` und macht daraus ein
+    // Objekt-URL. Ohne diese Erlaubnis blockiert der Browser jedes davon —
+    // **genau das war bis zum 2026-08-17 der Fall**: In `/admin` stand bei jedem
+    // Kartenangebot nur das Ersatzsymbol. `'self'` deckt `blob:` nicht ab, das
+    // ist ein eigenes Schema.
+    "img-src 'self' data: blob: https://i.ebayimg.com https://*.ebayimg.com https://funkyphil94.github.io",
     nonce ? `style-src 'self' 'nonce-${nonce}'` : "style-src 'self'",
     "font-src 'self' data:",
     `connect-src 'self'${supabase ? ` ${supabase}` : ""}`,

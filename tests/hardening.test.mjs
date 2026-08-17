@@ -224,6 +224,10 @@ test("the policy allows what the shop actually needs and forbids the rest", () =
   const policy = contentSecurityPolicy("https://project.supabase.co");
   assert.match(policy, /img-src[^;]*i\.ebayimg\.com/, "card photos come from eBay's CDN");
   assert.match(policy, /img-src[^;]*data:/, "the sanitiser allows inline data: images");
+  // Ohne `blob:` zeigt `/admin` bei jedem Kartenangebot nur das Ersatzsymbol:
+  // Die Bilder liegen hinter einer angemeldeten Abfrage und kommen als
+  // Objekt-URL in die Seite. Am 2026-08-17 in Produktion so vorgefunden.
+  assert.match(policy, /img-src[^;]*blob:/, "the admin console shows fetched card photos as object URLs");
   assert.match(policy, /connect-src[^;]*https:\/\/project\.supabase\.co/, "auth is called from the browser");
   assert.match(policy, /frame-ancestors 'none'/, "the shop does not belong in someone else's frame");
   assert.match(policy, /object-src 'none'/);

@@ -3473,3 +3473,34 @@ Eimer werden nach 90 Tagen vom bestehenden Cron gelöscht.
 Daten, der erste Eimer entsteht mit dem Deploy. Die Zahlen für 7 und 30 Tage
 sind bis dahin unvollständig, und das steht als Satz in der Kachel — sonst
 läse sich der Aufbau der Messung wie ein einbrechender Shop.
+
+## 2026-08-17 — Warum die Kartenbilder im Admin unsichtbar waren
+
+Unter `/admin` stand bei jedem Kartenangebot nur das Ersatzsymbol des Browsers
+mit dem Alternativtext. Die Bilder lagen nicht falsch, sie kamen nicht durch die
+eigene Sicherheitsregel.
+
+Die eingesendeten Bilder sind bewusst **nicht** frei abrufbar: Sie liegen in R2
+und `/api/admin/card-submissions/assets` gibt sie nur gegen eine gültige
+Adminsitzung heraus. Ein `<img src="/api/…">` trüge diesen Kopf nicht — der
+Browser lädt Bilder ohne die Kopfzeilen, die `fetch` mitschickt. `app/admin/page.tsx`
+holt sie deshalb angemeldet per `fetch` und legt das Ergebnis mit
+`URL.createObjectURL` als `blob:`-Adresse in die Seite.
+
+Genau dort griff die CSP: `img-src` nannte `'self'`, `data:` und die
+eBay-Bildserver — aber kein `blob:`. **`'self'` deckt `blob:` nicht ab**, das ist
+ein eigenes Schema mit eigener Erlaubnis. Der Browser verwarf jedes Bild still;
+in der Seite blieb ein `<img>` mit einer Adresse, die er nicht laden durfte. Das
+sieht exakt aus wie ein kaputter Upload, war aber keiner — die Dateien lagen die
+ganze Zeit unversehrt in R2.
+
+**Warum `blob:` sicherheitlich billig ist:** Eine solche Adresse entsteht nur im
+Browser selbst, aus Daten, die diese Seite bereits geladen hat, und ist auf das
+Dokument beschränkt, das sie erzeugt hat. Sie öffnet keine fremde Herkunft —
+anders als es ein zusätzlicher Hostname täte. Der Angriffsweg, gegen den
+`img-src` schützt (Bilder von fremden Servern nachladen und damit Daten
+hinaustragen), bleibt unverändert versperrt.
+
+Die Regel steht ab jetzt in `tests/hardening.test.mjs`, mit dem Fehlerbild als
+Begründung daneben. Ohne den Test sähe `blob:` beim nächsten Aufräumen der CSP
+wie überflüssiger Ballast aus — und `/admin` wäre wieder blind.

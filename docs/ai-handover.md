@@ -9331,3 +9331,28 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 - Nichts überschrieben: `main` hatte vor dem Push null eigene Commits, geprüft
   mit `git merge-base --is-ancestor`.
 - Status: ABGESCHLOSSEN.
+
+## Auftrag 2026-08-17: Bilder der Kartenangebote im Admin sind unsichtbar
+- Status: LÄUFT.
+- Befund des Nutzers: Unter `/admin` → „Kartenangebote" steht bei jedem Angebot
+  nur das Ersatzsymbol mit dem Alternativtext „Eingesendetes Bild zu …".
+- Ursache, in Produktion gemessen (`curl -D -` auf `https://shop.brandycards.de/admin`):
+  Die ausgelieferte CSP lautet
+  `img-src 'self' data: https://i.ebayimg.com https://*.ebayimg.com https://funkyphil94.github.io`
+  — **ohne `blob:`**. `app/admin/page.tsx` holt jedes Bild per `fetch` gegen
+  `/api/admin/card-submissions/assets` (der Endpunkt braucht den Admin-Header,
+  ein nacktes `<img src="/api/…">` käme also unangemeldet an) und baut daraus
+  mit `URL.createObjectURL` eine `blob:`-Adresse. Die blockiert der Browser.
+  `'self'` deckt `blob:` nicht ab — das ist ein eigenes Schema.
+- Umsetzung: `blob:` in `img-src` aufnehmen (`lib/security-headers.ts`), mit
+  Begründung im Kommentar, und in `tests/hardening.test.mjs` festhalten, damit
+  es niemand versehentlich wieder entfernt.
+
+## Auftrag 2026-08-17: Bilder der Kartenangebote im Admin — abgeschlossen
+- Ergebnis: `blob:` steht in `img-src` (`lib/security-headers.ts`), abgesichert
+  durch `tests/hardening.test.mjs`. Begründung in `docs/ai-agent-log.md`.
+- Kein Datenverlust: Die Bilder lagen die ganze Zeit unversehrt in R2, nur der
+  Browser durfte sie nicht anzeigen.
+- Prüfkette: 692 Tests grün, `npx tsc --noEmit` sauber, `npm run lint` mit einer
+  bereits vorher bestehenden Warnung in `app/account/page.tsx`.
+- Status: ABGESCHLOSSEN.
