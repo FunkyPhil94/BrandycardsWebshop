@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { authHeaders } from "./admin-auth";
+import { Lightbox } from "../lightbox";
 
 type Inquiry = {
   id: string;
@@ -76,19 +77,8 @@ export function RequestsPanel({ submissions, assetUrls, onSubmissionDeleted }: {
    * nächsten Umbau auseinander. */
   const [grossbild, setGrossbild] = useState<{ url: string; alt: string } | null>(null);
 
-  // Schließen muss ohne Maus gehen — wie auf der Detailseite. Solange das Bild
-  // offen ist, steht der Hintergrund still; sonst scrollt die Liste darunter weg.
+  // Escape und die Scrollsperre stecken in der Lightbox selbst.
   const grossbildSchliessen = useCallback(() => setGrossbild(null), []);
-  useEffect(() => {
-    if (!grossbild) return;
-    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") grossbildSchliessen(); };
-    document.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
-    };
-  }, [grossbild, grossbildSchliessen]);
 
   useEffect(() => {
     let cancelled = false;
@@ -219,16 +209,6 @@ export function RequestsPanel({ submissions, assetUrls, onSubmissionDeleted }: {
           })}
         </div>}
 
-    {grossbild && <div
-      className="lightbox"
-      role="dialog"
-      aria-modal="true"
-      aria-label={grossbild.alt}
-      onClick={grossbildSchliessen}
-    >
-      <button type="button" className="lightbox-close" onClick={grossbildSchliessen} aria-label="Schließen">✕</button>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={grossbild.url} alt={grossbild.alt} onClick={(event) => event.stopPropagation()} />
-    </div>}
+    {grossbild && <Lightbox key={grossbild.url} src={grossbild.url} alt={grossbild.alt} label={grossbild.alt} onClose={grossbildSchliessen} zoombar />}
   </section>;
 }

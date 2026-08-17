@@ -584,6 +584,15 @@ footer { background:var(--ink); color:#fff; padding:52px max(48px,calc((100vw - 
 .lightbox img { cursor:default; max-height:92vh; max-width:min(1100px,94vw); object-fit:contain; }
 .lightbox-close { background:transparent; border:1px solid #ffffff5c; color:#fff; font-size:17px; height:44px; position:absolute; right:26px; top:26px; width:44px; }
 .lightbox-close:hover { background:#ffffff1f; }
+/* Die 1:1-Ansicht: Der Rahmen füllt das Fenster, das Bild behält seine
+   Originalauflösung und wird darin verschoben. `max-width`/`max-height` aus
+   `.lightbox img` müssen dafür ausdrücklich zurückgenommen werden — sonst
+   passt sich das Bild wieder ein und es gäbe nichts zu verschieben. */
+.lightbox-zoom { background:transparent; border:1px solid #ffffff5c; color:#fff; font-size:10px; font-weight:800; height:44px; letter-spacing:.08em; padding:0 15px; position:absolute; right:78px; text-transform:uppercase; top:26px; }
+.lightbox-zoom:hover { background:#ffffff1f; }
+.lightbox-buehne { cursor:grab; height:92vh; overflow:auto; width:94vw; }
+.lightbox-buehne:active { cursor:grabbing; }
+.lightbox-buehne img { cursor:inherit; max-height:none; max-width:none; }
 
 @media (max-width:850px) {
   .detail-back { padding:22px 22px 0; }

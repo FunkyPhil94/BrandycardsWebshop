@@ -5,6 +5,7 @@ import { use, useCallback, useEffect, useState } from "react";
 import { ebayImageVariant } from "../../../lib/ebay-images.ts";
 import { cartButtonState } from "../../../lib/cart.ts";
 import { useI18n } from "../../i18n";
+import { Lightbox } from "../../lightbox";
 import { SiteFooter, SiteHeader, formatPrice, useCart } from "../../site-chrome";
 import { OfferForm } from "./offer-form";
 
@@ -56,18 +57,9 @@ export default function KartenDetailPage({ params }: { params: Promise<{ id: str
     return () => { cancelled = true; };
   }, [id]);
 
-  // The lightbox traps nothing but Escape; closing has to work without a mouse.
+  // Escape und die Sperre des Hintergrundscrollens stecken jetzt in der
+  // Lightbox selbst (app/lightbox.tsx) — sie gilt für alle, die sie benutzen.
   const closeZoom = useCallback(() => setZoomed(false), []);
-  useEffect(() => {
-    if (!zoomed) return;
-    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") closeZoom(); };
-    document.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
-    };
-  }, [closeZoom, zoomed]);
 
   const price = card ? formatPrice(card.priceAmountCents, card.priceCurrency, locale) : null;
   const images = card?.imageUrls ?? [];
@@ -188,17 +180,14 @@ export default function KartenDetailPage({ params }: { params: Promise<{ id: str
           : <p className="detail-empty">{t("Für diese Karte liegt noch keine Beschreibung vor. Das Angebot bei eBay enthält alle Details.")}</p>)}
       </section>
 
-      {zoomed && current && <div
-        className="lightbox"
-        role="dialog"
-        aria-modal="true"
-        aria-label={`${card.title} ${t("vergrößert")}`}
-        onClick={closeZoom}
-      >
-        <button type="button" className="lightbox-close" onClick={closeZoom} aria-label={t("Schließen")}>✕</button>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={current} alt={card.title} onClick={(event) => event.stopPropagation()} />
-      </div>}
+      {zoomed && current && <Lightbox
+        key={current}
+        src={current}
+        alt={card.title}
+        label={`${card.title} ${t("vergrößert")}`}
+        schliessenLabel={t("Schließen")}
+        onClose={closeZoom}
+      />}
     </>}
 
     <SiteFooter />
