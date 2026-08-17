@@ -50,20 +50,28 @@ export default function AccountPage() {
 
 /** Die Übersicht führt weiter, sie wiederholt nichts.
  *
- * Bewusst **ohne Zahlen**: Bestellungen ließen sich zählen, Preisvorschläge und
- * eingesendete Karten noch nicht — die Endpunkte dafür entstehen erst in U2
- * (`docs/ai-todo.md`). Eine Kachel mit Zahl neben zwei ohne wäre schlechter als
- * drei ohne, weil sie aussähe wie „keine vorhanden".
+ * Bewusst **ohne Zahlen**: Sie stünden für drei Abfragen, die nur dazu dienen,
+ * eine Ziffer neben eine Verknüpfung zu setzen — und wären beim ersten Blick
+ * nach einer Bestellung schon veraltet. Wer wissen will, was ansteht, ist einen
+ * Klick entfernt.
  */
 function Uebersicht() {
   const { t } = useI18n();
   return <>
     <h1>{t("Dein Konto.")}</h1>
-    <p>{t("Hier findest du deine Bestellungen, dein Profil und deine gespeicherten Daten.")}</p>
+    <p>{t("Hier findest du deine Bestellungen, deine Preisvorschläge, die Karten, die du uns angeboten hast, und deine gespeicherten Daten.")}</p>
     <div className="account-tiles">
       <Link href="/account/bestellungen">
         <strong>{t("Meine Bestellungen")}</strong>
         <span>{t("Stand, Beträge und Sendungsverfolgung")}</span>
+      </Link>
+      <Link href="/account/preisvorschlaege">
+        <strong>{t("Meine Preisvorschläge")}</strong>
+        <span>{t("Was du geboten hast und wie wir entschieden haben")}</span>
+      </Link>
+      <Link href="/account/kartenangebote">
+        <strong>{t("Meine angebotenen Karten")}</strong>
+        <span>{t("Karten, die du uns zum Ankauf geschickt hast")}</span>
       </Link>
       <Link href="/account/profil">
         <strong>{t("Mein Profil")}</strong>

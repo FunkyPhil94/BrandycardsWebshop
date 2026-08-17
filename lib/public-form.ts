@@ -159,9 +159,10 @@ export async function existingProduct(productId: string, prelistedOnly = false) 
   return { db, product };
 }
 
-export function formMetadata(title: string, message: string | null, extra: Record<string, unknown> = {}) {
-  return JSON.stringify({ title, message, ...extra });
-}
+/** Beide liegen in `lib/form-metadata.ts` — ohne Laufzeitabhängigkeit, damit der
+ *  Node-Testlauf sie direkt prüfen kann. Hier stehen sie nur weiterhin zur
+ *  Verfügung, damit bestehende Aufrufe unverändert bleiben. */
+export { formMetadata, readFormMetadata } from "./form-metadata";
 
 export function jsonError(error: unknown) {
   if (error instanceof RateLimitError) {

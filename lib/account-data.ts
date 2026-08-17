@@ -37,10 +37,23 @@ export const BLOCKING_ORDER_STATUSES = ["PENDING", "PROCESSING"] as const;
  * wird über `lower()` auf beiden Seiten, weil die Kontoadresse normalisiert
  * gespeichert wird, die Formularadresse aber so, wie sie getippt wurde.
  */
-function zuordnung(userId: string, email: string) {
+/** Was zu einem Konto gehört: alles mit seiner Id **oder** seiner E-Mail-Adresse.
+ *
+ * Der zweite Teil ist keine Bequemlichkeit. Anfragen und Kartenangebote lassen
+ * sich als Gast absenden; wer sich später mit derselben Adresse registriert,
+ * würde seine eigenen Vorgänge sonst nicht wiederfinden — weder im Datenexport
+ * noch in den Ansichten seines Kontos.
+ *
+ * **Exportiert, damit sie nicht abgeschrieben wird.** Seit dem 2026-08-17 nutzt
+ * auch das Kundenkonto diese Regel. Zwei Fassungen davon wären ein
+ * Datenschutzfehler mit Ansage: Die eine zeigte zu wenig, die andere zu viel.
+ */
+export function kontoZuordnung(userId: string, email: string) {
   return (spalteUserId: SQLiteColumn, spalteGuestEmail: SQLiteColumn) =>
     or(eq(spalteUserId, userId), sql`lower(${spalteGuestEmail}) = lower(${email})`);
 }
+
+const zuordnung = kontoZuordnung;
 
 /** Alles, was der Shop über einen angemeldeten Kunden weiß.
  *

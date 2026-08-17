@@ -18,6 +18,8 @@ import { isLocale } from "../../lib/i18n";
 const BEREICHE = [
   { pfad: "/account", titel: "Übersicht" },
   { pfad: "/account/bestellungen", titel: "Bestellungen" },
+  { pfad: "/account/preisvorschlaege", titel: "Preisvorschläge" },
+  { pfad: "/account/kartenangebote", titel: "Angebotene Karten" },
   { pfad: "/account/profil", titel: "Profil" },
   { pfad: "/account/daten", titel: "Meine Daten" },
 ] as const;

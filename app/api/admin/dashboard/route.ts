@@ -4,6 +4,7 @@ import { getDb } from "../../../../db";
 import { cardSubmissionAssets, cardSubmissions, ebayListings, inquiries, inventory, orders, products } from "../../../../db/schema";
 import { requireAdmin } from "../../../../lib/admin-access";
 import { istKaufbar } from "../../../../lib/catalog-availability";
+import { readFormMetadata } from "../../../../lib/public-form";
 
 /** Wie viele Karten gerade jemand kaufen könnte.
  *
@@ -67,13 +68,7 @@ export async function GET(request: Request) {
     const recentRows = await db.select({ id: cardSubmissions.id, email: cardSubmissions.guestEmail, name: cardSubmissions.name, message: cardSubmissions.message, requestedAmountCents: cardSubmissions.requestedAmountCents, status: cardSubmissions.status, createdAt: cardSubmissions.createdAt }).from(cardSubmissions).orderBy(desc(cardSubmissions.createdAt)).limit(20);
     const recentSubmissions = await Promise.all(recentRows.map(async (submission) => {
       const assets = await db.select({ id: cardSubmissionAssets.id, originalName: cardSubmissionAssets.originalName, mimeType: cardSubmissionAssets.mimeType, byteSize: cardSubmissionAssets.byteSize }).from(cardSubmissionAssets).where(eq(cardSubmissionAssets.submissionId, submission.id));
-      let title = "Kartenangebot";
-      let text: string | null = null;
-      try {
-        const inhalt = typeof submission.message === "string" ? JSON.parse(submission.message) as { title?: string; message?: string | null } : null;
-        title = inhalt?.title ?? title;
-        text = typeof inhalt?.message === "string" && inhalt.message.trim() ? inhalt.message : null;
-      } catch { /* keep safe fallback */ }
+      const { title, text } = readFormMetadata(submission.message);
       return { id: submission.id, email: submission.email, name: submission.name, title, text, requestedAmountCents: submission.requestedAmountCents, status: submission.status, createdAt: submission.createdAt, assets };
     }));
 
