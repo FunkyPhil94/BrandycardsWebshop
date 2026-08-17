@@ -9286,3 +9286,26 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 - Prüfung: `npm test` 533/533, `npm run lint` fehlerfrei (eine vorbestehende Warnung), `npx tsc --noEmit` sauber. Deploys: `04dfc2d1` (Uploadgrenze, Preis, Angebotskasten) und `24f9591b` (Betreiberhinweise).
 - **Offen für den Betreiber:** Fünf Testeinsendungen von mir stehen in der Produktion (Diagnose, Grenztest200/500/900, Nachweis 2MB) samt Bildern in R2. Das Löschen der R2-Objekte wurde mir verweigert; über „Löschen" im Adminbereich verschwinden Zeile und Bild gemeinsam. Ebenso steht dort eine Testanfrage „Nachweis Benachrichtigung".
 - Status: ABGESCHLOSSEN.
+
+## Auftrag 2026-08-17: Spracherkennung tot — Routen aus Produktion verschwunden
+- Status: ABGESCHLOSSEN.
+- Symptom: „Windows hört zu … (Shop antwortet mit HTTP 404)". Es war **nicht**
+  Azure und nicht das Guthaben.
+- Ursache: `/api/avatar/device/assistant/speech-token` und `.../probe` fehlten
+  im ausgerollten Worker. Sie existieren nur auf diesem Branch. Eine parallele
+  Sitzung hat vom `main`-Stand ausgerollt und damit meinen Deploy überschrieben:
+  1e618387 (18:33:09, mit Routen) → 04dfc2d1 (18:33:27) → 24f9591b (18:41:27).
+  Achtzehn Sekunden nach meinem Deploy war die Spracheingabe tot.
+- **Die Lehre, und sie gilt für beide Seiten:** Wer aus einem Branch deployt,
+  rollt alles weg, was nur in einem anderen liegt. `wrangler deploy` kennt kein
+  Zusammenführen. Vor jedem Deploy: `git fetch` und `git log HEAD..origin/main`
+  — ist da etwas, gehört es zuerst hereingeholt.
+- Behebung: `origin/main` erneut gemerged (ein Konflikt im Übergabeprotokoll,
+  beide Seiten behalten), gebaut, ausgerollt als `9824c54a`. Vor dem Deploy im
+  Build geprüft, dass beide Routen enthalten sind.
+- Verifikation: `speech-token` und `probe` antworten mit **401** statt 404 —
+  vorhanden, nur nicht angemeldet. `/`, `/admin`, `/api/products` mit 200,
+  `/api/page-views` mit 405 (GET auf einen POST-Endpunkt, also vorhanden).
+  692 Tests grün, `npx tsc --noEmit` sauber.
+- Ohne die Statuszeilen-Änderung von eben wäre das nicht zu finden gewesen: Der
+  Code 404 war der einzige Hinweis, dass es nicht an Azure lag.
