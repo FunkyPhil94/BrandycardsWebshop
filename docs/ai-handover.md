@@ -9539,3 +9539,28 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 - Version `a846e647-f49e-4d1f-b83a-7276f454e553`. `/` und `/admin` mit 200,
   die Adminrouten unangemeldet weiterhin 401 — der Schutz steht, nur die
   Nachfrage mitten in der Arbeit ist weg.
+
+## Auftrag 2026-08-17: Nach drei Preisvorschlägen zeigt die Karte den Anmeldekasten
+- Status: LÄUFT.
+- Befund des Betreibers: Nach drei gesendeten Vorschlägen steht beim Neuladen
+  nicht „keine weiteren Vorschläge möglich", sondern der Kasten „Für ein Angebot
+  brauchst du ein Kundenkonto" — bei einem angemeldeten Kunden.
+- **Server ist entlastet, an echten Daten geprüft:** In `price_offers` liegen für
+  `5cc79340…` genau drei Zeilen auf `REJECTED` (`xjok3y@googlemail.com`). Damit
+  liefert `GET /api/price-offers` zwangsläufig `signedIn: true` und
+  `attemptsLeft: 0` — und `app/karten/[id]/offer-form.tsx` hat für diesen Fall
+  den richtigen Satz. Der falsche Kasten entsteht also im Browser.
+- **Ursache:** Das Formular kennt nur zwei Zustände. Scheitert die Abfrage
+  (abgelaufenes Zugriffstoken, Netzfehler, 503), setzt der `catch`
+  `signedIn: false` — und die Seite fordert einen Angemeldeten zum Anmelden auf.
+  Ein fehlgeschlagener Aufruf ist aber kein Abmelden. Genau diese Verwechslung
+  hat auch schon am 2026-08-17 den Wettlauf beim Seitenaufbau erzeugt (Kommentar
+  in derselben Datei); damals wurde das Symptom behandelt, nicht die Ursache.
+- Umsetzung: Vier Zustände statt zwei — lädt / abgemeldet / bereit / Fehler. Ob
+  jemand angemeldet ist, entscheidet **Supabase**, nicht der Erfolg eines
+  HTTP-Aufrufs. Bei einem Fehler steht ein Hinweis mit „Erneut versuchen" da.
+- Nebenbefund, **nicht** Ursache und **nicht** behoben: Die Ratengrenze griff
+  nicht. 14 Leseabfragen in zwei Sekunden kamen alle durch, obwohl
+  `RATE_LIMITER` auf 10 pro 60 Sekunden steht; im `wrangler tail` erschien
+  **kein** `[rate-limit] Binding … fehlt`, die Bindung ist also da. Gehört in
+  die Todo, nicht in diesen Auftrag.
