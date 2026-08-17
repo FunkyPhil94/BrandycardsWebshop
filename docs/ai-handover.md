@@ -37,10 +37,15 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
+<!-- Fuer den naechsten Auftrag freihalten. -->
+
+Keine laufenden Aufträge.
+
+## Historie
+
 ### 2026-08-17 - Messen, welche Fragen der Assistent nicht versteht
 
-- Stand: **GEBAUT UND GEPRÜFT. Wartet auf die Freigabe für die produktive
-  Migration** — erst danach wird ausgerollt.
+- Stand: **ABGESCHLOSSEN. Migration eingespielt, ausgerollt.**
 - Auftrag: Vom Betreiber aus vier vorgelegten Wegen gewählt. Für den Assistenten
   stand im Vorrat nichts mehr offen; dies ist ein neuer Punkt.
 
@@ -145,7 +150,34 @@ SELECT question, COUNT(*) AS anzahl FROM assistant_unanswered
 diese Auswertung selbst beantwortet („welche Fragen verstehst du nicht?").
 Erst sinnvoll, wenn Daten vorliegen.
 
-## Historie
+**Migration produktiv eingespielt — auf ausdrückliche Freigabe des Betreibers.**
+
+- Vorher geprüft: `assistant_unanswered` existierte **nicht** (leeres Ergebnis
+  aus `sqlite_master`). Der erwartete Ausgangszustand, nicht unterstellt.
+- `npx wrangler d1 execute … --remote --file drizzle/0014_assistant_unanswered.sql`
+  → **2 Anweisungen, 4 Zeilen geschrieben, 4,71 ms.** Keine bestehende Tabelle
+  berührt.
+- Nachgeprüft: Tabelle **und** Index `assistant_unanswered_reason_idx` stehen,
+  Zeilenzahl **0**.
+
+**Ausgerollt als Worker-Version `55102f9e-8b40-451b-94a1-a08cbc11c5bf`.** Die
+Reihenfolge wurde eingehalten: erst migrieren, dann deployen. Client-Konfiguration
+im Bundle geprüft, `assistant_unanswered` dreimal im Worker-Bundle. Beide
+Assistant-Routen antworten produktiv mit 401 ohne Gerätetoken; die Tabelle ist
+weiterhin leer, es wurde also nichts unbeabsichtigt geschrieben.
+
+**Die Abnahme kann nur der Betreiber führen** — sie braucht ein Gerätetoken.
+Eine Frage stellen, die der Assistent nicht versteht (etwa „Erzähl mir einen
+Witz über Sammelkarten."), danach:
+
+```
+SELECT question, reason, created_at FROM assistant_unanswered ORDER BY created_at DESC LIMIT 5;
+```
+
+Erwartet wird **eine** Zeile mit `reason = 'UNSUPPORTED'`. Bleibt sie aus,
+steht der Grund im Worker-Log als
+`assistant unanswered question could not be recorded`.
+
 
 ### 2026-08-17 - Rest 1 beweisen: Menge eines LAUFENDEN eBay-Angebots ändern
 
