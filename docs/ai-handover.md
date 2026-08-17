@@ -9229,3 +9229,44 @@ selbst; die Schrittfolge samt Nachprüfung steht in
   bekannten Vorwarnung, WinUI-Build 0 Warnungen. Deploy `1e618387`; `/`,
   `/admin`, `/api/products` mit 200.
 - Status: ABGESCHLOSSEN.
+
+## Auftrag 2026-08-17: Warum Azure kein Sprachtoken gibt, muss sichtbar sein
+- Status: LÄUFT.
+- Befund: Der Betreiber meldete „Spracheingabe plötzlich total schlecht". Die
+  Statuszeile zeigte „Windows hört zu" — die App war also auf die lokale
+  Erkennung zurückgefallen, weil kein Azure-Token kam. Guthaben ist unangetastet
+  (volle 200 $), Kopplung und Shop-Verbindung sind nachweislich gesund (der
+  Ereignisabruf läuft alle drei Sekunden fehlerfrei).
+- Die eigentliche Lücke: `issueSpeechToken` erzeugt serverseitig eine genaue
+  Meldung samt HTTP-Status („Azure hat kein Sprachtoken ausgestellt (HTTP 429)"),
+  und `GetSpeechTokenAsync` wirft sie weg — **fünf verschiedene `return null`**,
+  alle ununterscheidbar. Der Betreiber sieht nur „lokale Erkennung" und kann
+  Guthaben (401/403) nicht von Tarifgrenze (429) unterscheiden. Genau deshalb
+  wurde hier geraten statt abgelesen.
+- Umsetzung: Der Grund wird mitgeführt und in der Statuszeile genannt. Die
+  Meldung des Servers ist dafür ausdrücklich gedacht (siehe Kommentar in
+  `app/api/avatar/device/assistant/speech-token/route.ts`) und erscheint erst
+  nach bestandener Authentifizierung.
+- Nicht geändert: dass überhaupt zurückgefallen wird. Eine schlechte Erkennung
+  ist besser als keine, solange sie sich als solche zu erkennen gibt.
+- Abnahme: `npm test`, `npx tsc --noEmit`, `npm run lint`, WinUI-Build, danach
+  ein Diktat — die Statuszeile muss den Azure-Statuscode nennen.
+
+## Auftrag 2026-08-17: Warum Azure kein Sprachtoken gibt — abgeschlossen
+- Ergebnis: `GetSpeechTokenAsync` gibt statt `null` ein `SpeechTokenOutcome`
+  zurück — entweder ein Token oder einen Grund. Die Statuszeile nennt ihn:
+  „Windows hört zu … (lokale Erkennung, eingeschränkte Genauigkeit — Azure hat
+  kein Sprachtoken ausgestellt (HTTP 429))". Auf 120 Zeichen gekürzt.
+- Der Text der Ausnahme geht bewusst **nicht** mit: Er kann Adressen und interne
+  Pfade tragen. Bei einem Netzfehler steht nur die Art dort.
+- Beim Bauen angeschlagen: Der Phase-8-Wächter sammelt Endpunktpfade aus dem
+  Desktop-Code, und ich hatte den Dateipfad der Token-Route in einen Kommentar
+  geschrieben — er las ihn als neuen Endpunkt. **Der Wächter hatte recht**, der
+  Kommentar wurde umformuliert statt der Test gelockert.
+- Betreiberbefund dazu: Das Azure-Guthaben ist unangetastet (volle 200 $).
+  Damit ist die Tarifgrenze des kostenlosen F0 der Hauptverdächtige; der
+  Statuscode entscheidet es beim nächsten Diktat.
+- Prüfung: 686 Tests grün, `npx tsc --noEmit` sauber, Lint bei der einen
+  bekannten Vorwarnung, WinUI-Build 0 Warnungen. Kein Worker-Deploy nötig —
+  die Serverseite lieferte den Grund bereits.
+- Status: ABGESCHLOSSEN.

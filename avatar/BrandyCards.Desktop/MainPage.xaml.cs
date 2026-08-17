@@ -383,14 +383,15 @@ public sealed partial class MainPage : Page
             // Fragemuster und Sprachtoken holen, bevor das Mikrofon aufgeht --
             // danach kostet das Diktat keine zusätzliche Wartezeit.
             var phrases = await EnsureSpeechPhrasesAsync();
-            var grant = await EnsureSpeechTokenAsync();
+            var outcome = await EnsureSpeechTokenAsync();
+            var grant = outcome.Grant;
 
             // **Die Entscheidung fällt vor dem Zuhören, nicht danach.** Ein
             // Rückfall nach einer gescheiterten Online-Erkennung nützte nichts:
             // Das Gesagte ist dann bereits verklungen und müsste ohnehin
             // wiederholt werden.
             AssistantStatusTextBlock.Text = grant is null
-                ? "Windows hört zu … (lokale Erkennung, eingeschränkte Genauigkeit)"
+                ? LokaleErkennungStatus(outcome.Reason)
                 : "Hört zu …";
             var transcription = grant is null
                 ? await _speechRecognitionService.TranscribeOnceAsync(phrases)
@@ -436,19 +437,41 @@ public sealed partial class MainPage : Page
     /// eine serverseitig nicht eingerichtete Spracherkennung sind allesamt
     /// Gründe, die den Knopf nicht unbrauchbar machen dürfen.
     /// </summary>
-    private async Task<SpeechTokenGrant?> EnsureSpeechTokenAsync()
+    private async Task<SpeechTokenOutcome> EnsureSpeechTokenAsync()
     {
-        if (_speechToken is not null && DateTimeOffset.UtcNow < _speechTokenValidUntil) return _speechToken;
-        if (string.IsNullOrWhiteSpace(_settings.DeviceToken)) return null;
+        if (_speechToken is not null && DateTimeOffset.UtcNow < _speechTokenValidUntil) return SpeechTokenOutcome.Granted(_speechToken.Value);
+        if (string.IsNullOrWhiteSpace(_settings.DeviceToken)) return SpeechTokenOutcome.Failed("Gerät ist nicht gekoppelt");
 
-        var grant = await _assistantService.GetSpeechTokenAsync(NormalizeShopUrl(_settings.ShopUrl), _settings.DeviceToken);
+        var outcome = await _assistantService.GetSpeechTokenAsync(NormalizeShopUrl(_settings.ShopUrl), _settings.DeviceToken);
+        var grant = outcome.Grant;
         _speechToken = grant;
         // Eine unsinnige oder fehlende Angabe des Servers darf kein ewig
         // gültiges Token vortäuschen; 30 Sekunden sind die Untergrenze.
         _speechTokenValidUntil = grant is null
             ? DateTimeOffset.MinValue
             : DateTimeOffset.UtcNow.AddSeconds(Math.Max(30, grant.Value.ExpiresInSeconds));
-        return _speechToken;
+        return outcome;
+    }
+
+    /// <summary>
+    /// Die Statuszeile für ein Diktat auf der schwächeren Erkennung.
+    ///
+    /// **Der Grund gehört dazu.** Ohne ihn stand dort nur „lokale Erkennung",
+    /// und aufgebrauchtes Guthaben (HTTP 401/403) war von der Tarifgrenze des
+    /// kostenlosen Tarifs (HTTP 429) nicht zu unterscheiden — zwei völlig
+    /// verschiedene Reparaturen. Gekürzt wird, weil die Statuszeile eine Zeile
+    /// ist und keine Ablage für Fremdtexte.
+    /// </summary>
+    private static string LokaleErkennungStatus(string grund)
+    {
+        const string basis = "Windows hört zu … (lokale Erkennung, eingeschränkte Genauigkeit";
+        if (string.IsNullOrWhiteSpace(grund)) return $"{basis})";
+        var kurz = grund.Trim();
+        if (kurz.Length > AssistantConversationService.MaxSpeechTokenReasonLength)
+        {
+            kurz = kurz[..AssistantConversationService.MaxSpeechTokenReasonLength] + "…";
+        }
+        return $"{basis} — {kurz})";
     }
 
     /// <summary>

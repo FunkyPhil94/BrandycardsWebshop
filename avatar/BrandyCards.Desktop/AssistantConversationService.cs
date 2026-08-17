@@ -100,7 +100,32 @@ internal sealed class AssistantConversationService(HttpClient httpClient)
     /// Spracherkennung nicht eingerichtet hat oder nicht erreichbar ist — der
     /// Aufrufer fällt dann auf die lokale Windows-Erkennung zurück.
     /// </summary>
-    public async Task<SpeechTokenGrant?> GetSpeechTokenAsync(string shopUrl, string deviceToken, CancellationToken cancellationToken = default)
+    /// <summary>
+    /// Höchstlänge des durchgereichten Grundes. Die Statuszeile ist eine Zeile,
+    /// kein Protokoll — eine überlange Meldung verdrängte den Rest.
+    /// </summary>
+    internal const int MaxSpeechTokenReasonLength = 120;
+
+    /// <summary>
+    /// Holt das Sprachtoken — und sagt bei einem Fehlschlag, **woran** es lag.
+    ///
+    /// **Der Befund vom 2026-08-17.** Vorher gab es hier fünf verschiedene
+    /// <c>return null</c>, alle ununterscheidbar. Der Betreiber sah im Panel nur
+    /// „lokale Erkennung" und konnte aufgebrauchtes Guthaben (401/403) nicht von
+    /// der Tarifgrenze des kostenlosen Tarifs (429) unterscheiden — obwohl der
+    /// Server den Grund samt HTTP-Status längst mitschickt. Es wurde deshalb
+    /// geraten, wo abzulesen gewesen wäre.
+    ///
+    /// Die Meldung des Servers ist ausdrücklich für den Betreiber gedacht und
+    /// erscheint erst nach bestandener Authentifizierung — die Begründung steht
+    /// im Kommentar der Sprachtoken-Route auf dem Server.
+    ///
+    /// (Der Dateipfad dorthin stand hier kurzzeitig ausgeschrieben und ließ den
+    /// Wächter aus Phase 8 anschlagen: Er sammelt Endpunktpfade aus dem
+    /// Desktop-Code, und ein Pfad im Kommentar sieht wie einer aus. Der Wächter
+    /// hat recht — dieser Client darf keine neuen Endpunkte kennen.)
+    /// </summary>
+    public async Task<SpeechTokenOutcome> GetSpeechTokenAsync(string shopUrl, string deviceToken, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -115,19 +140,34 @@ internal sealed class AssistantConversationService(HttpClient httpClient)
 
             using var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeout.Token);
             var body = await ReadBoundedBodyAsync(response, timeout.Token);
-            if (body.Outcome != BodyOutcome.Complete) return null;
-            if (!response.IsSuccessStatusCode) return null;
+            if (body.Outcome != BodyOutcome.Complete) return SpeechTokenOutcome.Failed("Antwort des Shops unvollständig");
+            if (!response.IsSuccessStatusCode)
+            {
+                // Der Text des Servers, wenn er einen mitschickt -- er nennt den
+                // Azure-Statuscode. Sonst bleibt wenigstens der HTTP-Status des
+                // Shops, und das ist immer noch mehr als nichts.
+                var grund = ReadStringField(body.Text, "error");
+                var text = grund.Kind == FieldKind.Found && !string.IsNullOrWhiteSpace(grund.Value)
+                    ? grund.Value!.Trim()
+                    : $"Shop antwortet mit HTTP {(int)response.StatusCode}";
+                return SpeechTokenOutcome.Failed(text);
+            }
 
             var token = ReadStringField(body.Text, "token");
             var region = ReadStringField(body.Text, "region");
-            if (token.Kind != FieldKind.Found || region.Kind != FieldKind.Found) return null;
-            if (string.IsNullOrWhiteSpace(token.Value) || string.IsNullOrWhiteSpace(region.Value)) return null;
+            if (token.Kind != FieldKind.Found || region.Kind != FieldKind.Found) return SpeechTokenOutcome.Failed("Antwort ohne Token oder Region");
+            if (string.IsNullOrWhiteSpace(token.Value) || string.IsNullOrWhiteSpace(region.Value)) return SpeechTokenOutcome.Failed("Token oder Region ist leer");
 
-            return new SpeechTokenGrant(token.Value!.Trim(), region.Value!.Trim(), ReadIntField(body.Text, "expiresInSeconds") ?? 0);
+            return SpeechTokenOutcome.Granted(
+                new SpeechTokenGrant(token.Value!.Trim(), region.Value!.Trim(), ReadIntField(body.Text, "expiresInSeconds") ?? 0));
         }
         catch (Exception exception) when (exception is HttpRequestException or IOException or OperationCanceledException or JsonException)
         {
-            return null;
+            // **Der Text der Ausnahme geht nicht mit.** Er kann Adressen und
+            // interne Pfade enthalten; hier hilft nur die Art des Fehlers.
+            return SpeechTokenOutcome.Failed(exception is OperationCanceledException
+                ? "Shop hat nicht rechtzeitig geantwortet"
+                : "Shop nicht erreichbar");
         }
     }
 

@@ -139,11 +139,15 @@ test("ohne Token bleibt der Knopf benutzbar, und die Wahl fällt vor dem Zuhöre
   const page = await read("avatar/BrandyCards.Desktop/MainPage.xaml.cs");
   // Ein Rueckfall nach gescheiterter Online-Erkennung naehme nichts zurueck:
   // Das Gesagte ist dann verklungen und muesste ohnehin wiederholt werden.
-  assert.match(page, /var grant = await EnsureSpeechTokenAsync\(\);[\s\S]*var transcription = grant is null[\s\S]*_speechRecognitionService\.TranscribeOnceAsync\(phrases\)[\s\S]*_onlineSpeechRecognitionService\.TranscribeOnceAsync\(grant\.Value, phrases\)/u);
+  assert.match(page, /var outcome = await EnsureSpeechTokenAsync\(\);[\s\S]*var transcription = grant is null[\s\S]*_speechRecognitionService\.TranscribeOnceAsync\(phrases\)[\s\S]*_onlineSpeechRecognitionService\.TranscribeOnceAsync\(grant\.Value, phrases\)/u);
   // Der Nutzer muss erkennen koennen, dass gerade die schwaechere Erkennung laeuft.
   assert.match(page, /lokale Erkennung, eingeschränkte Genauigkeit/u);
+  // **Und woran es lag.** Ohne den Grund war aufgebrauchtes Guthaben (401/403)
+  // nicht von der Tarifgrenze (429) zu unterscheiden -- zwei voellig
+  // verschiedene Reparaturen, und der Betreiber sah fuer beide denselben Satz.
+  assert.match(page, /LokaleErkennungStatus\(outcome\.Reason\)/u);
   // Ein Token je Diktat waere gegen die geteilte Ratenbegrenzung verschwenderisch.
-  assert.match(page, /if \(_speechToken is not null && DateTimeOffset\.UtcNow < _speechTokenValidUntil\) return _speechToken;/u);
+  assert.match(page, /if \(_speechToken is not null && DateTimeOffset\.UtcNow < _speechTokenValidUntil\) return SpeechTokenOutcome\.Granted\(_speechToken\.Value\);/u);
   assert.match(page, /Math\.Max\(30, grant\.Value\.ExpiresInSeconds\)/u,
     "eine unsinnige Serverangabe darf kein ewig gueltiges Token vortaeuschen");
 });
@@ -156,4 +160,37 @@ test("Schlüssel und Region sind dokumentiert, samt der Falle nach 30 Tagen", as
   // Ohne diesen Hinweis bricht die Spracherkennung nach Ablauf der Testversion
   // still ab, und niemand weiss warum.
   assert.match(beispiel, /Nutzungsbasierte Bezahlung/u);
+});
+
+test("ein gescheitertes Sprachtoken nennt den Grund statt nur zu scheitern", async () => {
+  // **Der Befund vom 2026-08-17.** Die Spracheingabe war "ploetzlich total
+  // schlecht": Die App lief auf der lokalen Erkennung, weil kein Azure-Token
+  // kam. Der Server meldete den Grund samt HTTP-Status -- der Client warf ihn
+  // in fuenf verschiedenen `return null` weg, und es wurde geraten statt
+  // abgelesen.
+  const service = await read("avatar/BrandyCards.Desktop/AssistantConversationService.cs");
+  const azure = await read("avatar/BrandyCards.Desktop/AzureSpeechRecognitionService.cs");
+
+  // Kein blosses `null` mehr: Das Ergebnis traegt entweder ein Token oder einen Grund.
+  assert.match(azure, /internal readonly record struct SpeechTokenOutcome\(SpeechTokenGrant\? Grant, string Reason\)/u);
+  assert.match(service, /public async Task<SpeechTokenOutcome> GetSpeechTokenAsync/u);
+  assert.doesNotMatch(service.slice(service.indexOf("GetSpeechTokenAsync"), service.indexOf("private static int? ReadIntField")),
+    /return null;/u, "kein ununterscheidbarer Fehlschlag mehr");
+
+  // Der Text des Servers wird durchgereicht -- er nennt den Azure-Statuscode.
+  assert.match(service, /ReadStringField\(body\.Text, "error"\)/u);
+  // Fehlt er, bleibt wenigstens der HTTP-Status des Shops.
+  assert.match(service, /Shop antwortet mit HTTP \{\(int\)response\.StatusCode\}/u);
+  // Der Ausnahmetext geht **nicht** mit: Er kann Adressen und interne Pfade tragen.
+  assert.doesNotMatch(service, /Failed\(exception\.Message\)/u);
+});
+
+test("der Grund wird gekürzt, die Statuszeile bleibt eine Zeile", async () => {
+  const page = await read("avatar/BrandyCards.Desktop/MainPage.xaml.cs");
+  const service = await read("avatar/BrandyCards.Desktop/AssistantConversationService.cs");
+  assert.match(service, /internal const int MaxSpeechTokenReasonLength = 120;/u);
+  assert.match(page, /kurz\.Length > AssistantConversationService\.MaxSpeechTokenReasonLength/u);
+  // Ohne Grund faellt die Meldung auf ihren alten Wortlaut zurueck, statt eine
+  // leere Klammer anzuhaengen.
+  assert.match(page, /if \(string\.IsNullOrWhiteSpace\(grund\)\) return \$"\{basis\}\)";/u);
 });

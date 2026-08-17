@@ -7,6 +7,22 @@ namespace BrandyCards_Desktop;
 internal readonly record struct SpeechTokenGrant(string Token, string Region, int ExpiresInSeconds);
 
 /// <summary>
+/// Das Ergebnis der Tokenanfrage: entweder ein Token — oder ein Grund.
+///
+/// **Warum nicht einfach `null`.** Genau das war es bis zum 2026-08-17, und es
+/// hat einen halben Abend Fehlersuche gekostet: Fünf verschiedene Fehlschläge
+/// sahen im Panel identisch aus („lokale Erkennung"), während der Server den
+/// Grund samt Azure-Statuscode längst mitlieferte. Ein Zustand, der nur sagt
+/// *dass* etwas schiefging, verschiebt die Arbeit auf den Menschen davor.
+/// </summary>
+internal readonly record struct SpeechTokenOutcome(SpeechTokenGrant? Grant, string Reason)
+{
+    public static SpeechTokenOutcome Granted(SpeechTokenGrant grant) => new(grant, string.Empty);
+
+    public static SpeechTokenOutcome Failed(string reason) => new(null, reason);
+}
+
+/// <summary>
 /// Erkennt eine einzelne Äußerung über Azure Speech.
 ///
 /// **Warum dieser Dienst und nicht die lokale Windows-Erkennung.** Die
