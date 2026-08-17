@@ -37,6 +37,34 @@ function formatMoney(amountCents: number | null, currency: string): string | nul
   }
 }
 
+/** Nennt den Zeitraum so, wie danach gefragt wurde.
+ *
+ * **Der Befund vom 2026-08-17:** Auf „Zeig mir den Umsatz vom 10.8 bis 12.8"
+ * antwortete der Assistent mit „Verkäufe der letzten 30 Tage" — der genannte
+ * Zeitraum kam in der Antwort nicht einmal vor. Endet das Fenster in der
+ * Vergangenheit, wurde eine Spanne genannt, und dann stehen ihre beiden Enden
+ * da statt einer Tageszahl.
+ */
+export function zeitraumSatz(
+  since: string,
+  until: string | undefined,
+  days: number,
+  spanneGenannt = false,
+): string {
+  const tagLabel = (wert: string) =>
+    new Intl.DateTimeFormat("de-DE", { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "UTC" })
+      .format(new Date(wert));
+
+  // Ohne genannte Spanne — oder ohne `until`, also aus einer älteren Fassung
+  // des Werkzeugs — bleibt es beim rollenden Fenster.
+  if (!spanneGenannt || !until) {
+    return `Verkäufe der letzten ${days} Tage`;
+  }
+  // `until` ist der Beginn des Folgetags; genannt wird der letzte enthaltene.
+  const letzter = new Date(Date.parse(until) - 1).toISOString();
+  return `Verkäufe vom ${tagLabel(since)} bis ${tagLabel(letzter)}`;
+}
+
 function formatDate(value: string | null): string {
   if (!value) return "nicht gemeldet";
   const parsed = new Date(value);
@@ -134,7 +162,11 @@ export function formatAssistantToolResult(result: AnyAssistantToolResult): strin
       const data = result.data;
       const shop = data.channels.shop;
       const ebay = data.channels.ebay;
-      const zeilen = [`Verkäufe der letzten ${data.days} Tage:`];
+      const zeilen = [`${zeitraumSatz(data.since, data.until, data.days, data.spanneGenannt)}:`];
+      // Eine gekürzte Antwort darf nicht aussehen wie eine vollständige.
+      if (data.gekuerzt) {
+        zeilen.push(`(Der genannte Zeitraum ist länger, als eBay je Abfrage zurückgibt — gezeigt werden die letzten ${data.days} Tage davon.)`);
+      }
 
       const shopUmsatz = formatMoney(shop.revenueCents, shop.currency) ?? "Betrag nicht verfügbar";
       zeilen.push(`• Shop: ${shop.orderCount} Bestellung(en), ${shop.itemCount} Karte(n), ${shopUmsatz}`);

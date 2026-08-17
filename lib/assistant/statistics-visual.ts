@@ -268,13 +268,23 @@ export function rendereStatistikBilder(ansicht: StatistikAnsicht, thema: Thema =
       const spitzeIndex = liste.reduce((a, s, i) => (s.shop + s.ebay > liste[a].shop + liste[a].ebay ? i : a), 0);
       const spitzeWert = liste.length ? liste[spitzeIndex].shop + liste[spitzeIndex].ebay : 0;
 
+      // **„Letzte N Tage" stimmt nur bei einem Fenster, das heute endet.** Wer
+      // nach dem 10.–12.8. fragt, bekäme sonst „Umsatz, letzte 3 Tage" über
+      // Zahlen, die eine ganz andere Woche meinen. Endet die Reihe in der
+      // Vergangenheit, tritt die Spanne an die Stelle der Tageszahl.
+      const spanne = fensterTage.length
+        ? `${tagLabel(fensterTage[0].tag)} – ${tagLabel(fensterTage[fensterTage.length - 1].tag)}`
+        : "";
+      const bisHeute = !verkauf.spanneGenannt || fensterTage.length === 0;
+      const wann = bisHeute ? `letzte ${fenster} Tage` : spanne;
+
       bilder.push({
         schluessel: `${fenster}-${metrik}`,
         fenster,
         metrik,
-        titel: `${fenster} Tage · ${metrik === "umsatz" ? "Umsatz" : "Stückzahl"}`,
+        titel: `${bisHeute ? `${fenster} Tage` : spanne} · ${metrik === "umsatz" ? "Umsatz" : "Stückzahl"}`,
         hinweis: `${liste.length} ${aufloesung}, ${metrik === "umsatz" ? "Bruttoumsatz" : "verkaufte Karten"} je Balken.`,
-        heroLabel: metrik === "umsatz" ? `Umsatz, letzte ${fenster} Tage` : `Verkaufte Karten, letzte ${fenster} Tage`,
+        heroLabel: `${metrik === "umsatz" ? "Umsatz" : "Verkaufte Karten"}, ${wann}`,
         // `null` heißt „eine Hälfte fehlt" — eine Summe daraus wäre schlimmer
         // als keine.
         heroWert: verkauf.totalRevenueCents === null && metrik === "umsatz"
@@ -285,9 +295,7 @@ export function rendereStatistikBilder(ansicht: StatistikAnsicht, thema: Thema =
         achse,
         // Nicht unter jeder Säule: Bei dreißig Tagen stünde Datum an Datum.
         xAchse: liste.map((s, i) => (liste.length <= 10 || i % Math.ceil(liste.length / 6) === 0 ? s.kurz : "")),
-        zeitraum: fensterTage.length
-          ? `${tagLabel(fensterTage[0].tag)} – ${tagLabel(fensterTage[fensterTage.length - 1].tag)}`
-          : "",
+        zeitraum: spanne,
         spitze: spitzeWert > 0 ? `Höchster Wert: ${zeige(spitzeWert)} (${liste[spitzeIndex].label})` : null,
         svg,
       });

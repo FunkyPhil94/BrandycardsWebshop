@@ -94,6 +94,88 @@ export function requestedDays(text: string): number | undefined {
   return undefined;
 }
 
+const MONATE: Record<string, number> = {
+  januar: 1, jan: 1, februar: 2, feb: 2, maerz: 3, marz: 3, mrz: 3, april: 4, apr: 4,
+  mai: 5, juni: 6, jun: 6, juli: 7, jul: 7, august: 8, aug: 8, september: 9, sep: 9, sept: 9,
+  oktober: 10, okt: 10, november: 11, nov: 11, dezember: 12, dez: 12,
+};
+
+/** Ein Datum in der Frage: `10.8.`, `10.08.2026` oder `10. August`. */
+const DATUM = new RegExp(
+  String.raw`\b(\d{1,2})\s*\.\s*(?:(\d{1,2})\s*\.?|(${Object.keys(MONATE).join("|")}))(?:\s*(\d{2,4}))?`,
+  "giu",
+);
+
+/** Wählt das Jahr für ein Datum ohne Jahresangabe.
+ *
+ * Wer im August nach dem „10.8." fragt, meint dieses Jahr; wer im Januar nach
+ * dem „20.12." fragt, meint das vergangene. Ein Datum in der Zukunft ist bei
+ * einer Frage nach vergangenen Verkäufen immer die falsche Lesart — dort steht
+ * nichts.
+ */
+function jahrFuer(tag: number, monat: number, jetzt: Date): number {
+  const jahr = jetzt.getUTCFullYear();
+  const kandidat = Date.UTC(jahr, monat - 1, tag);
+  return kandidat > jetzt.getTime() ? jahr - 1 : jahr;
+}
+
+function alsTagesdatum(tag: number, monat: number, jahr: number): string | null {
+  if (monat < 1 || monat > 12 || tag < 1 || tag > 31) return null;
+  const datum = new Date(Date.UTC(jahr, monat - 1, tag));
+  // Der 31. Februar rollt sonst stillschweigend in den März weiter.
+  if (datum.getUTCDate() !== tag || datum.getUTCMonth() !== monat - 1) return null;
+  return datum.toISOString().slice(0, 10);
+}
+
+/** Alle Datumsangaben der Frage, in der Reihenfolge ihres Auftretens. */
+export function findeDaten(message: string, jetzt: Date): string[] {
+  // Diakritika fallen, Punkte und Wörter bleiben stehen — anders als bei
+  // `normalizeQuestion`, die aus „10.8" ein „10 8" macht und die Datumsform
+  // damit zerstört. **Genau daran scheiterte die Erkennung vor dem
+  // 2026-08-17.**
+  const text = message.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
+  const treffer: string[] = [];
+  for (const m of text.matchAll(DATUM)) {
+    const tag = Number(m[1]);
+    const monat = m[2] !== undefined ? Number(m[2]) : MONATE[m[3]!];
+    const rohesJahr = m[4] === undefined ? undefined : Number(m[4]);
+    const jahr = rohesJahr === undefined ? jahrFuer(tag, monat, jetzt)
+      : rohesJahr < 100 ? 2000 + rohesJahr
+      : rohesJahr;
+    const datum = alsTagesdatum(tag, monat, jahr);
+    if (datum) treffer.push(datum);
+  }
+  return treffer;
+}
+
+/** Der genannte Zeitraum als Fensterlänge und Fensterende.
+ *
+ * **Warum zwei Werte und nicht nur `days`.** `days` allein ist ein rollendes
+ * Fenster bis heute; eine abgeschlossene Spanne wie der 10.–12.8. lässt sich
+ * damit nicht ausdrücken. Länge und Ende getrennt zu führen lässt alles
+ * Nachgelagerte unverändert und verschiebt nur, wo das Fenster liegt.
+ *
+ * Ein Ende in der Zukunft wird auf heute gezogen und die Länge entsprechend
+ * gekürzt — „vom 10.8. bis 31.12." meint alles, was es bis jetzt gibt, nicht
+ * vier leere Monate obendrauf.
+ */
+export function requestedRange(message: string, jetzt: Date): { days: number; bis: string } | undefined {
+  const daten = findeDaten(message, jetzt);
+  if (daten.length === 0) return undefined;
+
+  const heute = jetzt.toISOString().slice(0, 10);
+  const sortiert = [...daten].sort();
+  // Zwei oder mehr Daten: die äußeren beiden spannen den Zeitraum auf. Ein
+  // einzelnes Datum ist ein einzelner Tag — „was habe ich am 12.8. verkauft"
+  // ist keine offene Spanne bis heute.
+  const von = sortiert[0];
+  const bis = (sortiert[sortiert.length - 1] > heute ? heute : sortiert[sortiert.length - 1]);
+  if (bis < von) return undefined;
+
+  const tage = Math.round((Date.parse(bis) - Date.parse(von)) / 86_400_000) + 1;
+  return { days: tage, bis };
+}
+
 function uniqueInputs(inputs: AssistantToolInput[]): AssistantToolInput[] {
   const names = new Set<AssistantToolName>();
   return inputs.filter((input) => {
@@ -104,6 +186,16 @@ function uniqueInputs(inputs: AssistantToolInput[]): AssistantToolInput[] {
 }
 
 export class RuleBasedAssistantPlanner implements AssistantPlanner {
+  /** Die Uhr ist einspeisbar, weil ein Datum ohne Jahr nur relativ zu ihr
+   *  eindeutig ist — „10.8." meint je nach heutigem Tag ein anderes Jahr. */
+  private readonly jetzt: () => Date;
+
+  // Ausgeschrieben statt als Kurzschreibweise im Parameter: Node entfernt beim
+  // Ausführen von TypeScript nur Typen und übersetzt keine Parametereigenschaft.
+  constructor(jetzt: () => Date = () => new Date()) {
+    this.jetzt = jetzt;
+  }
+
   async plan(message: string): Promise<AssistantPlan> {
     const text = normalizeQuestion(message);
     // Die zweite Lesart derselben Frage. Beide werden durchsucht — siehe
@@ -197,11 +289,22 @@ export class RuleBasedAssistantPlanner implements AssistantPlanner {
     // Frage nach dem *einen* letzten Verkauf hinaus — eine Antwort, die zur
     // Frage passt wie eine Zahl zu einer Liste. Der Zeitraum oder das Wort
     // „Umsatz" ist das Unterscheidungsmerkmal.
-    const zeitraum = requestedDays(text);
+    //
+    // **Eine genannte Datumsspanne schlägt die Tagesangabe.** „Vom 10.8 bis
+    // 12.8" ist die genauere Auskunft als irgendein rollendes Fenster; sie wird
+    // auf dem *rohen* Text gesucht, weil `normalizeQuestion` aus „10.8" ein
+    // „10 8" macht und die Datumsform damit zerstört.
+    const spanne = requestedRange(message, this.jetzt());
+    const zeitraum = spanne?.days ?? requestedDays(text);
     const fragtNachUmsatz = enthaelt(["umsatz", "einnahmen", "eingenommen", "verdient", "erlos"]);
     const fragtNachVerkaufen = enthaelt(["verkauft", "verkauf", "sale", "abgesetzt"]);
     if (fragtNachUmsatz || (fragtNachVerkaufen && (zeitraum !== undefined || enthaelt(["ubersicht", "bilanz", "insgesamt", "wie viele"])))) {
-      tools.push({ tool: "sales_overview", limit, ...(zeitraum === undefined ? {} : { days: zeitraum }) });
+      tools.push({
+        tool: "sales_overview",
+        limit,
+        ...(zeitraum === undefined ? {} : { days: zeitraum }),
+        ...(spanne === undefined ? {} : { bis: spanne.bis }),
+      });
     }
     if (fragtNachVerkaufen || enthaelt(["letzter kauf", "ging zuletzt weg"])) {
       add("latest_sale");
@@ -235,7 +338,10 @@ export function parseOpenAIPlannedTools(value: unknown): AssistantToolInput[] {
       throw new Error("Das Modell hat ein nicht registriertes Assistant-Werkzeug angefordert.");
     }
     const args = parseFunctionArguments(item.arguments);
-    inputs.push(parseAssistantToolInput({ tool: item.name, ...args }));
+    // `null` ist im Schema die Art, „nicht genannt" zu sagen — durchgereicht
+    // wäre es ein ungültiges Feld und ließe die ganze Planung scheitern.
+    const gesetzt = Object.fromEntries(Object.entries(args).filter(([, wert]) => wert !== null));
+    inputs.push(parseAssistantToolInput({ tool: item.name, ...gesetzt }));
   }
   return uniqueInputs(inputs);
 }
@@ -244,15 +350,25 @@ export class OpenAIResponsesAssistantPlanner implements AssistantPlanner {
   private readonly apiKey: string;
   private readonly model: string;
   private readonly fetchImpl: FetchLike;
+  private readonly jetzt: () => Date;
 
   constructor(
     apiKey: string,
     model = DEFAULT_OPENAI_MODEL,
     fetchImpl: FetchLike = fetch,
+    jetzt: () => Date = () => new Date(),
   ) {
     this.apiKey = apiKey;
     this.model = model;
     this.fetchImpl = fetchImpl;
+    this.jetzt = jetzt;
+  }
+
+  /** Das heutige Datum für die Anweisung. **Ohne diesen Satz kann das Modell
+   *  „vom 10.8 bis 12.8" gar nicht auflösen**: Ein Datum ohne Jahr ist nur
+   *  relativ zu heute eindeutig, und das Modell kennt den Tag nicht. */
+  private heute(): string {
+    return this.jetzt().toISOString().slice(0, 10);
   }
 
   async plan(message: string): Promise<AssistantPlan> {
@@ -276,6 +392,10 @@ export class OpenAIResponsesAssistantPlanner implements AssistantPlanner {
           "Wenn die Frage nicht mit den angebotenen Shop- oder eBay-Lesewerkzeugen beantwortbar ist, rufe keine Funktion auf.",
           "limit ist die gewünschte Ergebniszahl von 1 bis 20; verwende 10, wenn keine Zahl genannt wurde.",
           "days ist der Zeitraum in Tagen von 1 bis 90 und zählt nur für sales_overview; verwende 30, wenn kein Zeitraum genannt wurde. Ein genannter Zeitraum gehört nach days, nicht nach limit.",
+          `bis ist der letzte Tag des Zeitraums als JJJJ-MM-TT, einschließlich. Heute ist der ${this.heute()}.`,
+          "Nennt die Frage eine abgeschlossene Spanne wie „vom 10.8 bis 12.8“, setze bis auf den letzten Tag und days auf die Zahl der Tage einschließlich beider Enden — für dieses Beispiel bis=Jahr-08-12 und days=3.",
+          "Nennt die Frage einen einzelnen Tag, ist bis dieser Tag und days ist 1.",
+          "Nennt die Frage kein Enddatum, lasse bis leer; der Zeitraum endet dann heute.",
         ].join(" "),
         input: [{ role: "user", content: message }],
         tools: ASSISTANT_TOOL_DEFINITIONS.map((tool) => ({
@@ -288,11 +408,24 @@ export class OpenAIResponsesAssistantPlanner implements AssistantPlanner {
             properties: {
               limit: { type: "integer", minimum: 1, maximum: 20, description: "Maximale Ergebniszahl." },
               days: { type: "integer", minimum: 1, maximum: 90, description: "Zeitraum in Tagen; nur sales_overview wertet ihn aus." },
+              bis: {
+                // `null` steht hier, weil `strict: true` keine weglassbare
+                // Eigenschaft kennt: Ohne diese Wahl müsste das Modell ein
+                // Enddatum erfinden, auch wo die Frage keines nennt.
+                type: ["string", "null"],
+                // **Das einzige Zeichenkettenfeld im ganzen Schema.** Es ist
+                // auf die Datumsform festgelegt, damit hier kein Freitext
+                // hereinkommt; verlassen wird sich darauf nicht — die Prüfung
+                // in `parseAssistantToolInput` gilt unabhängig davon, ob der
+                // Anbieter `pattern` beachtet.
+                pattern: "^\\d{4}-\\d{2}-\\d{2}$",
+                description: "Letzter Tag des Zeitraums als JJJJ-MM-TT, einschließlich; null, wenn der Zeitraum heute endet.",
+              },
             },
             // `strict: true` verlangt, dass jede Eigenschaft in `required`
             // steht. Der Zeitraum ist deshalb Pflicht im Schema und bekommt
             // seine Vorgabe erst dahinter -- siehe `boundedOverviewDays`.
-            required: ["limit", "days"],
+            required: ["limit", "days", "bis"],
             additionalProperties: false,
           },
         })),

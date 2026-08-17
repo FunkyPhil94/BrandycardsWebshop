@@ -8972,3 +8972,40 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 - Umsetzung: Alle 333 Xray-Testbeschreibungen per Issue-Key-CSV-Update um die Pflicht "Screenshot je Testschritt" erweitert. Testplan KAN-898 und Testausfuehrung KAN-899 enthalten die gleichen Regeln fuer PASS, FAIL und BLOCKED.
 - Verifikation: JQL mit dem Screenshot-Marker liefert 333 Testvorgaenge; KAN-565, KAN-600, KAN-700, KAN-800 und KAN-897 stichprobenartig geprueft. Keine Testergebnisse vorweggenommen.
 - Sicherheitsregel: Passwoerter, Tokens, Zahlungsdaten und sonstige Geheimnisse muessen vor dem Screenshot maskiert oder geschwaerzt werden.
+
+## Auftrag 2026-08-17: Der Assistent versteht genannte Datumsspannen
+- Status: LÄUFT.
+- Befund des Betreibers: „Zeig mir den Umsatz vom 10.8 bis 12.8" wurde mit
+  „Verkäufe der letzten 30 Tage" beantwortet. Der Zeitraum aus der Frage wurde
+  komplett ignoriert.
+- Ursache: Der Zeitraum ist im ganzen Assistenten als `days` modelliert -- ein
+  rollendes Fenster, das **immer heute endet**. Eine abgeschlossene Spanne in der
+  Vergangenheit lässt sich damit gar nicht ausdrücken. Zusätzlich zerstört
+  `normalizeQuestion` die Datumsform: aus „10.8" wird „10 8", weil Punkte zu
+  Leerzeichen werden.
+- Umsetzung: `sales_overview` bekommt neben `days` (Länge) ein `bis` (Ende des
+  Fensters, ISO-Datum). Regelplaner und Modellplaner erkennen deutsche
+  Datumsangaben; die Erkennung läuft auf dem **rohen** Fragetext. Antworttext und
+  Diagrammbeschriftung nennen die tatsächliche Spanne statt „letzte N Tage".
+- Abnahme: Die Frage des Betreibers liefert genau den 10.–12.8.; `npm test`,
+  `npx tsc --noEmit`, `npm run lint`, WinUI-Build.
+
+## Auftrag 2026-08-17: Der Assistent versteht genannte Datumsspannen — abgeschlossen
+- Ergebnis: `sales_overview` hat neben `days` (Fensterlänge) ein `bis`
+  (Fensterende) bekommen. Regel- und Modellplaner erkennen deutsche
+  Datumsangaben; Antworttext und Diagrammbeschriftung nennen die Spanne.
+- Zwei Fehler, die dabei aufgefallen sind: Die Abfragen hatten **keine
+  Obergrenze** (nur `>= since`), weil das Fenster bisher immer jetzt endete —
+  ohne sie hätte „10.8 bis 12.8" alles bis heute mitgezählt. Und der erste
+  Entwurf erschloss aus der Uhr, ob eine Spanne gemeint war; das kippte
+  Testdaten allein durch Zeitablauf. Das Werkzeug teilt es jetzt als
+  `spanneGenannt` ausdrücklich mit.
+- Prüfung: 629 Tests grün, `npx tsc --noEmit` sauber, Lint bei der einen
+  bekannten Vorwarnung. Deploy `bcb45145`; `/`, `/admin`, `/account`,
+  `/api/products` antworten mit 200, und das Client-Bundle enthält die
+  Supabase-Adresse.
+- Gegenprobe an Produktionsdaten: Im Zeitraum 10.–12.8. liegen genau 3
+  eBay-Bestellungen mit 3 Karten und 54,40 € (alle am 10.8.), keine
+  Shop-Bestellung. Vorher antwortete derselbe Satz mit 53 Karten und 1.267,41 €
+  aus 30 Tagen.
+- Status: ABGESCHLOSSEN.

@@ -127,12 +127,16 @@ test("der OpenAI-Planer stellt nur strikte Registry-Funktionen bereit und übern
   assert.equal(requestBody.tools.length, ASSISTANT_TOOL_NAMES.length);
   assert.deepEqual(requestBody.tools.map((tool) => tool.name), [...ASSISTANT_TOOL_NAMES]);
   assert.ok(requestBody.tools.every((tool) => tool.strict === true && tool.parameters.additionalProperties === false));
-  // Seit Phase 9 zwei Parameter: `limit` (Ergebniszahl) und `days` (Zeitraum,
-  // nur von sales_overview ausgewertet). Beide sind Zahlen mit Schranken --
-  // die Liste ist hier festgenagelt, damit kein Freitextfeld dazukommt, ueber
+  // Drei Parameter: `limit` (Ergebniszahl), `days` (Fensterlaenge) und seit dem
+  // 2026-08-17 `bis` (Fensterende), beides nur von sales_overview ausgewertet.
+  // Die Liste ist hier festgenagelt, damit kein Freitextfeld dazukommt, ueber
   // das eine Abfrage von aussen hereinkaeme.
-  assert.ok(requestBody.tools.every((tool) => Object.keys(tool.parameters.properties).join(",") === "limit,days"));
+  assert.ok(requestBody.tools.every((tool) => Object.keys(tool.parameters.properties).join(",") === "limit,days,bis"));
   assert.ok(requestBody.tools.every((tool) => tool.parameters.properties.days.maximum === 90));
+  // `bis` ist die einzige Zeichenkette im Schema und deshalb auf die
+  // Datumsform festgelegt -- ein freies Textfeld waere genau das, was dieser
+  // Test verhindern soll. Die serverseitige Pruefung gilt zusaetzlich.
+  assert.ok(requestBody.tools.every((tool) => tool.parameters.properties.bis.pattern === "^\\d{4}-\\d{2}-\\d{2}$"));
 });
 
 test("der Orchestrator erzeugt Antworten nur aus Tool-Daten und nennt Quelle sowie Datenstand", async () => {

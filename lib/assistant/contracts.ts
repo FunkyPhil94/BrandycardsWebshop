@@ -96,7 +96,33 @@ export type AssistantToolInput<K extends AssistantToolName = AssistantToolName> 
   /** Zeitraum in Tagen — nur `sales_overview` liest ihn. Bleibt er weg, gilt
    *  `SALES_OVERVIEW_DEFAULT_DAYS`. */
   days?: number;
+  /** **Das Ende des Fensters** als Datum `JJJJ-MM-TT`, einschließlich dieses
+   *  Tages. Bleibt es weg, endet das Fenster jetzt.
+   *
+   *  **Warum das nötig wurde.** Bis zum 2026-08-17 gab es nur `days`, also
+   *  ausschließlich rollende Fenster bis heute. „Zeig mir den Umsatz vom 10.8
+   *  bis 12.8" war damit gar nicht ausdrückbar — der Assistent antwortete mit
+   *  den letzten 30 Tagen, ohne den genannten Zeitraum auch nur zu erwähnen.
+   *
+   *  Länge und Ende getrennt zu halten war die kleinere Änderung: `days` bleibt
+   *  überall die Fensterlänge, und alles Nachgelagerte — Tagesreihe, Diagramm,
+   *  Umschalter — rechnet unverändert weiter. Verschoben wird nur, wo das
+   *  Fenster liegt. */
+  bis?: string;
 };
+
+/** Prüft ein Datum der Form `JJJJ-MM-TT` und gibt es unverändert zurück.
+ *
+ * `new Date("2026-02-31")` wirft nicht, sondern rollt auf den 3. März weiter.
+ * Ein vertippter Tag würde so stillschweigend zu einem anderen Zeitraum, statt
+ * als Fehler zurückzukommen — deshalb wird gegen die zurückgerechnete
+ * Schreibweise geprüft.
+ */
+export function istTagesdatum(value: unknown): value is string {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/u.test(value)) return false;
+  const datum = new Date(`${value}T00:00:00.000Z`);
+  return !Number.isNaN(datum.getTime()) && datum.toISOString().slice(0, 10) === value;
+}
 
 /** Vorgabe und Obergrenze für den Zeitraum der Verkaufsübersicht.
  *
@@ -272,6 +298,22 @@ export type AssistantToolDataMap = {
     days: number;
     /** Ab wann gezählt wurde — damit die Zahl nachprüfbar ist. */
     since: string;
+    /** Bis wann gezählt wurde — der Beginn des Tages *nach* dem letzten
+     *  enthaltenen. */
+    until?: string;
+    /** Ob die Frage eine abgeschlossene Spanne genannt hat.
+     *
+     *  **Ausdrücklich mitgeteilt statt aus der Uhr erschlossen.** Der erste
+     *  Entwurf verglich `until` mit „jetzt" und schloss daraus auf die Absicht.
+     *  Das ist zweierlei zugleich falsch: Ein Testdatensatz mit festen Daten
+     *  kippt allein durch Zeitablauf in die andere Lesart, und ein Fenster, das
+     *  zufällig gestern endet, wäre von einer genannten Spanne nicht zu
+     *  unterscheiden. Das Werkzeug weiß es sicher — also sagt es das. */
+    spanneGenannt?: boolean;
+    /** Wahr, wenn die genannte Spanne länger war als `SALES_OVERVIEW_MAX_DAYS`
+     *  und deshalb gekürzt wurde. Ohne dieses Feld sähe eine gekürzte Antwort
+     *  aus wie eine vollständige. */
+    gekuerzt?: boolean;
     /** **Woran sich der Umsatz bemisst.** Ein Betrag ohne Bezugsgröße ist keine
      *  Auskunft: Brutto vor Gebühren liest sich anders als das, was am Ende
      *  ankommt. Der Satz geht mit in die Antwort. */
@@ -510,7 +552,7 @@ export function parseAssistantToolInput(value: unknown): AssistantToolInput {
   }
 
   const input = value as Record<string, unknown>;
-  const allowedFields = new Set(["tool", "limit", "days"]);
+  const allowedFields = new Set(["tool", "limit", "days", "bis"]);
   const unexpected = Object.keys(input).filter((field) => !allowedFields.has(field));
   if (unexpected.length) {
     throw new AssistantRequestError(`Nicht unterstützte Felder: ${unexpected.join(", ")}.`);
@@ -535,10 +577,20 @@ export function parseAssistantToolInput(value: unknown): AssistantToolInput {
     if (typeof days !== "number" || !Number.isSafeInteger(days) || days < 1 || days > SALES_OVERVIEW_MAX_DAYS) {
       throw new AssistantRequestError(`days muss eine ganze Zahl zwischen 1 und ${SALES_OVERVIEW_MAX_DAYS} sein.`);
     }
-    return { tool: input.tool as AssistantToolName, limit, days };
+  }
+  // Aus demselben Grund wie oben abgewiesen statt zurechtgebogen: Ein Ende, das
+  // kein Datum ist, wäre sonst als „jetzt" durchgegangen -- also als eine
+  // andere Frage als die gestellte, ohne dass es jemand bemerkt.
+  if (input.bis !== undefined && !istTagesdatum(input.bis)) {
+    throw new AssistantRequestError("bis muss ein Datum der Form JJJJ-MM-TT sein.");
   }
 
-  return { tool: input.tool as AssistantToolName, limit };
+  return {
+    tool: input.tool as AssistantToolName,
+    limit,
+    ...(input.days === undefined ? {} : { days: input.days as number }),
+    ...(input.bis === undefined ? {} : { bis: input.bis as string }),
+  };
 }
 
 export function parseAssistantQuestionInput(value: unknown): AssistantQuestionInput {

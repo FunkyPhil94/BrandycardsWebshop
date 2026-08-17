@@ -120,12 +120,21 @@ export async function getLatestSale(): Promise<AssistantToolResult<"latest_sale"
  */
 
 export async function getSalesOverview(
-  input: Pick<AssistantToolInput<"sales_overview">, "limit" | "days">,
+  input: Pick<AssistantToolInput<"sales_overview">, "limit" | "days" | "bis">,
   now: Date = new Date(),
 ): Promise<AssistantToolResult<"sales_overview">> {
   const db = getDb();
-  const days = boundedOverviewDays(input.days ?? SALES_OVERVIEW_DEFAULT_DAYS);
-  const since = new Date(now.getTime() - days * 24 * 60 * 60 * 1000).toISOString();
+  const gewuenscht = input.days ?? SALES_OVERVIEW_DEFAULT_DAYS;
+  const days = boundedOverviewDays(gewuenscht);
+  // **Das Ende des Fensters.** `bis` nennt einen Tag *einschließlich*, das
+  // Fenster endet also mit dessen letztem Moment. Ein Ende in der Zukunft wird
+  // auf jetzt gezogen: „bis 31.12." darf keine leeren Tage anhängen, die dann
+  // im Diagramm als verkaufsfreie Tage dastünden.
+  const ende = input.bis
+    ? new Date(Math.min(new Date(`${input.bis}T00:00:00.000Z`).getTime() + 24 * 60 * 60 * 1000, now.getTime()))
+    : now;
+  const since = new Date(ende.getTime() - days * 24 * 60 * 60 * 1000).toISOString();
+  const until = ende.toISOString();
   const limit = Math.min(20, Math.max(1, input.limit));
 
   const [shopOrders, ebayRows, syncStates] = await Promise.all([
@@ -141,6 +150,10 @@ export async function getSalesOverview(
         inArray(orders.status, [...SOLD_ORDER_STATUSES]),
         isNotNull(orders.paidAt),
         sql`datetime(COALESCE(${orders.paidAt}, ${orders.createdAt})) >= datetime(${since})`,
+        // **Die Obergrenze ist neu und nicht überflüssig.** Solange das Fenster
+        // immer jetzt endete, konnte nichts dahinterliegen. Bei einer genannten
+        // Spanne wie „10.8 bis 12.8" zählte ohne sie alles bis heute mit.
+        sql`datetime(COALESCE(${orders.paidAt}, ${orders.createdAt})) < datetime(${until})`,
       )),
     db.select({
       ebayOrderId: ebaySales.ebayOrderId,
@@ -151,7 +164,10 @@ export async function getSalesOverview(
       orderTotalCents: ebaySales.orderTotalCents,
       currency: ebaySales.currency,
       soldAt: ebaySales.soldAt,
-    }).from(ebaySales).where(sql`datetime(${ebaySales.soldAt}) >= datetime(${since})`),
+    }).from(ebaySales).where(and(
+      sql`datetime(${ebaySales.soldAt}) >= datetime(${since})`,
+      sql`datetime(${ebaySales.soldAt}) < datetime(${until})`,
+    )),
     readEbayReadSyncStates(db),
   ]);
 
@@ -230,6 +246,9 @@ export async function getSalesOverview(
   return availableAssistantResult("sales_overview", {
     days,
     since,
+    until,
+    spanneGenannt: input.bis !== undefined,
+    gekuerzt: gewuenscht > days,
     revenueBasis: einheitlich
       ? "Bruttoumsatz: was Käufer gezahlt haben, inklusive des von ihnen getragenen Versands, vor eBay-Gebühren."
       : "Bruttoumsatz je Kanal; eine Gesamtsumme entfällt, weil mehrere Währungen vorkommen.",
@@ -249,6 +268,9 @@ export async function getSalesOverview(
     totalRevenueCents: gesamtMoeglich ? shopRevenueCents + ebayRevenueCents : null,
     totalItemCount: ebayChannel.available ? shopItemCount + ebayItemCount : null,
     sales: einzelverkaeufe.slice(0, limit),
-    ...verdichteAufTage(einzelverkaeufe, since, new Date()),
+    // Der letzte Moment *vor* dem Ende: `until` ist der Beginn des Folgetags,
+    // und daraus entstünde eine leere Säule für einen Tag, nach dem niemand
+    // gefragt hat.
+    ...verdichteAufTage(einzelverkaeufe, since, new Date(ende.getTime() - 1)),
   }, ebayChannel.available ? ["SHOP_DB", "EBAY_READ_API"] : ["SHOP_DB"], availability.available ? availability.freshness : null);
 }

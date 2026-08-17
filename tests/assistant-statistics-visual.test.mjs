@@ -249,3 +249,22 @@ test("die Leitzahl gehört zum gezeigten Fenster, nicht zur gestellten Frage", (
   assert.equal(fuenfundvierzig.heroLabel, "Umsatz, letzte 45 Tage");
   assert.equal(fuenfundvierzig.heroWert, "45,00 €");
 });
+
+test("bei genannter Spanne steht die Spanne über der Leitzahl, nicht „letzte N Tage“", () => {
+  // **Der Befund vom 2026-08-17:** Auf „Umsatz vom 10.8 bis 12.8" stand
+  // „Umsatz, letzte 7 Tage" ueber Zahlen, die eine ganz andere Woche meinten.
+  const tage = Array.from({ length: 3 }, (_, index) => ({
+    day: new Date(Date.UTC(2026, 7, 10 + index)).toISOString().slice(0, 10),
+    shopCents: 0, ebayCents: 100, shopItems: 0, ebayItems: 1,
+  }));
+  const bilder = rendereStatistikBilder({
+    verkauf: verkauf({ days: 3, dailySeries: tage, spanneGenannt: true }),
+  });
+  const bild = bilder.find((b) => b.schluessel === "3-umsatz");
+  assert.equal(bild.heroLabel, "Umsatz, 10.08. – 12.08.");
+  assert.match(bild.titel, /10\.08\. – 12\.08\./u);
+  // Ohne genannte Spanne bleibt die Beschriftung unveraendert -- die Aussage
+  // haengt an der Frage, nicht am Kalender.
+  const rollend = rendereStatistikBilder({ verkauf: verkauf({ days: 3, dailySeries: tage }) });
+  assert.equal(rollend.find((b) => b.schluessel === "3-umsatz").heroLabel, "Umsatz, letzte 3 Tage");
+});
