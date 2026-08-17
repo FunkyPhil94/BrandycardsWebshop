@@ -302,6 +302,29 @@ footer { background:var(--ink); color:#fff; padding:52px max(48px,calc((100vw - 
 .privacy-delete:disabled { opacity:.5; }
 .privacy-note { color:var(--muted); font-size:11px; line-height:1.7; margin:18px 0 0; max-width:520px; }
 .admin-card { max-width:820px; }
+/* Bereichsnavigation für Admin und Konto.
+   Dieselbe Gestalt für beide, weil es dieselbe Aufgabe ist: Der aktive Bereich
+   trägt die rote Unterkante, die übrigen bleiben ruhig. Umbrechend statt
+   scrollend — sieben Einträge passen auf einem Telefon nicht in eine Zeile, und
+   eine waagerecht wischbare Leiste versteckt genau die hinteren Einträge, die
+   man selten braucht und deshalb schon nicht findet. */
+.section-nav { border-bottom:1px solid var(--line); display:flex; flex-wrap:wrap; gap:2px 22px; margin:0 0 30px; padding-bottom:2px; }
+.section-nav a { border-bottom:2px solid transparent; color:var(--muted); font-size:10px; font-weight:800; letter-spacing:.09em; padding:0 0 9px; text-transform:uppercase; }
+.section-nav a:hover { color:var(--ink); }
+.section-nav a.is-active { border-bottom-color:var(--red); color:var(--ink); }
+.admin-session { color:var(--muted); font-family:'DM Mono',monospace; font-size:10px; letter-spacing:.04em; margin:-16px 0 26px; }
+.admin-session-mfa { color:#3f7d4f; }
+/* Eine Aktion je Zeile: Bezeichnung, ein Satz dazu, Schaltfläche rechts.
+   Vier gleich aussehende Knöpfe untereinander waren nicht zu unterscheiden. */
+.admin-actions { display:flex; flex-direction:column; gap:1px; margin:0 0 26px; }
+.admin-action { align-items:center; background:#ebe8e1; display:flex; gap:20px; justify-content:space-between; padding:16px 18px; }
+.admin-action > div { display:flex; flex-direction:column; gap:5px; }
+.admin-action strong { font-size:13px; }
+.admin-action span { color:var(--muted); font-size:11px; line-height:1.55; max-width:52ch; }
+.admin-action button { flex:0 0 auto; }
+@media (max-width:600px) {
+  .admin-action { align-items:flex-start; flex-direction:column; gap:12px; }
+}
 .admin-mfa-card { margin:0 auto; max-width:560px; }
 .admin-mfa-card > p:not(.eyebrow) { color:var(--muted); line-height:1.6; }
 .admin-security-banner { align-items:center; background:#ebe8e1; display:flex; gap:12px; margin:22px 0 26px; padding:14px 16px; }

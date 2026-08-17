@@ -79,7 +79,9 @@ export async function GET(request: Request) {
     // stehen — allein ist sie wertlos.
     return new Response(null, {
       status: 303,
-      headers: { location: `/admin?ebayClaim=${claimId}`, "cache-control": "no-store" },
+      // Zielt auf den eBay-Bereich, nicht auf die Übersicht: Dort steht seit der
+      // Aufteilung am 2026-08-17 das Abholen des Tokens.
+      headers: { location: `/admin/ebay?ebayClaim=${claimId}`, "cache-control": "no-store" },
     });
   } catch (error) {
     console.error("eBay OAuth claim konnte nicht gespeichert werden", error);

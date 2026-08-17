@@ -475,6 +475,8 @@ test("Alltagsarbeit im Admin fragt nicht erneut nach dem Authenticator-Code", as
   assert.match(auth, /RECENT_MFA_REQUIRED/u, "adminFetch reagiert auf die Antwort des Servers");
   for (const path of [
     "app/admin/page.tsx",
+    "app/admin/ebay/page.tsx",
+    "app/admin/system/page.tsx",
     "app/admin/offers-panel.tsx",
     "app/admin/orders-panel.tsx",
     "app/admin/products-panel.tsx",
@@ -485,12 +487,35 @@ test("Alltagsarbeit im Admin fragt nicht erneut nach dem Authenticator-Code", as
   }
 });
 
-test("Admin-Dashboard zeigt den aktiven MFA-Schutz sichtbar an", async () => {
-  const page = await read("app/admin/page.tsx");
-  assert.match(page, /admin-security-banner/u);
-  assert.match(page, /MFA aktiv/u);
+test("Admin zeigt den aktiven MFA-Schutz sichtbar an", async () => {
+  // Steht seit der Aufteilung am 2026-08-17 im Systembereich, nicht mehr auf der
+  // Startseite der Konsole.
+  const system = await read("app/admin/system/page.tsx");
+  assert.match(system, /admin-security-banner/u);
+  assert.match(system, /MFA aktiv/u);
   const styles = await read("app/globals.css");
   assert.match(styles, /admin-security-dot/u);
+});
+
+test("die MFA-Sperre der Oberflaeche steht im Layout, nicht in einzelnen Seiten", async () => {
+  // Sieben Bereiche, sieben Gelegenheiten, sie zu vergessen. Das Layout ist die
+  // einzige Stelle, an der jeder Aufruf vorbeikommt.
+  const shell = await read("app/admin/admin-shell.tsx");
+  assert.match(shell, /MfaPanel/u, "die Huelle zeigt den Sperrkasten");
+  assert.match(shell, /aal2/u, "und prueft die Stufe selbst");
+  assert.match(await read("app/admin/layout.tsx"), /AdminShell/u, "das Layout benutzt die Huelle");
+  for (const path of [
+    "app/admin/page.tsx",
+    "app/admin/bestellungen/page.tsx",
+    "app/admin/preisvorschlaege/page.tsx",
+    "app/admin/ankauf/page.tsx",
+    "app/admin/karten/page.tsx",
+    "app/admin/ebay/page.tsx",
+    "app/admin/system/page.tsx",
+  ]) {
+    assert.doesNotMatch(await read(path), /MfaPanel/u,
+      `${path} darf die Sperre nicht selbst noch einmal bauen`);
+  }
 });
 
 // --- S-01, der geplante Lauf darf nicht am ersten Fehler abbrechen ----------
