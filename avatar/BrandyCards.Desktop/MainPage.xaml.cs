@@ -37,6 +37,7 @@ public sealed partial class MainPage : Page
     private readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web);
     private readonly AssistantConversationService _assistantService;
     private readonly WindowsSpeechRecognitionService _speechRecognitionService = new();
+    private readonly AzureSpeechRecognitionService _onlineSpeechRecognitionService = new();
     private AvatarSettings _settings = new();
     private DeviceCursor? _cursor;
     private NativePetOverlay? _petOverlay;
@@ -48,6 +49,8 @@ public sealed partial class MainPage : Page
     private bool _assistantRequestRunning;
     private bool _speechRecognitionRunning;
     private IReadOnlyList<string>? _speechPhrases;
+    private SpeechTokenGrant? _speechToken;
+    private DateTimeOffset _speechTokenValidUntil;
     private bool _conversationInitialized;
 
     private static readonly IReadOnlyDictionary<string, AnimationSpec> Animations = new Dictionary<string, AnimationSpec>(StringComparer.OrdinalIgnoreCase)
@@ -305,11 +308,21 @@ public sealed partial class MainPage : Page
         SetSpeechRecognitionBusy(true);
         try
         {
-            // Die Fragemuster einmal je Sitzung holen, bevor das Mikrofon
-            // aufgeht -- danach kostet das Diktat keine zusätzliche Wartezeit.
+            // Fragemuster und Sprachtoken holen, bevor das Mikrofon aufgeht --
+            // danach kostet das Diktat keine zusätzliche Wartezeit.
             var phrases = await EnsureSpeechPhrasesAsync();
-            AssistantStatusTextBlock.Text = "Windows hört zu …";
-            var transcription = await _speechRecognitionService.TranscribeOnceAsync(phrases);
+            var grant = await EnsureSpeechTokenAsync();
+
+            // **Die Entscheidung fällt vor dem Zuhören, nicht danach.** Ein
+            // Rückfall nach einer gescheiterten Online-Erkennung nützte nichts:
+            // Das Gesagte ist dann bereits verklungen und müsste ohnehin
+            // wiederholt werden.
+            AssistantStatusTextBlock.Text = grant is null
+                ? "Windows hört zu … (lokale Erkennung, eingeschränkte Genauigkeit)"
+                : "Hört zu …";
+            var transcription = grant is null
+                ? await _speechRecognitionService.TranscribeOnceAsync(phrases)
+                : await _onlineSpeechRecognitionService.TranscribeOnceAsync(grant.Value, phrases);
             if (!transcription.Succeeded)
             {
                 AssistantStatusTextBlock.Text = transcription.StatusMessage;
@@ -337,6 +350,33 @@ public sealed partial class MainPage : Page
             SetSpeechRecognitionBusy(false);
             AssistantInputTextBox.Focus(FocusState.Programmatic);
         }
+    }
+
+    /// <summary>
+    /// Besorgt ein gültiges Token für die Online-Spracherkennung.
+    ///
+    /// Das Token wird wiederverwendet, solange es gilt — ein Aufruf je Diktat
+    /// wäre gegen die Ratenbegrenzung verschwenderisch, die sich Prüfroute und
+    /// Frage ohnehin teilen. Erneuert wird mit dem Vorlauf, den der Shop
+    /// mitgibt, damit es nicht mitten in einer Aufnahme reißt.
+    ///
+    /// <c>null</c> heißt: lokal weitermachen. Kein Netz, keine Kopplung oder
+    /// eine serverseitig nicht eingerichtete Spracherkennung sind allesamt
+    /// Gründe, die den Knopf nicht unbrauchbar machen dürfen.
+    /// </summary>
+    private async Task<SpeechTokenGrant?> EnsureSpeechTokenAsync()
+    {
+        if (_speechToken is not null && DateTimeOffset.UtcNow < _speechTokenValidUntil) return _speechToken;
+        if (string.IsNullOrWhiteSpace(_settings.DeviceToken)) return null;
+
+        var grant = await _assistantService.GetSpeechTokenAsync(NormalizeShopUrl(_settings.ShopUrl), _settings.DeviceToken);
+        _speechToken = grant;
+        // Eine unsinnige oder fehlende Angabe des Servers darf kein ewig
+        // gültiges Token vortäuschen; 30 Sekunden sind die Untergrenze.
+        _speechTokenValidUntil = grant is null
+            ? DateTimeOffset.MinValue
+            : DateTimeOffset.UtcNow.AddSeconds(Math.Max(30, grant.Value.ExpiresInSeconds));
+        return _speechToken;
     }
 
     /// <summary>

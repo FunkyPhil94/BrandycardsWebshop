@@ -63,6 +63,60 @@ internal sealed class AssistantConversationService(HttpClient httpClient)
     internal readonly record struct AssistantAnswer(bool Succeeded, string Text);
 
     /// <summary>
+    /// Holt ein kurzlebiges Token für die Online-Spracherkennung.
+    ///
+    /// Der Abonnementschlüssel bleibt dabei im Shop; hier kommt nur an, was von
+    /// allein verfällt. Gibt <c>null</c> zurück, wenn der Shop die
+    /// Spracherkennung nicht eingerichtet hat oder nicht erreichbar ist — der
+    /// Aufrufer fällt dann auf die lokale Windows-Erkennung zurück.
+    /// </summary>
+    public async Task<SpeechTokenGrant?> GetSpeechTokenAsync(string shopUrl, string deviceToken, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            timeout.CancelAfter(ProbeTimeout);
+
+            using var request = new HttpRequestMessage(HttpMethod.Post, $"{shopUrl}/api/avatar/device/assistant/speech-token")
+            {
+                Content = new StringContent("{}", Encoding.UTF8, "application/json"),
+            };
+            request.Headers.Authorization = new("Bearer", deviceToken);
+
+            using var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeout.Token);
+            var body = await ReadBoundedBodyAsync(response, timeout.Token);
+            if (body.Outcome != BodyOutcome.Complete) return null;
+            if (!response.IsSuccessStatusCode) return null;
+
+            var token = ReadStringField(body.Text, "token");
+            var region = ReadStringField(body.Text, "region");
+            if (token.Kind != FieldKind.Found || region.Kind != FieldKind.Found) return null;
+            if (string.IsNullOrWhiteSpace(token.Value) || string.IsNullOrWhiteSpace(region.Value)) return null;
+
+            return new SpeechTokenGrant(token.Value!.Trim(), region.Value!.Trim(), ReadIntField(body.Text, "expiresInSeconds") ?? 0);
+        }
+        catch (Exception exception) when (exception is HttpRequestException or IOException or OperationCanceledException or JsonException)
+        {
+            return null;
+        }
+    }
+
+    private static int? ReadIntField(string body, string field)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(body);
+            if (document.RootElement.ValueKind != JsonValueKind.Object) return null;
+            if (!document.RootElement.TryGetProperty(field, out var value)) return null;
+            return value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out var zahl) ? zahl : null;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
     /// Holt die Fragemuster für die lokale Spracherkennung.
     ///
     /// Die Liste ist die Grammatik der Spracheingabe und wird **serverseitig

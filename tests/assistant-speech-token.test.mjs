@@ -92,6 +92,62 @@ test("der Abonnementschlüssel verlässt den Server nicht", async () => {
   assert.doesNotMatch(modul, /console\.(log|error|warn)\([^)]*key/iu, "der Schluessel gehoert in kein Protokoll");
 });
 
+test("der Desktop kennt weder Schlüssel noch Anbieterkonto", async () => {
+  const [azure, service] = await Promise.all([
+    read("avatar/BrandyCards.Desktop/AzureSpeechRecognitionService.cs"),
+    read("avatar/BrandyCards.Desktop/AssistantConversationService.cs"),
+  ]);
+  for (const [name, quelle] of [["AzureSpeechRecognitionService.cs", azure], ["AssistantConversationService.cs", service]]) {
+    // `FromSubscription` und der Schluesselkopf sind die beiden Wege, auf denen
+    // ein Abonnementschluessel ueberhaupt in einen Client geraten koennte.
+    assert.doesNotMatch(quelle, /FromSubscription|Ocp-Apim-Subscription-Key/u,
+      `${name} darf den Abonnementschluessel nicht verwenden`);
+    // Und er darf auch nicht aus der Umgebung oder den Einstellungen gelesen
+    // werden -- der Desktop hat keine Quelle dafuer und soll keine bekommen.
+    assert.doesNotMatch(quelle, /Environment\.GetEnvironmentVariable|_settings\.\w*(Key|Secret)/u,
+      `${name} darf sich keinen Schluessel beschaffen`);
+  }
+  // Der Name des Secrets darf vorkommen -- er steht in einem Hinweis, der dem
+  // Betreiber sagt, wo er suchen muss. Der Wert kommt hier nie an.
+  assert.match(azure, /SpeechConfig\.FromAuthorizationToken\(grant\.Token, grant\.Region\)/u);
+  assert.equal((azure.match(/SpeechConfig\.From\w+/gu) ?? []).length, 1,
+    "es darf genau einen Weg geben, die Erkennung zu konfigurieren");
+});
+
+test("die Online-Erkennung hört auf Deutsch und nutzt die Phrasen aus Variante 2", async () => {
+  const azure = await read("avatar/BrandyCards.Desktop/AzureSpeechRecognitionService.cs");
+  assert.match(azure, /RecognitionLanguage = "de-DE"/u);
+  assert.match(azure, /PhraseListGrammar\.FromRecognizer\(recognizer\)/u);
+  // Ohne das ausfuehrliche Format gibt Azure nur eine Lesart zurueck, und die
+  // Vorauswahl aus Variante 1 haette nichts mehr zu waehlen.
+  assert.match(azure, /OutputFormat = OutputFormat\.Detailed/u);
+  assert.match(azure, /result\.Best\(\)\.Select\(alternative => alternative\.Text\)/u);
+  // Dieselbe Obergrenze wie lokal -- eine zweite Zahl waere eine zweite Wahrheit.
+  assert.match(azure, /WindowsSpeechRecognitionService\.MaxCandidates/u);
+});
+
+test("ein abgelehntes Token wird als Betreiberproblem benannt, nicht als Mikrofonfehler", async () => {
+  // Sonst sucht jemand stundenlang am Headset, waehrend ein Secret falsch ist.
+  const azure = await read("avatar/BrandyCards.Desktop/AzureSpeechRecognitionService.cs");
+  assert.match(azure, /CancellationErrorCode\.AuthenticationFailure/u);
+  assert.match(azure, /AZURE_SPEECH_KEY oder AZURE_SPEECH_REGION im Shop falsch gesetzt/u);
+  assert.match(azure, /CancellationErrorCode\.TooManyRequests or CancellationErrorCode\.Forbidden/u,
+    "das aufgebrauchte Freikontingent braucht eine eigene Erklaerung");
+});
+
+test("ohne Token bleibt der Knopf benutzbar, und die Wahl fällt vor dem Zuhören", async () => {
+  const page = await read("avatar/BrandyCards.Desktop/MainPage.xaml.cs");
+  // Ein Rueckfall nach gescheiterter Online-Erkennung naehme nichts zurueck:
+  // Das Gesagte ist dann verklungen und muesste ohnehin wiederholt werden.
+  assert.match(page, /var grant = await EnsureSpeechTokenAsync\(\);[\s\S]*var transcription = grant is null[\s\S]*_speechRecognitionService\.TranscribeOnceAsync\(phrases\)[\s\S]*_onlineSpeechRecognitionService\.TranscribeOnceAsync\(grant\.Value, phrases\)/u);
+  // Der Nutzer muss erkennen koennen, dass gerade die schwaechere Erkennung laeuft.
+  assert.match(page, /lokale Erkennung, eingeschränkte Genauigkeit/u);
+  // Ein Token je Diktat waere gegen die geteilte Ratenbegrenzung verschwenderisch.
+  assert.match(page, /if \(_speechToken is not null && DateTimeOffset\.UtcNow < _speechTokenValidUntil\) return _speechToken;/u);
+  assert.match(page, /Math\.Max\(30, grant\.Value\.ExpiresInSeconds\)/u,
+    "eine unsinnige Serverangabe darf kein ewig gueltiges Token vortaeuschen");
+});
+
 test("Schlüssel und Region sind dokumentiert, samt der Falle nach 30 Tagen", async () => {
   const beispiel = await read(".env.example");
   assert.match(beispiel, /^AZURE_SPEECH_KEY=$/mu);
