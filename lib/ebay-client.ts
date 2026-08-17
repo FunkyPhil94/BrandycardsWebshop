@@ -121,11 +121,30 @@ export type EbayActiveListing = {
   priceAmountCents: number | null;
   priceCurrency: string;
   quantity: number;
+  /** eBay's primary category id, and the condition code.
+   *
+   * **Both were never read before 2026-08-17.** The columns existed on
+   * `ebay_listings` and were `NULL` for all 535 rows, because the upsert never
+   * set them and nothing extracted them here. Without them there is no way to
+   * ask which *kind* of card sells — only which individual one did.
+   *
+   * They stay optional: `GetMyeBaySelling` trims its `ItemType`, so a field may
+   * simply be absent. Absent is recorded as `null`, never guessed. */
+  categoryId: string | null;
+  conditionId: string | null;
   /** eBay listing start time (ISO). Drives the "newest cards" view. */
   startAt: string | null;
   endAt: string | null;
   rawData: Record<string, unknown>;
 };
+
+/** eBay's category and condition ids are numeric codes. Anything else — an
+ *  empty tag, a stray word — is recorded as absent rather than stored, so a
+ *  later grouping never has to guess whether a value means something. */
+function digitsOrNull(value: string | undefined): string | null {
+  const ziffern = (value ?? "").replace(/[^0-9]/gu, "");
+  return ziffern.length ? ziffern : null;
+}
 
 function parseTradingResponse(xml: string, config: EbayConfig) {
   const ack = xmlValue(xml, "Ack")?.toUpperCase();
@@ -168,6 +187,10 @@ function parseTradingResponse(xml: string, config: EbayConfig) {
       priceAmountCents: Number.isFinite(price) ? Math.round(price * 100) : null,
       priceCurrency: xmlAttribute(itemXml, "CurrentPrice", "currencyID") ?? "EUR",
       quantity: Number.isFinite(quantity) && quantity >= 0 ? quantity : 0,
+      // `PrimaryCategory` is a block, not a value — reading it directly would
+      // yield the concatenated inner XML instead of the id.
+      categoryId: digitsOrNull(xmlValue(xmlBlock(itemXml, "PrimaryCategory") ?? "", "CategoryID")),
+      conditionId: digitsOrNull(xmlValue(itemXml, "ConditionID")),
       startAt: parseEbayDate(xmlValue(itemXml, "StartTime")),
       endAt: parseEbayDate(xmlValue(itemXml, "EndTime")),
       rawData: { source: "trading-api", marketplaceId: config.marketplaceId, itemId: ebayItemId },

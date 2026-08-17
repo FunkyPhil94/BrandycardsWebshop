@@ -2,7 +2,7 @@ import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import type { BatchItem } from "drizzle-orm/batch";
 import { env } from "cloudflare:workers";
 import { getDb } from "../db";
-import { ebayListings, inventory, priceOffers, productAssets, products, syncEvents, syncRuns } from "../db/schema";
+import { ebayListingPriceHistory, ebayListings, inventory, priceOffers, productAssets, products, syncEvents, syncRuns } from "../db/schema";
 import { getActiveEbayListings, type EbayActiveListing } from "./ebay-client";
 import { bilderStehenSchonSo, stehtSchonSo } from "./ebay-sync-diff";
 import { darfUebernommenWerden, handfelder, ohneHandfelder, titelSchluessel } from "./manual-overrides";
@@ -31,6 +31,8 @@ function mapActiveListing(listing: EbayActiveListing) {
     listingUrl: listing.listingUrl,
     priceAmountCents: listing.priceAmountCents,
     priceCurrency: listing.priceCurrency,
+    categoryId: listing.categoryId,
+    conditionId: listing.conditionId,
     quantity: listing.quantity,
     startAt: listing.startAt,
     endAt: listing.endAt,
@@ -125,6 +127,12 @@ async function runEbaySyncInternal() {
       title: ebayListings.title,
       priceAmountCents: ebayListings.priceAmountCents,
       priceCurrency: ebayListings.priceCurrency,
+      // **Müssen mitgelesen werden, seit sie geschrieben werden.** `stehtSchonSo`
+      // vergleicht nur, was `listingValues` mitbringt — fehlte das Feld hier,
+      // stünde `undefined` gegen einen Wert, der Vergleich meldete ewig einen
+      // Unterschied, und jeder Lauf schriebe jedes der 535 Angebote neu.
+      categoryId: ebayListings.categoryId,
+      conditionId: ebayListings.conditionId,
       quantity: ebayListings.quantity,
       listingType: ebayListings.listingType,
       listingUrl: ebayListings.listingUrl,
@@ -204,6 +212,8 @@ async function runEbaySyncInternal() {
           descriptionHtml: mapped.description,
           priceAmountCents: mapped.priceAmountCents,
           priceCurrency: mapped.priceCurrency,
+          categoryId: mapped.categoryId,
+          conditionId: mapped.conditionId,
           quantity: mapped.quantity,
           listingType: mapped.listingType,
           listingUrl: mapped.listingUrl,
@@ -238,6 +248,30 @@ async function runEbaySyncInternal() {
         else if (!stehtSchonSo(productsById.get(productId), productValues)) statements.push(db.update(products).set(productValues).where(eq(products.id, productId)));
         if (!existing) statements.push(db.insert(ebayListings).values(listingValues));
         else if (!stehtSchonSo(existing, listingValues)) statements.push(db.update(ebayListings).set(listingValues).where(eq(ebayListings.id, existing.id)));
+        // **Die Preisänderung, festgehalten bevor sie überschrieben wird.**
+        // `price_amount_cents` trägt immer nur den aktuellen Preis; der Sync
+        // überschreibt ihn im Drei-Minuten-Takt. Ohne diese Zeile bleibt von
+        // einer Senkung nichts übrig, und die Frage „hilft Reduzieren?" ist
+        // dauerhaft unbeantwortbar — nicht wegen fehlender Auswertung, sondern
+        // weil es nie eine Beobachtung gab.
+        //
+        // Geschrieben wird **nur bei echter Änderung**: Ein Eintrag je Lauf
+        // wäre bei 535 Angeboten alle drei Minuten ein Vielfaches der
+        // Nutzdaten. Ein neues Angebot bekommt seinen Ausgangspreis mit
+        // `vorherCents: null` — es gab keinen vorherigen, und eine 0 hiesse
+        // „war vorher gratis".
+        const preisVorher = existing ? existing.priceAmountCents ?? null : null;
+        const preisNachher = mapped.priceAmountCents ?? null;
+        if (preisVorher !== preisNachher && (existing || preisNachher !== null)) {
+          statements.push(db.insert(ebayListingPriceHistory).values({
+            ebayItemId: mapped.ebayItemId,
+            productId,
+            vorherCents: preisVorher,
+            nachherCents: preisNachher,
+            currency: mapped.priceCurrency,
+            changedAt: now,
+          }));
+        }
         // Bilder werden nur angefasst, wenn sich die Liste wirklich
         // unterscheidet. Das blinde Löschen-und-Einfügen war der teuerste
         // Einzelposten des Laufs, ohne je etwas zu ändern.

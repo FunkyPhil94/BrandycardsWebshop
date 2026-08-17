@@ -536,6 +536,18 @@ export type EbaySaleRecord = {
   title: string | null;
   quantity: number;
   amountCents: number | null;
+  /** Der Postenpreis **ohne Versand und Steuern**.
+   *
+   * eBay liefert je Posten beides: `lineItemCost` ist der reine Artikelpreis,
+   * `total` derselbe Betrag zuzüglich anteiligem Versand und Steuern. Bis zum
+   * 2026-08-17 nahm `amountCents` `total` und fiel nur ersatzweise auf
+   * `lineItemCost` zurück — der Wert wurde also schon geholt und verworfen.
+   *
+   * Er bekommt hier ein **eigenes** Feld, statt `amountCents` umzudeuten: Für
+   * den ausgewiesenen Bruttoumsatz ist der gezahlte Betrag der richtige, für
+   * die Frage „welche Preislage verkauft sich" der ohne Versand. Versand
+   * variiert nach Ziel und sagt über die Karte nichts. */
+  itemPriceCents: number | null;
   orderTotalCents: number | null;
   currency: string;
   soldAt: string | null;
@@ -606,6 +618,11 @@ export function parseSalesOrders(payload: unknown, fallbackCurrency = "EUR"): Eb
         title: boundedText(typeof line?.title === "string" ? line.title : null, MAX_SALE_TITLE_LENGTH),
         quantity: Number.isSafeInteger(quantity) && quantity > 0 ? quantity : 1,
         amountCents: moneyToCents(line?.total) ?? moneyToCents(line?.lineItemCost),
+        // Kein Rückfall auf `total`: Der enthielte den Versand und wäre damit
+        // nicht das, was dieses Feld verspricht. Fehlt `lineItemCost`, bleibt
+        // es leer — eine Lücke ist ehrlicher als eine Zahl mit anderer
+        // Bedeutung.
+        itemPriceCents: moneyToCents(line?.lineItemCost),
         orderTotalCents,
         currency: moneyCurrency(line?.total, currency),
         soldAt,

@@ -9044,3 +9044,30 @@ selbst; die Schrittfolge samt Nachprüfung steht in
   bekannten Vorwarnung. Deploy `42245198`; `/`, `/admin`, `/api/products`
   antworten mit 200.
 - Status: ABGESCHLOSSEN.
+
+## Auftrag 2026-08-17: Historie mitschreiben statt wegwerfen
+- Status: LÄUFT.
+- Auftrag des Betreibers: Die beiden Datenpunkte mitschreiben, die
+  Unternehmensfragen erst beantwortbar machen — Preis/Kategorie/Zustand auf die
+  Verkaufszeile, und ein Protokoll der Preisänderungen. Preis ausdrücklich
+  **vor Versandkosten**, wenn möglich.
+- Vorbefund (Produktion, lesend): Nur 52 von 158 Verkäufen sind ihrem Angebot
+  zuordenbar. `category_id` und `condition_id` sind für **alle 535** Angebote
+  leer — der Angebots-Upsert setzt sie nicht, und `raw_data` enthält sie auch
+  nicht. Es gibt also noch keine Quelle für die Kategorie; die muss zuerst aus
+  der Trading-API geholt werden.
+- Zum Preis vor Versand: eBay liefert je Posten `lineItemCost` (ohne Versand und
+  Steuern) und `total` (mit). Der Code nimmt bisher `total` und fällt nur
+  ersatzweise auf `lineItemCost` zurück. Der gewünschte Wert wird also bereits
+  geholt und verworfen. Er bekommt eine **eigene** Spalte; `amountCents` bleibt
+  unverändert, weil sonst rückwirkend die Bedeutung bestehender Zeilen und der
+  ausgewiesene Umsatzbegriff kippten.
+- Umsetzung: (1) Kategorie und Zustand im Trading-Mapper auslesen und ins
+  Angebot schreiben. (2) `ebay_sales` bekommt Momentaufnahme-Spalten, gefüllt
+  beim Einsammeln aus dem dann noch vorhandenen Angebot. (3) Neue Tabelle für
+  Preisänderungen, geschrieben nur bei echter Änderung.
+- Rahmen: Rein additiv. Keine bestehende Spalte ändert ihre Bedeutung, keine
+  Migration löscht oder schreibt Produktionsdaten um.
+- Abnahme: `npm test`, `npx tsc --noEmit`, `npm run lint`, Migration eingespielt,
+  nach einem Lauf in Produktion nachgezählt, wie viele Angebote eine Kategorie
+  bekommen haben.

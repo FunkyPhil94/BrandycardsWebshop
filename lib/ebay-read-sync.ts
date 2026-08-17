@@ -28,7 +28,7 @@ import {
   type EbayReadDataType,
   type EbayReadSyncStatus,
 } from "../db/schema.ts";
-import { maxInsertRows } from "./d1-limits.ts";
+import { D1_SAFE_ID_LIST, maxInsertRows } from "./d1-limits.ts";
 import {
   EbayReadError,
   boundedDetail,
@@ -135,6 +135,17 @@ async function recordAttempt(
       detail,
     },
   });
+}
+
+/** Zerlegt eine Kennungsliste für ein `IN (…)`. Jede Kennung kostet einen
+ *  gebundenen Parameter, und D1 deckelt die pro Statement — geschätzt wird das
+ *  nicht, die Grenze steht gemessen in `d1-limits.ts`. */
+function teile<T>(werte: T[], groesse: number): T[][] {
+  const teile: T[][] = [];
+  for (let index = 0; index < werte.length; index += groesse) {
+    teile.push(werte.slice(index, index + groesse));
+  }
+  return teile;
 }
 
 async function insertChunked<T>(rows: T[], columns: number, write: (chunk: T[]) => Promise<unknown>) {
@@ -325,22 +336,50 @@ async function syncBuyerOffers(db: Db, _now: Date, stamp: string): Promise<numbe
  */
 async function syncSales(db: Db, now: Date, stamp: string): Promise<number> {
   const sales: EbaySaleRecord[] = await fetchEbaySales(now);
-  const rows = sales
-    .filter((sale) => sale.soldAt !== null)
-    .map((sale) => ({
+  const verwertbar = sales.filter((sale) => sale.soldAt !== null);
+
+  // **Die Momentaufnahme des Angebots — der eigentliche Zweck dieses Blocks.**
+  // Verschwindet ein Angebot bei eBay, bleibt die Verkaufszeile stehen, aber
+  // Preis, Kategorie und Zustand sind weg. Am 2026-08-17 waren von 158
+  // Verkäufen nur noch 52 einem Angebot zuzuordnen. Hier wird kopiert, solange
+  // es das Angebot noch gibt.
+  //
+  // Nur die tatsächlich vorkommenden Kennungen werden nachgeschlagen, nicht
+  // die ganze Tabelle: Bei 535 Angeboten und einer Handvoll neuer Verkäufe je
+  // Lauf wäre alles andere Verschwendung.
+  const kennungen = [...new Set(verwertbar.map((sale) => sale.ebayItemId).filter((id): id is string => Boolean(id)))];
+  const angebote = new Map<string, { priceAmountCents: number | null; categoryId: string | null; conditionId: string | null }>();
+  for (const teil of teile(kennungen, D1_SAFE_ID_LIST)) {
+    const zeilen = await db.select({
+      ebayItemId: ebayListings.ebayItemId,
+      priceAmountCents: ebayListings.priceAmountCents,
+      categoryId: ebayListings.categoryId,
+      conditionId: ebayListings.conditionId,
+    }).from(ebayListings).where(inArray(ebayListings.ebayItemId, teil));
+    for (const zeile of zeilen) angebote.set(zeile.ebayItemId, zeile);
+  }
+
+  const rows = verwertbar.map((sale) => {
+    const angebot = sale.ebayItemId ? angebote.get(sale.ebayItemId) : undefined;
+    return {
       ebayOrderId: sale.ebayOrderId,
       lineItemId: sale.lineItemId,
       ebayItemId: sale.ebayItemId,
       title: sale.title,
       quantity: sale.quantity,
       amountCents: sale.amountCents,
+      itemPriceCents: sale.itemPriceCents,
+      listingPriceCents: angebot?.priceAmountCents ?? null,
+      categoryId: angebot?.categoryId ?? null,
+      conditionId: angebot?.conditionId ?? null,
       orderTotalCents: sale.orderTotalCents,
       currency: sale.currency,
       soldAt: sale.soldAt as string,
       collectedAt: stamp,
-    }));
+    };
+  });
 
-  await insertChunked(rows, 10, (chunk) => db.insert(ebaySales).values(chunk).onConflictDoUpdate({
+  await insertChunked(rows, 14, (chunk) => db.insert(ebaySales).values(chunk).onConflictDoUpdate({
     target: [ebaySales.ebayOrderId, ebaySales.lineItemId],
     set: {
       // Titel und Beträge können sich bei einer Stornierung oder Korrektur bei
@@ -349,6 +388,15 @@ async function syncSales(db: Db, now: Date, stamp: string): Promise<number> {
       title: sql`excluded.title`,
       quantity: sql`excluded.quantity`,
       amountCents: sql`excluded.amount_cents`,
+      itemPriceCents: sql`excluded.item_price_cents`,
+      // **`COALESCE` und nicht `excluded`.** Wird ein Verkauf erneut
+      // eingesammelt, nachdem das Angebot bei eBay verschwunden ist, ist die
+      // frische Momentaufnahme leer. Ein blindes Überschreiben löschte damit
+      // genau die Angabe, für die diese Spalten angelegt wurden — und zwar
+      // still, beim ganz normalen Lauf. Ein einmal festgehaltener Wert bleibt.
+      listingPriceCents: sql`COALESCE(excluded.listing_price_cents, ebay_sales.listing_price_cents)`,
+      categoryId: sql`COALESCE(excluded.category_id, ebay_sales.category_id)`,
+      conditionId: sql`COALESCE(excluded.condition_id, ebay_sales.condition_id)`,
       orderTotalCents: sql`excluded.order_total_cents`,
       currency: sql`excluded.currency`,
       soldAt: sql`excluded.sold_at`,

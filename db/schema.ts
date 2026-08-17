@@ -547,12 +547,64 @@ export const ebaySales = sqliteTable("ebay_sales", {
    *  derselben Bestellung wiederholt. Der Umsatz summiert über *verschiedene*
    *  Bestellungen — sonst zählte eine Bestellung mit drei Karten dreifach. */
   orderTotalCents: integer("order_total_cents"),
+  /** Der Postenpreis **ohne Versand und Steuern** (`lineItemCost`).
+   *
+   *  Getrennt von `amountCents`, das aus `total` stammt und den vom Käufer
+   *  getragenen Versand enthält. Beide zu vermischen hiesse, den ausgewiesenen
+   *  Umsatzbegriff rueckwirkend zu aendern — bestehende Zeilen bekaemen eine
+   *  neue Bedeutung, ohne dass es ihnen anzusehen waere. Fuer die Frage
+   *  „welche Preislage verkauft sich" ist dies der richtige Wert: Versand
+   *  variiert nach Ziel und sagt ueber die Karte nichts. */
+  itemPriceCents: integer("item_price_cents"),
+  /** Momentaufnahme des Angebots im Augenblick des Einsammelns.
+   *
+   *  **Der Grund steht in den Zahlen:** Von 158 Verkaeufen liessen sich am
+   *  2026-08-17 nur 52 ihrem Angebot zuordnen. Verschwindet ein Angebot bei
+   *  eBay, bleibt die Verkaufszeile — Preis, Kategorie und Zustand aber sind
+   *  weg, und mit ihnen jede Auswertung nach Art der Karte. Was hier steht,
+   *  ueberlebt das Angebot.
+   *
+   *  Rueckwirkend fuellen laesst sich das nicht; fuer die 106 verwaisten
+   *  Verkaeufe bleiben die Felder leer. */
+  listingPriceCents: integer("listing_price_cents"),
+  categoryId: text("category_id"),
+  conditionId: text("condition_id"),
   currency: text("currency").notNull().default("EUR"),
   soldAt: timestamp("sold_at"),
   collectedAt: timestamp("collected_at"),
 }, (table) => [
   uniqueIndex("ebay_sales_line_unique").on(table.ebayOrderId, table.lineItemId),
   index("ebay_sales_sold_idx").on(table.soldAt),
+]);
+
+/** Jede tatsächliche Preisänderung eines eBay-Angebots.
+ *
+ * **Warum das eine eigene Tabelle braucht.** `ebay_listings.price_amount_cents`
+ * trägt immer nur den aktuellen Preis; der Sync überschreibt ihn im
+ * Drei-Minuten-Takt. Ob ein Preis je gesenkt wurde und was danach geschah,
+ * stand deshalb nirgends — und ohne das ist die Frage „hilft es, zu
+ * reduzieren?" nicht beantwortbar, sondern nur beantwortbar *aussehend*.
+ *
+ * Geschrieben wird **nur bei echter Änderung**. Ein Eintrag je Lauf wäre bei
+ * 535 Angeboten alle drei Minuten ein Vielfaches der Nutzdaten — genau der
+ * Fehler, den `sync_events` schon einmal gemacht hat (~31 700 Zeilen in 24
+ * Stunden ohne jede Aussage).
+ *
+ * Die Zeile hängt bewusst am `ebay_item_id`, nicht am Angebotsdatensatz: Sie
+ * soll auch dann noch dastehen, wenn das Angebot längst weg ist.
+ */
+export const ebayListingPriceHistory = sqliteTable("ebay_listing_price_history", {
+  id: id(),
+  ebayItemId: text("ebay_item_id").notNull(),
+  productId: text("product_id"),
+  /** `null` beim allerersten beobachteten Preis — es gab keinen vorherigen.
+   *  Eine 0 stünde hier für „war vorher gratis" und wäre schlicht falsch. */
+  vorherCents: integer("vorher_cents"),
+  nachherCents: integer("nachher_cents"),
+  currency: text("currency").notNull().default("EUR"),
+  changedAt: timestamp("changed_at"),
+}, (table) => [
+  index("ebay_price_history_item_idx").on(table.ebayItemId, table.changedAt),
 ]);
 
 export const auditEvents = sqliteTable("audit_events", {
