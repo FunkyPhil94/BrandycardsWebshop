@@ -1376,8 +1376,23 @@ lassen.
 Vor dem Ändern fragen. Sie stehen hier, damit sie nicht verlorengehen, **nicht**
 als Auftrag.
 
-*(derzeit keine — die beiden bisherigen sind am 2026-08-09 abgearbeitet, siehe
-unten.)*
+**Am 2026-08-17 dazugekommen, beide klein, beide keine Textwünsche sondern
+Hygiene:**
+
+1. **`processEbayOutbox` ist von keinem Test erreichbar.** `lib/ebay-outbox.ts`
+   importiert `../db` als *Verzeichnis*; Node-ESM scheitert daran mit
+   `ERR_UNSUPPORTED_DIR_IMPORT`. Die 15 Outbox-Tests treffen deshalb den Client
+   und das Planmodul, nie die Schleife selbst — das war nie entschieden, sondern
+   eine unbemerkte Nebenwirkung der Importform. Wer es ändern will: `getDb`
+   injizierbar machen oder den Verzeichnisimport auflösen. Kein Notfall, der
+   Pfad ist an echten Daten belegt.
+2. **`.env.local` und die produktiven Secrets laufen auseinander.** Am
+   2026-08-17 war der lokale `EBAY_REFRESH_TOKEN` älter als die dritte
+   Zustimmungsrunde und wurde mit `invalid_grant` abgewiesen. Für Builds
+   folgenlos (dort zählen nur die `NEXT_PUBLIC_SUPABASE_*`-Werte), für jede
+   lokale Arbeit gegen echte eBay-Daten aber eine Falle, die sich als „eBay
+   antwortet nicht" tarnt. Denkbar: ein Skript, das die Namen beider Seiten
+   vergleicht und Abweichungen benennt, ohne Werte auszugeben.
 
 ### Erledigt, zweite Runde
 
