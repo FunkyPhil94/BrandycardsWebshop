@@ -1,0 +1,103 @@
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import test from "node:test";
+
+const { issueSpeechToken, SpeechTokenUnavailableError } = await import("../lib/assistant/speech-token.ts");
+const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
+
+const ROUTE = "app/api/avatar/device/assistant/speech-token/route.ts";
+
+function withEnv(werte, fn) {
+  const vorher = { AZURE_SPEECH_KEY: process.env.AZURE_SPEECH_KEY, AZURE_SPEECH_REGION: process.env.AZURE_SPEECH_REGION };
+  Object.assign(process.env, werte);
+  for (const [name, wert] of Object.entries(werte)) if (wert === undefined) delete process.env[name];
+  return (async () => fn())().finally(() => {
+    for (const [name, wert] of Object.entries(vorher)) {
+      if (wert === undefined) delete process.env[name];
+      else process.env[name] = wert;
+    }
+  });
+}
+
+test("fehlende Zugangsdaten werden einzeln benannt, nicht zusammengefasst", async () => {
+  // Dieselbe Lehre wie bei PAYPAL_ENVIRONMENT: Ein stiller Sammelzustand
+  // verbirgt, welcher der beiden Werte fehlt -- und der Betreiber sucht
+  // an der falschen Stelle.
+  await withEnv({ AZURE_SPEECH_KEY: undefined, AZURE_SPEECH_REGION: "westeurope" }, async () => {
+    await assert.rejects(() => issueSpeechToken(async () => new Response("x")), /AZURE_SPEECH_KEY fehlt/u);
+  });
+  await withEnv({ AZURE_SPEECH_KEY: "geheim", AZURE_SPEECH_REGION: undefined }, async () => {
+    await assert.rejects(() => issueSpeechToken(async () => new Response("x")), /AZURE_SPEECH_REGION fehlt/u);
+  });
+});
+
+test("das Token wird bei Azure geholt und der Schlüssel bleibt im Kopf der Anfrage", async () => {
+  await withEnv({ AZURE_SPEECH_KEY: "geheimer-schluessel", AZURE_SPEECH_REGION: "westeurope" }, async () => {
+    let gesehen = null;
+    const grant = await issueSpeechToken(async (url, init) => {
+      gesehen = { url, init };
+      return new Response("  ein.jwt.token  ", { status: 200 });
+    });
+
+    assert.equal(gesehen.url, "https://westeurope.api.cognitive.microsoft.com/sts/v1.0/issueToken");
+    assert.equal(gesehen.init.method, "POST");
+    assert.equal(gesehen.init.headers["Ocp-Apim-Subscription-Key"], "geheimer-schluessel");
+    assert.equal(grant.token, "ein.jwt.token", "das Token wird getrimmt weitergereicht");
+    assert.equal(grant.region, "westeurope");
+    // Der Client soll erneuern, bevor das Token reisst -- nicht danach.
+    assert.ok(grant.expiresInSeconds > 0 && grant.expiresInSeconds < 600,
+      `Vorlauf fehlt: ${grant.expiresInSeconds}s`);
+  });
+});
+
+test("eine Fehlerantwort von Azure gibt ihren Körper nicht weiter", async () => {
+  await withEnv({ AZURE_SPEECH_KEY: "geheimer-schluessel", AZURE_SPEECH_REGION: "westeurope" }, async () => {
+    await assert.rejects(
+      () => issueSpeechToken(async () => new Response("Invalid subscription key geheimer-schluessel für Konto 12345", { status: 401 })),
+      (error) => {
+        assert.ok(error instanceof SpeechTokenUnavailableError);
+        assert.match(error.message, /HTTP 401/u);
+        // Azures Diagnosetext kann Schluessel oder Kontodetails enthalten.
+        assert.doesNotMatch(error.message, /geheimer-schluessel|12345/u);
+        return true;
+      },
+    );
+  });
+});
+
+test("ein leeres Token gilt als Fehlschlag, nicht als Erfolg", async () => {
+  await withEnv({ AZURE_SPEECH_KEY: "k", AZURE_SPEECH_REGION: "westeurope" }, async () => {
+    await assert.rejects(() => issueSpeechToken(async () => new Response("   ", { status: 200 })), /leeres Sprachtoken/u);
+  });
+});
+
+test("die Token-Route ist bewacht und wird nirgends zwischengespeichert", async () => {
+  const route = await read(ROUTE);
+  assert.match(route, /enforcePublicRateLimit\(request, "avatar-assistant"\)/u);
+  assert.match(route, /authenticateAvatarDevice\(request, "ASSISTANT_READ"\)/u);
+  assert.match(route, /enforcePublicRateLimit[\s\S]*authenticateAvatarDevice/u, "die Begrenzung greift vor dem Token-Lookup");
+  assert.match(route, /"cache-control": "no-store"/u);
+  // Nur POST: Ein GET waere fuer Proxies und Verlauf eine abrufbare Adresse,
+  // an deren Ende ein gueltiges Fremdanbieter-Token steht.
+  assert.doesNotMatch(route, /export async function GET/u);
+});
+
+test("der Abonnementschlüssel verlässt den Server nicht", async () => {
+  const [route, modul] = await Promise.all([read(ROUTE), read("lib/assistant/speech-token.ts")]);
+  // Die Route reicht nur durch, was `issueSpeechToken` zurueckgibt -- und das
+  // ist Token, Region und Laufzeit. Ein direkter Zugriff auf den Schluessel in
+  // der Route waere der Weg, auf dem er in eine Antwort geriete.
+  assert.doesNotMatch(route, /AZURE_SPEECH_KEY/u);
+  assert.match(modul, /process\.env\.AZURE_SPEECH_KEY/u);
+  assert.doesNotMatch(modul, /console\.(log|error|warn)\([^)]*key/iu, "der Schluessel gehoert in kein Protokoll");
+});
+
+test("Schlüssel und Region sind dokumentiert, samt der Falle nach 30 Tagen", async () => {
+  const beispiel = await read(".env.example");
+  assert.match(beispiel, /^AZURE_SPEECH_KEY=$/mu);
+  assert.match(beispiel, /^AZURE_SPEECH_REGION=$/mu);
+  assert.doesNotMatch(beispiel, /NEXT_PUBLIC_AZURE/u, "der Schluessel darf nie ins Client-Bundle");
+  // Ohne diesen Hinweis bricht die Spracherkennung nach Ablauf der Testversion
+  // still ab, und niemand weiss warum.
+  assert.match(beispiel, /Nutzungsbasierte Bezahlung/u);
+});
