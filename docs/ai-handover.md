@@ -37,9 +37,63 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-<!-- Fuer den naechsten Auftrag freihalten. -->
+### 2026-08-17 - Rest 1 beweisen: Menge eines LAUFENDEN eBay-Angebots ändern
 
-Keine laufenden Aufträge.
+- Stand: **LÄUFT.**
+- **Schreibzugriff auf eBay, vom Betreiber ausdrücklich beauftragt.** Er wählte
+  aus drei vorgelegten Wegen den hier beschriebenen.
+
+**Zwei Korrekturen an meinem eigenen früheren Vorschlag, beide vor dem
+Eingriff gefunden:**
+
+1. Ich hatte ein **Wegwerf-Angebot** angeboten, als wäre es klein. Es ist es
+   nicht: Im Code existiert **kein** `AddItem`/`AddFixedPriceItem`, der
+   Schreibpfad kann ausschließlich die Menge bestehender Angebote ändern. Es
+   bräuchte eine neue Schreibfähigkeit, eine weitere OAuth-Zustimmung (der Scope
+   ist `sell.inventory`, das deckt kein Einstellen) — und ein echtes
+   öffentliches Angebot, das ein echter Käufer kaufen könnte. Ein vom Verkäufer
+   stornierter Kauf schlägt auf den eBay-Verkäuferstatus durch.
+2. Der naheliegende Ersatz — ein laufendes Angebot auf **0** setzen und
+   zurücksetzen — wäre **irreversibel**. eBay beendet ein Festpreisangebot bei
+   Menge 0, und ein beendetes Angebot lässt sich nicht revidieren. Ohne
+   `AddItem` gäbe es keinen Rückweg; ein echtes Angebot wäre dauerhaft
+   verloren.
+
+**Was stattdessen gemacht wird.** Die Produktion hat Angebote mit Menge > 1
+(7× Menge 2, 2× Menge 3, eines mit 6). Gewählt: **`398292430657`**, „Topps
+Premier League Flagship Edition Mega Tin 26/27", **Menge 6, verkauft 0**.
+
+Ablauf, streng in dieser Reihenfolge:
+
+1. Verfügbarkeit lesen — erwartet 6.
+2. `reviseEbayItemQuantity(…, 5)` — erwartet `REVISED`.
+3. **Zurücklesen — erwartet 5. Das ist der Beweis:** die Menge eines
+   *laufenden* Angebots hat sich wirklich geändert. Genau das war am
+   2026-08-08 offengeblieben, weil jener Test ein bereits beendetes Angebot traf.
+4. `reviseEbayItemQuantity(…, 6)` — wiederherstellen.
+5. Zurücklesen — erwartet 6.
+
+**Warum das ungefährlich ist:** Das Angebot bleibt durchgehend aktiv und
+kaufbar, nur eines von sechs Stück ist für Sekunden nicht buchbar. Es verlässt
+die eBay-Aktivliste nie — die Sorge, der Drei-Minuten-Sync könnte die Karte
+lokal deaktivieren, gilt deshalb **nicht** für diesen Weg; sie galt nur für die
+Variante mit Menge 0. Der Sync schreibt ohnehin nur von eBay in die Datenbank,
+nicht umgekehrt.
+
+**Abbruchbedingung:** Ändert sich `quantity_sold` während des Laufs, hat jemand
+wirklich gekauft. Dann wird **nicht** blind auf 6 zurückgesetzt, sondern
+abgebrochen und berichtet — sonst überschriebe die Wiederherstellung einen
+echten Verkauf und erzeugte genau den Doppelverkauf, den dieser Punkt
+verhindern soll.
+
+**Wenn Schritt 4 fehlschlägt:** Das Angebot steht auf 5 statt 6. Das ist die
+sichere Richtung (ein Stück zu wenig im Angebot, kein Doppelverkauf) und von
+Hand über die eBay-Oberfläche zu korrigieren. Es gehört dann hierher
+protokolliert.
+
+**Ausgeführt wird lokal** mit den Zugangsdaten aus `.env.local` gegen dieselbe
+`reviseEbayItemQuantity`, die auch der Worker benutzt — kein Sonderpfad, kein
+Deployment nötig.
 
 ## Historie
 
