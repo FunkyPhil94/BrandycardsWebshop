@@ -550,6 +550,27 @@ export const ebayOauthClaims = sqliteTable("ebay_oauth_claims", {
   createdAt: timestamp("created_at"),
 }, (table) => [index("ebay_oauth_claims_expiry_idx").on(table.expiresAt)]);
 
+/** Fragen an den Assistenten, die unbeantwortet blieben.
+ *
+ * **Der Zweck ist der Werkzeugausbau.** Zwölf Werkzeuge sind eingerichtet;
+ * welche fehlen, war bis zum 2026-08-17 unbekannt, weil eine `UNSUPPORTED`-Frage
+ * spurlos verschwand. Damit wäre jede weitere Erweiterung geraten.
+ *
+ * **Nur Unbeantwortetes**, und das ist eine Entscheidung: Bei beantworteten
+ * Fragen ist bereits bekannt, welche Werkzeuge griffen, und ein Mitschnitt jeder
+ * Frage wäre ein wachsendes Tätigkeitsprotokoll ohne zusätzlichen Nutzen.
+ *
+ * `reason` trennt Fälle, die in der Antwort gleich aussehen — eine
+ * Werkzeuglücke von einer Betriebsstörung. Ohne die Spalte würde ein nicht
+ * erreichbares Modell als Werkzeugbedarf gezählt.
+ */
+export const assistantUnanswered = sqliteTable("assistant_unanswered", {
+  id: id(),
+  question: text("question").notNull(),
+  reason: text("reason").notNull(),
+  createdAt: timestamp("created_at"),
+}, (table) => [index("assistant_unanswered_reason_idx").on(table.reason, table.createdAt)]);
+
 export type User = typeof users.$inferSelect;
 export type Product = typeof products.$inferSelect;
 export type Order = typeof orders.$inferSelect;

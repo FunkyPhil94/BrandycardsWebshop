@@ -6,6 +6,7 @@ import type {
   AssistantToolInput,
 } from "./contracts.ts";
 import type { AssistantPlanner } from "./planner.ts";
+import { type UnansweredQuestionRecorder, zeichneUnbeantworteteFrageAuf } from "./question-log.ts";
 import { failedToolText, formatAssistantToolResult, toolSummary } from "./response-formatter.ts";
 
 export interface AssistantToolExecutor {
@@ -27,18 +28,28 @@ function uniqueSources(values: AssistantDataSource[][]): AssistantDataSource[] {
 export class AssistantOrchestrator {
   private readonly planner: AssistantPlanner;
   private readonly tools: AssistantToolExecutor;
+  /** Optional: zeichnet unbeantwortete Fragen auf, damit der Werkzeugausbau
+   *  gemessen statt geraten wird. Ohne Recorder verhält sich alles wie vorher —
+   *  die Messung ist Zubehör und darf niemals Voraussetzung sein. */
+  private readonly recorder: UnansweredQuestionRecorder | null;
 
   constructor(
     planner: AssistantPlanner,
     tools: AssistantToolExecutor,
+    recorder: UnansweredQuestionRecorder | null = null,
   ) {
     this.planner = planner;
     this.tools = tools;
+    this.recorder = recorder;
   }
 
   async ask(input: AssistantQuestionInput): Promise<AssistantOrchestratorResponse> {
     const plan = await this.planner.plan(input.message);
     if (!plan.tools.length) {
+      // Aufgezeichnet wird die fehlgeschlagene **Zuordnung** — hier, an der
+      // einen Stelle, an der alle drei Gründe zusammenlaufen.
+      await zeichneUnbeantworteteFrageAuf(this.recorder, input.message, plan.reason);
+
       // **Ein Anbieterausfall ist kein `UNSUPPORTED`.** Drei Lagen führen zu
       // derselben leeren Werkzeugliste und sind grundverschieden: „nichts
       // eingerichtet", „eingerichtet und gerade kaputt" und „fachlich nicht

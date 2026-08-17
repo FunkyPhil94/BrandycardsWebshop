@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
+import { getDb } from "../../../../../db";
+import { assistantUnanswered } from "../../../../../db/schema";
 import { ASSISTANT_SPEECH_PHRASES, ASSISTANT_TOOL_DEFINITIONS, AssistantRequestError, parseAssistantQuestionInput } from "../../../../../lib/assistant/contracts";
+import type { UnansweredQuestionRecorder } from "../../../../../lib/assistant/question-log";
 import { createServerAssistantOrchestrator } from "../../../../../lib/assistant/server-orchestrator";
 import { authenticateAvatarDevice } from "../../../../../lib/avatar-device-auth";
 import { enforcePublicRateLimit, RateLimitError } from "../../../../../lib/rate-limit";
@@ -7,6 +10,26 @@ import { readTextBody, RequestBodyError } from "../../../../../lib/request-body"
 
 const MAX_ASSISTANT_REQUEST_BYTES = 4 * 1024;
 const NO_STORE = { "cache-control": "no-store" };
+
+/** Schreibt unbeantwortete Fragen in die Messtabelle.
+ *
+ * **Der einzige Schreibvorgang im Assistant-Pfad, und er steht absichtlich
+ * hier.** Der Assistant-Code selbst bleibt schreibfrei — ein Test aus Phase 4
+ * hält das fest, und die Zusicherung soll absolut bleiben. Diese Route besitzt
+ * den Datenbankzugang ohnehin.
+ *
+ * Berührt werden **keine** Geschäftsdaten: `assistant_unanswered` enthält nur
+ * die eigenen Fragen des Betreibers und den Grund, aus dem sie unbeantwortet
+ * blieben. Wozu: Welche Werkzeuge fehlen, war bis zum 2026-08-17 unbekannt,
+ * weil eine abgewiesene Frage spurlos verschwand.
+ */
+function createUnansweredRecorder(): UnansweredQuestionRecorder {
+  return {
+    async record({ question, reason }) {
+      await getDb().insert(assistantUnanswered).values({ question, reason });
+    },
+  };
+}
 
 async function authorize(request: Request) {
   // Vor dem D1-Token-Lookup begrenzen: auch frei erfundene bcav_-Tokens dürfen
@@ -56,7 +79,7 @@ export async function POST(request: Request) {
       throw new AssistantRequestError("Die Assistant-Anfrage enthält kein gültiges JSON.");
     }
     const input = parseAssistantQuestionInput(body);
-    const result = await createServerAssistantOrchestrator().ask(input);
+    const result = await createServerAssistantOrchestrator(createUnansweredRecorder()).ask(input);
     return NextResponse.json(result, { headers: NO_STORE });
   } catch (error) {
     if (error instanceof RateLimitError) {

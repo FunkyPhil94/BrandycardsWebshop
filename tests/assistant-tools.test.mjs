@@ -110,7 +110,11 @@ test("die Geräte-Assistant-Route authentifiziert, begrenzt und liefert nie cach
   assert.match(route, /readTextBody\(request, MAX_ASSISTANT_REQUEST_BYTES\)/u);
   assert.match(route, /"cache-control": "no-store"/u);
   assert.match(route, /parseAssistantQuestionInput\(body\)/u);
-  assert.match(route, /createServerAssistantOrchestrator\(\)\.ask\(input\)/u);
+  // Die Argumentliste ist seit dem 2026-08-17 nicht mehr leer: Die Route gibt
+  // den Recorder für unbeantwortete Fragen herein, damit der Assistant-Code
+  // selbst schreibfrei bleiben kann. Geprüft wird weiter das Wesentliche --
+  // die Route beantwortet über den Orchestrator und mit der geparsten Eingabe.
+  assert.match(route, /createServerAssistantOrchestrator\(.*\)\.ask\(input\)/u);
   assert.doesNotMatch(route, /parseAssistantToolInput\(body\)/u, "Clients dürfen kein Werkzeug direkt auswählen");
 });
 
