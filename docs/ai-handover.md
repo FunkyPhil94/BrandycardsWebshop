@@ -39,7 +39,8 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ### 2026-08-17 - Messen, welche Fragen der Assistent nicht versteht
 
-- Stand: **LÄUFT.**
+- Stand: **GEBAUT UND GEPRÜFT. Wartet auf die Freigabe für die produktive
+  Migration** — erst danach wird ausgerollt.
 - Auftrag: Vom Betreiber aus vier vorgelegten Wegen gewählt. Für den Assistenten
   stand im Vorrat nichts mehr offen; dies ist ein neuer Punkt.
 
@@ -78,6 +79,71 @@ angewendet und wiederholbar. Rot-Nachweis für die neuen Tests.
 **Rücksprachepflichtig und deshalb nicht Teil dieses Durchlaufs:** die Migration
 auf der **produktiven** D1. Sie wird vorbereitet und lokal belegt; das Einspielen
 braucht eine ausdrückliche Freigabe.
+
+**Ergebnis: `npm test` 582/582, TypeScript fehlerfrei, ESLint 0 Fehler.** Zehn
+neue Tests in `tests/assistant-question-log.test.mjs`.
+
+Migration `0014_assistant_unanswered.sql` **lokal** angewendet, zweimal
+hintereinander ohne Fehler (`IF NOT EXISTS`), eine Testzeile geschrieben, gelesen
+und wieder entfernt (0 übrig).
+
+**Zwei Wächter schlugen an, und beide hatten recht — keiner wurde gelockert:**
+
+1. **Phase 4 verlangt, dass der Assistant-Code keine Schreibpfade enthält** —
+   absolut, und das soll es bleiben, auch für die eigene Messtabelle. Der erste
+   Entwurf schrieb in `server-orchestrator.ts` und verletzte das. Aufgelöst
+   nicht durch Aufweichen, sondern durch Verschieben: Der Recorder ist eine
+   Schnittstelle, die konkrete `insert`-Stelle liegt in der Route, die den
+   Datenbankzugang ohnehin besitzt. Der Wächter blieb wörtlich unverändert und
+   ist jetzt zusätzlich in `assistant-question-log.test.mjs` gespiegelt.
+2. `tests/assistant-tools.test.mjs` fixierte die Aufrufform
+   `createServerAssistantOrchestrator()` mit leerer Klammer. Dort steht jetzt
+   ein Argument; die Prüfung wurde auf das Wesentliche geweitet — Route
+   beantwortet über den Orchestrator mit der geparsten Eingabe — mit der
+   Begründung daneben.
+
+**Fachliche Festlegungen, jeweils gegen die bequemere Variante:**
+
+- **Nur Unbeantwortetes wird gespeichert.** Bei beantworteten Fragen ist bekannt,
+  welche Werkzeuge griffen; ein Mitschnitt jeder Frage wäre ein wachsendes
+  Tätigkeitsprotokoll ohne zusätzlichen Nutzen.
+- **`READY` wird nicht aufgezeichnet**, auch wenn die Ausführung anschließend
+  scheitert. Gemessen wird die **Zuordnung**, nicht die Datenbeschaffung — für
+  letztere gibt es die Betriebsalarme.
+- **Der Grund geht mit.** „Kein Werkzeug passt" ist eine Lücke,
+  „Modell nicht erreichbar" eine Störung. Ohne die Spalte würde man Werkzeuge
+  gegen eine Störung bauen.
+- **Die Aufzeichnung scheitert leise.** Sie läuft nach der fertigen Antwort und
+  ist gefangen; ein D1-Fehler darf aus einer gültigen Auskunft keinen Fehler
+  machen. Dieselbe Haltung wie beim Nachlesen der eBay-Menge und bei der
+  Lesartenprüfung.
+
+**Nebenwirkung, die die Reihenfolge bestimmt:** Ohne die Tabelle schlägt der
+`insert` fehl — gefangen, also harmlos, aber es würde nichts aufgezeichnet und
+das Worker-Protokoll füllte sich mit Meldungen. Deshalb **erst migrieren, dann
+deployen**, nicht umgekehrt.
+
+**Was der Betreiber freigeben muss:**
+
+```
+npx wrangler d1 execute brandycards-production --remote --file drizzle/0014_assistant_unanswered.sql
+```
+
+Additiv, keine bestehende Tabelle wird berührt, `IF NOT EXISTS` macht den Lauf
+wiederholbar. Danach deployen.
+
+**Auswerten später so** — die Abfrage gehört zum Ergebnis, sonst liegen die Daten
+nur da:
+
+```sql
+SELECT reason, COUNT(*) AS anzahl FROM assistant_unanswered GROUP BY reason;
+SELECT question, COUNT(*) AS anzahl FROM assistant_unanswered
+ WHERE reason = 'UNSUPPORTED' GROUP BY question ORDER BY anzahl DESC LIMIT 20;
+```
+
+**Naheliegender nächster Schritt, nicht gebaut:** ein dreizehntes Werkzeug, das
+diese Auswertung selbst beantwortet („welche Fragen verstehst du nicht?").
+Erst sinnvoll, wenn Daten vorliegen.
 
 ## Historie
 
