@@ -9187,3 +9187,45 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 - Deploy-Verifikation: `/` antwortet mit 200; `/admin` zeigt „Nicht authentifiziert" statt „Supabase ist noch nicht konfiguriert" — die Seite, die Client-Konfiguration braucht, ist also gesund. Der erste echte Aufruf steht in der Produktion: `/` mit `view_count = 1`. Der anschließende Besuch von `/admin` erzeugte **keine** Zeile, die Ausnahme greift also auch produktiv.
 - Design-Hook: Die vier `border-left`-Akzente in `app/globals.css` bleiben auf Wunsch des Betreibers; der Ignore ist in `.impeccable/config.json` auf diese Datei begrenzt.
 - Status: ABGESCHLOSSEN.
+
+## Auftrag 2026-08-17: Aufrufe erfragbar machen + Assistent heißt K.A.R.L.
+- Status: LÄUFT.
+- Auftrag: „Wie viele Aufrufe hat unser Webshop in den letzten X Tagen / in
+  Zeitraum X / gesamt?" soll beantwortbar sein — für Shop **und** eBay. Dazu ein
+  Akronym als Name; der Betreiber hat **K.A.R.L.** gewählt
+  (**K**artenshop-**A**uskunft für **R**echerche und **L**agebericht).
+- Vorbefund: `main` hatte drei Commits, die dieser Branch nicht hatte — ein
+  Shop-Aufrufzähler war „vorhin" bereits gebaut worden (`page_views`,
+  `page_view_archive`, `lib/page-views.ts`). Fast hätte ich einen zweiten
+  danebengesetzt. `origin/main` wurde deshalb zuerst hereingeholt; drei
+  Konflikte (Schema, `package.json`, Übergabeprotokoll), alle beidseitig
+  aufgelöst, danach 678 Tests grün.
+- Datenlage und ihre Grenzen, die die Antwort nennen muss:
+  - **Shop**: exakt je Stunde, beliebige Zeiträume; „gesamt" stimmt, weil
+    ablaufende Eimer ins Archiv summiert werden. Misst aber erst seit heute.
+  - **eBay**: rollendes 30-Tage-Fenster plus Tageshistorie erst seit 2026-08-14.
+    Ein „gesamt" gibt es dort **nicht** und lässt sich nicht nachholen.
+- Umsetzung: 13. Werkzeug `traffic_overview`, rein lesend, mit `days`/`bis` wie
+  die Verkaufsübersicht. Beide Quellen getrennt ausgewiesen — nie addiert, das
+  wären zwei verschiedene Dinge. Planerregeln für „Aufrufe/Besucher/Klicks",
+  abgegrenzt von der bestehenden Regel für „welche Angebote wurden angesehen".
+- Abnahme: `npm test`, `npx tsc --noEmit`, `npm run lint`, Deploy, Frage im
+  Assistenten gegen die Produktionszahlen gegengeprüft.
+
+## Auftrag 2026-08-17: Aufrufe erfragbar machen + Assistent heißt K.A.R.L. — abgeschlossen
+- Ergebnis: 13. Werkzeug `traffic_overview` steht, rein lesend, mit `days`/`bis`
+  wie die Verkaufsübersicht. Der Assistent heißt im Panel jetzt **K.A.R.L.**
+  (Kartenshop-Auskunft für Recherche und Lagebericht); der Name liegt als
+  Konstante `AssistantName`, weil er an sechs Stellen im Verlauf auftaucht.
+- Wichtig für die nächste Sitzung: `origin/main` musste zuerst hereingeholt
+  werden — der Shop-Zähler war dort bereits gebaut, in diesem Branch fehlte er.
+  Fast wäre ein zweiter danebengesetzt worden. **Vor neuer Arbeit an gemeinsamen
+  Themen erst `git fetch` und `git log HEAD..origin/main`.**
+- Datenstand bei Abnahme: Shop 27 Aufrufe in 8 Stundeneimern, Messbeginn
+  2026-08-17T18:00Z, Archiv 0 (noch kein Aufräumlauf). eBay 1.679 Aufrufe im
+  rollenden 30-Tage-Fenster. Die Antwort weist beide getrennt aus, nennt den
+  Messbeginn und sagt ausdrücklich, dass es für eBay kein „insgesamt" gibt.
+- Prüfung: 684 Tests grün, `npx tsc --noEmit` sauber, Lint bei der einen
+  bekannten Vorwarnung, WinUI-Build 0 Warnungen. Deploy `1e618387`; `/`,
+  `/admin`, `/api/products` mit 200.
+- Status: ABGESCHLOSSEN.

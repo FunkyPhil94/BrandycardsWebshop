@@ -17,6 +17,19 @@ namespace BrandyCards_Desktop;
 
 public sealed partial class MainPage : Page
 {
+    /// <summary>
+    /// Der Name, unter dem der Assistent im Gesprächsverlauf spricht.
+    ///
+    /// **K**artenshop-**A**uskunft für **R**echerche und **L**agebericht — vom
+    /// Betreiber am 2026-08-17 gewählt.
+    ///
+    /// Steht als Konstante da, weil der Name an sechs Stellen im Verlauf
+    /// auftaucht. Sechsmal als Zeichenkette geschrieben liefe er beim nächsten
+    /// Umbenennen auseinander, und im selben Gespräch stünden zwei verschiedene
+    /// Sprecher.
+    /// </summary>
+    private const string AssistantName = "K.A.R.L.";
+
     private const int FrameWidth = 192;
     private const int FrameHeight = 208;
 
@@ -484,7 +497,7 @@ public sealed partial class MainPage : Page
             // sagen, gegen welche Fläche gezeichnet wird.
             var thema = ActualTheme == ElementTheme.Dark ? "dunkel" : "hell";
             var reply = await _assistantService.AskAsync(shopUrl, _settings.DeviceToken, message, thema);
-            AddConversationMessage("Assistant", reply.Text, isUser: false);
+            AddConversationMessage(AssistantName, reply.Text, isUser: false);
             AddConversationVisuals(reply.Visuals, message);
             // Eine Absage des Shops ist keine empfangene Antwort. Vorher stand
             // auch bei HTTP 503 „Antwort empfangen" in der Statuszeile.
@@ -496,19 +509,19 @@ public sealed partial class MainPage : Page
             // Framework-Meldung dazu ist englisch und nennt eine Zahl, die der
             // Nutzer nicht einordnen kann.
             AddConversationMessage(
-                "Assistant",
+                AssistantName,
                 $"Der Shop hat innerhalb von {AssistantConversationService.RequestTimeout.TotalSeconds:0} Sekunden nicht geantwortet. Die Frage wurde nicht beantwortet; bitte erneut stellen.",
                 isUser: false);
             AssistantStatusTextBlock.Text = "Zeitüberschreitung";
         }
         catch (HttpRequestException ex)
         {
-            AddConversationMessage("Assistant", DesktopErrorMessages.Describe(ex), isUser: false);
+            AddConversationMessage(AssistantName, DesktopErrorMessages.Describe(ex), isUser: false);
             AssistantStatusTextBlock.Text = "Shop nicht erreichbar";
         }
         catch (Exception ex)
         {
-            AddConversationMessage("Assistant", DesktopErrorMessages.Describe(ex), isUser: false);
+            AddConversationMessage(AssistantName, DesktopErrorMessages.Describe(ex), isUser: false);
             AssistantStatusTextBlock.Text = "Anfrage fehlgeschlagen";
         }
         finally
@@ -556,7 +569,7 @@ public sealed partial class MainPage : Page
         if (_conversationInitialized) return;
         _conversationInitialized = true;
         AddConversationMessage(
-            "Assistant",
+            AssistantName,
             "Hallo! Stelle mir freie Fragen zu Verkäufen, Listings, Bestellungen, Preisvorschlägen, Bestand, Anfragen, eBay-Daten und Statistiken. Ich verwende dafür ausschließlich registrierte Lesewerkzeuge.",
             isUser: false);
         WarnIfPairingExpiresSoon();
@@ -577,7 +590,7 @@ public sealed partial class MainPage : Page
         if (restTage > PairingExpiryWarningDays) return;
 
         AddConversationMessage(
-            "Assistant",
+            AssistantName,
             restTage <= 0
                 ? "Hinweis: Die Verbindung zu diesem Shop ist abgelaufen. Bitte über „Verbindung ändern\" einen neuen Pairing-Code aus dem Adminbereich eingeben."
                 : $"Hinweis: Die Verbindung zu diesem Shop läuft in {Math.Ceiling(restTage):0} Tagen ab. Danach brauchst du über „Verbindung ändern\" einen neuen Pairing-Code aus dem Adminbereich.",

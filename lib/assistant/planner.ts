@@ -204,6 +204,16 @@ export class RuleBasedAssistantPlanner implements AssistantPlanner {
     const gefaltet = foldUmlautDigraphs(text);
     const enthaelt = (terms: readonly string[]) => containsAny(text, terms) || containsAny(gefaltet, terms);
     const limit = requestedLimit(text);
+    // **Eine genannte Datumsspanne schlägt die Tagesangabe.** „Vom 10.8 bis
+    // 12.8" ist die genauere Auskunft als irgendein rollendes Fenster; sie wird
+    // auf dem *rohen* Text gesucht, weil `normalizeQuestion` aus „10.8" ein
+    // „10 8" macht und die Datumsform damit zerstört.
+    //
+    // Steht hier oben, weil **zwei** Werkzeuge den Zeitraum auswerten: die
+    // Verkaufsübersicht und die Aufrufe. Zweimal gerechnet liefen sie
+    // auseinander, sobald jemand nur eine Stelle anfasst.
+    const spanne = requestedRange(message, this.jetzt());
+    const zeitraum = spanne?.days ?? requestedDays(text);
     const tools: AssistantToolInput[] = [];
     const add = (tool: AssistantToolName) => tools.push({ tool, limit });
 
@@ -225,6 +235,21 @@ export class RuleBasedAssistantPlanner implements AssistantPlanner {
     }
     if (enthaelt(["sync", "abgleich", "rucknahme", "outbox", "ebay zustand", "ebay status"])) {
       add("ebay_sync_health");
+    }
+    // **Zwei Fragen, die dasselbe Wort benutzen.** „Welche Angebote wurden am
+    // häufigsten angesehen?" will eine Rangliste je Angebot; „wie viele Aufrufe
+    // hatte der Shop?" will eine Summe. Unterschieden wird an der Mengenfrage
+    // („wie viele", „gesamt") und am Ort („shop", „webshop", „seite") — nicht
+    // am Wort „Aufruf", das in beiden vorkommt.
+    const fragtNachMenge = enthaelt(["wie viele", "wieviele", "wie viel", "anzahl", "gesamt", "insgesamt", "summe", "besucher", "besuche", "traffic"]);
+    const nenntDenShop = enthaelt(["shop", "webshop", "website", "webseite", "seite", "homepage", "startseite"]);
+    if (enthaelt(["aufruf", "aufrufe", "besucher", "besuche", "seitenaufruf", "traffic", "klicks"]) && (fragtNachMenge || nenntDenShop)) {
+      tools.push({
+        tool: "traffic_overview",
+        limit,
+        ...(zeitraum === undefined ? {} : { days: zeitraum }),
+        ...(spanne === undefined ? {} : { bis: spanne.bis }),
+      });
     }
     if (enthaelt([
       "aufruf",
@@ -289,13 +314,6 @@ export class RuleBasedAssistantPlanner implements AssistantPlanner {
     // Frage nach dem *einen* letzten Verkauf hinaus — eine Antwort, die zur
     // Frage passt wie eine Zahl zu einer Liste. Der Zeitraum oder das Wort
     // „Umsatz" ist das Unterscheidungsmerkmal.
-    //
-    // **Eine genannte Datumsspanne schlägt die Tagesangabe.** „Vom 10.8 bis
-    // 12.8" ist die genauere Auskunft als irgendein rollendes Fenster; sie wird
-    // auf dem *rohen* Text gesucht, weil `normalizeQuestion` aus „10.8" ein
-    // „10 8" macht und die Datumsform damit zerstört.
-    const spanne = requestedRange(message, this.jetzt());
-    const zeitraum = spanne?.days ?? requestedDays(text);
     const fragtNachUmsatz = enthaelt(["umsatz", "einnahmen", "eingenommen", "verdient", "erlos"]);
     const fragtNachVerkaufen = enthaelt(["verkauft", "verkauf", "sale", "abgesetzt"]);
     if (fragtNachUmsatz || (fragtNachVerkaufen && (zeitraum !== undefined || enthaelt(["ubersicht", "bilanz", "insgesamt", "wie viele"])))) {

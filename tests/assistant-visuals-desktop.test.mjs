@@ -78,7 +78,10 @@ test("der Text bleibt neben dem Bild stehen", async () => {
   const page = await read(PAGE);
   // Die Frage geht mit, damit das Statistikfenster sie für einen anderen
   // Zeitraum erneut stellen kann — der Client formuliert dabei nichts selbst.
-  assert.match(page, /AddConversationMessage\("Assistant", reply\.Text, isUser: false\);\s*\n\s*AddConversationVisuals\(reply\.Visuals, message\);/u);
+  // `AssistantName` statt der Zeichenkette, seit der Assistent K.A.R.L. heißt:
+  // Der Name steht an sechs Stellen und liefe als Literal beim nächsten
+  // Umbenennen auseinander.
+  assert.match(page, /AddConversationMessage\(AssistantName, reply\.Text, isUser: false\);\s*\n\s*AddConversationVisuals\(reply\.Visuals, message\);/u);
 });
 
 test("ohne Bilder ändert sich nichts am Panel", async () => {

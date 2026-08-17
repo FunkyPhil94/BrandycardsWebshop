@@ -18,6 +18,7 @@ export const ASSISTANT_TOOL_LABELS: Record<AssistantToolName, string> = {
   ebay_sync_health: "eBay-Abgleich",
   assistant_statistics: "Shop-Übersicht",
   sales_overview: "Verkaufsübersicht",
+  traffic_overview: "Aufrufe",
 };
 
 const SOURCE_LABELS: Record<AssistantDataSource, string> = {
@@ -194,6 +195,46 @@ export function formatAssistantToolResult(result: AnyAssistantToolResult): strin
           zeilen.push(`• ${formatDate(verkauf.soldAt)} · ${verkauf.channel === "EBAY" ? "eBay" : "Shop"} · ${titel}: ${betrag}`);
         }
       }
+      return withSource(zeilen.join("\n"), result);
+    }
+    case "traffic_overview": {
+      const data = result.data;
+      const zeilen = [`${zeitraumSatz(data.since, data.until, data.days, data.spanneGenannt).replace("Verkäufe", "Aufrufe")}:`];
+
+      zeilen.push(`• Shop: ${data.shop.fenster} Aufruf(e) im Zeitraum, ${data.shop.gesamt} insgesamt`);
+      // **Ohne diesen Satz ist die Zahl nicht zu deuten.** Ist der Zähler
+      // jünger als das erfragte Fenster, ist „30 Tage: 40" kein schwacher
+      // Monat, sondern schlicht alles, was es gibt.
+      if (data.shop.messungSeit) {
+        const beginn = Date.parse(data.shop.messungSeit);
+        if (Number.isFinite(beginn) && beginn > Date.parse(data.since)) {
+          zeilen.push(`  (Der Shop-Zähler läuft erst seit ${formatDate(data.shop.messungSeit)} — für die Zeit davor gibt es keine Messung, keine Null.)`);
+        }
+      } else {
+        zeilen.push("  (Für den Shop wurde in diesem Zeitraum noch nichts gezählt.)");
+      }
+
+      for (const seite of data.shop.seiten) {
+        zeilen.push(`  – ${seite.pfad}: ${seite.aufrufe}`);
+      }
+
+      if (data.ebay.available) {
+        zeilen.push(`• eBay-Angebote: ${data.ebay.rollendeAufrufe} Aufruf(e) und ${data.ebay.rollendeEinblendungen} Einblendung(en) in den letzten 30 Tagen`);
+        // Die Tageshistorie ist die einzige Quelle für einen frei gewählten
+        // Zeitraum bei eBay — und sie reicht nur so weit zurück, wie sie
+        // gesammelt wurde.
+        if (data.ebay.historieSeit) {
+          zeilen.push(`  – im erfragten Zeitraum: ${data.ebay.fensterAufrufe} Aufruf(e), gezählt ab ${data.ebay.historieSeit}`);
+        }
+      } else {
+        zeilen.push(`• eBay-Angebote: ${data.ebay.unavailableMessage ?? "Diese Zahlen liegen nicht vor."}`);
+      }
+
+      // Eine Gesamtzahl für eBay gibt es nicht und kann es nicht geben. Das
+      // gehört in die Antwort — sonst wirkt die fehlende Zahl wie ein Fehler.
+      zeilen.push("Für eBay gibt es kein „insgesamt“: eBay liefert nur ein rollendes 30-Tage-Fenster, und die eigene Tageszählung beginnt erst mit ihrer Einrichtung.");
+      // Zwei Orte, zwei Zahlen -- eine Summe daraus benennt nichts.
+      zeilen.push("Shop- und eBay-Aufrufe sind getrennt gezählt und nicht addierbar.");
       return withSource(zeilen.join("\n"), result);
     }
     case "assistant_statistics": {

@@ -11,6 +11,7 @@ export const ASSISTANT_TOOL_NAMES = [
   "ebay_sync_health",
   "assistant_statistics",
   "sales_overview",
+  "traffic_overview",
 ] as const;
 
 export type AssistantToolName = (typeof ASSISTANT_TOOL_NAMES)[number];
@@ -47,6 +48,11 @@ export const ASSISTANT_TOOL_DEFINITIONS = [
   // Lesesync sie geholt hat. Ein `READY` verspräche eine Vollständigkeit, für
   // die dieses Werkzeug nicht geradestehen kann.
   { name: "sales_overview", description: "Verkäufe und Umsatz der letzten Tage, Shop und eBay", availability: "SOURCE_DEPENDENT" },
+  // Dieselbe Begründung wie oben, aus dem umgekehrten Grund: Die Shop-Aufrufe
+  // stehen vollständig in der eigenen Datenbank, die eBay-Aufrufe hängen am
+  // Lesesync — und beide haben einen Messbeginn, vor dem es schlicht nichts
+  // gibt. Das Werkzeug muss das sagen dürfen, statt Null zu melden.
+  { name: "traffic_overview", description: "Seitenaufrufe des Shops und Aufrufe der eBay-Angebote", availability: "SOURCE_DEPENDENT" },
 ] as const satisfies readonly {
   name: AssistantToolName;
   description: string;
@@ -88,6 +94,8 @@ export const ASSISTANT_SPEECH_PHRASES = [
   "Welche eBay-Angebote wurden am häufigsten angesehen?",
   "Gibt es neue Nachrichten bei eBay?",
   "Gibt es neue Anfragen im Shop?",
+  "Wie viele Aufrufe hatte der Shop in den letzten 7 Tagen?",
+  "Wie viele Besucher hatte der Webshop insgesamt?",
 ] as const;
 
 export type AssistantToolInput<K extends AssistantToolName = AssistantToolName> = {
@@ -293,6 +301,48 @@ export type AssistantToolDataMap = {
       attemptCount: number;
       availableAt: string | null;
     }>;
+  };
+  traffic_overview: {
+    /** Das ausgewertete Fenster. */
+    days: number;
+    since: string;
+    until: string;
+    spanneGenannt?: boolean;
+    /** Die Aufrufe des eigenen Shops.
+     *
+     *  **`gesamt` ist wirklich gesamt**: Es zählt das Archiv mit, in das
+     *  ablaufende Stundeneimer summiert werden. Eine reine Summe über
+     *  `page_views` wäre „letzte 90 Tage" und schrumpfte ab Tag 91, während der
+     *  Shop wächst.
+     *
+     *  `messungSeit` ist die wichtigste Zahl daneben: Solange die Messung
+     *  jünger ist als das erfragte Fenster, ist die Zahl kein Monatswert,
+     *  sondern alles, was es überhaupt gibt. Ohne diese Angabe liest man ein
+     *  „30 Tage: 40" als schlechten Monat statt als jungen Zähler. */
+    shop: {
+      fenster: number;
+      gesamt: number;
+      messungSeit: string | null;
+      /** Die meistbesuchten Bereiche im Fenster, absteigend. */
+      seiten: Array<{ pfad: string; aufrufe: number }>;
+    };
+    /** Die Aufrufe der eigenen eBay-Angebote — **nie mit den Shop-Aufrufen
+     *  addiert.** Das sind zwei verschiedene Orte; eine Summe daraus wäre eine
+     *  Zahl, die nichts benennt. */
+    ebay: {
+      available: boolean;
+      unavailableCode: string | null;
+      unavailableMessage: string | null;
+      /** Aus dem rollenden 30-Tage-Fenster, das eBay liefert. */
+      rollendeAufrufe: number | null;
+      rollendeEinblendungen: number | null;
+      /** Aus der eigenen Tageshistorie — nur so weit, wie sie zurückreicht. */
+      fensterAufrufe: number | null;
+      historieSeit: string | null;
+      /** eBay hat nie eine Gesamtzahl geliefert, und sie lässt sich nicht
+       *  nachholen. Das Feld gibt es, damit die Antwort es sagen kann. */
+      gesamtVerfuegbar: false;
+    };
   };
   sales_overview: {
     days: number;

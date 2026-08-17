@@ -40,8 +40,8 @@
                     HorizontalAlignment="Stretch"
                     Click="LauncherButton_Click"
                     AutomationProperties.AutomationId="AssistantLauncher"
-                    AutomationProperties.Name="BrandyCards Assistant öffnen"
-                    AutomationProperties.HelpText="Öffnet das Textpanel des persönlichen Assistenten.">
+                    AutomationProperties.Name="K.A.R.L. öffnen"
+                    AutomationProperties.HelpText="Öffnet das Textpanel von K.A.R.L., der Kartenshop-Auskunft für Recherche und Lagebericht.">
                 <Grid ColumnSpacing="12">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
@@ -73,8 +73,12 @@
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <StackPanel Spacing="3">
-                        <TextBlock Text="Persönlicher Assistent" FontSize="22" FontWeight="SemiBold" Foreground="{ThemeResource AvatarTextBrush}" />
-                        <TextBlock Text="Nur lesender Zugriff über fest definierte Funktionen" TextWrapping="Wrap" FontSize="12" Foreground="{ThemeResource AvatarMutedBrush}" />
+                        <TextBlock Text="K.A.R.L." FontSize="22" FontWeight="SemiBold" Foreground="{ThemeResource AvatarTextBrush}" />
+                        <!-- Der Name wird ausgeschrieben, sonst ist er nur eine Buchstabenfolge.
+                             Der Zusatz zum Lesezugriff bleibt: Er ist die Zusage, unter der
+                             dieses Panel überhaupt gebaut wurde. -->
+                        <TextBlock Text="Kartenshop-Auskunft für Recherche und Lagebericht" TextWrapping="Wrap" FontSize="12" Foreground="{ThemeResource AvatarMutedBrush}" />
+                        <TextBlock Text="Nur lesender Zugriff über fest definierte Funktionen" TextWrapping="Wrap" FontSize="11" Foreground="{ThemeResource AvatarMutedBrush}" />
                     </StackPanel>
                     <Button x:Name="CloseAssistantButton"
                             Grid.Column="1"

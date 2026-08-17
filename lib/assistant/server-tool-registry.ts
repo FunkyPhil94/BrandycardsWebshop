@@ -5,6 +5,7 @@ import { listOpenShopOffers } from "./tools/offers";
 import { getLatestSale, getSalesOverview } from "./tools/sales";
 import { getInventoryReview, getLatestListing, listNewOrders } from "./tools/shop";
 import { getAssistantStatistics } from "./tools/statistics";
+import { getTrafficOverview } from "./tools/traffic";
 
 const handlers: AssistantToolHandlers = {
   latest_sale: () => getLatestSale(),
@@ -19,6 +20,7 @@ const handlers: AssistantToolHandlers = {
   ebay_sync_health: (input) => getEbaySyncHealth(input),
   assistant_statistics: () => getAssistantStatistics(),
   sales_overview: (input) => getSalesOverview(input),
+  traffic_overview: (input) => getTrafficOverview(input),
 };
 
 export const assistantToolRegistry = createAssistantToolRegistry(handlers);
