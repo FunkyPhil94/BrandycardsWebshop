@@ -37,6 +37,55 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
+### 2026-08-17 - Aufruf-Historie sammeln (Vorstufe der Aufruf-Statistik)
+
+- Stand: **LÄUFT.**
+- Auftrag: Der Betreiber möchte eine Statistik „welche Karten hatten in Zeitraum
+  X die meisten Aufrufe, welche kaum oder keine". Er hat nach dem Befund unten
+  ausdrücklich zugestimmt, **tägliche Momentaufnahmen** zu sammeln.
+
+**Der Befund, der das nötig macht.** `ebay_listing_traffic` enthält **277 Zeilen
+— genau eine je aktiver Karte**, alle mit demselben Fenster (18.07.–16.08.). Der
+Sync holt bei eBay einen 30-Tage-Aggregatwert und überschreibt ihn. Es gibt
+**keine Zeitachse**: „Zeitraum X" ist mit diesen Daten nicht beantwortbar, und
+rückwirkend ist nichts zu retten.
+
+Was heute schon aussagekräftig ist: 95 Aufrufe hat die meistgesehene Karte, und
+**63 von 277 Karten haben null Aufrufe** in diesen 30 Tagen.
+
+**Warum nicht einfach täglich dieselbe Abfrage speichern.** eBay liefert ein
+*rollierendes* 30-Tage-Ergebnis. Die Differenz zweier Tagesstände ist **nicht**
+die Zahl der Aufrufe dieses Tages — es fällt am hinteren Ende ebenso viel heraus,
+wie vorn hinzukommt. Wer so rechnet, erfindet Zahlen.
+
+**Der gangbare Weg:** `getTrafficReport` mit `dimension=LISTING` und einem
+**Ein-Tages-Fenster**. Das kostet dieselbe Zahl an Aufrufen wie heute und liefert
+echte Tageswerte je Karte. „Zeitraum X" wird damit später eine Summe über Tage —
+exakt statt geschätzt. Per Karte *und* pro Tag in einem Aufruf geht nicht; eBay
+lässt nur eine Dimension zu.
+
+**Bauweise.**
+
+- Neue Tabelle `ebay_listing_traffic_daily`, Schlüssel (Karte, Tag). Sie wird
+  **nie geleert** — anders als `ebay_listing_traffic`, die bewusst nur das
+  aktuelle Fenster hält. Ein Tageswert ist eine Tatsache, kein Momentanstand.
+- Die bestehende 30-Tage-Tabelle und das Werkzeug `ebay_most_viewed` bleiben
+  unverändert. Sie liefern weiter Auskunft, solange die Historie noch dünn ist.
+- **Nachgeholt werden die letzten drei Tage, nicht nur der gestrige.**
+  Aufrufzahlen hinken bei eBay nach; ein einmal geholter Tag kann sich noch
+  ändern. Der heutige Tag wird ausgelassen, weil er unvollständig ist.
+- **Riegel gegen den 15-Minuten-Takt.** Der Lesesync läuft viermal je Stunde; ein
+  ungebremster Zusatzabruf wären 576 Aufrufe am Tag gegen ein geteiltes
+  Kontingent. Geholt wird nur, wenn der jüngste Eintrag älter als 20 Stunden ist.
+
+**Abnahme:** `npm test`, `npx tsc --noEmit`, `npm run lint`, Migration lokal
+angewendet und wiederholbar. Die produktive Migration bleibt
+rücksprachepflichtig.
+
+**Reihenfolge, mit Absicht:** Das Sammeln kommt **vor** der Desktop-Hälfte und
+vor der Aufruf-Grafik. Jeder Tag ohne Aufzeichnung ist ein Tag, der später fehlt;
+die anderen beiden Stücke verlieren durch Warten nichts.
+
 ### 2026-08-17 - Interaktive Grafik für Statistikfragen
 
 - Stand: **LÄUFT.**
