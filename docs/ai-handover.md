@@ -9615,3 +9615,23 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 - Reihenfolge: U1 zuerst, U2 und U3 hängen daran. U4 und U5 sind unabhängig,
   U5 wartet auf eine Entscheidung des Betreibers.
 - Status: ABGESCHLOSSEN.
+
+## Auftrag 2026-08-17: U1 — Konto und Admin in Unterseiten aufteilen
+- Status: LÄUFT.
+- Vorab zwei Korrekturen in `docs/ai-todo.md`, beide gemessen statt vermutet:
+  - **U3 war bereits vollständig gebaut.** `lib/shipping.ts` kennt DHL und fünf
+    weitere Dienste, der Admin hat ein Auswahlfeld, die Kontoseite zeigt
+    „Sendung verfolgen", und die Versandmail nutzt dieselbe Funktion. Mein
+    Vorschlag hatte behauptet, die Nummer werde nicht verlinkt — falsch, sie
+    fällt nur nicht auf, weil noch keine Bestellung versendet ist.
+  - **U5 ist entschieden:** `username` und `displayName` werden gestrichen. Die
+    Anrede bleibt wie sie ist — die Bestellbestätigung hat ohnehin keine.
+- Reihenfolge in diesem Auftrag: erst Admin, dann Konto, je ein eigener Commit,
+  damit ein Fehler nicht beide Bereiche betrifft.
+- Zu beachten: `tests/hardening.test.mjs` (Zeilen um 319, 477, 489) und
+  `tests/i18n.test.mjs` (29, 65) lesen `app/admin/page.tsx` und
+  `app/account/page.tsx` als Dateien. Beim Aufteilen wandern Inhalte in andere
+  Dateien — die Tests müssen mitwandern, sonst prüfen sie ins Leere.
+- Der eBay-Rückweg zeigt auf `/admin?ebayClaim=…`
+  (`app/api/admin/ebay/oauth/callback/route.ts:82`). Das Abholen des Tokens
+  wandert nach `/admin/ebay`, die Weiterleitung muss mitgeändert werden.

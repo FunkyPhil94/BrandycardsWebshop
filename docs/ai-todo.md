@@ -106,22 +106,32 @@ unverändert.
 
 ---
 
-## U3. Sendungsverfolgung mit DHL
+## U3. ~~Sendungsverfolgung mit DHL~~ — war bereits vollständig gebaut
 
-Hängt an U1. **Versanddienst laut Betreiber: DHL**, andere zunächst nicht.
+**Am 2026-08-17 nachgesehen, nachdem sie als Aufgabe hier stand.** Es gibt
+nichts zu bauen. Meine Behauptung, die Nummer werde „nicht verlinkt", war
+falsch — ich hatte sie ungeprüft aus der Kontoseite abgeleitet, wo der Link nur
+deshalb nicht auffiel, weil noch keine Bestellung versendet ist.
 
-Gespeichert sind heute `shippingCarrier` und `trackingNumber` als freier Text
-(`db/schema.ts`, Migration `drizzle/0007_order_fulfillment.sql`); die
-Bestellhistorie zeigt die Nummer, verlinkt sie aber nicht.
+Vorhanden ist:
+- `lib/shipping.ts` mit `CARRIER_URLS` für **DHL**, Deutsche Post, Hermes, DPD,
+  GLS und UPS, dazu `normalizeShippingCarrier`, `shippingCarrierLabel` und
+  `trackingUrl`.
+- Genau die Absicherung, die ich vorgeschlagen hatte, steht dort schon als
+  Kommentar: Nur bekannte Anbieter werden zu einem Link, damit ein Adminfeld
+  keinen beliebigen externen Verweis in Konto oder E-Mail einschleusen kann.
+  Ohne Dienst oder ohne Nummer gibt `trackingUrl` `null` zurück — kein Link ins
+  Nichts.
+- Im Admin ist der Dienst ein **Auswahlfeld** mit DHL an erster Stelle
+  (`app/admin/orders-panel.tsx`), kein Freitext.
+- `app/api/account/orders/route.ts` liefert `trackingUrl` mit, die Kontoseite
+  zeigt „Sendung verfolgen".
+- Die Versandmail nutzt **dieselbe** Funktion (`lib/email/notify.ts` →
+  `lib/email/templates.ts`), Konto und Mail können also nicht auseinanderlaufen.
 
-Zu bauen: aus Dienst und Nummer eine Verfolgungsadresse ableiten, an *einer*
-Stelle, damit Konto und Bestellbestätigungsmail dieselbe verwenden. Bei einem
-unbekannten Dienst oder fehlender Nummer bleibt die Nummer als Text stehen —
-**kein Link ins Nichts**, das ist schlechter als kein Link.
-
-**Abnahme:** Eine echte Sendungsnummer führt im Browser zur DHL-Verfolgung.
-Ein Datensatz ohne Nummer und einer mit unbekanntem Dienst zeigen keinen Link
-und keinen Fehler.
+**Offen bleibt allein die Prüfung am echten Fall:** Sobald die erste Bestellung
+als versendet markiert ist, einmal nachsehen, dass der Link tatsächlich bei DHL
+landet.
 
 ---
 
@@ -162,11 +172,15 @@ Sie kosten zweierlei:
 - **Personenbezogene Daten ohne Zweck**, ausgewiesen in der
   Datenschutzerklärung. Datenminimierung will genau das nicht.
 
-**Die Entscheidung gehört dem Betreiber, weil es Kundendaten sind:**
-- `username` ersatzlos streichen — die Anmeldung läuft über E-Mail.
-- `displayName` entweder ebenfalls streichen **oder** ihm einen Zweck geben
-  („Hallo Philip" in Bestellbestätigung und Kontoübersicht statt der
-  E-Mail-Adresse).
+**Entschieden vom Betreiber am 2026-08-17: beide Felder werden gestrichen.**
+`username` ersatzlos — die Anmeldung läuft über die E-Mail-Adresse. `displayName`
+ebenfalls, es wird nicht gebraucht.
+
+Zur Anrede: Sie soll allgemein und nicht geschlechtsbezogen bleiben. **Dafür ist
+nichts zu tun** — die Bestellbestätigung beginnt mit „Danke für deine
+Bestellung!", ohne Namen und ohne Anrede (`lib/email/templates.ts`, der Ton ist
+dort als Absicht dokumentiert). Beim Streichen darf also auch keine Anrede
+*hinzukommen*.
 
 Beim Streichen gehören dazu: Migration samt `users_username_unique`, das
 Profilformular, `validate-registration`, der Datenexport und der Absatz in
