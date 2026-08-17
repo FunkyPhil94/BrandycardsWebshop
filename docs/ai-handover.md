@@ -9309,3 +9309,15 @@ selbst; die Schrittfolge samt Nachprüfung steht in
   692 Tests grün, `npx tsc --noEmit` sauber.
 - Ohne die Statuszeilen-Änderung von eben wäre das nicht zu finden gewesen: Der
   Code 404 war der einzige Hinweis, dass es nicht an Azure lag.
+
+## Auftrag 2026-08-17: Den Branch auf main bringen
+- Status: LÄUFT.
+- Anlass: `main` fehlten 65 Commits, darunter die Azure-Sprach-Routen. Genau
+  diese Lücke hat heute Abend die Spracherkennung gekostet: Eine Sitzung rollte
+  von `main` aus und entfernte damit Routen, die es nur auf diesem Branch gab.
+  Solange das so bleibt, ist der laufende Produktionsstand nicht reproduzierbar
+  und jeder Deploy von `main` bricht ihn erneut.
+- Vorprüfung: `main` hat **null** Commits, die dieser Branch nicht hat — der
+  Push ist ein reines Fast-Forward und nimmt der anderen Sitzung nichts weg.
+- Umsetzung: `git push origin HEAD:main`, danach gegenprüfen, dass `origin/main`
+  und `HEAD` auf denselben Commit zeigen.
