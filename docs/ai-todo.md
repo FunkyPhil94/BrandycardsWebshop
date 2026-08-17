@@ -11,6 +11,170 @@ dabei, damit niemand den Gesprächsverlauf braucht.
 
 ---
 
+## U1. Gerüst: Konto und Admin in Unterseiten aufteilen
+
+**Vom Betreiber abgenommen am 2026-08-17.** Beides liegt heute auf je einer
+Seite: das Kundenkonto als 374 Zeilen mit vier Blöcken untereinander, die
+Adminkonsole mit sieben Panels und **acht Abfragen bei jedem Laden**
+(`dashboard`, `mfa/status`, `inquiries`, `orders`, `products`, `offers`,
+`outbox`, `page-views`) plus einem Aufruf je eingesendetem Bild. Wer eine
+Bestellung ansehen will, lädt trotzdem alles.
+
+**Adressen — Entscheidung, nicht Geschmack:** Es bleibt bei **einer deutschen
+Adressgruppe**. Die Sprachwahl läuft über das Cookie `brandycards-locale` und
+`Accept-Language` (`app/i18n.tsx`, `lib/i18n.ts`), **nicht über den Pfad**.
+Sprachabhängige Adressen bräuchten einen Routen-Mechanismus, den es hier nicht
+gibt — für Seiten hinter der Anmeldung, die auf `noindex` stehen. Alles auf
+Englisch umzustellen bräche die elf indexierten deutschen Pfade aus
+`app/sitemap.ts`. Die sichtbare Sprache bleibt vollständig umschaltbar, jede
+Beschriftung läuft weiter durch `t()`.
+
+### Kundenkonto
+
+| Adresse | Inhalt |
+|---|---|
+| `/account` | Übersicht mit Kennzahlen und Verweisen; **Anmeldung/Registrierung/Passwort-Reset bleiben hier** |
+| `/account/bestellungen` | bisherige Bestellhistorie |
+| `/account/preisvorschlaege` | neu, siehe U2 |
+| `/account/kartenangebote` | neu, siehe U2 |
+| `/account/profil` | „Mein Profil" |
+| `/account/daten` | Datenexport und Kontolöschung, bewusst getrennt vom Rest |
+
+Wer abgemeldet eine Unterseite aufruft, landet auf `/account`.
+
+### Adminkonsole
+
+| Adresse | Was hineinkommt |
+|---|---|
+| `/admin` | Kennzahlen, `ViewsPanel`, MFA-Hinweis |
+| `/admin/bestellungen` | `orders-panel.tsx` |
+| `/admin/preisvorschlaege` | `offers-panel.tsx` |
+| `/admin/karten` | `products-panel.tsx` |
+| `/admin/ankauf` | `requests-panel.tsx` samt Bildabruf |
+| `/admin/ebay` | Sync, OAuth/Token, Schreibprüfung, `outbox-panel.tsx`, Rücknahmen |
+| `/admin/system` | Desktop-Kopplung, MFA, Aufräumläufe |
+
+`ViewsPanel` bleibt auf der Übersicht — die Begründung steht als Kommentar in
+`app/admin/page.tsx` und gilt weiter: Es beantwortet dieselbe Frage wie die
+Bestandszahlen.
+
+**Die MFA-Sperre wandert nach `app/admin/layout.tsx`.** Heute sitzt sie in
+`page.tsx`. Mit sieben Unterseiten müsste sie siebenmal dastehen, und die siebte
+wird vergessen. Ein Layout ist die einzige Stelle, an der das nicht passieren
+kann.
+
+**Die vier eBay-Schaltflächen bekommen je einen erklärenden Satz.** Heute stehen
+sie fast gleich aussehend untereinander, und man muss raten, welche gerade
+richtig ist.
+
+**Abnahme:** Jede Adresse ist direkt aufrufbar und übersteht das Neuladen. Jeder
+Bereich löst **nur seine eigenen** Abfragen aus — im Netzwerkprotokoll
+nachgezählt, nicht geschätzt. `/admin` ohne bestätigte MFA zeigt weiterhin den
+Sperrkasten, und zwar auf **jeder** Unterseite. Die Panels selbst bleiben
+inhaltlich unverändert; es ist ein Umzug, keine Neuentwicklung.
+
+---
+
+## U2. Zwei neue Kundenansichten, und was dafür im Backend fehlt
+
+Hängt an U1.
+
+**Meine Preisvorschläge** (`/account/preisvorschlaege`): alle gesendeten
+Vorschläge mit Stand, Betrag, Karte und Ablaufzeit bei angenommenen.
+
+Dafür fehlt ein Endpunkt. **`/api/account/offers` reicht nicht** — es liefert
+über `acceptedOffersForUser` nur *angenommene, noch gültige* Angebote, weil es
+für die Kasse gebaut ist. **Diesen Endpunkt nicht erweitern:** An ihm hängt der
+Preis, der abgebucht wird (`app/checkout/page.tsx`). Ein zweiter Endpunkt
+daneben, etwa `/api/account/price-offers`, liest die vollständige Liste.
+
+**Meine angebotenen Karten** (`/account/kartenangebote`): die zum Ankauf
+eingesendeten Karten mit Stand und den eigenen Bildern. Auch hier gibt es
+nichts — die Daten kommen heute ausschließlich im Datenexport vor
+(`lib/account-data.ts`). Angenehm: Die Zuordnung dort greift über Konto-ID
+**oder** E-Mail, wer als Gast eingesendet und sich später registriert hat, sieht
+seine Karten trotzdem. Diese Regel übernehmen, nicht neu erfinden.
+
+**Statusnamen für Kunden.** Intern heißt es `NEW`, `IN_REVIEW`, `NEEDS_INFO`,
+`ACCEPTED`, `REJECTED`, `CLOSED`. So darf nichts davon auf einer Kundenseite
+stehen. Die Zuordnung gehört an *eine* Stelle, nicht in jede Ansicht.
+
+**Abnahme:** Ein Kunde sieht seine eigenen Vorgänge und **ausschließlich** die
+eigenen — geprüft mit dem Token eines zweiten Kontos gegen dieselben Kennungen.
+Kein interner Statusname erscheint in der Oberfläche. Der Kassen-Endpunkt ist
+unverändert.
+
+---
+
+## U3. Sendungsverfolgung mit DHL
+
+Hängt an U1. **Versanddienst laut Betreiber: DHL**, andere zunächst nicht.
+
+Gespeichert sind heute `shippingCarrier` und `trackingNumber` als freier Text
+(`db/schema.ts`, Migration `drizzle/0007_order_fulfillment.sql`); die
+Bestellhistorie zeigt die Nummer, verlinkt sie aber nicht.
+
+Zu bauen: aus Dienst und Nummer eine Verfolgungsadresse ableiten, an *einer*
+Stelle, damit Konto und Bestellbestätigungsmail dieselbe verwenden. Bei einem
+unbekannten Dienst oder fehlender Nummer bleibt die Nummer als Text stehen —
+**kein Link ins Nichts**, das ist schlechter als kein Link.
+
+**Abnahme:** Eine echte Sendungsnummer führt im Browser zur DHL-Verfolgung.
+Ein Datensatz ohne Nummer und einer mit unbekanntem Dienst zeigen keinen Link
+und keinen Fehler.
+
+---
+
+## U4. Zwei Lücken, die mit den neuen Ansichten sichtbar werden
+
+Keine Aufräumarbeit, sondern Funktionen — deshalb getrennt von U1 bis U3.
+
+- **Ein Preisvorschlag lässt sich nicht zurückziehen.** `WITHDRAWN` steht im
+  Schema und wird von `offerAttempts` (`lib/price-offers.ts`) ausdrücklich
+  **nicht** mitgezählt. Bei drei Versuchen pro Karte wäre das ein spürbarer
+  Unterschied für den Kunden. Es fehlt allein der Weg dorthin.
+- **Der Stand „Rückfrage" (`NEEDS_INFO`) ist eine Sackgasse.** Der Betreiber
+  kann ihn setzen, der Kunde sieht nirgends, was gefragt wurde, und kann nicht
+  antworten. Entweder wird der Stand nutzbar, oder er verschwindet aus der
+  Auswahl in `app/admin/requests-panel.tsx` — ein Status, der nichts auslöst,
+  täuscht Bearbeitung nur vor.
+
+---
+
+## U5. Entscheidung offen: Benutzername und Anzeigename
+
+**Befund vom 2026-08-17, im gesamten Code gemessen.** `users.username` und
+`users.display_name` werden **nirgends angezeigt**. Treffer gibt es nur an den
+Stellen, die sie selbst eintragen, speichern und exportieren: das Profilformular
+in `app/account/page.tsx`, `app/api/account/profile/route.ts`,
+`app/api/account/validate-registration/route.ts`, `lib/account-data.ts` und der
+Absatz in der Datenschutzerklärung, der sie als verarbeitete Daten auflistet.
+In `lib/email/`, in den Bestellungen, im Checkout und in der Adminkonsole:
+**kein einziger Treffer.** Der Versand nutzt `shippingAddress.name`, ein anderes
+Feld.
+
+Sie kosten zweierlei:
+- **Ein Sperr-Risiko am laufenden Betrieb.** Der Kommentar in `lib/app-user.ts`
+  beschreibt es selbst: Der Benutzername kommt aus Supabase-`user_metadata`, das
+  der Kunde selbst beschreiben kann; eine Kollision verletzt
+  `users_username_unique`, und dieser Code läuft bei **jeder** Anfrage. Es gibt
+  eine Absicherung — das Risiko existiert nur, weil das Feld existiert.
+- **Personenbezogene Daten ohne Zweck**, ausgewiesen in der
+  Datenschutzerklärung. Datenminimierung will genau das nicht.
+
+**Die Entscheidung gehört dem Betreiber, weil es Kundendaten sind:**
+- `username` ersatzlos streichen — die Anmeldung läuft über E-Mail.
+- `displayName` entweder ebenfalls streichen **oder** ihm einen Zweck geben
+  („Hallo Philip" in Bestellbestätigung und Kontoübersicht statt der
+  E-Mail-Adresse).
+
+Beim Streichen gehören dazu: Migration samt `users_username_unique`, das
+Profilformular, `validate-registration`, der Datenexport und der Absatz in
+`app/datenschutz/page.tsx`. **Achtung Falle:** `drizzle/meta/_journal.json` ist
+veraltet (siehe CLAUDE.md) — die Migration wird von Hand geschrieben.
+
+---
+
 ## Die Ratengrenze griff nicht — 14 Anfragen gegen ein Limit von 10
 
 **Befund vom 2026-08-17, in Produktion gemessen.** Vierzehn Aufrufe von

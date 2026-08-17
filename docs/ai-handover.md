@@ -9590,3 +9590,28 @@ selbst; die Schrittfolge samt Nachprüfung steht in
   Anmeldekasten war also tatsächlich falsch — kein abgelaufenes Konto.
 - Kein weiterer Handlungsbedarf an dieser Stelle. Offen bleibt allein der
   Nebenbefund zur Ratengrenze, er steht in `docs/ai-todo.md`.
+
+## Auftrag 2026-08-17: Aufteilung von Konto und Admin als Aufgaben festhalten
+- Status: LÄUFT.
+- Vom Betreiber abgenommen: die vorgeschlagene Aufteilung in Unterseiten für
+  Kundenkonto und Adminkonsole. Versanddienst für die Sendungsverfolgung: **DHL**.
+- Entscheidung zu den Adressen: **eine deutsche Adressgruppe**, keine
+  sprachabhängigen Pfade. Begründung: Die Sprachwahl läuft über das Cookie
+  `brandycards-locale` und `Accept-Language`, nicht über den Pfad — pro Sprache
+  eigene Adressen hieße, einen Routen-Mechanismus einzuführen, den es hier nicht
+  gibt, für Seiten, die ohnehin `noindex` sind. Alles auf Englisch umzustellen
+  bräche die elf indexierten deutschen Pfade aus `app/sitemap.ts`. Umbenennen
+  bleibt später jederzeit möglich, es sind Verzeichnisse, keine Logik.
+- Nur Dokumentation, kein Code, kein Deploy.
+
+## Auftrag 2026-08-17: Aufteilung festhalten — abgeschlossen
+- In `docs/ai-todo.md` als U1 bis U5 eingetragen, oberhalb des Befunds zur
+  Ratengrenze: U1 Gerüst (Unterseiten, Layouts, MFA-Sperre), U2 die beiden neuen
+  Kundenansichten samt fehlender Endpunkte, U3 DHL-Sendungsverfolgung, U4 die
+  zwei Funktionslücken (Vorschlag zurückziehen, „Rückfrage" beantworten),
+  U5 die offene Entscheidung zu Benutzer- und Anzeigename.
+- Jede Aufgabe trägt Dateien, Begründung und Abnahmekriterien, wie es die Todo
+  selbst verlangt — morgen kann eine Sitzung ohne Rückfragen anfangen.
+- Reihenfolge: U1 zuerst, U2 und U3 hängen daran. U4 und U5 sind unabhängig,
+  U5 wartet auf eine Entscheidung des Betreibers.
+- Status: ABGESCHLOSSEN.
