@@ -207,6 +207,17 @@ function parseTradingResponse(xml: string, config: EbayConfig) {
   };
 }
 
+/** Wie viele Angebote je Seite abgerufen werden.
+ *
+ * Steht als Konstante da, weil die Zahl an **zwei** Stellen gebraucht wird: in
+ * der Anfrage und beim Ableiten der Seitenzahl aus der Gesamtanzahl. Doppelt
+ * geschrieben koennten die beiden auseinanderlaufen, und dann rechnete der
+ * Abruf mit einer anderen Seitengroesse, als er anfordert.
+ *
+ * 200 ist die Obergrenze von `GetMyeBaySelling`.
+ */
+const EBAY_ACTIVE_PAGE_SIZE = 200;
+
 /** Returns the listings that are actually active in the seller account.
  * Unlike Inventory API, this also includes listings created in the eBay UI.
  */
@@ -214,6 +225,7 @@ export async function getActiveEbayListings() {
   const config = getConfig();
   const accessToken = await getAccessToken(config);
   const listings: EbayActiveListing[] = [];
+  const jeSeite: number[] = [];
   let page = 1;
   let totalPages = 1;
   let totalEntries = 0;
@@ -222,7 +234,7 @@ export async function getActiveEbayListings() {
     // opt-out eBay also returns SoldList, UnsoldList, ScheduledList and BidList.
     // Those containers must stay off - they cost response size and previously
     // leaked sold items into the shop.
-    const request = `<?xml version="1.0" encoding="utf-8"?><GetMyeBaySellingRequest xmlns="urn:ebay:apis:eBLBaseComponents"><ActiveList><Include>true</Include><Pagination><EntriesPerPage>200</EntriesPerPage><PageNumber>${page}</PageNumber></Pagination></ActiveList><SoldList><Include>false</Include></SoldList><UnsoldList><Include>false</Include></UnsoldList><ScheduledList><Include>false</Include></ScheduledList><BidList><Include>false</Include></BidList><DeletedFromSoldList><Include>false</Include></DeletedFromSoldList><DeletedFromUnsoldList><Include>false</Include></DeletedFromUnsoldList><DetailLevel>ReturnAll</DetailLevel></GetMyeBaySellingRequest>`;
+    const request = `<?xml version="1.0" encoding="utf-8"?><GetMyeBaySellingRequest xmlns="urn:ebay:apis:eBLBaseComponents"><ActiveList><Include>true</Include><Pagination><EntriesPerPage>${EBAY_ACTIVE_PAGE_SIZE}</EntriesPerPage><PageNumber>${page}</PageNumber></Pagination></ActiveList><SoldList><Include>false</Include></SoldList><UnsoldList><Include>false</Include></UnsoldList><ScheduledList><Include>false</Include></ScheduledList><BidList><Include>false</Include></BidList><DeletedFromSoldList><Include>false</Include></DeletedFromSoldList><DeletedFromUnsoldList><Include>false</Include></DeletedFromUnsoldList><DetailLevel>ReturnAll</DetailLevel></GetMyeBaySellingRequest>`;
     const response = await fetchWithTimeout(`${apiBase(config.environment)}/ws/api.dll`, {
       method: "POST",
       headers: { "Content-Type": "text/xml", "X-EBAY-API-CALL-NAME": "GetMyeBaySelling", "X-EBAY-API-SITEID": config.siteId, "X-EBAY-API-COMPATIBILITY-LEVEL": "1231", "X-EBAY-API-IAF-TOKEN": accessToken },
@@ -231,12 +243,29 @@ export async function getActiveEbayListings() {
     if (!response.ok) throw new Error(`eBay GetMyeBaySelling fehlgeschlagen (${response.status}).`);
     const parsed = parseTradingResponse(await response.text(), config);
     listings.push(...parsed.items);
-    totalPages = parsed.totalPages;
+    jeSeite.push(parsed.items.length);
+    // **`Math.max` statt Zuweisung — hier lag der Fehler.** `totalPages` wurde
+    // von *jeder* Antwort überschrieben, während die Zeile darunter
+    // `totalEntries` seit jeher gegen genau diesen Fall absichert. Eine
+    // einzelne Antwort ohne `TotalNumberOfPages` — und `?? "1"` macht daraus
+    // eine 1 — beendete damit die Schleife nach Seite eins. Beobachtet am
+    // 2026-08-10, -13 und -17: **jeder** dieser Fehlschläge lud exakt 200
+    // Angebote, also genau eine Seite.
+    totalPages = Math.max(totalPages, parsed.totalPages);
     totalEntries = Math.max(totalEntries, parsed.totalEntries);
     page++;
-  } while (page <= totalPages && page <= 50);
+    // Die Gesamtanzahl ist die zweite, unabhängige Auskunft darüber, wie viel
+    // noch aussteht. Sie zu nutzen heißt, dass ein einzelnes fehlendes Feld den
+    // Abruf nicht mehr allein abbrechen kann.
+  } while (page <= Math.max(totalPages, Math.ceil(totalEntries / EBAY_ACTIVE_PAGE_SIZE)) && page <= 50);
   if (totalPages > 50 || listings.length < totalEntries) {
-    throw new Error(`eBay-Aktivliste unvollständig: ${listings.length} von ${totalEntries} Angeboten geladen.`);
+    // Die beobachteten Werte gehören in die Meldung: Ohne sie liess sich am
+    // gespeicherten Fehlschlag nicht mehr entscheiden, ob eBay die Seitenzahl
+    // falsch meldet oder eine spätere Seite leer zurückkam.
+    throw new Error(
+      `eBay-Aktivliste unvollständig: ${listings.length} von ${totalEntries} Angeboten geladen.`
+      + ` Seiten laut eBay: ${totalPages}, geholt: ${jeSeite.length}, je Seite: ${jeSeite.join("/")}.`,
+    );
   }
   // eBay can repeat an item at a page boundary. The item ID is the stable
   // identity; returning it once prevents duplicate products downstream.

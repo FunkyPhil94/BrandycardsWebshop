@@ -9101,3 +9101,58 @@ selbst; die Schrittfolge samt Nachprüfung steht in
   bekannten Vorwarnung. Migration `0016` eingespielt (6 Abfragen, 8 Zeilen
   geschrieben). Deploy `032fced5`; `/`, `/admin`, `/api/products` mit 200.
 - Status: ABGESCHLOSSEN.
+
+## Auftrag 2026-08-17: Ursache der abbrechenden Angebots-Synchronisation
+- Status: LÄUFT.
+- Befund: `sync_runs` meldet sporadisch „eBay-Aktivliste unvollständig: 200 von
+  N Angeboten geladen." Fünfmal in neun Tagen bei rund 480 Läufen täglich
+  (0,1 %), zuletzt 2026-08-17 17:21. Selbstheilend — der Lauf drei Minuten
+  später gelingt.
+- Beweisführung: **Jeder** Fehlschlag lud exakt 200, also genau eine Seite —
+  nie 250, nie 400. Die Schleife bricht immer nach der ersten Seite ab.
+- Ursache im Code (`lib/ebay-client.ts`, `getActiveEbayListings`): Die
+  Fortsetzungsbedingung hängt allein an `totalPages`, und das wird bei **jeder**
+  Seite überschrieben statt fortgeschrieben. Die Zeile direkt darunter sichert
+  `totalEntries` mit `Math.max` gegen genau diesen Fall ab — bei `totalPages`
+  fehlt das. Zusätzlich macht `?? "1"` aus einem fehlenden Feld eine 1. Jede
+  einzelne schwache Antwort beendet damit die Schleife, egal ob sie von Seite 1
+  oder einer späteren kommt.
+- Nicht feststellbar aus den gespeicherten Daten: ob eBay die Seitenzahl schon
+  auf Seite 1 falsch meldet oder ob Seite 2 leer zurückkam. Ein direkter
+  Kontrollaufruf war nicht möglich, weil der Refresh-Token in der lokalen
+  `.env.local` veraltet ist (`invalid_grant`). Der Fix wirkt in beiden Fällen.
+- Umsetzung: Seitenzahl zusätzlich aus der Gesamtanzahl ableiten, `totalPages`
+  nur noch wachsen lassen, Seitengröße als Konstante statt doppelt im XML, und
+  die Fehlermeldung um die beobachteten Werte erweitern, damit ein künftiger
+  Fehlschlag sich selbst erklärt.
+- Ausdrücklich **nicht** geändert: dass der Lauf abbricht. Das ist richtig —
+  sonst gälten 76 Angebote als verschwunden und würden abgeräumt.
+- Abnahme: `npm test`, `npx tsc --noEmit`, `npm run lint`, Deploy, danach die
+  Fehlerrate weiter beobachten.
+
+## Auftrag 2026-08-17: Ursache der abbrechenden Angebots-Synchronisation — abgeschlossen
+- Ergebnis: Ursache gefunden und behoben. Die Fortsetzungsbedingung der
+  Seitenschleife hing allein an `totalPages`, das bei **jeder** Antwort
+  überschrieben wurde — während `totalEntries` in der Zeile direkt darunter seit
+  jeher mit `Math.max` gegen genau diesen Fall gesichert ist. Zusammen mit
+  `?? "1"` beendete eine einzelne Antwort ohne `TotalNumberOfPages` den Abruf
+  nach Seite eins. Das deckt sich mit dem Befund, dass **jeder** Fehlschlag
+  exakt 200 Angebote lud.
+- Behoben durch: `Math.max` auch für `totalPages`, zusätzliche Ableitung der
+  Seitenzahl aus der Gesamtanzahl, Seitengröße als Konstante `EBAY_ACTIVE_PAGE_SIZE`
+  statt doppelt im XML.
+- Zwei Regressionstests, beide gegengeprüft: Ohne die Korrektur fallen sie um,
+  mit ihr stehen sie. Ein dritter hält fest, dass ein unvollständiger Abruf
+  weiterhin abbricht und die Meldung jetzt die beobachteten Werte mitführt
+  (Seitenzahl laut eBay, geholte Seiten, Angebote je Seite).
+- Ausdrücklich unverändert: dass der Lauf abbricht. Sonst gälten die fehlenden
+  Angebote als verschwunden und würden abgeräumt.
+- Offen und ehrlich benannt: Ob eBay die Seitenzahl schon auf Seite 1 falsch
+  meldet oder erst eine spätere Antwort schwach war, liess sich aus den
+  gespeicherten Daten nicht entscheiden; ein Kontrollaufruf war unmöglich, weil
+  der Refresh-Token in der lokalen `.env.local` veraltet ist. Die Korrektur
+  wirkt in beiden Fällen, und die erweiterte Meldung beantwortet die Frage beim
+  nächsten Auftreten von selbst.
+- Prüfung: 655 Tests grün, `npx tsc --noEmit` sauber, Lint bei der einen
+  bekannten Vorwarnung. Deploy `1064f435`; `/`, `/admin`, `/api/products` mit 200.
+- Status: ABGESCHLOSSEN.

@@ -129,3 +129,88 @@ test("pagination follows the ActiveList total, not another container", async () 
 
   assert.deepEqual(listings.map((listing) => listing.ebayItemId), ["1001", "1002", "1003"]);
 });
+
+// --- Der Abbruch nach Seite eins --------------------------------------------
+//
+// `sync_runs` meldete am 2026-08-10, -13 und -17 "eBay-Aktivliste
+// unvollstaendig: 200 von N Angeboten geladen." **Jeder** dieser Fehlschlaege
+// lud exakt 200, also genau eine Seite. Ursache: Die Fortsetzungsbedingung hing
+// allein an `totalPages`, und das wurde von *jeder* Antwort ueberschrieben --
+// waehrend `totalEntries` daneben seit jeher mit `Math.max` dagegen abgesichert
+// war. Eine einzige Antwort ohne `TotalNumberOfPages` (`?? "1"` macht daraus
+// eine 1) beendete damit den Abruf.
+
+function seite({ anzahl, totalPages, totalEntries, startId = 100000000000 }) {
+  const items = Array.from({ length: anzahl }, (_, i) => ACTIVE_ITEM(String(startId + i), `Karte ${startId + i}`)).join("");
+  const pagination = totalPages === null
+    ? `<PaginationResult><TotalNumberOfEntries>${totalEntries}</TotalNumberOfEntries></PaginationResult>`
+    : `<PaginationResult><TotalNumberOfPages>${totalPages}</TotalNumberOfPages><TotalNumberOfEntries>${totalEntries}</TotalNumberOfEntries></PaginationResult>`;
+  return `<?xml version="1.0" encoding="utf-8"?>
+<GetMyeBaySellingResponse xmlns="urn:ebay:apis:eBLBaseComponents">
+  <Ack>Success</Ack>
+  <ActiveList><ItemArray>${items}</ItemArray>${pagination}</ActiveList>
+</GetMyeBaySellingResponse>`;
+}
+
+test("eine fehlende Seitenzahl beendet den Abruf nicht mehr", async () => {
+  process.env.EBAY_CLIENT_ID = "id";
+  process.env.EBAY_CLIENT_SECRET = "secret";
+  process.env.EBAY_REFRESH_TOKEN = "refresh";
+
+  // Seite 1 meldet gar keine Seitenzahl -- genau der Fall, der bisher nach
+  // 200 Angeboten abbrach. Die Gesamtanzahl sagt aber, dass mehr da ist.
+  const calls = installFetchStub([
+    seite({ anzahl: 200, totalPages: null, totalEntries: 201 }),
+    seite({ anzahl: 1, totalPages: 2, totalEntries: 201, startId: 200000000000 }),
+  ]);
+
+  const { getActiveEbayListings } = await import("../lib/ebay-client.ts");
+  const listings = await getActiveEbayListings();
+
+  assert.equal(calls.length, 2, "die zweite Seite muss geholt werden");
+  assert.equal(listings.length, 201);
+});
+
+test("eine spaetere schwache Antwort schrumpft die Seitenzahl nicht", async () => {
+  process.env.EBAY_CLIENT_ID = "id";
+  process.env.EBAY_CLIENT_SECRET = "secret";
+  process.env.EBAY_REFRESH_TOKEN = "refresh";
+
+  // Seite 2 meldet ploetzlich "eine Seite". Vor der Korrektur setzte diese
+  // Antwort `totalPages` zurueck, und Seite 3 wurde nie geholt.
+  //
+  // Drei Seiten sind hier noetig, damit der Test ueberhaupt etwas bewacht: Bei
+  // zweien waere der Abruf ohnehin fertig gewesen und die Fassung ohne
+  // Korrektur bestuende genauso.
+  const calls = installFetchStub([
+    seite({ anzahl: 200, totalPages: 3, totalEntries: 401 }),
+    seite({ anzahl: 200, totalPages: 1, totalEntries: 401, startId: 200000000000 }),
+    seite({ anzahl: 1, totalPages: 3, totalEntries: 401, startId: 300000000000 }),
+  ]);
+
+  const { getActiveEbayListings } = await import("../lib/ebay-client.ts");
+  const listings = await getActiveEbayListings();
+
+  assert.equal(calls.length, 3, "die dritte Seite muss trotz der schwachen zweiten Antwort kommen");
+  assert.equal(listings.length, 401);
+});
+
+test("bleibt der Abruf unvollstaendig, erklaert die Meldung sich selbst", async () => {
+  process.env.EBAY_CLIENT_ID = "id";
+  process.env.EBAY_CLIENT_SECRET = "secret";
+  process.env.EBAY_REFRESH_TOKEN = "refresh";
+
+  // eBay behauptet 99 Angebote, liefert aber nur 5 und keine zweite Seite.
+  // Der Lauf muss abbrechen -- sonst gaelten 94 Angebote als verschwunden und
+  // wuerden abgeraeumt. Neu ist, dass die Meldung die beobachteten Werte
+  // mitfuehrt: Ohne sie liess sich am gespeicherten Fehlschlag nicht mehr
+  // entscheiden, woran es lag.
+  installFetchStub([seite({ anzahl: 5, totalPages: 1, totalEntries: 99 })]);
+
+  const { getActiveEbayListings } = await import("../lib/ebay-client.ts");
+  await assert.rejects(getActiveEbayListings(), (fehler) => {
+    assert.match(fehler.message, /unvollständig: 5 von 99 Angeboten/u);
+    assert.match(fehler.message, /Seiten laut eBay: 1, geholt: 1, je Seite: 5\./u);
+    return true;
+  });
+});
