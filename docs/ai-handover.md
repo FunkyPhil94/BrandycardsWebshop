@@ -37,9 +37,61 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-<!-- Fuer den naechsten Auftrag freihalten. -->
+### 2026-08-17 - Punkt 6: die zwei Reste am eBay-Schreibpfad
 
-Keine laufenden Aufträge.
+- Stand: **LÄUFT.**
+- Auftrag des Betreibers: Punkt 6 aus dem Arbeitsvorrat.
+
+**Zustand erhoben, bevor geplant wurde** (lesend an der Produktion):
+
+```
+SELECT status, operation, COUNT(*), MAX(created_at) FROM ebay_outbox GROUP BY ...
+→ SUCCEEDED / REVISE_QUANTITY / 2 / 2026-08-08 10:33:14
+```
+
+Zwei Aufträge, beide erfolgreich, **seit dem 2026-08-08 keiner mehr**. Nichts
+`FAILED`, nichts hängt. Es hat seither also keinen Shop-Verkauf gegeben, der den
+Pfad berührt hätte — Rest 1 ist deshalb unverändert unbewiesen.
+
+**Was an den beiden Resten wirklich machbar ist:**
+
+- **Rest 2 (welche `ALREADY_ENDED`-Nummer war es?)** ist reine Codearbeit und
+  wird gemacht. Der Vorrat nennt den Weg selbst: `tradingErrorCodes(xml)` in die
+  Protokollzeile. Umgesetzt wird das an der Stelle, an der die Nummern bekannt
+  sind — in `reviseEbayItemQuantity`, nicht durch Umbau des Rückgabetyps. Vier
+  bestehende Tests hängen an der schlichten Zeichenkette `"ALREADY_ENDED"`, und
+  ein Vertragsumbau nur zur Protokollierung wäre der falsche Preis.
+- **Rest 1 (fällt die Menge eines *laufenden* Angebots wirklich auf 0?)** kann
+  ich **nicht** beweisen. Es bräuchte entweder einen echten Verkauf — nicht
+  herbeiführbar — oder ein Wegwerf-Angebot, also einen **Schreibzugriff auf
+  eBay**. Der ist ausdrücklich rücksprachepflichtig und wird nicht eigenmächtig
+  vorgenommen.
+
+**Was ich stattdessen dafür tue: den nächsten echten Verkauf selbst zum Beleg
+machen.** Heute meldet ein erfolgreicher Auftrag nur „eBay hat `Ack: Success`
+geschickt". Das ist nicht dasselbe wie „die Menge steht jetzt auf 0". Nach einem
+`REVISED` wird deshalb die Verfügbarkeit über das vorhandene
+`getEbayAvailability` **zurückgelesen** und protokolliert.
+
+- Streng informativ: Scheitert das Zurücklesen, bleibt der Auftrag `SUCCEEDED`.
+  Eine Diagnose darf den Geschäftsvorgang nicht gefährden.
+- Nur im Fall `REVISED`, nicht bei `ALREADY_ENDED` — dort ist das Angebot ohnehin
+  beendet.
+- **Kosten:** ein zusätzlicher Trading-Aufruf je erfolgreicher Rücknahme. Der
+  Topf umfasst 5 000 Aufrufe/Tag und ist geteilt; Rücknahmen entstehen einmal je
+  verkaufter Karte (bisher 4 in 90 Tagen). Vernachlässigbar, aber genannt.
+
+**Und der Fall, der bleibend wichtig ist:** Meldet eBay Erfolg, während die
+Menge danach **nicht** 0 ist, ist das ein stiller Doppelverkaufspfad. Das löst
+künftig einen Betriebsalarm aus — nicht als Einmalbeweis, sondern dauerhaft.
+
+**Bewusst nicht gemacht: keine Migration.** Eine Spalte für ein Diagnoseergebnis
+wäre ein Schema-Eingriff in die Produktion für etwas, das kein Geschäftsdatum
+ist. Der dauerhafte Weg für Protokolle heißt Logpush und ist eine
+Betreiberentscheidung; sie wird als solche notiert statt vorweggenommen.
+
+**Abnahme:** `npm test`, `npx tsc --noEmit`, `npm run lint`, Deploy. Rot-Nachweis
+für die neuen Tests. Kein eBay-Schreibzugriff, keine Produktionsdatenänderung.
 
 ## Historie
 
