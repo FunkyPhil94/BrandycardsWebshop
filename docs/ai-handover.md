@@ -9381,3 +9381,7 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 - Prüfkette: 692 Tests grün, `npx tsc --noEmit` sauber, Lint mit der bekannten
   Vorwarnung in `app/account/page.tsx`.
 - Status: ABGESCHLOSSEN.
+
+## Nachtrag 2026-08-17: Deploy der Bild-Begründung
+- Version `ec2534cd-4f90-4227-bc93-e4cf36caf498`, aus dem Hauptverzeichnis.
+- `/`, `/admin`, `/api/products` je 200; `img-src` trägt weiterhin `blob:`.
