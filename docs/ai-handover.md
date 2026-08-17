@@ -9155,4 +9155,35 @@ selbst; die Schrittfolge samt Nachprüfung steht in
   nächsten Auftreten von selbst.
 - Prüfung: 655 Tests grün, `npx tsc --noEmit` sauber, Lint bei der einen
   bekannten Vorwarnung. Deploy `1064f435`; `/`, `/admin`, `/api/products` mit 200.
+
+## Auftrag 2026-08-17: Aufrufzähler im Adminbereich (24h / 7 Tage / 30 Tage)
+- Status: LÄUFT.
+- Ziel: Der Adminbereich zeigt die Seitenaufrufe des eigenen Shops in drei Fenstern — letzte 24 Stunden, 7 Tage, 30 Tage — samt Aufschlüsselung nach Seitenbereich.
+- Ausgangslage: Es gibt **keine** Shop-eigene Aufrufmessung. `ebay_listing_traffic` zählt Aufrufe der eBay-Angebote, nicht die des Shops. Historische Zahlen existieren also nicht; der Zähler beginnt mit dem Deploy bei null, die 7- und 30-Tage-Werte sind anfangs unvollständig.
+- Umsetzung: Neue D1-Tabelle `page_views` als Stundeneimer (Fensterbeginn + normalisiertes Pfadmuster + Zähler), Zählen per Beacon aus einer Client-Komponente im Root-Layout, öffentliche Route `POST /api/page-views` mit Ratengrenze, Auswertung über `GET /api/admin/page-views`, Anzeige in einem neuen Adminpanel. Aufbewahrung 90 Tage über den bestehenden Cron.
+- Datenschutz: Keine IP, kein Cookie, kein Identifikator, keine Sitzungserkennung — nur ein Zähler je Stunde und Pfadmuster. Abschnitt 11 der Datenschutzseite wird entsprechend nachgezogen, weil er derzeit „keine Analysefunktionen" behauptet.
+- Prüfung: neuer Test `tests/page-views.test.mjs` (Pfadnormalisierung, Fenstergrenzen, Aufbewahrung), `npm test`, `npm run lint`, `npx tsc --noEmit`.
+
+## Auftrag 2026-08-17: Aufrufzähler im Adminbereich — abgeschlossen
+- Ergebnis: Neue Tabelle `page_views` (Migration `drizzle/0014_page_views.sql`), Zählpunkt `app/view-tracker.tsx` im Wurzel-Layout, öffentliche Route `POST /api/page-views`, Auswertung `GET /api/admin/page-views`, Anzeige `app/admin/views-panel.tsx` direkt unter den Bestandszahlen. Neuer Ratengrenzen-Tarif `beacon` (60/min, `RATE_LIMITER_BEACON`, Namespace 1003) in `wrangler.toml`. Löschung nach 90 Tagen im geplanten Lauf.
+- Prüfung: `npm test` 523/523 grün (einschließlich Build), `npm run lint` ohne Fehler (eine vorbestehende Warnung in `app/account/page.tsx`), `npx tsc --noEmit` sauber. Neuer Test `tests/page-views.test.mjs` mit 15 Fällen.
+- Prüfung am laufenden Server: Aufruf von `/karten` erzeugte genau eine Zeile mit `view_count = 1`; `/karten/testkarte-123?suche=ronaldo` landete als `/karten/[id]` ohne Suchbegriff; `/admin` erzeugte **keine** Zeile. Die Auswertungsabfrage wurde mit gesetzten Eimern über 3 Stunden, 3 Tage, 20 Tage und 60 Tage gegen lokales D1 gefahren und lieferte die erwarteten Summen (60 Tage korrekt ausgeschlossen). Layout auf 1280 px dreispaltig, auf 375 px untereinander, kein Querscrollen.
+- Nicht geprüft: die gerenderte Adminkachel selbst — dafür wären Adminanmeldung und MFA nötig. Geprüft wurden stattdessen die Auswertungsabfrage gegen echtes D1 und die Darstellung des erzeugten Markups gegen das echte Stylesheet.
+- Offen vor dem Deploy: Migration 0014 muss auf der produktiven D1 laufen, und der Zweig muss nach `main`. Vorher zählt nichts.
+- Hinweis: Rückwirkende Zahlen gibt es nicht. Der erste Eimer entsteht mit dem Deploy; 7- und 30-Tage-Werte sind bis dahin unvollständig und sagen das in der Kachel auch.
+- Status: ABGESCHLOSSEN (Code), Deploy ausstehend.
+
+## Auftrag 2026-08-17: Gesamtzähler und Produktivsetzung
+- Status: LÄUFT.
+- Ziel: Zusätzlich zu 24h/7d/30d eine Zahl „insgesamt" seit Beginn der Erfassung; anschließend Zweig nach `main`, Migration auf die produktive D1 und Deploy.
+- Fallstrick: Ein einfaches `SUM(page_views)` wäre **nicht** „insgesamt", sondern „letzte 90 Tage" — die Aufbewahrungsfrist löscht ältere Eimer, und die Zahl würde ab Tag 91 stillschweigend schrumpfen statt zu wachsen.
+- Umsetzung: Neue Tabelle `page_view_archive`; der Cron summiert ablaufende Eimer dorthin, **bevor** er sie löscht, und zwar in einem `batch` (auf D1 atomar). Gesamt = Archiv + vorhandene Eimer. Der heiße Pfad bleibt bei einem Schreibvorgang je Aufruf.
+- Prüfung: erweiterter `tests/page-views.test.mjs`, `npm test`, `npm run lint`, `npx tsc --noEmit`; danach Deploy-Verifikation an einer Seite, die Client-Konfiguration braucht.
+
+## Auftrag 2026-08-17: Gesamtzähler und Produktivsetzung — abgeschlossen
+- Ergebnis: Vierte Kachel „Insgesamt" im Adminbereich. Neue Tabelle `page_view_archive` (Migration 0015); `lib/page-views-retention.ts` summiert ablaufende Eimer dorthin, bevor der geplante Lauf sie löscht, beides als `batch` und damit atomar. Gesamt = Archiv + vorhandene Eimer.
+- Prüfung: `npm test` 527/527 grün, `npm run lint` fehlerfrei (eine vorbestehende Warnung), `npx tsc --noEmit` sauber. Das Aufaddieren im Archiv wurde gegen lokales D1 gefahren: 100 + 25 ergab 125, nicht 25. Kachelreihe geprüft bei 375 px (1×4), 700 px (2×2) und 1280 px (4×1), kein Querscrollen, sechsstellige Zahlen passen.
+- Deploy: Zweig als Fast-Forward nach `main`, Build im Hauptverzeichnis mit `.env.local` (Client-Konfiguration im Bündel bestätigt), Migrationen 0014 und 0015 auf der produktiven D1 ausgeführt (31 → 32 Tabellen), `npx wrangler deploy`. Version `888d9f35-6ccf-4206-93ab-24c13bd5e518`. Das neue Binding `RATE_LIMITER_BEACON` (60/60s) ist in der Deploy-Ausgabe aufgeführt.
+- Deploy-Verifikation: `/` antwortet mit 200; `/admin` zeigt „Nicht authentifiziert" statt „Supabase ist noch nicht konfiguriert" — die Seite, die Client-Konfiguration braucht, ist also gesund. Der erste echte Aufruf steht in der Produktion: `/` mit `view_count = 1`. Der anschließende Besuch von `/admin` erzeugte **keine** Zeile, die Ausnahme greift also auch produktiv.
+- Design-Hook: Die vier `border-left`-Akzente in `app/globals.css` bleiben auf Wunsch des Betreibers; der Ignore ist in `.impeccable/config.json` auf diese Datei begrenzt.
 - Status: ABGESCHLOSSEN.

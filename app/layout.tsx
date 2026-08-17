@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import logo from "./brand/brandycards-logo.png";
 import { GlobalLegalNav, I18nProvider } from "./i18n";
+import { ViewTracker } from "./view-tracker";
 import { SHOP_BASE_URL } from "../lib/seo";
 
 export const metadata: Metadata = {
@@ -33,5 +34,5 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="de" suppressHydrationWarning><body><I18nProvider>{children}<GlobalLegalNav /></I18nProvider></body></html>;
+  return <html lang="de" suppressHydrationWarning><body><I18nProvider>{children}<GlobalLegalNav /><ViewTracker /></I18nProvider></body></html>;
 }
