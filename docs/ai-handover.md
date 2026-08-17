@@ -9706,3 +9706,19 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 - **Nicht geprüft:** Ansichten mit echten Daten. Das Konto mit den drei
   abgelehnten Vorschlägen ist ein anderes als die Browsersitzung hier.
 - Status: ABGESCHLOSSEN.
+
+## Auftrag 2026-08-17: U3 geprüft, U4 und U5
+- Status: LÄUFT.
+- **U3 braucht keine Arbeit mehr.** Neben dem bereits gebauten Weg deckt
+  `tests/n5-orders.test.mjs` ihn ab: DHL-Adresse, `trackingUrl(…, null) === null`
+  und die Versandmail mit Verfolgungslink. Offen bleibt allein der Blick beim
+  ersten echten Versand.
+- **U4a:** Preisvorschlag zurückziehen — `PATCH /api/account/price-offers`,
+  nur eigene und nur solange `NEW` oder `IN_REVIEW`. `WITHDRAWN` zählt in
+  `offerAttempts` nicht mit, der Versuch wird also wirklich frei.
+- **U4b:** Rückfrage zu einem Kartenangebot. Neue Spalte `admin_question`,
+  Migration von Hand (`drizzle/meta/_journal.json` ist veraltet, siehe
+  CLAUDE.md). Der Kunde sieht die Frage im Konto **und** bekommt eine E-Mail —
+  ohne Mail bliebe der Stand so wirkungslos wie vorher.
+- **U5:** `username` und `display_name` entfernen, samt Index, Profilformular,
+  Registrierung, Datenexport und Datenschutztext.
