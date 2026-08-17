@@ -15,7 +15,24 @@ type Offer = {
   expiresAt: string | null;
 };
 
-type State = { signedIn: boolean; offers: Offer[]; attemptsLeft: number };
+/** Vier Zustände, und der vierte ist der wichtige.
+ *
+ * **„Abgemeldet" und „Abfrage fehlgeschlagen" sind nicht dasselbe.** Vorher gab
+ * es nur `signedIn: boolean`, und jeder Fehlschlag landete auf `false`. Wer
+ * angemeldet war und dessen Zugriffstoken gerade ablief, bekam deshalb die
+ * Aufforderung, sich anzumelden — am 2026-08-17 beim Betreiber aufgetreten,
+ * nachdem er drei Vorschläge gesendet hatte: Statt „keine weiteren Vorschläge
+ * möglich" stand der Anmeldekasten da, obwohl der Server längst
+ * `attemptsLeft: 0` lieferte.
+ *
+ * Ob jemand angemeldet ist, weiß **Supabase**. Ob die Abfrage geklappt hat, sagt
+ * der Aufruf. Zwei Fragen, zwei Antworten.
+ */
+type Zustand =
+  | { art: "laedt" }
+  | { art: "abgemeldet" }
+  | { art: "bereit"; offers: Offer[]; attemptsLeft: number }
+  | { art: "fehler" };
 
 const LABEL: Record<Offer["status"], string> = {
   NEW: "In Prüfung",
@@ -26,18 +43,21 @@ const LABEL: Record<Offer["status"], string> = {
   WITHDRAWN: "Zurückgezogen",
 };
 
-async function authHeaders(): Promise<HeadersInit> {
+/** Das Zugriffstoken der laufenden Sitzung — oder `null`, wenn keine läuft.
+ *
+ * Kein stiller Rückfall auf leere Kopfzeilen: Ein fehlendes Token bedeutet
+ * abgemeldet, und das muss die aufrufende Stelle unterscheiden können. */
+async function sitzungsToken(): Promise<string | null> {
   try {
     const { data } = await getSupabaseBrowserClient().auth.getSession();
-    const token = data.session?.access_token;
-    return token ? { Authorization: `Bearer ${token}` } : {};
+    return data.session?.access_token ?? null;
   } catch {
-    return {};
+    return null;
   }
 }
 
 export function OfferForm({ productId, listPriceCents, currency }: { productId: string; listPriceCents: number | null; currency: string }) {
-  const [state, setState] = useState<State | null>(null);
+  const [zustand, setZustand] = useState<Zustand>({ art: "laedt" });
   const [pending, setPending] = useState(false);
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const { cart, addToCart } = useCart();
@@ -50,14 +70,21 @@ export function OfferForm({ productId, listPriceCents, currency }: { productId: 
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      const token = await sitzungsToken();
+      if (cancelled) return;
+      if (!token) { setZustand({ art: "abgemeldet" }); return; }
       try {
-        const headers = await authHeaders();
-        const response = await fetch(`/api/price-offers?productId=${productId}`, { headers });
+        const response = await fetch(`/api/price-offers?productId=${productId}`, { headers: { Authorization: `Bearer ${token}` } });
+        // 401 heißt: Das Token trägt nicht mehr. Das *ist* abgemeldet — anders
+        // als ein 429, 500 oder ein abgebrochenes Netz, wo niemand weiß, wie es
+        // um die Vorschläge steht.
+        if (response.status === 401) { if (!cancelled) setZustand({ art: "abgemeldet" }); return; }
         if (!response.ok) throw new Error("failed");
-        const data = await response.json() as State;
-        if (!cancelled) setState(data);
+        const data = await response.json() as { signedIn: boolean; offers: Offer[]; attemptsLeft: number };
+        if (cancelled) return;
+        setZustand(data.signedIn ? { art: "bereit", offers: data.offers, attemptsLeft: data.attemptsLeft } : { art: "abgemeldet" });
       } catch {
-        if (!cancelled) setState({ signedIn: false, offers: [], attemptsLeft: 0 });
+        if (!cancelled) setZustand({ art: "fehler" });
       }
     })();
     return () => { cancelled = true; };
@@ -68,14 +95,14 @@ export function OfferForm({ productId, listPriceCents, currency }: { productId: 
    * **Ohne das entscheidet ein Wettlauf über den Kasten.** Die Prüfung oben
    * läuft einmal beim Aufbau der Seite. Liegt in dem Moment noch kein Token
    * vor — Supabase liest die Sitzung asynchron aus dem Speicher und erneuert
-   * ein abgelaufenes Zugriffstoken erst im Hintergrund —, kommt `signedIn:
-   * false` zurück, und der Kasten fordert zum Anmelden auf. Bei jemandem, der
-   * angemeldet ist. Er blieb bis zum 2026-08-17 auch dabei, weil nichts die
-   * Frage je wiederholte.
+   * ein abgelaufenes Zugriffstoken erst im Hintergrund —, gilt der Besucher als
+   * abgemeldet.
    *
    * `onAuthStateChange` meldet sich, sobald die Sitzung steht (auch bei
    * `TOKEN_REFRESHED` und nach dem Abmelden), und der Zähler stößt die Prüfung
-   * erneut an.
+   * erneut an. Das bleibt richtig und nötig — es ersetzt aber nicht die
+   * Unterscheidung oben: Kommt gar kein Ereignis mehr, weil die Sitzung längst
+   * steht und nur der Aufruf scheiterte, muss der Fehler als Fehler dastehen.
    */
   useEffect(() => {
     let subscription: { unsubscribe: () => void } | undefined;
@@ -96,9 +123,10 @@ export function OfferForm({ productId, listPriceCents, currency }: { productId: 
     setPending(true);
     setFeedback(null);
     try {
+      const token = await sitzungsToken();
       const response = await fetch("/api/price-offers", {
         method: "POST",
-        headers: { "Content-Type": "application/json", ...(await authHeaders()) },
+        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ productId, price: data.get("price"), message: data.get("message") || undefined }),
       });
       const payload = await response.json().catch(() => ({}));
@@ -113,7 +141,8 @@ export function OfferForm({ productId, listPriceCents, currency }: { productId: 
     }
   }
 
-  const accepted = state?.offers.find((offer) => offer.status === "ACCEPTED");
+  const offers = zustand.art === "bereit" ? zustand.offers : [];
+  const accepted = offers.find((offer) => offer.status === "ACCEPTED");
   useEffect(() => {
     if (!accepted || !accepted.expiresAt || Date.parse(accepted.expiresAt) <= Date.now() || cart[productId] > 0) return;
     // Das Angebot ist personengebunden und wird serverseitig erneut geprüft.
@@ -121,9 +150,9 @@ export function OfferForm({ productId, listPriceCents, currency }: { productId: 
     addToCart(productId, 1);
   }, [accepted, addToCart, cart, productId]);
 
-  if (!state) return null;
+  if (zustand.art === "laedt") return null;
 
-  if (!state.signedIn) {
+  if (zustand.art === "abgemeldet") {
     return <div className="offer-box">
       <h3>{t("Mach uns ein Angebot")}</h3>
       <p>{t("Du musst diese Karte nicht zum angegebenen Preis nehmen. Sag uns einfach, was sie dir wert ist. Für ein Angebot brauchst du ein Kundenkonto. So wissen wir, für wen der vereinbarte Preis gilt.")}</p>
@@ -131,7 +160,17 @@ export function OfferForm({ productId, listPriceCents, currency }: { productId: 
     </div>;
   }
 
-  const open = state.offers.find((offer) => offer.status === "NEW" || offer.status === "IN_REVIEW");
+  // Der Fehlerfall sagt, was los ist, und bietet den Weg heraus an. Vorher stand
+  // hier der Anmeldekasten — eine Auskunft, die schlicht falsch war.
+  if (zustand.art === "fehler") {
+    return <div className="offer-box">
+      <h3>{t("Preis vorschlagen")}</h3>
+      <p>{t("Der Stand deiner Vorschläge lässt sich gerade nicht abrufen. Deine bisherigen Vorschläge sind davon nicht betroffen.")}</p>
+      <button type="button" className="button button-outline" onClick={() => setReloadToken((token) => token + 1)}>{t("Erneut versuchen")}</button>
+    </div>;
+  }
+
+  const open = offers.find((offer) => offer.status === "NEW" || offer.status === "IN_REVIEW");
 
   if (accepted) {
     return <div className="offer-box offer-accepted">
@@ -149,7 +188,7 @@ export function OfferForm({ productId, listPriceCents, currency }: { productId: 
           <p>{t("Dein Vorschlag über {{amount}} liegt uns vor. Wir melden uns per E-Mail.", { amount: formatPrice(open.amount, open.currency, locale) ?? "" })}</p>
           <p className="offer-meta">{t("Status: {{status}}", { status: t(LABEL[open.status]) })}</p>
         </>
-      : state.attemptsLeft <= 0
+      : zustand.attemptsLeft <= 0
         ? <p>{t(listPriceCents
           ? "Für diese Karte hast du alle Vorschläge genutzt. Der reguläre Preis gilt weiterhin."
           : "Für diese Karte hast du alle Vorschläge genutzt. Ein neuer Vorschlag ist derzeit nicht möglich.")}</p>
@@ -177,7 +216,7 @@ export function OfferForm({ productId, listPriceCents, currency }: { productId: 
                 {pending ? t("Wird gesendet …") : t("Vorschlag senden")}
               </button>
             </form>
-            <p className="offer-meta">{t("Noch {{left}} von 3 Vorschlägen für diese Karte.", { left: state.attemptsLeft })}</p>
+            <p className="offer-meta">{t("Noch {{left}} von 3 Vorschlägen für diese Karte.", { left: zustand.attemptsLeft })}</p>
           </>}
     {feedback && <p className={`form-feedback ${feedback.type}`} role="status">{feedback.message}</p>}
   </div>;

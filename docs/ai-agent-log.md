@@ -3539,3 +3539,46 @@ Geschichte. `app/admin/requests-panel.tsx` schreibt jetzt hin, was los ist:
 Browser konnte nichts daraus machen). Dieselbe Überlegung wie bei „keine
 Preisvorstellung": Eine leere Stelle ist von einem Anzeigefehler nicht zu
 unterscheiden.
+
+## 2026-08-17 — Warum ein fehlgeschlagener Aufruf niemand abmeldet
+
+Nach drei Preisvorschlägen stand auf der Kartenseite der Anmeldekasten — bei
+einem angemeldeten Kunden. Erwartet war „Für diese Karte hast du alle Vorschläge
+genutzt", und dieser Satz war die ganze Zeit im Code.
+
+Der Server war nicht schuld, das ließ sich an echten Daten zeigen: drei Zeilen
+auf `REJECTED` in `price_offers`, also `signedIn: true` und `attemptsLeft: 0`.
+
+Die Ursache war ein zusammengefallenes Begriffspaar. Das Formular kannte
+`signedIn: boolean`, und der `catch` schrieb bei **jedem** Fehlschlag
+`signedIn: false`:
+
+```ts
+} catch {
+  if (!cancelled) setState({ signedIn: false, offers: [], attemptsLeft: 0 });
+}
+```
+
+Ein abgelaufenes Zugriffstoken, ein 503, ein abgebrochenes Netz — alles wurde zu
+„nicht angemeldet". Das ist keine Ungenauigkeit, sondern eine **falsche
+Auskunft**: Die Seite forderte jemanden zum Anmelden auf, der angemeldet war,
+und verschwieg dabei den Zustand, den sie eigentlich zeigen sollte.
+
+Dieselbe Verwechslung hatte schon einmal zugeschlagen. Der Kommentar über
+`onAuthStateChange` in derselben Datei beschreibt den Wettlauf beim Seitenaufbau:
+Token noch nicht da → Anmeldekasten. Damals wurde ein zweiter Versuch
+nachgerüstet, der das Symptom in den meisten Fällen wegräumte. Die Ursache blieb
+liegen, und deshalb kam sie wieder — diesmal an einer Stelle, wo kein weiteres
+Anmeldeereignis nachkommt, das den Fehler überschreiben könnte.
+
+Jetzt gibt es vier Zustände: lädt, abgemeldet, bereit, Fehler. **Ob jemand
+angemeldet ist, entscheidet Supabase. Ob die Abfrage geklappt hat, entscheidet
+der Aufruf.** Zwei Fragen, zwei Antworten. Ein `401` gilt weiterhin als
+abgemeldet — dort ist es die Wahrheit. Alles andere zeigt einen Hinweis mit
+„Erneut versuchen" und sagt ausdrücklich, dass die bisherigen Vorschläge davon
+nicht betroffen sind.
+
+Dieselbe Falle steckt in jedem `catch`, der einen Fehler in einen fachlichen
+Zustand umdeutet. Am Bild im Adminbereich war es heute schon dasselbe Muster:
+Das Ersatzsymbol des Browsers hieß gleichzeitig „blockiert" und „keine
+Bilddaten" — auch dort war die Behebung, die Fälle auseinanderzuziehen.

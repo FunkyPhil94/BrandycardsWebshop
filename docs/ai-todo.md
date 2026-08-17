@@ -11,6 +11,36 @@ dabei, damit niemand den Gesprächsverlauf braucht.
 
 ---
 
+## Die Ratengrenze griff nicht — 14 Anfragen gegen ein Limit von 10
+
+**Befund vom 2026-08-17, in Produktion gemessen.** Vierzehn Aufrufe von
+`GET /api/price-offers` in zwei Sekunden, alle von derselben Adresse, kamen
+**alle** mit 200 durch. `wrangler.toml` setzt `RATE_LIMITER` auf
+`limit = 10, period = 60`, und `enforcePublicRateLimit` ist die erste Zeile der
+Route.
+
+Wichtig für die Eingrenzung: Im `wrangler tail` erschien **kein**
+`[rate-limit] Binding … fehlt`. Der Rückfall auf den Zähler im Arbeitsspeicher
+greift also nicht — die Bindung ist vorhanden und hat trotzdem nicht begrenzt.
+
+Zu prüfen:
+- Zählt Cloudflare je Rechenzentrum und ist die Grenze bewusst unscharf? Dann
+  gehört das als Satz in `lib/rate-limit-policy.ts`, damit niemand mehr davon
+  ausgeht, dass bei 11 Schluss ist.
+- Oder wird der Schlüssel je Anfrage anders gebildet? `rateLimitKey` nutzt
+  `cf-connecting-ip` — steht die Kopfzeile bei jeder Anfrage gleich da?
+- Messen, nicht schätzen: `tests/rate-limit.test.mjs` prüft heute nur, dass
+  Tabelle und `wrangler.toml` zusammenpassen, nicht die tatsächliche Wirkung.
+
+**Warum es zählt:** Die Grenze schützt Formulare, Uploads und den Anmeldeweg.
+Wirkt sie nicht wie angenommen, ist SEC-02 nur auf dem Papier erledigt.
+
+**Abnahme:** Entweder begrenzt eine gemessene Serie tatsächlich, oder es steht
+schriftlich fest, mit welcher Unschärfe zu rechnen ist — und die Zahlen in
+`wrangler.toml` sind entsprechend gewählt.
+
+---
+
 ## Kategorie und Zustand: eBay liefert sie nicht, Entscheidung offen
 
 **Befund vom 2026-08-17, gemessen statt vermutet.** Für die Frage „welche *Art*

@@ -746,6 +746,8 @@ const ENGLISH_EXTRA_2: Record<string, string> = {
   "3 bis 30 Zeichen: nur Buchstaben, Zahlen und Unterstrich (_).": "3 to 30 characters: letters, numbers and underscores only (_).",
   "E-Mail f\u00fcr die Bestellbest\u00e4tigung": "Email for order confirmation",
   "Kein Kundenkonto n\u00f6tig. Du kannst direkt als Gast bezahlen.": "No customer account needed. You can pay as a guest.",
+  "Der Stand deiner Vorschl\u00e4ge l\u00e4sst sich gerade nicht abrufen. Deine bisherigen Vorschl\u00e4ge sind davon nicht betroffen.": "Your offers cannot be loaded right now. The offers you have already sent are unaffected.",
+  "Erneut versuchen": "Try again",
 };
 
 export function translate(locale: Locale, key: string, values: Values = {}) {
