@@ -101,9 +101,10 @@ bucket_name = "brandycards-uploads"
 # Ohne diese Blöcke fällt lib/rate-limit.ts auf einen Zähler im Arbeitsspeicher
 # des Isolates zurück. Workers-Isolate sind kurzlebig und existieren vielfach
 # parallel, die Begrenzung wäre damit wirkungslos — und zwar still.
-# Zwei Namespaces, weil ein Binding genau eine Grenze trägt: Uploads brauchen
-# eine engere als ein Kontaktformular. Die Werte müssen zu RATE_LIMIT_TIERS in
-# lib/rate-limit-policy.ts passen; tests/rate-limit.test.mjs prüft das.
+# Drei Namespaces, weil ein Binding genau eine Grenze trägt: Uploads brauchen
+# eine engere als ein Kontaktformular, und der Aufrufzähler eine weitere als
+# beide. Die Werte müssen zu RATE_LIMIT_TIERS in lib/rate-limit-policy.ts
+# passen; tests/rate-limit.test.mjs prüft das.
 [[ratelimits]]
 name = "RATE_LIMITER"
 namespace_id = "1001"
@@ -113,3 +114,8 @@ simple = { limit = 10, period = 60 }
 name = "RATE_LIMITER_STRICT"
 namespace_id = "1002"
 simple = { limit = 3, period = 60 }
+
+[[ratelimits]]
+name = "RATE_LIMITER_BEACON"
+namespace_id = "1003"
+simple = { limit = 60, period = 60 }

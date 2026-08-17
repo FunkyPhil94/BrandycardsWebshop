@@ -35,7 +35,8 @@ export default function DatenschutzPage() {
       <h2>10. {t("Ihre Rechte")}</h2>
       <p>{t("Sie haben insbesondere das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung, Datenübertragbarkeit und Widerspruch im Rahmen der gesetzlichen Voraussetzungen. Außerdem besteht ein Beschwerderecht bei einer Datenschutzaufsichtsbehörde.")}</p>
       <h2>11. {t("Cookies und Tracking")}</h2>
-      <p>{t("Wir setzen derzeit keine nicht erforderlichen Analyse-, Werbe- oder Resend-Trackingfunktionen ein. Falls sich dies ändert, werden die erforderlichen Informationen und gegebenenfalls eine Einwilligungslösung ergänzt. Unabhängig davon werden Kartenbilder direkt von eBay geladen; was dabei übertragen wird, steht in Abschnitt 7.")}</p>
+      <p>{t("Wir zählen die Aufrufe unserer eigenen Seiten, um zu sehen, welche Bereiche des Shops genutzt werden. Gespeichert wird dabei ausschließlich ein Zähler je Stunde und Seitenbereich. Es werden keine Cookies gesetzt, keine IP-Adressen, Geräte- oder Sitzungskennungen gespeichert, keine Profile gebildet und keine Daten an Dritte übermittelt; ein Rückschluss auf einzelne Personen ist aus diesen Zahlen nicht möglich. Sie werden nach 90 Tagen gelöscht.")}</p>
+      <p>{t("Darüber hinaus setzen wir keine Analyse-, Werbe- oder Resend-Trackingfunktionen ein. Falls sich dies ändert, werden die erforderlichen Informationen und gegebenenfalls eine Einwilligungslösung ergänzt. Unabhängig davon werden Kartenbilder direkt von eBay geladen; was dabei übertragen wird, steht in Abschnitt 7.")}</p>
       <p className="form-feedback">{t("Arbeitsentwurf: Anbieter- und Speicherortangaben sowie Aufbewahrungsfristen sollten vor dem Verkaufsstart anhand der aktuellen Verträge und Anbieterunterlagen rechtlich geprüft werden. Das gilt besonders für die Abschnitte 7 (Einbindung der eBay-Bildserver) und 9 (Löschfrist für Kartenangebote).")}</p>
     </article>
   </main>;

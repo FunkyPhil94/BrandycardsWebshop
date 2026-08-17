@@ -7356,3 +7356,21 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 - Umsetzung: Alle 333 Xray-Testbeschreibungen per Issue-Key-CSV-Update um die Pflicht "Screenshot je Testschritt" erweitert. Testplan KAN-898 und Testausfuehrung KAN-899 enthalten die gleichen Regeln fuer PASS, FAIL und BLOCKED.
 - Verifikation: JQL mit dem Screenshot-Marker liefert 333 Testvorgaenge; KAN-565, KAN-600, KAN-700, KAN-800 und KAN-897 stichprobenartig geprueft. Keine Testergebnisse vorweggenommen.
 - Sicherheitsregel: Passwoerter, Tokens, Zahlungsdaten und sonstige Geheimnisse muessen vor dem Screenshot maskiert oder geschwaerzt werden.
+
+
+## Auftrag 2026-08-17: Aufrufzähler im Adminbereich (24h / 7 Tage / 30 Tage)
+- Status: LÄUFT.
+- Ziel: Der Adminbereich zeigt die Seitenaufrufe des eigenen Shops in drei Fenstern — letzte 24 Stunden, 7 Tage, 30 Tage — samt Aufschlüsselung nach Seitenbereich.
+- Ausgangslage: Es gibt **keine** Shop-eigene Aufrufmessung. `ebay_listing_traffic` zählt Aufrufe der eBay-Angebote, nicht die des Shops. Historische Zahlen existieren also nicht; der Zähler beginnt mit dem Deploy bei null, die 7- und 30-Tage-Werte sind anfangs unvollständig.
+- Umsetzung: Neue D1-Tabelle `page_views` als Stundeneimer (Fensterbeginn + normalisiertes Pfadmuster + Zähler), Zählen per Beacon aus einer Client-Komponente im Root-Layout, öffentliche Route `POST /api/page-views` mit Ratengrenze, Auswertung über `GET /api/admin/page-views`, Anzeige in einem neuen Adminpanel. Aufbewahrung 90 Tage über den bestehenden Cron.
+- Datenschutz: Keine IP, kein Cookie, kein Identifikator, keine Sitzungserkennung — nur ein Zähler je Stunde und Pfadmuster. Abschnitt 11 der Datenschutzseite wird entsprechend nachgezogen, weil er derzeit „keine Analysefunktionen" behauptet.
+- Prüfung: neuer Test `tests/page-views.test.mjs` (Pfadnormalisierung, Fenstergrenzen, Aufbewahrung), `npm test`, `npm run lint`, `npx tsc --noEmit`.
+
+## Auftrag 2026-08-17: Aufrufzähler im Adminbereich — abgeschlossen
+- Ergebnis: Neue Tabelle `page_views` (Migration `drizzle/0014_page_views.sql`), Zählpunkt `app/view-tracker.tsx` im Wurzel-Layout, öffentliche Route `POST /api/page-views`, Auswertung `GET /api/admin/page-views`, Anzeige `app/admin/views-panel.tsx` direkt unter den Bestandszahlen. Neuer Ratengrenzen-Tarif `beacon` (60/min, `RATE_LIMITER_BEACON`, Namespace 1003) in `wrangler.toml`. Löschung nach 90 Tagen im geplanten Lauf.
+- Prüfung: `npm test` 523/523 grün (einschließlich Build), `npm run lint` ohne Fehler (eine vorbestehende Warnung in `app/account/page.tsx`), `npx tsc --noEmit` sauber. Neuer Test `tests/page-views.test.mjs` mit 15 Fällen.
+- Prüfung am laufenden Server: Aufruf von `/karten` erzeugte genau eine Zeile mit `view_count = 1`; `/karten/testkarte-123?suche=ronaldo` landete als `/karten/[id]` ohne Suchbegriff; `/admin` erzeugte **keine** Zeile. Die Auswertungsabfrage wurde mit gesetzten Eimern über 3 Stunden, 3 Tage, 20 Tage und 60 Tage gegen lokales D1 gefahren und lieferte die erwarteten Summen (60 Tage korrekt ausgeschlossen). Layout auf 1280 px dreispaltig, auf 375 px untereinander, kein Querscrollen.
+- Nicht geprüft: die gerenderte Adminkachel selbst — dafür wären Adminanmeldung und MFA nötig. Geprüft wurden stattdessen die Auswertungsabfrage gegen echtes D1 und die Darstellung des erzeugten Markups gegen das echte Stylesheet.
+- Offen vor dem Deploy: Migration 0014 muss auf der produktiven D1 laufen, und der Zweig muss nach `main`. Vorher zählt nichts.
+- Hinweis: Rückwirkende Zahlen gibt es nicht. Der erste Eimer entsteht mit dem Deploy; 7- und 30-Tage-Werte sind bis dahin unvollständig und sagen das in der Kachel auch.
+- Status: ABGESCHLOSSEN (Code), Deploy ausstehend.

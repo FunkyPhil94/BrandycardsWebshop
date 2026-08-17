@@ -1,11 +1,12 @@
 /** Cloudflare Worker entry point for the vinext-starter template. */
 import { handleImageOptimization, DEFAULT_DEVICE_SIZES, DEFAULT_IMAGE_SIZES } from "vinext/server/image-optimization";
 import handler from "vinext/server/app-router-entry";
-import { lte } from "drizzle-orm";
+import { lt, lte } from "drizzle-orm";
 import { runEbaySync } from "../lib/ebay-sync";
 import { runEbayReadSync } from "../lib/ebay-read-sync";
 import { getDb } from "../db";
-import { ebayOauthClaims } from "../db/schema";
+import { ebayOauthClaims, pageViews } from "../db/schema";
+import { aufrufAufbewahrungGrenze } from "../lib/page-views";
 import { cleanupOrphanedUploads, deleteExpiredCardSubmissions } from "../lib/card-submission-cleanup";
 import { releaseExpiredReservations } from "../lib/paypal/settle-order";
 import { processEbayOutbox } from "../lib/ebay-outbox";
@@ -154,6 +155,10 @@ const worker = {
       // Anschlussversuch ruft sie nie, und die Zeile trüge weiter einen
       // gültigen Refresh-Token.
       ["Abgelaufene eBay-OAuth-Ansprüche", getDb().delete(ebayOauthClaims).where(lte(ebayOauthClaims.expiresAt, now))],
+      // Aufrufeimer jenseits der Aufbewahrungsfrist. Ohne diesen Schritt
+      // wüchse die Tabelle für immer — langsam, aber eben ohne Ende, und
+      // niemand würde es bemerken, weil die Auswertung nur 30 Tage liest.
+      ["Abgelaufene Aufrufzahlen", getDb().delete(pageViews).where(lt(pageViews.bucketStart, aufrufAufbewahrungGrenze()))],
     ] as const satisfies ReadonlyArray<readonly [string, PromiseLike<unknown>]>;
 
     ctx.waitUntil(

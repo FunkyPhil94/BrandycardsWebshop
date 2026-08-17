@@ -5,7 +5,7 @@
  * Cloudflare binding lookup.
  */
 
-export type RateLimitTier = "standard" | "strict";
+export type RateLimitTier = "standard" | "strict" | "beacon";
 
 export type RateLimitPolicy = {
   /** Binding name — must match a `[[ratelimits]]` block in wrangler.toml. */
@@ -17,7 +17,8 @@ export type RateLimitPolicy = {
   periodSeconds: 10 | 60;
 };
 
-/** Two tiers, because uploads deserve a tighter leash than a contact form.
+/** Three tiers, because uploads deserve a tighter leash than a contact form —
+ *  and the view beacon a looser one than either.
  *
  * Each tier needs its **own** namespace: one binding means one counter
  * configuration, so two limits cannot share it. `tests/rate-limit.test.mjs`
@@ -28,6 +29,12 @@ export type RateLimitPolicy = {
 export const RATE_LIMIT_TIERS: Record<RateLimitTier, RateLimitPolicy> = {
   standard: { binding: "RATE_LIMITER", limit: 10, periodSeconds: 60 },
   strict: { binding: "RATE_LIMITER_STRICT", limit: 3, periodSeconds: 60 },
+  /** Der Aufrufzähler. **Absichtlich hoch**: Wer sich durch den Katalog
+   *  klickt, erzeugt in einer Minute leicht zwanzig Seitenaufrufe — mit den
+   *  zehn des Standardtarifs würde der Zähler ausgerechnet die interessierten
+   *  Besucher abschneiden und zu niedrig stehen. Die Grenze ist hier gegen
+   *  Schleifen und aufgeblasene Zahlen gedacht, nicht gegen Benutzung. */
+  beacon: { binding: "RATE_LIMITER_BEACON", limit: 60, periodSeconds: 60 },
 };
 
 /** Derives the counting key from the request.

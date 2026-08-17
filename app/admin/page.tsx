@@ -6,6 +6,7 @@ import { OrdersPanel } from "./orders-panel";
 import { OutboxPanel } from "./outbox-panel";
 import { ProductsPanel } from "./products-panel";
 import { RequestsPanel } from "./requests-panel";
+import { ViewsPanel } from "./views-panel";
 import Link from "next/link";
 import { authHeaders } from "./admin-auth";
 import { MfaPanel } from "./mfa-panel";
@@ -230,6 +231,10 @@ export default function AdminPage() {
             <div><strong>{dashboard.counts.cardSubmissions}</strong><span>Kartenangebote</span></div>
             <div><strong>{dashboard.counts.orders}</strong><span>Bestellungen</span></div>
           </div>
+          {/* Steht direkt unter den Bestandszahlen, weil es dieselbe Frage
+              beantwortet — „wie läuft es gerade?" — und nicht zwischen den
+              eBay-Schaltflächen untergehen soll. */}
+          <ViewsPanel />
           <div className="avatar-pairing-panel">
             <div>
               <p className="eyebrow">DESKTOP-VERBINDUNG</p>

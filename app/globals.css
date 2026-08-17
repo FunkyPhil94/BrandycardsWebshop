@@ -634,6 +634,21 @@ footer { background:var(--ink); color:#fff; padding:52px max(48px,calc((100vw - 
 .admin-section h2 { font-size:15px; letter-spacing:-.02em; margin:0 0 12px; }
 .offer-message { color:var(--muted); font-size:12px; font-style:italic; margin:0; }
 
+/* Aufrufzähler. Nimmt die Kacheln aus `.admin-stats` und stellt drei statt
+   zwei nebeneinander — die drei Zeiträume gehören in eine Reihe, sonst liest
+   man zwei davon als Paar und den dritten als Nachtrag. Unter 560 px fällt die
+   Reihe untereinander, weil 30 px große Zahlen zu dritt nicht auf ein
+   Telefondisplay passen. */
+.admin-views-stats { grid-template-columns:repeat(3,minmax(0,1fr)); margin:0 0 12px; }
+@media (max-width:560px) { .admin-views-stats { grid-template-columns:1fr; } }
+.admin-views-note { color:var(--muted); font-size:11px; line-height:1.6; margin:0 0 6px; max-width:640px; }
+.admin-views-table { border-collapse:collapse; font-size:12px; width:100%; }
+.admin-views-table th,.admin-views-table td { border-bottom:1px solid var(--line); padding:8px 10px; text-align:right; }
+.admin-views-table th[scope="row"] { font-weight:600; text-align:left; }
+.admin-views-table thead th { color:var(--muted); font-family:'DM Mono',monospace; font-size:9px; font-weight:400; letter-spacing:.08em; text-transform:uppercase; }
+.admin-views-table thead th:first-child { text-align:left; }
+.admin-views-table td { font-family:'DM Mono',monospace; font-variant-numeric:tabular-nums; }
+
 /* Der eBay-Refresh-Token, genau einmal sichtbar (SEC-12). Auffällig gerahmt,
    weil ein Neuladen ihn endgültig kostet. */
 .ebay-token { background:#ebe8e1; border-left:3px solid var(--red); display:grid; gap:12px; margin-top:20px; padding:18px; }

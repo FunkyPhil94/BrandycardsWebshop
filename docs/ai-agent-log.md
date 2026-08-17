@@ -2831,3 +2831,46 @@ Desktop wurde DPI-bewusst aufgenommen; der Avatar ist am unteren rechten Rand
 sichtbar, ohne grünes Rechteck oder schwarzen Fensterrahmen. Der ausgeschnittene
 260x300-Overlay-Bereich enthielt in 19.500 Stichproben 0 grüne Hintergrundpixel.
 Produktionsdaten, Tokens und Cloudflare-Einstellungen blieben unverändert.
+
+## 2026-08-17 - Aufrufzähler im Adminbereich
+
+Der Adminbereich zeigt jetzt die Seitenaufrufe des eigenen Shops in drei
+Zeiträumen (24 Stunden, 7 Tage, 30 Tage) samt Aufschlüsselung nach
+Seitenbereich. Vier Entscheidungen dahinter sind erklärungsbedürftig.
+
+**Gezählt wird im Browser, nicht im Worker.** Im Worker wäre es billiger zu
+haben gewesen — jede Anfrage kommt dort ohnehin vorbei. Er sieht aber auch
+Suchmaschinen, Vorabrufe, RSC-Nachladungen und jede Bilddatei. Die Zahl im
+Adminbereich wäre ein Vielfaches dessen gewesen, was jemand tatsächlich
+angesehen hat, und hätte sich bei jeder Änderung am Ausliefern verschoben,
+ohne dass sich am Besucherverhalten etwas geändert hätte. Der Preis der
+Browser-Variante: Besucher ohne JavaScript zählen nicht mit.
+
+**Ein Eimer je Stunde und Pfadmuster, kein Ereignisprotokoll.** Eine Zeile je
+Aufruf wäre die naheliegende Form gewesen und die falsche: Sie wächst mit dem
+Erfolg des Shops, und jede 30-Tage-Auswertung müsste alles davon lesen. So
+kostet ein Aufruf einen Schreibvorgang, die Auswertung liest höchstens 720
+Eimer je Muster, und es gibt schlicht keine Stelle, an der etwas über eine
+einzelne Person stehen könnte.
+
+**Der Pfad wird auf ein Muster reduziert.** Roh gespeichert bekäme jede der
+~300 Karten eine eigene Zeile je Stunde — aus 17 Zeilen am Tag würden 7 000.
+Zusätzlich trügen Abfrageparameter die Suchbegriffe der Besucher in die
+Datenbank. `/karten/<id>` wird deshalb zu `/karten/[id]`, Abfrage und Anker
+fallen weg. Aufrufzahlen je einzelnem Angebot gibt es für die eBay-Seite
+weiterhin in `ebay_listing_traffic`; die beiden Zahlen messen Verschiedenes und
+sind nicht vergleichbar.
+
+**Der Adminbereich zählt sich selbst nicht mit.** Die eigenen Besuche des
+Betreibers in der Zahl, an der er den Shop misst, wären eine Verfälschung — und
+zwar die größte genau dann, wenn sonst wenig los ist.
+
+Datenschutzseite, Abschnitt 11, wurde nachgezogen: Sie behauptete bis heute,
+es gebe keinerlei Analysefunktionen. Der Zähler setzt kein Cookie, speichert
+keine Adresse, keine Geräte- oder Sitzungskennung und bildet kein Profil; die
+Eimer werden nach 90 Tagen vom bestehenden Cron gelöscht.
+
+**Was der Zähler nicht kann:** rückwirkend zählen. Es gibt keine historischen
+Daten, der erste Eimer entsteht mit dem Deploy. Die Zahlen für 7 und 30 Tage
+sind bis dahin unvollständig, und das steht als Satz in der Kachel — sonst
+läse sich der Aufbau der Messung wie ein einbrechender Shop.
