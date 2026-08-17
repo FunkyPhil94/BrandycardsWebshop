@@ -37,9 +37,67 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-<!-- Fuer den naechsten Auftrag freihalten. -->
+### 2026-08-17 - Variante 3: Azure Speech statt SAPI
 
-Keine laufenden Aufträge.
+- Stand: **LÄUFT.**
+- **Der Befund, der alles entschieden hat:** Der Betreiber hat auf Vorschlag
+  Windows-Diktat (Win+H) im selben Textfeld getestet — „lief erstaunlich gut".
+  Damit sind Mikrofon, Aufnahmeweg und Aussprache als Ursache ausgeschlossen;
+  schuld war allein die Engine. Win+H läuft über **Azure Speech**. Der Dienst
+  ist damit nicht nach Fremdbenchmark gewählt, sondern an der Stimme, dem
+  Mikrofon und dem Vokabular des Betreibers belegt.
+- Am Gerät ausgelesen: `MS-1031-80-DESK`, „Microsoft Speech Recognizer 8.0 for
+  Windows (German - Germany)" — die SAPI-Engine aus Windows-7-Zeiten. Kein
+  neuronales Modell. Hardware: Intel Iris Xe (kein CUDA), i5-1145G7, 16 GB.
+- **Freigabe des Betreibers:** Datenschutz ist zweitrangig, das Projekt läuft
+  privat und nicht kommerziell. Damit ist die Phase-3-Zusage „Audio verlässt
+  den lokalen Prozess nicht" **bewusst aufgegeben**. Das ist eine Entscheidung,
+  keine Nachlässigkeit, und wird als solche dokumentiert.
+
+**Verworfene Wege, mit Begründung — damit sie niemand erneut aufgreift.**
+
+- **`Windows.Media.SpeechRecognition` (die frühere „Variante 3"):** doppelt
+  tot. Sie verlangt Paketidentität, und Microsoft hat die Windows-
+  Spracherkennung abgekündigt und durch Voice Access ersetzt. Meine frühere
+  Empfehlung dazu war falsch und ist zurückgezogen.
+- **NVIDIA Canary-1B-v2:** starkes Modell, Lizenz CC-BY-4.0 also unproblematisch,
+  ~8,4 % WER Deutsch. Aber NVIDIA rät von CPU-Betrieb ab, und hier gibt es keine
+  CUDA-Karte. Die GGUF-Portierung liefe auf der CPU, nennt aber Linux als
+  unterstütztes System.
+- **ElevenLabs/OpenAI/Deepgram:** allesamt möglich, aber ungemessen auf diesem
+  Gerät. Azure ist der einzige Dienst mit einem echten Beleg.
+
+**Bauweise.**
+
+- Das **Speech SDK läuft unpackaged** — der Blocker, an dem die WinRT-Variante
+  scheiterte, existiert hier nicht. Pet-Overlay und Startpfad bleiben unberührt.
+- `RecognizeOnceAsync()` gegen das Standardmikrofon ist fast formgleich mit dem
+  heutigen `Recognize()`. `SpeechTranscriptionResult` behält seine Form, damit
+  die Schichten aus Variante 1 und 2 unverändert weiterarbeiten.
+- **Der Schlüssel bleibt serverseitig.** Neue Route gibt ein kurzlebiges
+  Azure-Autorisierungstoken aus; der Desktop nutzt
+  `SpeechConfig.FromAuthorizationToken()`. Kein Secret im Client — das Prinzip
+  aus Phase 4.
+- **Variante 2 trägt weiter:** Azure kennt Phrase Lists. Die 16 Phrasen liegen
+  fertig vor und werden bereits ausgeliefert; sie spannen künftig die
+  Azure-Erkennung vor. Variante 1 bleibt die Korrekturschicht darüber.
+- **SAPI bleibt als Rückfall**, wenn kein Token oder kein Netz da ist. Ein
+  toter Knopf wäre schlechter als eine schlechte Erkennung.
+
+**Betreiberseite:** Azure-Abonnement steht (Testversion, 200 $, 30 Tage).
+Speech-Ressource `Free F0` wird gerade angelegt. Secrets `AZURE_SPEECH_KEY` und
+`AZURE_SPEECH_REGION` setzt der Betreiber selbst; die KI sieht den Schlüssel nie.
+
+**Zu dokumentieren, weil es sonst in 30 Tagen still bricht:** Nach Ablauf der
+Testversion muss auf „Nutzungsbasierte Bezahlung" umgestellt werden, sonst wird
+das Abonnement deaktiviert und die F0-Ressource antwortet nicht mehr. Die
+Umstellung selbst kostet nichts; F0 bleibt kostenlos (5 Audiostunden/Monat).
+
+**Abnahme:** `npm test`, `npx tsc --noEmit`, `npm run lint`, WinUI-x64-Build.
+Der gesprochene Nachweis am Gerät bleibt Sache des Betreibers.
+
+**Nicht Teil des Auftrags:** Produktionsdaten, Remote-Migrationen,
+eBay-Schreibvorgänge. `NativePetOverlay.cs` bleibt unberührt.
 
 ## Historie
 
