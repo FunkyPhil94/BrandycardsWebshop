@@ -1386,6 +1386,23 @@ Hygiene:**
    eine unbemerkte Nebenwirkung der Importform. Wer es ändern will: `getDb`
    injizierbar machen oder den Verzeichnisimport auflösen. Kein Notfall, der
    Pfad ist an echten Daten belegt.
+1. **Ein dreizehntes Assistant-Werkzeug: „Welche Fragen verstehst du nicht?"**
+   Liest `assistant_unanswered` (seit 2026-08-17 produktiv) und nennt die
+   häufigsten unbeantworteten Fragen samt Verteilung nach Grund. Wäre ein
+   Werkzeug wie die anderen — eigene Datenbank, also `READY`, Quelle `SHOP_DB`,
+   Parameter „letzte x Tage" —, dazu ein Eintrag im Regelplaner, ein
+   Formatierer und eine Phrase in der Sprachgrammatik.
+
+   **Bewusst zurückgestellt, nicht vergessen.** Am 2026-08-17 stand genau eine
+   Zeile in der Tabelle, und die war ein *gewollter* Treffer (ein Witz soll
+   abgelehnt werden). Ein Werkzeug, das eine Zeile vorliest, lohnt sich nicht.
+   **Ab etwa Anfang September** ist die Frage sinnvoll — dann zeigt die
+   Auswertung auch, ob die Liste überhaupt lang genug wird.
+
+   Der Gewinn ist Bequemlichkeit, kein neues Wissen: Dieselbe Auskunft liefert
+   eine SQL-Abfrage (steht im Übergabeprotokoll). Der Reiz liegt darin, dass der
+   Assistent über seine eigenen Lücken spricht, ohne Terminal.
+
 2. **`.env.local` und die produktiven Secrets laufen auseinander.** Am
    2026-08-17 war der lokale `EBAY_REFRESH_TOKEN` älter als die dritte
    Zustimmungsrunde und wurde mit `invalid_grant` abgewiesen. Für Builds
