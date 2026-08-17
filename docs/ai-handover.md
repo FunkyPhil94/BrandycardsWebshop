@@ -9458,3 +9458,20 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 ## Nachtrag 2026-08-17: Deploy der Bildvergrößerung
 - Version `617cecdb-cb89-4bad-92de-fa8d9419227b`. `/`, `/admin`, `/verkaufen`,
   `/api/products` je 200.
+
+## Auftrag 2026-08-17: 1:1-Ansicht mit Verschieben
+- Status: LÄUFT.
+- Anlass: Für die Zustandsbeurteilung einer Karte reicht die eingepasste Ansicht
+  nicht — Kanten und Ecken entscheiden über den Preis und sind erst in
+  Originalauflösung zu sehen.
+- Vorgehen: Die Lightbox wird zu einem gemeinsamen Bauteil `app/lightbox.tsx`,
+  das Adminbereich **und** Kartendetailseite benutzen. Die 1:1-Ansicht hängt an
+  einem Schalter (`zoombar`), der auf der Kundenseite **aus** bleibt: Dort
+  ändert sich nichts, weder Aussehen noch Bedienung. So gibt es weiterhin nur
+  eine Lightbox im Projekt, statt einer zweiten mit mehr Funktionen.
+- Verschieben mit gedrückter Maustaste; auf Touchgeräten übernimmt das native
+  Scrollen des Rahmens, deshalb greift der Zieh-Code nur bei `pointerType`
+  `mouse`.
+- Risiko und wie es begrenzt wird: Die Kundenseite wird angefasst, ohne dass
+  sich dort etwas ändern soll. Sie ist öffentlich und daher **im Browser
+  nachprüfbar** — das passiert vor dem Deploy.
