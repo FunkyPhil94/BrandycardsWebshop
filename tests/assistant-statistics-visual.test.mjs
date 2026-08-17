@@ -123,14 +123,22 @@ test("es entsteht ein Bild je Ansicht, und jedes ist ein vollständiges SVG", ()
   }
 });
 
-test("das Bild trägt alles — auch Leitzahl und Kacheln", () => {
-  // Wuerde WinUI die Zahlen als eigene Elemente setzen, formatierte der Client
-  // wieder Daten. Genau das hat Phase 4 entfernt.
+test("die Texte stehen als Felder, nicht im Bild", () => {
+  // **Der Befund vom 2026-08-17:** Direct2D zeichnet kein <text> und
+  // ueberspringt es stillschweigend -- im Assistenten kamen die Bilder ohne
+  // eine einzige Beschriftung an. Seitdem liefert der Server fertige
+  // Zeichenketten, und WinUI setzt sie nativ.
   const [bild] = rendereStatistikBilder({ verkauf: verkauf(), kennzahlen });
-  assert.match(bild.svg, /30,00 €/u, "die Leitzahl steht im Bild");
-  assert.match(bild.svg, /Verkaufsfähige Karten/u);
-  assert.match(bild.svg, /277/u);
-  assert.match(bild.svg, /Verkäufe im Zeitverlauf/u);
+  assert.match(bild.heroLabel, /Umsatz, letzte \d+ Tage/u);
+  assert.match(bild.heroWert, /€/u);
+  assert.equal(bild.kacheln.length, 5);
+  assert.equal(bild.kacheln[0].label, "Verkaufsfähige Karten");
+  assert.equal(bild.kacheln[0].wert, "277");
+  assert.deepEqual(bild.legende.map((l) => l.name), ["Shop", "eBay"]);
+  assert.equal(bild.achse.length, 5, "vier Teilungen ergeben fuenf Werte");
+  assert.match(bild.zeitraum, /\d{2}\.\d{2}\. – \d{2}\.\d{2}\./u);
+  // Und im Bild selbst steht garantiert kein Text.
+  assert.doesNotMatch(bild.svg, /<text/u);
 });
 
 test("kein style-Block, keine CSS-Variablen, keine Media-Query", () => {
@@ -161,13 +169,12 @@ test("eine Metrik je Bild — niemals zwei y-Achsen", () => {
   assert.match(bilder[1].hinweis, /verkaufte Karten/u);
 });
 
-test("Legende und Spitzenlabel sind Pflicht — das Orange liegt hell unter 3:1", () => {
-  // Der Validator meldete 2,76:1. Das verpflichtet zu sichtbaren Labels.
+test("Legende und Spitzenwert sind Pflicht — das Orange liegt hell unter 3:1", () => {
+  // Der Validator meldete 2,76:1. Das verpflichtet zu sichtbaren Labels; sie
+  // stehen jetzt als Text daneben statt im Bild.
   const [bild] = rendereStatistikBilder({ verkauf: verkauf() }, "hell");
-  assert.match(bild.svg, />Shop</u);
-  assert.match(bild.svg, />eBay</u);
-  // Genau ein direktes Label am Spitzenwert, nicht auf jeder Saeule.
-  assert.equal((bild.svg.match(/font-weight="600" text-anchor="middle"/gu) ?? []).length, 1);
+  assert.deepEqual(bild.legende, [{ name: "Shop", farbe: "#2a78d6" }, { name: "eBay", farbe: "#eb6834" }]);
+  assert.match(bild.spitze, /Höchster Wert/u);
 });
 
 test("Gitterlinien sind durchgezogene Haarlinien", () => {
@@ -182,10 +189,12 @@ test("Text trägt Textfarben, nie die Serienfarbe", () => {
   assert.doesNotMatch(bild.svg, /<text[^>]*fill="#eb6834"/u);
 });
 
-test("Fremdtext wird maskiert und kann das Bild nicht verlassen", () => {
-  const [bild] = rendereStatistikBilder({ verkauf: verkauf({ revenueBasis: '</text><script>alert(1)</script>' }) });
-  assert.doesNotMatch(bild.svg, /<script>alert/u);
-  assert.match(bild.svg, /&lt;script&gt;/u);
+test("das Bild enthält nur Formen, also nichts zu maskieren", () => {
+  // Fremdtext erreicht das SVG gar nicht mehr -- er wandert in Felder, die als
+  // JSON uebertragen und von WinUI als Text gesetzt werden.
+  const [bild] = rendereStatistikBilder({ verkauf: verkauf({ revenueBasis: "</text><script>alert(1)</script>" }) });
+  assert.doesNotMatch(bild.svg, /script|<text/u);
+  assert.match(bild.svg, /^<svg /u);
 });
 
 test("gekürzt wird an der Wortgrenze, nicht mitten im Wort", () => {
@@ -195,14 +204,14 @@ test("gekürzt wird an der Wortgrenze, nicht mitten im Wort", () => {
   assert.equal(kuerzeAufWortgrenze("A".repeat(40), 10), "AAAAAAAAAA …");
 });
 
-test("Kennzahlen allein ergeben ein Bild ohne Diagramm", () => {
+test("Kennzahlen allein ergeben eine Ansicht ohne Diagramm", () => {
   const bilder = rendereStatistikBilder({ kennzahlen });
   assert.equal(bilder.length, 1);
   assert.equal(bilder[0].schluessel, "kennzahlen");
-  assert.match(bilder[0].svg, /Shop-Kennzahlen/u);
-  assert.doesNotMatch(bilder[0].svg, /Verkäufe im Zeitverlauf/u);
+  assert.equal(bilder[0].heroLabel, "Shop-Kennzahlen");
+  assert.equal(bilder[0].svg, "", "ohne Verkaufsdaten gibt es kein Diagramm");
+  assert.equal(bilder[0].kacheln.length, 5);
 });
-
 
 test("das erfragte Fenster ist immer dabei", () => {
   // Wer „die letzten 45 Tage" fragt, soll seine 45 Tage sehen -- sonst waere der
@@ -233,10 +242,10 @@ test("die Leitzahl gehört zum gezeigten Fenster, nicht zur gestellten Frage", (
     shopCents: 0, ebayCents: 100, shopItems: 0, ebayItems: 1,
   }));
   const bilder = rendereStatistikBilder({ verkauf: verkauf({ days: 45, dailySeries: tage, totalRevenueCents: 4500 }) });
-  const sieben = bilder.find((b) => b.schluessel === "7-umsatz").svg;
-  const fuenfundvierzig = bilder.find((b) => b.schluessel === "45-umsatz").svg;
-  assert.match(sieben, /letzte 7 Tage/u);
-  assert.match(sieben, /7,00 €/u, "sieben Tage à 1,00 €");
-  assert.match(fuenfundvierzig, /letzte 45 Tage/u);
-  assert.match(fuenfundvierzig, /45,00 €/u);
+  const sieben = bilder.find((b) => b.schluessel === "7-umsatz");
+  const fuenfundvierzig = bilder.find((b) => b.schluessel === "45-umsatz");
+  assert.equal(sieben.heroLabel, "Umsatz, letzte 7 Tage");
+  assert.equal(sieben.heroWert, "7,00 €");
+  assert.equal(fuenfundvierzig.heroLabel, "Umsatz, letzte 45 Tage");
+  assert.equal(fuenfundvierzig.heroWert, "45,00 €");
 });

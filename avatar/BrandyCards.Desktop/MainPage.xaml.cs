@@ -55,6 +55,7 @@ public sealed partial class MainPage : Page
     private SpeechTokenGrant? _speechToken;
     private DateTimeOffset _speechTokenValidUntil;
     private bool _conversationInitialized;
+    private StatistikFenster? _statistikFenster;
 
     private static readonly IReadOnlyDictionary<string, AnimationSpec> Animations = new Dictionary<string, AnimationSpec>(StringComparer.OrdinalIgnoreCase)
     {
@@ -613,93 +614,44 @@ public sealed partial class MainPage : Page
     }
 
     /// <summary>
-    /// Hängt die mitgelieferten Bilder unter die Antwort.
+    /// Hängt die Statistikansicht unter die Antwort.
     ///
-    /// **Der Desktop zeigt nur an.** Er zeichnet nichts, rechnet nichts und
-    /// setzt keine Beschriftung zusammen — Titel und Hinweis kommen fertig vom
-    /// Server. Umgeschaltet wird zwischen bereits gelieferten Bildern; das
-    /// kostet keine zweite Anfrage.
+    /// **Kompakt**, weil das Panel rund 520 Punkte breit ist: Leitzahl,
+    /// Diagramm, Hinweis und ein Knopf ins Vollbild. Kacheln und die vollständige
+    /// Umschalterreihe würden hier gequetscht — im Screenshot vom 2026-08-17 war
+    /// der letzte Knopf abgeschnitten.
     ///
-    /// **Der Text bleibt darüber stehen.** Ein Bild hat keine Trefferflächen und
-    /// ist für einen Screenreader stumm; die Zahlen stehen deshalb weiterhin in
-    /// der Textantwort.
+    /// **Der Text bleibt darüber stehen.** Die Zahlen sind auch ohne Bild
+    /// erreichbar, und für einen Screenreader ist der Antworttext die
+    /// verlässlichere Quelle.
     /// </summary>
     private void AddConversationVisuals(IReadOnlyList<AssistantConversationService.AssistantVisual> bilder)
     {
         if (bilder.Count == 0) return;
 
-        var bild = new Image
-        {
-            Stretch = Stretch.Uniform,
-            HorizontalAlignment = HorizontalAlignment.Left,
-            MaxWidth = 460,
-        };
-        var hinweis = new TextBlock
-        {
-            Style = (Style)Application.Current.Resources["ConversationBodyTextStyle"],
-            TextWrapping = TextWrapping.Wrap,
-        };
-
-        var inhalt = new StackPanel { Spacing = 6 };
-
-        // Umschalter nur, wenn es etwas umzuschalten gibt. Ein einzelner Knopf
-        // waere eine Bedienung, die nichts bewirkt.
-        if (bilder.Count > 1)
-        {
-            var leiste = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 };
-            AutomationProperties.SetName(leiste, "Ansicht der Statistik");
-            foreach (var eintrag in bilder)
-            {
-                var knopf = new Button { Content = eintrag.Titel, MinHeight = 30 };
-                AutomationProperties.SetName(knopf, $"Ansicht {eintrag.Titel}");
-                knopf.Click += (_, _) => Zeige(eintrag, leiste);
-                leiste.Children.Add(knopf);
-            }
-            inhalt.Children.Add(leiste);
-        }
-
-        inhalt.Children.Add(bild);
-        inhalt.Children.Add(hinweis);
-
-        var rahmen = new Border
+        var inhalt = StatistikAnsicht.Baue(bilder, kompakt: true, () => ZeigeStatistikGross(bilder));
+        ConversationPanel.Children.Add(new Border
         {
             Style = (Style)Application.Current.Resources["AssistantMessageBorderStyle"],
-            HorizontalAlignment = HorizontalAlignment.Left,
+            HorizontalAlignment = HorizontalAlignment.Stretch,
             Child = inhalt,
-        };
-        ConversationPanel.Children.Add(rahmen);
-
-        Zeige(bilder[0], inhalt.Children.OfType<StackPanel>().FirstOrDefault());
+        });
         ConversationScrollViewer.UpdateLayout();
         ConversationScrollViewer.ChangeView(null, ConversationScrollViewer.ScrollableHeight, null);
+    }
 
-        async void Zeige(AssistantConversationService.AssistantVisual eintrag, StackPanel? leiste)
-        {
-            // **Auf das Laden wird gewartet, und das ist kein Formalismus.**
-            // Ohne `await` verlässt der Strom seinen Gültigkeitsbereich, bevor
-            // `SvgImageSource` ihn gelesen hat — das Bild bliebe dann leer, und
-            // zwar nur manchmal, je nachdem wer schneller ist.
-            //
-            // Das Bild kommt aus dem Speicher, nicht von einer Adresse: Es wird
-            // nichts geladen und nichts aufgelöst.
-            var quelle = new SvgImageSource();
-            using (var strom = new MemoryStream(Encoding.UTF8.GetBytes(eintrag.Svg)))
-            {
-                await quelle.SetSourceAsync(strom.AsRandomAccessStream());
-            }
-            bild.Source = quelle;
-            AutomationProperties.SetName(bild, $"{eintrag.Titel}. {eintrag.Hinweis}");
-            hinweis.Text = eintrag.Hinweis;
-
-            if (leiste is null) return;
-            foreach (var knopf in leiste.Children.OfType<Button>())
-            {
-                // Der gewählte Knopf wird auch angesagt, nicht nur eingefärbt.
-                var gewaehlt = (knopf.Content as string) == eintrag.Titel;
-                knopf.IsEnabled = !gewaehlt;
-                AutomationProperties.SetName(knopf, gewaehlt ? $"Ansicht {eintrag.Titel}, ausgewählt" : $"Ansicht {knopf.Content}");
-            }
-        }
+    /// <summary>
+    /// Öffnet die Statistik in einem eigenen Fenster.
+    ///
+    /// Genau eines: Ein zweiter Klick holt das vorhandene nach vorn, statt
+    /// Fenster zu stapeln.
+    /// </summary>
+    private void ZeigeStatistikGross(IReadOnlyList<AssistantConversationService.AssistantVisual> bilder)
+    {
+        _statistikFenster?.Close();
+        _statistikFenster = new StatistikFenster(bilder, ActualTheme);
+        _statistikFenster.Closed += (_, _) => _statistikFenster = null;
+        _statistikFenster.Activate();
     }
 
     private void SetAssistantBusy(bool isBusy)

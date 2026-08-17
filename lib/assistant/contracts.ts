@@ -438,6 +438,15 @@ export type AssistantVisual = {
   schluessel: string;
   titel: string;
   hinweis: string;
+  heroLabel: string;
+  heroWert: string;
+  kacheln: Array<{ label: string; wert: string }>;
+  legende: Array<{ name: string; farbe: string }>;
+  achse: string[];
+  zeitraum: string;
+  spitze: string | null;
+  /** Nur Balken und Gitterlinien. **Kein `<text>`** — Direct2D zeichnet es
+   *  nicht, und `SvgImageSource` erbt diese Grenze. */
   svg: string;
 };
 

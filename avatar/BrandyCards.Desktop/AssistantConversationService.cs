@@ -77,7 +77,19 @@ internal sealed class AssistantConversationService(HttpClient httpClient)
     /// zusammengesetzt zu werden — sonst formatierte der Client wieder Daten,
     /// und genau das hat Phase 4 entfernt.
     /// </summary>
-    internal readonly record struct AssistantVisual(string Schluessel, string Titel, string Hinweis, string Svg);
+    internal readonly record struct AssistantVisual(
+        string Schluessel,
+        int Fenster,
+        string Titel,
+        string Hinweis,
+        string HeroLabel,
+        string HeroWert,
+        string Zeitraum,
+        string Spitze,
+        IReadOnlyList<string> Achse,
+        IReadOnlyList<(string Name, string Farbe)> Legende,
+        IReadOnlyList<(string Label, string Wert)> Kacheln,
+        string Svg);
 
     /// <summary>
     /// Holt ein kurzlebiges Token für die Online-Spracherkennung.
@@ -366,13 +378,28 @@ internal sealed class AssistantConversationService(HttpClient httpClient)
             {
                 if (bilder.Count == MaxVisuals) break;
                 if (eintrag.ValueKind != JsonValueKind.Object) continue;
-                var svg = Feld(eintrag, "svg");
                 var schluessel = Feld(eintrag, "schluessel");
-                if (string.IsNullOrWhiteSpace(svg) || string.IsNullOrWhiteSpace(schluessel)) continue;
+                if (string.IsNullOrWhiteSpace(schluessel)) continue;
+
+                var svg = Feld(eintrag, "svg") ?? string.Empty;
                 // Nur SVG wird angezeigt. Alles andere waere ein Inhalt, den
-                // dieser Client nicht angefordert hat.
-                if (!svg.TrimStart().StartsWith("<svg", StringComparison.OrdinalIgnoreCase)) continue;
-                bilder.Add(new AssistantVisual(schluessel, Feld(eintrag, "titel") ?? schluessel, Feld(eintrag, "hinweis") ?? string.Empty, svg));
+                // dieser Client nicht angefordert hat. Leer ist erlaubt: Eine
+                // reine Kennzahlenansicht hat kein Diagramm.
+                if (svg.Length > 0 && !svg.TrimStart().StartsWith("<svg", StringComparison.OrdinalIgnoreCase)) continue;
+
+                bilder.Add(new AssistantVisual(
+                    schluessel,
+                    Zahl(eintrag, "fenster"),
+                    Feld(eintrag, "titel") ?? schluessel,
+                    Feld(eintrag, "hinweis") ?? string.Empty,
+                    Feld(eintrag, "heroLabel") ?? string.Empty,
+                    Feld(eintrag, "heroWert") ?? string.Empty,
+                    Feld(eintrag, "zeitraum") ?? string.Empty,
+                    Feld(eintrag, "spitze") ?? string.Empty,
+                    Texte(eintrag, "achse"),
+                    Paare(eintrag, "legende", "name", "farbe"),
+                    Paare(eintrag, "kacheln", "label", "wert"),
+                    svg));
             }
         }
         catch (JsonException)
@@ -384,6 +411,30 @@ internal sealed class AssistantConversationService(HttpClient httpClient)
 
         static string? Feld(JsonElement element, string name) =>
             element.TryGetProperty(name, out var wert) && wert.ValueKind == JsonValueKind.String ? wert.GetString() : null;
+
+        static int Zahl(JsonElement element, string name) =>
+            element.TryGetProperty(name, out var wert) && wert.ValueKind == JsonValueKind.Number && wert.TryGetInt32(out var zahl) ? zahl : 0;
+
+        static IReadOnlyList<string> Texte(JsonElement element, string name)
+        {
+            if (!element.TryGetProperty(name, out var liste) || liste.ValueKind != JsonValueKind.Array) return [];
+            return [.. liste.EnumerateArray().Where(e => e.ValueKind == JsonValueKind.String).Select(e => e.GetString() ?? string.Empty)];
+        }
+
+        static IReadOnlyList<(string, string)> Paare(JsonElement element, string name, string ersterName, string zweiterName)
+        {
+            if (!element.TryGetProperty(name, out var liste) || liste.ValueKind != JsonValueKind.Array) return [];
+            var paare = new List<(string, string)>();
+            foreach (var eintrag in liste.EnumerateArray())
+            {
+                if (eintrag.ValueKind != JsonValueKind.Object) continue;
+                var erster = eintrag.TryGetProperty(ersterName, out var a) && a.ValueKind == JsonValueKind.String ? a.GetString() : null;
+                var zweiter = eintrag.TryGetProperty(zweiterName, out var b) && b.ValueKind == JsonValueKind.String ? b.GetString() : null;
+                if (erster is null || zweiter is null) continue;
+                paare.Add((erster, zweiter));
+            }
+            return paare;
+        }
     }
 
     /// <summary>Obergrenze für die Zahl der Bilder je Antwort — heute sind es

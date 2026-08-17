@@ -44,6 +44,18 @@ export type StatistikAnsicht = {
 };
 
 /** Ein fertiges Bild samt der Angaben, die der Desktop zum Umschalten braucht. */
+/** Eine fertig formatierte Ansicht.
+ *
+ * **Die Texte sind Zeichenketten, das Diagramm ist ein textfreies SVG.** Grund:
+ * Direct2D — und damit `SvgImageSource` in WinUI — stellt `<text>` nicht dar und
+ * überspringt es stillschweigend. Am 2026-08-17 kamen die Bilder deshalb ohne
+ * eine einzige Beschriftung im Assistenten an.
+ *
+ * Der Desktop setzt die Texte als echte Steuerelemente. Er **formatiert nichts**
+ * — alles kommt fertig von hier —, er platziert nur. Damit bleibt die Trennung
+ * aus Phase 4 gewahrt, und der Text wird scharf, skaliert mit der DPI und ist
+ * vorlesbar.
+ */
 export type StatistikBild = {
   /** Stabiler Schlüssel, z. B. `30-umsatz`. */
   schluessel: string;
@@ -51,8 +63,24 @@ export type StatistikBild = {
   metrik: Metrik;
   /** Beschriftung des Umschalters. */
   titel: string;
-  /** Was unter dem Bild steht — Auflösung und Bezugsgröße. */
+  /** Was unter dem Diagramm steht — Auflösung und Bezugsgröße. */
   hinweis: string;
+  /** Überschrift der Leitzahl, z. B. „Umsatz, letzte 30 Tage". */
+  heroLabel: string;
+  /** Die Leitzahl selbst, fertig gesetzt. */
+  heroWert: string;
+  kacheln: Array<{ label: string; wert: string }>;
+  /** Serienname und Farbe für die Legende — die Farbe gehört zum Plättchen,
+   *  nie zum Text. */
+  legende: Array<{ name: string; farbe: string }>;
+  /** Achsenwerte von oben nach unten, passend zu den vier Gitterteilungen. */
+  achse: string[];
+  /** Anfang und Ende des gezeigten Zeitraums. Ein Datum je Säule wäre im Panel
+   *  unlesbar und würde bei nativer Platzierung gegen die Balken verrutschen. */
+  zeitraum: string;
+  /** Der Spitzenwert im Klartext, statt als Beschriftung im Bild. */
+  spitze: string | null;
+  /** Nur Balken und Gitterlinien — kein `<text>`, weil Direct2D keins zeichnet. */
   svg: string;
 };
 
@@ -94,19 +122,8 @@ export function fensterAuswahl(gefragt: number, verfuegbareTage: number): number
   if (gefragt > 0) kandidaten.add(gefragt);
   return [...kandidaten].filter((tage) => tage <= verfuegbareTage).sort((a, b) => a - b);
 }
-const SCHRIFT = "system-ui, -apple-system, Segoe UI, sans-serif";
-const B = 520;
 
 type Saeule = { label: string; kurz: string; shop: number; ebay: number };
-
-function maskiere(text: string): string {
-  return text
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
-}
 
 function euro(cents: number): string {
   return `${(cents / 100).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
@@ -160,188 +177,117 @@ function obergrenze(werte: number[], metrik: Metrik): number {
   return 10 * stelle;
 }
 
-function text(inhalt: string, x: number, y: number, o: { fill: string; size: number; anchor?: string; weight?: number }): string {
-  return `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" fill="${o.fill}" font-family="${SCHRIFT}" font-size="${o.size}"`
-    + `${o.weight ? ` font-weight="${o.weight}"` : ""}${o.anchor ? ` text-anchor="${o.anchor}"` : ""}>${maskiere(inhalt)}</text>`;
-}
-
-function kachel(x: number, y: number, breite: number, label: string, wert: string, f: Farben): string {
-  // Zeilenumbruch von Hand: SVG kennt keinen Textfluss, und ein zu langes Label
-  // würde sonst über die Kachel hinauslaufen statt umzubrechen.
-  const woerter = label.split(" ");
-  const zeilen: string[] = [];
-  let zeile = "";
-  for (const wort of woerter) {
-    const versuch = zeile ? `${zeile} ${wort}` : wort;
-    if (versuch.length > Math.floor((breite - 18) / 5.4) && zeile) {
-      zeilen.push(zeile);
-      zeile = wort;
-    } else {
-      zeile = versuch;
-    }
-  }
-  if (zeile) zeilen.push(zeile);
-  const sichtbar = zeilen.slice(0, 2);
-
-  return `<rect x="${x}" y="${y}" width="${breite}" height="62" rx="10" fill="${f.karte}" stroke="${f.rahmen}" stroke-width="1"/>`
-    + sichtbar.map((z, i) => text(z, x + 10, y + 17 + i * 11, { fill: f.ink2, size: 10 })).join("")
-    + text(wert, x + 10, y + 51, { fill: f.ink, size: 20, weight: 600 });
-}
-
-function zeichneBild(
-  ansicht: StatistikAnsicht,
-  tage: Tageswert[] | null,
-  fenster: number,
-  metrik: Metrik,
-  thema: Thema,
-): { svg: string; hinweis: string } {
-  const f = PALETTE[thema];
-  const verkauf = ansicht.verkauf;
+function zeichnePlot(liste: Saeule[], metrik: Metrik, f: Farben): { svg: string; achse: string[] } {
+  const B = 520, H = 200, L = 4, R = 4, O = 6, U = 6;
+  const max = obergrenze(liste.map((s) => s.shop + s.ebay), metrik);
+  const plotB = B - L - R;
+  const plotH = H - O - U;
+  const y = (v: number) => O + plotH - (v / max) * plotH;
   const teile: string[] = [];
-  let y = 0;
 
-  // ---- Leitzahl -----------------------------------------------------------
-  if (verkauf) {
-    // **Die Leitzahl gehört zum gezeigten Fenster, nicht zur gestellten Frage.**
-    // Sonst stünde über einem 7-Tage-Diagramm der 90-Tage-Umsatz, und beide
-    // Zahlen im selben Bild widersprächen sich. Gerechnet wird über die
-    // vollständige Tagesreihe, nicht über die gekürzte Verkaufsliste.
-    const fensterTage = tage && fenster > 0 ? tage.slice(-fenster) : [];
-    const fensterUmsatz = fensterTage.reduce((summe, t) => summe + t.shopCents + t.ebayCents, 0);
-    const zeitraum = fensterTage.length || verkauf.days;
-
-    teile.push(text(`Umsatz, letzte ${zeitraum} Tage`, 14, 22, { fill: f.ink2, size: 12 }));
-    // `null` heißt „eine Hälfte fehlt" — eine Summe daraus wäre schlimmer als
-    // keine, und das gilt für jedes Fenster.
-    teile.push(text(verkauf.totalRevenueCents === null ? "unvollständig" : euro(fensterTage.length ? fensterUmsatz : verkauf.totalRevenueCents), 14, 66, { fill: f.ink, size: 42, weight: 600 }));
-    teile.push(text(kuerzeAufWortgrenze(verkauf.revenueBasis, 78), 14, 84, { fill: f.muted, size: 10 }));
-    y = 98;
-  } else {
-    teile.push(text("Shop-Kennzahlen", 14, 24, { fill: f.ink2, size: 13, weight: 600 }));
-    y = 38;
+  // Gitter: durchgezogene Haarlinien, eine Stufe von der Fläche entfernt.
+  for (let i = 0; i <= 4; i += 1) {
+    const wert = (max / 4) * i;
+    teile.push(`<line x1="${L}" x2="${B - R}" y1="${y(wert).toFixed(1)}" y2="${y(wert).toFixed(1)}" stroke="${i === 0 ? f.achse : f.gitter}" stroke-width="1"/>`);
   }
 
-  // ---- Kacheln ------------------------------------------------------------
-  if (ansicht.kennzahlen) {
-    const k = ansicht.kennzahlen;
-    const werte: [string, string][] = [
-      ["Verkaufsfähige Karten", k.sellableCards.toLocaleString("de-DE")],
-      ["Offene Preisvorschläge", k.openShopOffers.toLocaleString("de-DE")],
-      ["Zu bearbeitende Bestellungen", k.actionableOrders.toLocaleString("de-DE")],
-      ["Neue Shop-Anfragen", k.newShopInquiries.toLocaleString("de-DE")],
-      ["Offene eBay-Aufträge", k.unresolvedEbayJobs.toLocaleString("de-DE")],
-    ];
-    const spalten = 3;
-    const breite = (B - 28 - (spalten - 1) * 8) / spalten;
-    werte.forEach(([label, wert], i) => {
-      const spalte = i % spalten;
-      const reihe = Math.floor(i / spalten);
-      teile.push(kachel(14 + spalte * (breite + 8), y + reihe * 70, breite, label, wert, f));
-    });
-    y += Math.ceil(werte.length / spalten) * 70 + 6;
-  }
+  const band = plotB / Math.max(1, liste.length);
+  const dick = Math.min(24, Math.max(3, band - 4));
 
-  // ---- Diagramm -----------------------------------------------------------
-  let hinweis = "";
-  if (tage && verkauf) {
-    const { liste, aufloesung } = saeulen(tage, fenster, metrik);
-    hinweis = `${liste.length} ${aufloesung}, ${metrik === "umsatz" ? "Bruttoumsatz" : "verkaufte Karten"} je Balken.`;
-
-    const kartenHoehe = 214;
-    teile.push(`<rect x="14" y="${y}" width="${B - 28}" height="${kartenHoehe}" rx="12" fill="${f.karte}" stroke="${f.rahmen}" stroke-width="1"/>`);
-    teile.push(text("Verkäufe im Zeitverlauf", 26, y + 20, { fill: f.ink2, size: 12 }));
-
-    // Legende — bei zwei Serien immer vorhanden, nie Farbe allein.
-    teile.push(`<rect x="${B - 132}" y="${y + 11}" width="9" height="9" rx="2" fill="${f.shop}"/>`);
-    teile.push(text("Shop", B - 119, y + 19, { fill: f.ink2, size: 11 }));
-    teile.push(`<rect x="${B - 78}" y="${y + 11}" width="9" height="9" rx="2" fill="${f.ebay}"/>`);
-    teile.push(text("eBay", B - 65, y + 19, { fill: f.ink2, size: 11 }));
-
-    const L = 66, R = 26, O = y + 34, U = y + kartenHoehe - 34;
-    const plotB = B - L - R;
-    const plotH = U - O;
-    const max = obergrenze(liste.map((s) => s.shop + s.ebay), metrik);
-    const skala = (v: number) => U - (v / max) * plotH;
-    const zeige = (v: number) => (metrik === "umsatz" ? euro(v) : String(v));
-
-    for (let i = 0; i <= 4; i += 1) {
-      const v = (max / 4) * i;
-      teile.push(`<line x1="${L}" x2="${B - R}" y1="${skala(v).toFixed(1)}" y2="${skala(v).toFixed(1)}" stroke="${f.gitter}" stroke-width="1"/>`);
-      teile.push(text(metrik === "umsatz" ? Math.round(v / 100).toLocaleString("de-DE") : String(Math.round(v)), L - 7, skala(v) + 3.5, { fill: f.muted, size: 10, anchor: "end" }));
+  liste.forEach((s, i) => {
+    const x = L + band * i + (band - dick) / 2;
+    const gesamt = s.shop + s.ebay;
+    const ecke = Math.min(4, dick / 2).toFixed(1);
+    if (s.ebay > 0) {
+      const hoehe = Math.max(1, y(s.shop) - y(gesamt) - (s.shop > 0 ? 2 : 0));
+      teile.push(`<rect x="${x.toFixed(1)}" y="${y(gesamt).toFixed(1)}" width="${dick.toFixed(1)}" height="${hoehe.toFixed(1)}" rx="${ecke}" fill="${f.ebay}"/>`);
     }
-    teile.push(`<line x1="${L}" x2="${B - R}" y1="${skala(0)}" y2="${skala(0)}" stroke="${f.achse}" stroke-width="1"/>`);
+    if (s.shop > 0) {
+      teile.push(`<rect x="${x.toFixed(1)}" y="${y(s.shop).toFixed(1)}" width="${dick.toFixed(1)}" height="${Math.max(1, y(0) - y(s.shop)).toFixed(1)}" rx="${s.ebay > 0 ? "0" : ecke}" fill="${f.shop}"/>`);
+    }
+  });
 
-    const band = plotB / Math.max(1, liste.length);
-    const dick = Math.min(24, Math.max(3, band - 4));
-    const spitze = liste.reduce((a, s, i) => (s.shop + s.ebay > liste[a].shop + liste[a].ebay ? i : a), 0);
-
-    liste.forEach((s, i) => {
-      const x = L + band * i + (band - dick) / 2;
-      const gesamt = s.shop + s.ebay;
-      const ecke = Math.min(4, dick / 2).toFixed(1);
-      if (s.ebay > 0) {
-        const hoehe = Math.max(1, skala(s.shop) - skala(gesamt) - (s.shop > 0 ? 2 : 0));
-        teile.push(`<rect x="${x.toFixed(1)}" y="${skala(gesamt).toFixed(1)}" width="${dick.toFixed(1)}" height="${hoehe.toFixed(1)}" rx="${ecke}" fill="${f.ebay}"/>`);
-      }
-      if (s.shop > 0) {
-        teile.push(`<rect x="${x.toFixed(1)}" y="${skala(s.shop).toFixed(1)}" width="${dick.toFixed(1)}" height="${Math.max(1, skala(0) - skala(s.shop)).toFixed(1)}" rx="${s.ebay > 0 ? "0" : ecke}" fill="${f.shop}"/>`);
-      }
-      // Direktes Label **nur** am Spitzenwert — eine Zahl auf jeder Säule wäre Chaos.
-      if (i === spitze && gesamt > 0) {
-        teile.push(text(zeige(gesamt), x + dick / 2, Math.max(O + 9, skala(gesamt) - 5), { fill: f.ink, size: 10, weight: 600, anchor: "middle" }));
-      }
-      if (liste.length <= 12 || i % Math.ceil(liste.length / 8) === 0) {
-        teile.push(text(s.kurz, L + band * i + band / 2, U + 14, { fill: f.muted, size: 10, anchor: "middle" }));
-      }
-    });
-
-    teile.push(text(hinweis, 26, y + kartenHoehe - 8, { fill: f.muted, size: 10 }));
-    y += kartenHoehe + 6;
-  }
-
-  const H = Math.round(y + 8);
-  const beschreibung = verkauf
-    ? `Statistik: Umsatz der letzten ${verkauf.days} Tage, ${hinweis}`
-    : "Shop-Kennzahlen";
+  // Achsenwerte von oben nach unten, passend zu den Gitterteilungen.
+  const achse = [4, 3, 2, 1, 0].map((i) => {
+    const wert = (max / 4) * i;
+    return metrik === "umsatz"
+      ? `${Math.round(wert / 100).toLocaleString("de-DE")} €`
+      : String(Math.round(wert));
+  });
 
   return {
-    hinweis,
-    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${B} ${H}" width="${B}" height="${H}" role="img">`
-      + `<title>${maskiere(beschreibung)}</title>`
-      + `<rect width="${B}" height="${H}" fill="${f.flaeche}"/>`
-      + teile.join("")
-      + `</svg>`,
+    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${B} ${H}" width="${B}" height="${H}" preserveAspectRatio="none">${teile.join("")}</svg>`,
+    achse,
   };
 }
 
-/** Erzeugt die Bilder für alle sinnvollen Ansichten.
+/** Erzeugt die Ansichten für alle sinnvollen Fenster.
  *
  * Alle auf einmal, damit das Umschalten im Desktop sofort geht und keine zweite
- * Anfrage kostet — dieselbe Überlegung wie bei der Lesartenprüfung, wo die
- * Ratenbegrenzung das Bündeln erzwang.
+ * Anfrage kostet.
  */
 export function rendereStatistikBilder(ansicht: StatistikAnsicht, thema: Thema = "hell"): StatistikBild[] {
   if (!ansicht.verkauf && !ansicht.kennzahlen) return [];
+  const f = PALETTE[thema];
 
-  const reihe = ansicht.verkauf ? baueTagesreihe(ansicht.verkauf) : null;
-  if (!reihe || !ansicht.verkauf) {
-    const { svg, hinweis } = zeichneBild(ansicht, null, 0, "umsatz", thema);
-    return [{ schluessel: "kennzahlen", fenster: 0, metrik: "umsatz", titel: "Kennzahlen", hinweis, svg }];
+  const kacheln = ansicht.kennzahlen
+    ? [
+        { label: "Verkaufsfähige Karten", wert: ansicht.kennzahlen.sellableCards.toLocaleString("de-DE") },
+        { label: "Offene Preisvorschläge", wert: ansicht.kennzahlen.openShopOffers.toLocaleString("de-DE") },
+        { label: "Zu bearbeitende Bestellungen", wert: ansicht.kennzahlen.actionableOrders.toLocaleString("de-DE") },
+        { label: "Neue Shop-Anfragen", wert: ansicht.kennzahlen.newShopInquiries.toLocaleString("de-DE") },
+        { label: "Offene eBay-Aufträge", wert: ansicht.kennzahlen.unresolvedEbayJobs.toLocaleString("de-DE") },
+      ]
+    : [];
+
+  const verkauf = ansicht.verkauf;
+  if (!verkauf) {
+    return [{
+      schluessel: "kennzahlen", fenster: 0, metrik: "umsatz", titel: "Kennzahlen",
+      hinweis: "Stand jetzt.", heroLabel: "Shop-Kennzahlen", heroWert: "",
+      kacheln, legende: [], achse: [], zeitraum: "", spitze: null, svg: "",
+    }];
   }
 
+  const reihe = baueTagesreihe(verkauf);
   const bilder: StatistikBild[] = [];
-  for (const fenster of fensterAuswahl(ansicht.verkauf.days, reihe.tage.length)) {
+
+  for (const fenster of fensterAuswahl(verkauf.days, reihe.tage.length)) {
     for (const metrik of ["umsatz", "stueck"] as Metrik[]) {
-      const { svg, hinweis } = zeichneBild(ansicht, reihe.tage, fenster, metrik, thema);
+      const { liste, aufloesung } = saeulen(reihe.tage, fenster, metrik);
+      const { svg, achse } = zeichnePlot(liste, metrik, f);
+      const zeige = (v: number) => (metrik === "umsatz" ? euro(v) : `${v}`);
+
+      // Die Leitzahl gehört zum **gezeigten** Fenster, nicht zur gestellten
+      // Frage: Sonst stünde über einem 7-Tage-Diagramm der 90-Tage-Umsatz.
+      const fensterTage = reihe.tage.slice(-fenster);
+      const fensterUmsatz = fensterTage.reduce((summe, t) => summe + t.shopCents + t.ebayCents, 0);
+      const spitzeIndex = liste.reduce((a, s, i) => (s.shop + s.ebay > liste[a].shop + liste[a].ebay ? i : a), 0);
+      const spitzeWert = liste.length ? liste[spitzeIndex].shop + liste[spitzeIndex].ebay : 0;
+
       bilder.push({
         schluessel: `${fenster}-${metrik}`,
         fenster,
         metrik,
         titel: `${fenster} Tage · ${metrik === "umsatz" ? "Umsatz" : "Stückzahl"}`,
-        hinweis,
+        hinweis: `${liste.length} ${aufloesung}, ${metrik === "umsatz" ? "Bruttoumsatz" : "verkaufte Karten"} je Balken.`,
+        heroLabel: metrik === "umsatz" ? `Umsatz, letzte ${fenster} Tage` : `Verkaufte Karten, letzte ${fenster} Tage`,
+        // `null` heißt „eine Hälfte fehlt" — eine Summe daraus wäre schlimmer
+        // als keine.
+        heroWert: verkauf.totalRevenueCents === null && metrik === "umsatz"
+          ? "unvollständig"
+          : zeige(metrik === "umsatz" ? fensterUmsatz : fensterTage.reduce((s, t) => s + t.shopStueck + t.ebayStueck, 0)),
+        kacheln,
+        legende: [{ name: "Shop", farbe: f.shop }, { name: "eBay", farbe: f.ebay }],
+        achse,
+        zeitraum: fensterTage.length
+          ? `${tagLabel(fensterTage[0].tag)} – ${tagLabel(fensterTage[fensterTage.length - 1].tag)}`
+          : "",
+        spitze: spitzeWert > 0 ? `Höchster Wert: ${zeige(spitzeWert)} (${liste[spitzeIndex].label})` : null,
         svg,
       });
     }
   }
+
   return bilder;
 }

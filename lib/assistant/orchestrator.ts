@@ -117,7 +117,12 @@ export class AssistantOrchestrator {
     const visuals: AssistantVisual[] = rendereStatistikBilder(
       statistikAnsicht(fulfilled.map((item) => item.result)),
       input.thema === "dunkel" ? "dunkel" : "hell",
-    ).map((bild) => ({ schluessel: bild.schluessel, titel: bild.titel, hinweis: bild.hinweis, svg: bild.svg }));
+    ).map((bild) => ({
+      schluessel: bild.schluessel, titel: bild.titel, hinweis: bild.hinweis,
+      heroLabel: bild.heroLabel, heroWert: bild.heroWert, kacheln: bild.kacheln,
+      legende: bild.legende, achse: bild.achse, zeitraum: bild.zeitraum,
+      spitze: bild.spitze, svg: bild.svg,
+    }));
 
     return {
       status: failed.length === 0 ? "ANSWERED" : fulfilled.length ? "PARTIAL" : "FAILED",
