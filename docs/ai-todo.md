@@ -11,6 +11,33 @@ dabei, damit niemand den Gesprächsverlauf braucht.
 
 ---
 
+## Der eBay-Webhook meldet nur einen Bruchteil der Verkäufe
+
+**Befund vom 2026-08-17**, aufgefallen beim Beheben von „letzter Verkauf zeigt
+nichts Neues": In Produktion stehen **5 `CARD_SOLD`-Ereignisse in
+`avatar_events` gegen 156 Zeilen in `ebay_sales`**. Der neueste Webhook war zwei
+Tage alt, während der Lesesync minutenaktuell war.
+
+`getLatestSale` ist inzwischen unabhängig davon (es liest alle drei Quellen),
+die Frage bleibt aber offen: **Warum kommt der Webhook fast nie an?** Solange
+das ungeklärt ist, ist jede Stelle, die sich auf `CARD_SOLD` verlässt,
+stillschweigend unvollständig.
+
+Zu prüfen:
+- Ist die eBay-Benachrichtigung für `ITEM_SOLD` überhaupt abonniert, und auf
+  welche Zieladresse? Siehe `lib/ebay-notifications.ts` und
+  `tests/ebay-notifications.test.mjs`.
+- Kommen Zustellungen an und scheitern erst bei der Verarbeitung, oder kommt
+  gar nichts an? Cloudflare-Logs des Worker-Endpunkts prüfen.
+- Sind die 5 vorhandenen Ereignisse zeitlich oder inhaltlich auffällig (nur
+  bestimmte Angebotsarten, nur ein Zeitraum)?
+
+**Abnahme:** Entweder meldet der Webhook neue Verkäufe wieder zuverlässig, oder
+es steht schriftlich fest, dass er es nicht kann — und die Stellen, die ihn
+nutzen, sind entsprechend abgesichert.
+
+---
+
 ## Der Desktop-Assistent ist fertig — Stand 2026-08-17
 
 **Für den Assistenten steht derzeit nichts offen.** Wer hier nach dem nächsten
