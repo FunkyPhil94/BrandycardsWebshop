@@ -9493,3 +9493,30 @@ selbst; die Schrittfolge samt Nachprüfung steht in
   `cursor: grab`, Scrollbereich 925×825 und tatsächlich verschoben.
 - `/`, `/admin`, `/karten`, `/verkaufen` je 200. 692 Tests grün, `tsc` sauber.
 - Status: ABGESCHLOSSEN.
+
+## Auftrag 2026-08-17: MFA nur noch dort, wo sie etwas schützt
+- Status: LÄUFT.
+- Anlass (Betreiber): Der Authenticator-Code wird für Alltagsarbeit verlangt —
+  einen Preisvorschlag ablehnen, einen Angebotsstatus ändern. Für Anmeldung und
+  Token ist er richtig, dafür nicht.
+- Zwei Ursachen, beide werden angefasst:
+  1. **Der Client fragt immer.** `authHeaders(_, true)` löst eine TOTP-Abfrage
+     aus, *bevor* überhaupt jemand gefragt hat, ob sie nötig ist — auch wenn die
+     letzte Bestätigung zehn Sekunden her ist. Ersetzt durch `adminFetch`:
+     zuerst senden, und nur wenn der Server mit 428 antwortet, den Code holen
+     und einmal wiederholen. Damit entscheidet die Regel *eine* Stelle.
+  2. **Zu viele Routen verlangen frische MFA.** Neu eingeteilt (siehe
+     `lib/admin-access.ts`): Alltag ohne, folgenschwer mit.
+- **Mit frischer MFA bleiben:** eBay-OAuth (`start`, `claim`) und
+  Gerätekopplung (`avatar/pairing`) — beide geben Zugangsmittel heraus;
+  `orders/refund` — Geld verlässt das Haus; `card-submissions` DELETE und
+  `card-submissions/cleanup` — löschen endgültig samt Bildern.
+- **Ohne frische MFA:** Status von Anfragen, Kartenangeboten, Bestellungen;
+  Preisvorschlag annehmen/ablehnen; Produkte anlegen, bearbeiten, Markierung
+  zurücknehmen; eBay-Lesesync; Ausgangswarteschlange abarbeiten;
+  `orders/cancel` (greift nur bei **unbezahlten** Bestellungen, es fließt kein
+  Geld). Der Adminbereich als Ganzes bleibt hinter `aal2` — das ändert sich
+  nicht, nur die *erneute* Abfrage je Klick fällt weg.
+- Tests werden auf die neue Einteilung umgeschrieben, **in beide Richtungen**:
+  Die sensiblen Routen müssen `recentAuthSeconds` tragen, die Alltagsrouten
+  dürfen es nicht. Sonst wandert die Regel beim nächsten Umbau zurück.
