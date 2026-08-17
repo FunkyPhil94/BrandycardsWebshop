@@ -87,6 +87,7 @@ internal sealed class AssistantConversationService(HttpClient httpClient)
         string Zeitraum,
         string Spitze,
         IReadOnlyList<string> Achse,
+        IReadOnlyList<string> XAchse,
         IReadOnlyList<(string Name, string Farbe)> Legende,
         IReadOnlyList<(string Label, string Wert)> Kacheln,
         string Svg);
@@ -245,13 +246,22 @@ internal sealed class AssistantConversationService(HttpClient httpClient)
     /// reagieren, deshalb muss die Oberfläche es sagen. Das ist
     /// Darstellungskontext, keine Formatierung.
     /// </param>
-    public async Task<AssistantAnswer> AskAsync(string shopUrl, string deviceToken, string message, string thema, CancellationToken cancellationToken = default)
+    /// <param name="tage">
+    /// Ein ausdrücklich gewählter Zeitraum, oder <c>null</c>. Er überschreibt
+    /// **nur** den Zeitraum der Verkaufsübersicht; welche Werkzeuge laufen,
+    /// entscheidet weiterhin allein der serverseitige Planer aus dem Fragetext.
+    /// </param>
+    public async Task<AssistantAnswer> AskAsync(string shopUrl, string deviceToken, string message, string thema, int? tage = null, CancellationToken cancellationToken = default)
     {
         using var request = new HttpRequestMessage(HttpMethod.Post, $"{shopUrl}/api/avatar/device/assistant")
         {
             // StringContent kennt die Byte-Länge vor dem Senden. Damit passiert
             // die Anfrage auch den serverseitigen Body-Guard ohne chunked Body.
-            Content = new StringContent(JsonSerializer.Serialize(new { message, thema }), Encoding.UTF8, "application/json"),
+            Content = new StringContent(
+                tage is null
+                    ? JsonSerializer.Serialize(new { message, thema })
+                    : JsonSerializer.Serialize(new { message, thema, tage }),
+                Encoding.UTF8, "application/json"),
         };
         request.Headers.Authorization = new("Bearer", deviceToken);
 
@@ -397,6 +407,7 @@ internal sealed class AssistantConversationService(HttpClient httpClient)
                     Feld(eintrag, "zeitraum") ?? string.Empty,
                     Feld(eintrag, "spitze") ?? string.Empty,
                     Texte(eintrag, "achse"),
+                    Texte(eintrag, "xAchse"),
                     Paare(eintrag, "legende", "name", "farbe"),
                     Paare(eintrag, "kacheln", "label", "wert"),
                     svg));

@@ -16,7 +16,8 @@ test("der Desktop platziert Text, er formatiert ihn nicht", async () => {
     /heroLabel\.Text = eintrag\.HeroLabel;/u,
     /heroWert\.Text = eintrag\.HeroWert;/u,
     /hinweis\.Text = eintrag\.Hinweis;/u,
-    /zeile\.Text = wert;/u,
+    /zeile\.Text = eintrag\.Achse\[i\];/u,
+    /zelle\.Text = beschriftung;/u,
   ]) assert.match(ansicht, zuweisung);
   // Nirgends wird gerechnet oder eine Zahl gesetzt.
   assert.doesNotMatch(ansicht, /ToString\("[NCF]|\/ 100|toLocaleString/u, "hier wird nicht formatiert");
@@ -75,7 +76,9 @@ test("auf das Laden wird gewartet, sonst bleibt das Bild manchmal leer", async (
 test("der Text bleibt neben dem Bild stehen", async () => {
   // Ein Bild hat keine Trefferflaechen und ist fuer einen Screenreader stumm.
   const page = await read(PAGE);
-  assert.match(page, /AddConversationMessage\("Assistant", reply\.Text, isUser: false\);\s*\n\s*AddConversationVisuals\(reply\.Visuals\);/u);
+  // Die Frage geht mit, damit das Statistikfenster sie für einen anderen
+  // Zeitraum erneut stellen kann — der Client formuliert dabei nichts selbst.
+  assert.match(page, /AddConversationMessage\("Assistant", reply\.Text, isUser: false\);\s*\n\s*AddConversationVisuals\(reply\.Visuals, message\);/u);
 });
 
 test("ohne Bilder ändert sich nichts am Panel", async () => {
@@ -118,4 +121,43 @@ test("ein fehlendes visuals-Feld ist kein Fehler", async () => {
   const service = await read(SERVICE);
   assert.match(service, /TryGetProperty\("visuals", out var liste\) \|\| liste\.ValueKind != JsonValueKind\.Array\) return bilder;/u);
   assert.match(service, /catch \(JsonException\)\s*\{\s*return \[\];/u);
+});
+
+test("das Zeitfenster wird übertragen — sonst heißen die Knöpfe „0 Tage“", async () => {
+  // **Genau das war der Fehler:** Der Orchestrator bildete `fenster` nicht ab,
+  // und im Panel standen drei Knoepfe mit derselben Beschriftung.
+  const orchestrator = await read("lib/assistant/orchestrator.ts");
+  assert.match(orchestrator, /fenster: bild\.fenster/u);
+  const service = await read(SERVICE);
+  assert.match(service, /Zahl\(eintrag, "fenster"\)/u);
+});
+
+test("die x-Achse ist beschriftet, und nicht unter jeder Säule", async () => {
+  const [visual, ansicht] = await Promise.all([
+    read("lib/assistant/statistics-visual.ts"),
+    read(ANSICHT),
+  ]);
+  assert.match(visual, /xAchse: liste\.map/u);
+  // Bei dreissig Saeulen stuende sonst Datum an Datum.
+  assert.match(visual, /i % Math\.ceil\(liste\.length \/ 6\) === 0 \? s\.kurz : ""/u);
+  // Gleich breite Spalten -- dieselbe Aufteilung wie die Saeulen im Bild.
+  assert.match(ansicht, /xAchse\.ColumnDefinitions\.Add\(new ColumnDefinition \{ Width = new GridLength\(1, GridUnitType\.Star\) \}\)/u);
+});
+
+test("die y-Werte sitzen auf ihren Gitterlinien, nicht darüber", async () => {
+  // Gestapelte Textbloecke sassen ueber den Linien. Halbe Randzeilen ruecken
+  // die Beschriftungen auf 0, 1/4, 1/2, 3/4 und 1 der Plothoehe.
+  const ansicht = await read(ANSICHT);
+  assert.match(ansicht, /new\[\] \{ 0\.5, 1\.0, 1\.0, 1\.0, 0\.5 \}/u);
+  assert.match(ansicht, /VerticalAlignment\.Top[\s\S]*VerticalAlignment\.Bottom[\s\S]*VerticalAlignment\.Center/u);
+});
+
+test("der freie Zeitraum fragt neu und überschreibt nur die Spanne", async () => {
+  const [fenster, orchestrator] = await Promise.all([read(FENSTER), read("lib/assistant/orchestrator.ts")]);
+  assert.match(fenster, /Eigener Zeitraum:/u);
+  assert.match(fenster, /Minimum = 1, Maximum = 90/u);
+  // Der Planer bleibt der Einzige, der entscheidet, *was* gefragt wird.
+  assert.match(orchestrator, /tool\.tool === "sales_overview" \? \{ \.\.\.tool, days: input\.tage \} : tool/u);
+  // Ein Fehlschlag laesst die vorherige Ansicht stehen.
+  assert.match(fenster, /catch \(Exception fehler\)/u);
 });

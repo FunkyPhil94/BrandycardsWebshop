@@ -485,7 +485,7 @@ public sealed partial class MainPage : Page
             var thema = ActualTheme == ElementTheme.Dark ? "dunkel" : "hell";
             var reply = await _assistantService.AskAsync(shopUrl, _settings.DeviceToken, message, thema);
             AddConversationMessage("Assistant", reply.Text, isUser: false);
-            AddConversationVisuals(reply.Visuals);
+            AddConversationVisuals(reply.Visuals, message);
             // Eine Absage des Shops ist keine empfangene Antwort. Vorher stand
             // auch bei HTTP 503 „Antwort empfangen" in der Statuszeile.
             AssistantStatusTextBlock.Text = reply.Succeeded ? "Antwort empfangen" : "Shop meldet einen Fehler";
@@ -625,11 +625,11 @@ public sealed partial class MainPage : Page
     /// erreichbar, und für einen Screenreader ist der Antworttext die
     /// verlässlichere Quelle.
     /// </summary>
-    private void AddConversationVisuals(IReadOnlyList<AssistantConversationService.AssistantVisual> bilder)
+    private void AddConversationVisuals(IReadOnlyList<AssistantConversationService.AssistantVisual> bilder, string frage)
     {
         if (bilder.Count == 0) return;
 
-        var inhalt = StatistikAnsicht.Baue(bilder, kompakt: true, () => ZeigeStatistikGross(bilder));
+        var inhalt = StatistikAnsicht.Baue(bilder, kompakt: true, () => ZeigeStatistikGross(bilder, frage));
         ConversationPanel.Children.Add(new Border
         {
             Style = (Style)Application.Current.Resources["AssistantMessageBorderStyle"],
@@ -646,10 +646,18 @@ public sealed partial class MainPage : Page
     /// Genau eines: Ein zweiter Klick holt das vorhandene nach vorn, statt
     /// Fenster zu stapeln.
     /// </summary>
-    private void ZeigeStatistikGross(IReadOnlyList<AssistantConversationService.AssistantVisual> bilder)
+    private void ZeigeStatistikGross(IReadOnlyList<AssistantConversationService.AssistantVisual> bilder, string frage)
     {
         _statistikFenster?.Close();
-        _statistikFenster = new StatistikFenster(bilder, ActualTheme);
+        _statistikFenster = new StatistikFenster(bilder, ActualTheme, HoleZeitraum);
+        async Task<IReadOnlyList<AssistantConversationService.AssistantVisual>> HoleZeitraum(int tage)
+        {
+            if (string.IsNullOrWhiteSpace(_settings.DeviceToken)) return [];
+            var antwort = await _assistantService.AskAsync(
+                NormalizeShopUrl(_settings.ShopUrl), _settings.DeviceToken, frage,
+                ActualTheme == ElementTheme.Dark ? "dunkel" : "hell", tage);
+            return antwort.Visuals;
+        }
         _statistikFenster.Closed += (_, _) => _statistikFenster = null;
         _statistikFenster.Activate();
     }

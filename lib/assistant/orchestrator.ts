@@ -94,7 +94,14 @@ export class AssistantOrchestrator {
       return { status: "UNSUPPORTED", readOnly: true, answer, tools: [], sources: [], freshness: null, visuals: [] };
     }
 
-    const executions: ToolExecution[] = await Promise.all(plan.tools.map(async (tool): Promise<ToolExecution> => {
+    // **Ein gewählter Zeitraum überschreibt nur den Zeitraum**, nicht die
+    // Werkzeugwahl. Der Planer bleibt der Einzige, der entscheidet, *was*
+    // gefragt wird; das Statistikfenster stellt nur ein, *über welche Spanne*.
+    const werkzeuge = input.tage === undefined
+      ? plan.tools
+      : plan.tools.map((tool) => (tool.tool === "sales_overview" ? { ...tool, days: input.tage } : tool));
+
+    const executions: ToolExecution[] = await Promise.all(werkzeuge.map(async (tool): Promise<ToolExecution> => {
       try {
         return { input: tool, result: await this.tools.execute(tool) };
       } catch (error) {
@@ -118,9 +125,9 @@ export class AssistantOrchestrator {
       statistikAnsicht(fulfilled.map((item) => item.result)),
       input.thema === "dunkel" ? "dunkel" : "hell",
     ).map((bild) => ({
-      schluessel: bild.schluessel, titel: bild.titel, hinweis: bild.hinweis,
+      schluessel: bild.schluessel, fenster: bild.fenster, titel: bild.titel, hinweis: bild.hinweis,
       heroLabel: bild.heroLabel, heroWert: bild.heroWert, kacheln: bild.kacheln,
-      legende: bild.legende, achse: bild.achse, zeitraum: bild.zeitraum,
+      legende: bild.legende, achse: bild.achse, xAchse: bild.xAchse, zeitraum: bild.zeitraum,
       spitze: bild.spitze, svg: bild.svg,
     }));
 

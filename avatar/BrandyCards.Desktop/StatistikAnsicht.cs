@@ -49,7 +49,15 @@ internal static class StatistikAnsicht
         var spitze = Text(11, "AvatarMutedBrush");
         var zeitraum = Text(11, "AvatarMutedBrush");
         var bild = new Image { Stretch = Stretch.Fill, Height = kompakt ? 150 : 260 };
-        var achse = new StackPanel { Width = 62, VerticalAlignment = VerticalAlignment.Stretch };
+        // **Auf die Linien zentriert, nicht gestapelt.** Gestapelte Textbloecke
+        // sassen ueber ihren Gitterlinien statt daneben. Die Linien liegen bei
+        // 0, 1/4, 1/2, 3/4 und 1 der Plothoehe; halbe Randzeilen ruecken die
+        // Beschriftungen genau auf diese Hoehen.
+        var achse = new Grid { Width = 62 };
+        foreach (var anteil in new[] { 0.5, 1.0, 1.0, 1.0, 0.5 })
+        {
+            achse.RowDefinitions.Add(new RowDefinition { Height = new GridLength(anteil, GridUnitType.Star) });
+        }
         var kacheln = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
         var legende = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 12 };
 
@@ -71,13 +79,19 @@ internal static class StatistikAnsicht
         if (sichtbare.Count > 1) wurzel.Children.Add(schalter);
 
         // --- Diagramm mit Achse ----------------------------------------------
+        var xAchse = new Grid();
         var plot = new Grid();
         plot.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         plot.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        plot.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        plot.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         Grid.SetColumn(achse, 0);
         Grid.SetColumn(bild, 1);
+        Grid.SetColumn(xAchse, 1);
+        Grid.SetRow(xAchse, 1);
         plot.Children.Add(achse);
         plot.Children.Add(bild);
+        plot.Children.Add(xAchse);
         wurzel.Children.Add(plot);
 
         var fuss = new StackPanel { Spacing = 1 };
@@ -116,13 +130,33 @@ internal static class StatistikAnsicht
 
             // Achsenwerte an denselben vier Teilungen wie die Gitterlinien.
             achse.Children.Clear();
-            foreach (var wert in eintrag.Achse)
+            for (var i = 0; i < eintrag.Achse.Count && i < achse.RowDefinitions.Count; i += 1)
             {
                 var zeile = Text(10, "AvatarMutedBrush");
-                zeile.Text = wert;
+                zeile.Text = eintrag.Achse[i];
                 zeile.TextAlignment = TextAlignment.Right;
-                zeile.Height = bild.Height / Math.Max(1, eintrag.Achse.Count);
+                zeile.Margin = new Thickness(0, 0, 8, 0);
+                // Oben und unten an den Rand der halben Zeilen, dazwischen
+                // mittig -- so trifft jede Beschriftung ihre Linie.
+                zeile.VerticalAlignment = i == 0 ? VerticalAlignment.Top
+                    : i == eintrag.Achse.Count - 1 ? VerticalAlignment.Bottom
+                    : VerticalAlignment.Center;
+                Grid.SetRow(zeile, i);
                 achse.Children.Add(zeile);
+            }
+
+            // x-Achse: gleich breite Spalten, genau wie die Saeulen im Bild.
+            xAchse.Children.Clear();
+            xAchse.ColumnDefinitions.Clear();
+            foreach (var beschriftung in eintrag.XAchse)
+            {
+                xAchse.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                var zelle = Text(10, "AvatarMutedBrush");
+                zelle.Text = beschriftung;
+                zelle.TextAlignment = TextAlignment.Center;
+                zelle.TextWrapping = TextWrapping.NoWrap;
+                Grid.SetColumn(zelle, xAchse.ColumnDefinitions.Count - 1);
+                xAchse.Children.Add(zelle);
             }
 
             legende.Children.Clear();

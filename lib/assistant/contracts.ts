@@ -389,6 +389,14 @@ export type AssistantThema = (typeof ASSISTANT_THEMEN)[number];
 export type AssistantQuestionInput = {
   message: string;
   thema: AssistantThema;
+  /** Ein ausdrücklich gewählter Zeitraum in Tagen.
+   *
+   * **Kein Ersatz für die Frage, sondern ein Nachschlag.** Der Planer wählt
+   * weiterhin die Werkzeuge aus dem Text; dieser Wert überschreibt nur den
+   * Zeitraum der Verkaufsübersicht. Gedacht für das Statistikfenster, in dem
+   * man den Zeitraum einstellt, statt die Frage neu zu formulieren.
+   */
+  tage?: number;
 };
 
 /** Wie viele Lesarten desselben Diktats höchstens geprüft werden.
@@ -436,6 +444,9 @@ export type AssistantOrchestratorToolSummary = {
  */
 export type AssistantVisual = {
   schluessel: string;
+  /** Das Zeitfenster in Tagen. **Wurde beim Abbilden vergessen**, worauf im
+   *  Panel drei Knöpfe „0 Tage" hießen. */
+  fenster: number;
   titel: string;
   hinweis: string;
   heroLabel: string;
@@ -443,6 +454,10 @@ export type AssistantVisual = {
   kacheln: Array<{ label: string; wert: string }>;
   legende: Array<{ name: string; farbe: string }>;
   achse: string[];
+  /** Eine Beschriftung je Säule, leer wo keine stehen soll. Der Desktop legt
+   *  sie in gleich breite Spalten unter das Bild — dieselbe Aufteilung wie die
+   *  Säulen, also sitzen sie ohne Nachrechnen darunter. */
+  xAchse: string[];
   zeitraum: string;
   spitze: string | null;
   /** Nur Balken und Gitterlinien. **Kein `<text>`** — Direct2D zeichnet es
@@ -532,7 +547,7 @@ export function parseAssistantQuestionInput(value: unknown): AssistantQuestionIn
   }
 
   const input = value as Record<string, unknown>;
-  const erlaubt = new Set(["message", "thema"]);
+  const erlaubt = new Set(["message", "thema", "tage"]);
   const unexpected = Object.keys(input).filter((field) => !erlaubt.has(field));
   if (unexpected.length) {
     throw new AssistantRequestError(`Nicht unterstützte Felder: ${unexpected.join(", ")}.`);
@@ -552,6 +567,16 @@ export function parseAssistantQuestionInput(value: unknown): AssistantQuestionIn
   }
   const thema = (input.thema === undefined ? "hell" : input.thema) as AssistantThema;
 
+  // Abgewiesen statt zurechtgebogen: Ein unsinniger Zeitraum ist ein Fehler des
+  // Aufrufers. 90 Tage ist die Grenze, bis zu der eBay Bestellungen je Abfrage
+  // zurückgibt -- mehr wäre im hinteren Teil unvollständig, ohne es zu sagen.
+  if (input.tage !== undefined) {
+    const tage = input.tage;
+    if (typeof tage !== "number" || !Number.isSafeInteger(tage) || tage < 1 || tage > SALES_OVERVIEW_MAX_DAYS) {
+      throw new AssistantRequestError(`tage muss eine ganze Zahl zwischen 1 und ${SALES_OVERVIEW_MAX_DAYS} sein.`);
+    }
+  }
+
   const message = input.message.trim();
   if (!message) {
     throw new AssistantRequestError("Die Frage darf nicht leer sein.");
@@ -560,7 +585,7 @@ export function parseAssistantQuestionInput(value: unknown): AssistantQuestionIn
     throw new AssistantRequestError(`Die Frage darf höchstens ${MAX_ASSISTANT_QUESTION_LENGTH} Zeichen lang sein.`);
   }
 
-  return { message, thema };
+  return input.tage === undefined ? { message, thema } : { message, thema, tage: input.tage as number };
 }
 
 export function parseAssistantCandidateProbeInput(value: unknown): AssistantCandidateProbeInput {

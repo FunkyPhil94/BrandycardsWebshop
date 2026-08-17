@@ -75,6 +75,9 @@ export type StatistikBild = {
   legende: Array<{ name: string; farbe: string }>;
   /** Achsenwerte von oben nach unten, passend zu den vier Gitterteilungen. */
   achse: string[];
+  /** Eine Beschriftung je Säule, leer wo keine stehen soll — bei dreißig Säulen
+   *  wäre unter jeder ein Datum unlesbar. */
+  xAchse: string[];
   /** Anfang und Ende des gezeigten Zeitraums. Ein Datum je Säule wäre im Panel
    *  unlesbar und würde bei nativer Platzierung gegen die Balken verrutschen. */
   zeitraum: string;
@@ -245,7 +248,7 @@ export function rendereStatistikBilder(ansicht: StatistikAnsicht, thema: Thema =
     return [{
       schluessel: "kennzahlen", fenster: 0, metrik: "umsatz", titel: "Kennzahlen",
       hinweis: "Stand jetzt.", heroLabel: "Shop-Kennzahlen", heroWert: "",
-      kacheln, legende: [], achse: [], zeitraum: "", spitze: null, svg: "",
+      kacheln, legende: [], achse: [], xAchse: [], zeitraum: "", spitze: null, svg: "",
     }];
   }
 
@@ -280,6 +283,8 @@ export function rendereStatistikBilder(ansicht: StatistikAnsicht, thema: Thema =
         kacheln,
         legende: [{ name: "Shop", farbe: f.shop }, { name: "eBay", farbe: f.ebay }],
         achse,
+        // Nicht unter jeder Säule: Bei dreißig Tagen stünde Datum an Datum.
+        xAchse: liste.map((s, i) => (liste.length <= 10 || i % Math.ceil(liste.length / 6) === 0 ? s.kurz : "")),
         zeitraum: fensterTage.length
           ? `${tagLabel(fensterTage[0].tag)} – ${tagLabel(fensterTage[fensterTage.length - 1].tag)}`
           : "",

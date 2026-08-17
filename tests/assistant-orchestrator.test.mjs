@@ -242,7 +242,12 @@ test("Text und Diktat enden im Desktop-Client am selben Orchestrator-Aufruf", as
   // gezeichnetes Bild kann nicht auf `prefers-color-scheme` reagieren. Geprüft
   // bleibt das Wesentliche -- ein Körper mit bekannter Länge, und die Frage
   // selbst als einziges fachliches Feld.
-  assert.match(service, /new StringContent\(JsonSerializer\.Serialize\(new \{ message, thema \}\), Encoding\.UTF8, "application\/json"\)/u);
+  // Seit dem Statistikfenster kann ein ausdrücklich gewählter Zeitraum
+  // mitgehen. Geprüft bleibt das Wesentliche: die Frage als einziges
+  // fachliches Feld, und ein Körper mit bekannter Länge.
+  assert.match(service, /JsonSerializer\.Serialize\(new \{ message, thema \}\)/u);
+  assert.match(service, /JsonSerializer\.Serialize\(new \{ message, thema, tage \}\)/u);
+  assert.match(service, /Encoding\.UTF8, "application\/json"\)/u);
   assert.doesNotMatch(service, /ResolveTool|FormatLatestSale|FormatStatistics/u);
   assert.ok((page.match(/await SendAssistantMessageAsync\(message\)/gu) ?? []).length >= 2);
   assert.match(page, /transcription\.Text![\s\S]*SendAssistantMessageAsync\(message\)/u);

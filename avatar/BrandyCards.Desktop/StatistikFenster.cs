@@ -24,18 +24,82 @@ namespace BrandyCards_Desktop;
 /// </summary>
 internal sealed class StatistikFenster : Window
 {
-    public StatistikFenster(IReadOnlyList<AssistantConversationService.AssistantVisual> bilder, ElementTheme thema)
+    public StatistikFenster(
+        IReadOnlyList<AssistantConversationService.AssistantVisual> bilder,
+        ElementTheme thema,
+        Func<int, Task<IReadOnlyList<AssistantConversationService.AssistantVisual>>>? holeZeitraum = null)
     {
         Title = "BrandyCards Statistik";
 
-        var inhalt = StatistikAnsicht.Baue(bilder, kompakt: false);
         var rahmen = new ScrollViewer
         {
             VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
             HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
             Padding = new Thickness(20),
-            Content = inhalt,
         };
+
+        var inhalt = new StackPanel { Spacing = 12 };
+        var ansicht = new ContentControl { HorizontalContentAlignment = HorizontalAlignment.Stretch };
+        var stand = new TextBlock { FontSize = 11, TextWrapping = TextWrapping.Wrap, Visibility = Visibility.Collapsed };
+
+        // **Der frei wählbare Zeitraum.** Die Umschalter bieten nur die Fenster,
+        // die mitgeliefert wurden; wer einen anderen will, stellt ihn hier ein.
+        // Das fragt den Shop erneut — der Zeitraum überschreibt dort nur die
+        // Spanne, nicht die Werkzeugwahl.
+        if (holeZeitraum is not null)
+        {
+            var zeile = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, VerticalAlignment = VerticalAlignment.Center };
+            var beschriftung = new TextBlock { Text = "Eigener Zeitraum:", FontSize = 12, VerticalAlignment = VerticalAlignment.Center };
+            var eingabe = new NumberBox
+            {
+                Value = 30, Minimum = 1, Maximum = 90, Width = 120,
+                SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Inline,
+            };
+            AutomationProperties.SetName(eingabe, "Zeitraum in Tagen, 1 bis 90");
+            var tage = new TextBlock { Text = "Tage", FontSize = 12, VerticalAlignment = VerticalAlignment.Center };
+            var holen = new Button { Content = "Anzeigen", MinHeight = 32 };
+            AutomationProperties.SetName(holen, "Statistik für den eingestellten Zeitraum anzeigen");
+
+            holen.Click += async (_, _) =>
+            {
+                var gewaehlt = (int)Math.Clamp(double.IsNaN(eingabe.Value) ? 30 : eingabe.Value, 1, 90);
+                holen.IsEnabled = false;
+                stand.Visibility = Visibility.Visible;
+                stand.Text = $"Hole {gewaehlt} Tage …";
+                try
+                {
+                    var neue = await holeZeitraum(gewaehlt);
+                    if (neue.Count == 0)
+                    {
+                        stand.Text = "Für diesen Zeitraum kam keine Statistik zurück.";
+                        return;
+                    }
+                    ansicht.Content = StatistikAnsicht.Baue(neue, kompakt: false);
+                    stand.Visibility = Visibility.Collapsed;
+                }
+                catch (Exception fehler)
+                {
+                    // Ein Fehlschlag laesst die vorherige Ansicht stehen, statt
+                    // sie durch eine leere zu ersetzen.
+                    stand.Text = DesktopErrorMessages.Describe(fehler);
+                }
+                finally
+                {
+                    holen.IsEnabled = true;
+                }
+            };
+
+            zeile.Children.Add(beschriftung);
+            zeile.Children.Add(eingabe);
+            zeile.Children.Add(tage);
+            zeile.Children.Add(holen);
+            inhalt.Children.Add(zeile);
+            inhalt.Children.Add(stand);
+        }
+
+        ansicht.Content = StatistikAnsicht.Baue(bilder, kompakt: false);
+        inhalt.Children.Add(ansicht);
+        rahmen.Content = inhalt;
 
         var wurzel = new Grid
         {
