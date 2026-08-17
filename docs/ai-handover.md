@@ -9385,3 +9385,16 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 ## Nachtrag 2026-08-17: Deploy der Bild-Begründung
 - Version `ec2534cd-4f90-4227-bc93-e4cf36caf498`, aus dem Hauptverzeichnis.
 - `/`, `/admin`, `/api/products` je 200; `img-src` trägt weiterhin `blob:`.
+
+## Auftrag 2026-08-17: Die fünf Testangebote aus Produktion entfernen
+- Status: LÄUFT.
+- Ausdrücklich vom Betreiber freigegeben („ja, lösch die fünf Testangebote").
+- Betroffen sind **genau** diese fünf Zeilen in `card_submissions`, alle von
+  `xjok3y@googlemail.com`, alle vom 2026-08-17 zwischen 18:23 und 18:33:
+  `a04f3a81…` (Nachweis 2MB), `a6bfb3a3…` (Grenztest900), `93809acc…`
+  (Grenztest500), `0c2596f6…` (Grenztest200), `54f53b85…` (Diagnose).
+  Andere Kartenangebote gibt es in Produktion nicht; die Tabelle ist danach leer.
+- Reihenfolge: erst die fünf Objekte aus R2 (`brandycards-uploads`), dann die
+  Zeilen in `card_submission_assets`, dann `card_submissions`. Andersherum wären
+  die Speicherschlüssel weg, bevor die Dateien gelöscht sind — die Objekte
+  blieben als Waisen liegen.
