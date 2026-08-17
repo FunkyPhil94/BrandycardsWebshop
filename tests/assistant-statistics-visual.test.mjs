@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-const { baueTagesreihe } = await import("../lib/assistant/statistics-series.ts");
-const { kuerzeAufWortgrenze, rendereStatistikBilder } = await import("../lib/assistant/statistics-visual.ts");
+const { baueTagesreihe, verdichteAufTage } = await import("../lib/assistant/statistics-series.ts");
+const { fensterAuswahl, kuerzeAufWortgrenze, rendereStatistikBilder } = await import("../lib/assistant/statistics-visual.ts");
 
 const JETZT = new Date("2026-08-17T12:00:00.000Z");
 
@@ -21,6 +21,18 @@ const verkauf = (ueberschreibung = {}) => ({
     { channel: "SHOP", reference: "BC-1", title: "A", quantity: 1, amountCents: 500, currency: "EUR", soldAt: "2026-08-12T10:00:00.000Z" },
     { channel: "EBAY", reference: "E-1", title: "B", quantity: 2, amountCents: 2500, currency: "EUR", soldAt: "2026-08-15T10:00:00.000Z" },
   ],
+  // Die **vollstaendige** Tagesreihe -- `sales` ist auf `limit` gekuerzt und
+  // taugt nicht als Grundlage fuer ein Diagramm.
+  dailySeries: [
+    { day: "2026-08-11", shopCents: 0, ebayCents: 0, shopItems: 0, ebayItems: 0 },
+    { day: "2026-08-12", shopCents: 500, ebayCents: 0, shopItems: 1, ebayItems: 0 },
+    { day: "2026-08-13", shopCents: 0, ebayCents: 0, shopItems: 0, ebayItems: 0 },
+    { day: "2026-08-14", shopCents: 0, ebayCents: 0, shopItems: 0, ebayItems: 0 },
+    { day: "2026-08-15", shopCents: 0, ebayCents: 2500, shopItems: 0, ebayItems: 2 },
+    { day: "2026-08-16", shopCents: 0, ebayCents: 0, shopItems: 0, ebayItems: 0 },
+    { day: "2026-08-17", shopCents: 0, ebayCents: 0, shopItems: 0, ebayItems: 0 },
+  ],
+  ohneDatum: 0,
   ...ueberschreibung,
 });
 
@@ -55,11 +67,12 @@ test("die Kanäle landen getrennt im richtigen Tag", () => {
 test("Verkäufe ohne Datum werden gezählt, nicht verschluckt", () => {
   // Sonst ergaebe die Summe der Saeulen weniger als die Kennzahl darueber, und
   // niemand wuesste warum.
-  const daten = verkauf();
-  daten.sales.push({ channel: "EBAY", reference: "E-2", title: "C", quantity: 1, amountCents: 900, currency: "EUR", soldAt: null });
-  daten.sales.push({ channel: "EBAY", reference: "E-3", title: "D", quantity: 1, amountCents: 900, currency: "EUR", soldAt: "kein Datum" });
-  const reihe = baueTagesreihe(daten, JETZT);
-  assert.equal(reihe.ohneDatum, 2);
+  const { ohneDatum } = verdichteAufTage([
+    { channel: "EBAY", quantity: 1, amountCents: 900, soldAt: null },
+    { channel: "EBAY", quantity: 1, amountCents: 900, soldAt: "kein Datum" },
+    { channel: "SHOP", quantity: 1, amountCents: 500, soldAt: "2026-08-12T10:00:00.000Z" },
+  ], "2026-08-11T00:00:00.000Z", JETZT);
+  assert.equal(ohneDatum, 2);
 });
 
 test("ein Verkauf außerhalb des Fensters gehört nicht in die Reihe", () => {
@@ -72,12 +85,25 @@ test("ein Verkauf außerhalb des Fensters gehört nicht in die Reihe", () => {
 });
 
 test("fehlende Menge gilt als eins, fehlender Betrag als null", () => {
-  const daten = verkauf({ sales: [
-    { channel: "EBAY", reference: "E", title: "B", quantity: null, amountCents: null, currency: "EUR", soldAt: "2026-08-13T10:00:00.000Z" },
-  ] });
-  const tag = baueTagesreihe(daten, JETZT).tage.find((t) => t.tag === "2026-08-13");
-  assert.equal(tag.ebayStueck, 1, "eine Karte ist die sichere Annahme");
+  const { dailySeries } = verdichteAufTage([
+    { channel: "EBAY", quantity: null, amountCents: null, soldAt: "2026-08-13T10:00:00.000Z" },
+  ], "2026-08-11T00:00:00.000Z", JETZT);
+  const tag = dailySeries.find((t) => t.day === "2026-08-13");
+  assert.equal(tag.ebayItems, 1, "eine Karte ist die sichere Annahme");
   assert.equal(tag.ebayCents, 0, "ein Betrag wird nicht erfunden");
+});
+
+test("die Verdichtung ist lückenlos und läuft über ALLE Verkäufe", () => {
+  // **Der Fehler, den das behebt:** Das Diagramm baute auf `sales`, und die
+  // Liste ist auf `limit` gekuerzt -- hoechstens zwanzig Eintraege, waehrend die
+  // Leitzahl darueber alle meint. Die Saeulen waeren stillschweigend zu niedrig
+  // gewesen.
+  const viele = Array.from({ length: 50 }, () => ({
+    channel: "EBAY", quantity: 1, amountCents: 100, soldAt: "2026-08-14T10:00:00.000Z",
+  }));
+  const { dailySeries } = verdichteAufTage(viele, "2026-08-11T00:00:00.000Z", JETZT);
+  assert.equal(dailySeries.length, 7, "11.08. bis 17.08., auch die leeren Tage");
+  assert.equal(dailySeries.find((t) => t.day === "2026-08-14").ebayCents, 5000, "alle 50, nicht die ersten 20");
 });
 
 
@@ -177,11 +203,40 @@ test("Kennzahlen allein ergeben ein Bild ohne Diagramm", () => {
   assert.doesNotMatch(bilder[0].svg, /Verkäufe im Zeitverlauf/u);
 });
 
-test("ein größeres Fenster liefert mehr Ansichten", () => {
-  const daten = verkauf({ days: 90, since: "2026-05-19T00:00:00.000Z" });
-  const bilder = rendereStatistikBilder(daten.days ? { verkauf: daten } : {});
-  assert.deepEqual(bilder.map((b) => b.schluessel), ["7-umsatz", "7-stueck", "30-umsatz", "30-stueck", "90-umsatz", "90-stueck"]);
-  // Bei 90 Tagen wird auf Wochen verdichtet, bei 7 und 30 nicht.
-  assert.match(bilder.find((b) => b.schluessel === "90-umsatz").hinweis, /Wochen/u);
-  assert.match(bilder.find((b) => b.schluessel === "30-umsatz").hinweis, /Tage/u);
+
+test("das erfragte Fenster ist immer dabei", () => {
+  // Wer „die letzten 45 Tage" fragt, soll seine 45 Tage sehen -- sonst waere der
+  // Zeitraum in Wahrheit fest, egal was gefragt wurde.
+  assert.deepEqual(fensterAuswahl(45, 45), [7, 30, 45]);
+  assert.deepEqual(fensterAuswahl(30, 90), [7, 30, 90], "ein Standardfenster verdoppelt sich nicht");
+  // Angeboten wird nur, wofuer Tage vorliegen: Ein Knopf ueber leeren Wochen
+  // behauptete, es sei nichts verkauft worden.
+  assert.deepEqual(fensterAuswahl(90, 7), [7]);
+  assert.deepEqual(fensterAuswahl(3, 10), [3, 7]);
+});
+
+test("ein erfragtes Zwischenfenster erscheint als eigene Ansicht", () => {
+  const tage = Array.from({ length: 45 }, (_, index) => ({
+    day: new Date(Date.UTC(2026, 6, 1 + index)).toISOString().slice(0, 10),
+    shopCents: 0, ebayCents: 100, shopItems: 0, ebayItems: 1,
+  }));
+  const bilder = rendereStatistikBilder({ verkauf: verkauf({ days: 45, dailySeries: tage }) });
+  assert.deepEqual(bilder.map((b) => b.schluessel), ["7-umsatz", "7-stueck", "30-umsatz", "30-stueck", "45-umsatz", "45-stueck"]);
+  assert.match(bilder.find((b) => b.schluessel === "45-umsatz").titel, /45 Tage/u);
+});
+
+test("die Leitzahl gehört zum gezeigten Fenster, nicht zur gestellten Frage", () => {
+  // Sonst stuende ueber einem 7-Tage-Diagramm der 90-Tage-Umsatz, und beide
+  // Zahlen im selben Bild widersprechen sich.
+  const tage = Array.from({ length: 45 }, (_, index) => ({
+    day: new Date(Date.UTC(2026, 6, 1 + index)).toISOString().slice(0, 10),
+    shopCents: 0, ebayCents: 100, shopItems: 0, ebayItems: 1,
+  }));
+  const bilder = rendereStatistikBilder({ verkauf: verkauf({ days: 45, dailySeries: tage, totalRevenueCents: 4500 }) });
+  const sieben = bilder.find((b) => b.schluessel === "7-umsatz").svg;
+  const fuenfundvierzig = bilder.find((b) => b.schluessel === "45-umsatz").svg;
+  assert.match(sieben, /letzte 7 Tage/u);
+  assert.match(sieben, /7,00 €/u, "sieben Tage à 1,00 €");
+  assert.match(fuenfundvierzig, /letzte 45 Tage/u);
+  assert.match(fuenfundvierzig, /45,00 €/u);
 });

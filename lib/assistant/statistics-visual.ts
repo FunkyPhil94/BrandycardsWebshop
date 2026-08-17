@@ -75,7 +75,25 @@ const PALETTE: Record<Thema, Farben> = {
   },
 };
 
-const FENSTER = [7, 30, 90] as const;
+/** Die Fenster, die immer angeboten werden — sofern Daten dafür da sind. */
+const STANDARD_FENSTER = [7, 30, 90] as const;
+
+/** Welche Zeitfenster angeboten werden.
+ *
+ * **Das erfragte Fenster ist immer dabei.** Wer „die letzten 45 Tage" fragt,
+ * soll seine 45 Tage sehen und nicht nur 7 und 30 — die Frage bestimmt den
+ * Zeitraum, die Umschalter erweitern ihn nur. Ohne diese Vereinigung wäre der
+ * Zeitraum in Wahrheit fest, egal was gefragt wurde.
+ *
+ * Angeboten wird nur, wofür auch Tage vorliegen: Ein Knopf „90 Tage" über einer
+ * Reihe von sieben Tagen zeigte drei leere Wochen und behauptete damit, es sei
+ * nichts verkauft worden.
+ */
+export function fensterAuswahl(gefragt: number, verfuegbareTage: number): number[] {
+  const kandidaten = new Set<number>(STANDARD_FENSTER);
+  if (gefragt > 0) kandidaten.add(gefragt);
+  return [...kandidaten].filter((tage) => tage <= verfuegbareTage).sort((a, b) => a - b);
+}
 const SCHRIFT = "system-ui, -apple-system, Segoe UI, sans-serif";
 const B = 520;
 
@@ -184,8 +202,18 @@ function zeichneBild(
 
   // ---- Leitzahl -----------------------------------------------------------
   if (verkauf) {
-    teile.push(text(`Umsatz, letzte ${verkauf.days} Tage`, 14, 22, { fill: f.ink2, size: 12 }));
-    teile.push(text(verkauf.totalRevenueCents === null ? "unvollständig" : euro(verkauf.totalRevenueCents), 14, 66, { fill: f.ink, size: 42, weight: 600 }));
+    // **Die Leitzahl gehört zum gezeigten Fenster, nicht zur gestellten Frage.**
+    // Sonst stünde über einem 7-Tage-Diagramm der 90-Tage-Umsatz, und beide
+    // Zahlen im selben Bild widersprächen sich. Gerechnet wird über die
+    // vollständige Tagesreihe, nicht über die gekürzte Verkaufsliste.
+    const fensterTage = tage && fenster > 0 ? tage.slice(-fenster) : [];
+    const fensterUmsatz = fensterTage.reduce((summe, t) => summe + t.shopCents + t.ebayCents, 0);
+    const zeitraum = fensterTage.length || verkauf.days;
+
+    teile.push(text(`Umsatz, letzte ${zeitraum} Tage`, 14, 22, { fill: f.ink2, size: 12 }));
+    // `null` heißt „eine Hälfte fehlt" — eine Summe daraus wäre schlimmer als
+    // keine, und das gilt für jedes Fenster.
+    teile.push(text(verkauf.totalRevenueCents === null ? "unvollständig" : euro(fensterTage.length ? fensterUmsatz : verkauf.totalRevenueCents), 14, 66, { fill: f.ink, size: 42, weight: 600 }));
     teile.push(text(kuerzeAufWortgrenze(verkauf.revenueBasis, 78), 14, 84, { fill: f.muted, size: 10 }));
     y = 98;
   } else {
@@ -302,8 +330,7 @@ export function rendereStatistikBilder(ansicht: StatistikAnsicht, thema: Thema =
   }
 
   const bilder: StatistikBild[] = [];
-  for (const fenster of FENSTER) {
-    if (fenster > reihe.tage.length) continue;
+  for (const fenster of fensterAuswahl(ansicht.verkauf.days, reihe.tage.length)) {
     for (const metrik of ["umsatz", "stueck"] as Metrik[]) {
       const { svg, hinweis } = zeichneBild(ansicht, reihe.tage, fenster, metrik, thema);
       bilder.push({

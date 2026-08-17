@@ -1,19 +1,15 @@
 import type { AssistantToolDataMap } from "./contracts.ts";
 
-/** Aus Einzelverkäufen eine Tagesreihe machen — ohne dabei zu lügen.
+/** Die Tagesreihe für das Diagramm.
  *
- * Getrennt vom Zeichnen, weil hier die Entscheidungen liegen, die man prüfen
- * können muss: welche Tage vorkommen, und was mit Verkäufen ohne verlässlichen
- * Zeitpunkt passiert.
- *
- * **Immer Tage, nie Wochen.** Der Tag ist die atomare Wahrheit; verdichtet wird
- * erst bei der Anzeige, wenn das gewählte Fenster zu viele Säulen ergäbe. Würde
- * der Server schon wöchentlich bündeln, zeigte ein Umschalten auf „7 Tage" zwei
- * Wochensäulen — die Interaktion würde die Daten verfälschen.
+ * **Seit dem 2026-08-17 rechnet dieses Modul nicht mehr selbst.** Es verdichtete
+ * `sales` auf Tage — und `sales` ist auf `limit` gekürzt, höchstens zwanzig
+ * Einträge, während die Leitzahl darüber alle meint. Die Säulen wären
+ * stillschweigend zu niedrig gewesen. Das Werkzeug liefert die Verdichtung jetzt
+ * vollständig mit; hier wird sie nur noch übernommen.
  */
 
 export type Tageswert = {
-  /** ISO-Datum, die stabile Kennung. */
   tag: string;
   shopCents: number;
   ebayCents: number;
@@ -23,84 +19,77 @@ export type Tageswert = {
 
 export type Tagesreihe = {
   tage: Tageswert[];
-  /** Verkäufe ohne verwertbaren Zeitpunkt.
-   *
-   * Sie fallen aus der Reihe und werden **genannt**, nicht stillschweigend
-   * geschluckt: Sonst ergäbe die Summe der Säulen weniger als die Kennzahl
-   * darüber, und niemand wüsste warum. */
+  /** Verkäufe ohne verwertbaren Zeitpunkt — genannt, nicht verschluckt: Sonst
+   *  ergäbe die Summe der Säulen weniger als die Kennzahl darüber. */
   ohneDatum: number;
 };
 
 /** Ab wie vielen Tagen die Anzeige auf Wochen verdichtet.
  *
- * Nicht Geschmack, sondern Lesbarkeit: 90 Säulen in einem Panel von rund 500
- * Pixeln wären unter zwei Pixel je Säule, während die Markenregel eine sichtbare
- * Breite verlangt. Der Wert wird ins Dokument übergeben, damit die Schwelle
- * genau einmal existiert.
+ * Nicht Geschmack, sondern Lesbarkeit: 90 Säulen in einem Bild von 520 Punkten
+ * Breite wären unter zwei Punkte je Säule, während die Markenregel eine
+ * sichtbare Breite verlangt.
  */
 export const MAX_TAGES_SAEULEN = 31;
 
-function istEndlicheZahl(wert: unknown): wert is number {
-  return typeof wert === "number" && Number.isFinite(wert);
+export function baueTagesreihe(daten: AssistantToolDataMap["sales_overview"]): Tagesreihe {
+  return {
+    tage: (daten.dailySeries ?? []).map((eintrag) => ({
+      tag: eintrag.day,
+      shopCents: eintrag.shopCents,
+      ebayCents: eintrag.ebayCents,
+      shopStueck: eintrag.shopItems,
+      ebayStueck: eintrag.ebayItems,
+    })),
+    ohneDatum: daten.ohneDatum ?? 0,
+  };
 }
 
-const ZWEISTELLIG = (zahl: number) => String(zahl).padStart(2, "0");
-
-function tagesAnfang(datum: Date): Date {
-  return new Date(Date.UTC(datum.getUTCFullYear(), datum.getUTCMonth(), datum.getUTCDate()));
-}
-
-function isoTag(datum: Date): string {
-  return `${datum.getUTCFullYear()}-${ZWEISTELLIG(datum.getUTCMonth() + 1)}-${ZWEISTELLIG(datum.getUTCDate())}`;
-}
-
-/**
- * Baut die Tagesreihe für das Diagramm.
+/** Verdichtet **alle** Verkäufe des Fensters auf Tagessummen.
  *
- * **Lückenlos, auch wo nichts verkauft wurde.** Ein Tag ohne Verkauf ist eine
- * Aussage und erscheint als Nullsäule. Würden nur Tage mit Verkäufen gezeichnet,
- * stünden zwei Säulen mit drei Wochen Abstand nebeneinander und der Verlauf wäre
- * frei erfunden.
+ * **Warum nicht aus `sales`.** Jene Liste ist auf `limit` gekürzt; ein Diagramm
+ * daraus zeigte bei 161 Verkäufen zwanzig und stünde unter einer Leitzahl, die
+ * alle meint. Diese Reihe ist vollständig und dennoch klein: höchstens ein
+ * Eintrag je Tag.
  *
- * `jetzt` ist einsetzbar, damit die Reihe testbar ist, ohne von der Uhr des
- * Testlaufs abzuhängen.
+ * **Lückenlos ab `since`**, auch wo nichts verkauft wurde — ein Tag ohne
+ * Verkauf ist eine Aussage. Verkäufe ohne verwertbaren Zeitpunkt werden
+ * gezählt, nicht verschluckt: Sonst ergäbe die Summe der Tage weniger als der
+ * Gesamtumsatz, und niemand wüsste warum.
  */
-export function baueTagesreihe(
-  daten: AssistantToolDataMap["sales_overview"],
-  jetzt: Date = new Date(),
-): Tagesreihe {
-  const seit = tagesAnfang(new Date(daten.since));
-  const bis = tagesAnfang(jetzt);
-  const tage = new Map<string, Tageswert>();
+export function verdichteAufTage(
+  verkaeufe: Array<{ channel: "SHOP" | "EBAY"; quantity: number; amountCents: number | null; soldAt: string | null }>,
+  since: string,
+  jetzt: Date,
+) {
+  const tagesAnfang = (datum: Date) => new Date(Date.UTC(datum.getUTCFullYear(), datum.getUTCMonth(), datum.getUTCDate()));
+  const iso = (datum: Date) => datum.toISOString().slice(0, 10);
 
-  for (const lauf = new Date(seit); lauf <= bis; lauf.setUTCDate(lauf.getUTCDate() + 1)) {
-    const tag = isoTag(lauf);
-    tage.set(tag, { tag, shopCents: 0, ebayCents: 0, shopStueck: 0, ebayStueck: 0 });
+  const tage = new Map<string, { day: string; shopCents: number; ebayCents: number; shopItems: number; ebayItems: number }>();
+  const bis = tagesAnfang(jetzt);
+  for (const lauf = tagesAnfang(new Date(since)); lauf <= bis; lauf.setUTCDate(lauf.getUTCDate() + 1)) {
+    tage.set(iso(lauf), { day: iso(lauf), shopCents: 0, ebayCents: 0, shopItems: 0, ebayItems: 0 });
   }
 
   let ohneDatum = 0;
-  for (const verkauf of daten.sales) {
+  for (const verkauf of verkaeufe) {
     const zeitpunkt = verkauf.soldAt ? new Date(verkauf.soldAt) : null;
     if (!zeitpunkt || Number.isNaN(zeitpunkt.getTime())) {
       ohneDatum += 1;
       continue;
     }
-
-    // Ein Verkauf außerhalb des Fensters gehört nicht in die Reihe; er wurde
-    // nicht „verloren", sondern nie angefragt.
-    const ziel = tage.get(isoTag(tagesAnfang(zeitpunkt)));
+    const ziel = tage.get(iso(tagesAnfang(zeitpunkt)));
     if (!ziel) continue;
-
-    const stueck = istEndlicheZahl(verkauf.quantity) ? verkauf.quantity : 1;
-    const cents = istEndlicheZahl(verkauf.amountCents) ? verkauf.amountCents : 0;
+    const stueck = Number.isFinite(verkauf.quantity) ? verkauf.quantity : 1;
+    const cents = Number.isFinite(verkauf.amountCents ?? NaN) ? (verkauf.amountCents as number) : 0;
     if (verkauf.channel === "SHOP") {
       ziel.shopCents += cents;
-      ziel.shopStueck += stueck;
+      ziel.shopItems += stueck;
     } else {
       ziel.ebayCents += cents;
-      ziel.ebayStueck += stueck;
+      ziel.ebayItems += stueck;
     }
   }
 
-  return { tage: [...tage.values()], ohneDatum };
+  return { dailySeries: [...tage.values()], ohneDatum };
 }

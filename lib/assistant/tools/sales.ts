@@ -13,6 +13,7 @@ import {
   type AssistantToolResult,
 } from "../contracts";
 import { assistantTimestamp, assistantTimestampValue } from "../time";
+import { verdichteAufTage } from "../statistics-series.ts";
 
 const SOLD_ORDER_STATUSES = ["PAID", "PROCESSING", "SHIPPED", "COMPLETED", "REFUNDED"] as const;
 
@@ -117,6 +118,7 @@ export async function getLatestSale(): Promise<AssistantToolResult<"latest_sale"
  * „nach Gebühren" wäre geraten. `revenueBasis` trägt diesen Satz mit, damit die
  * Zahl nicht ohne ihre Bezugsgröße weitergereicht wird.
  */
+
 export async function getSalesOverview(
   input: Pick<AssistantToolInput<"sales_overview">, "limit" | "days">,
   now: Date = new Date(),
@@ -247,5 +249,6 @@ export async function getSalesOverview(
     totalRevenueCents: gesamtMoeglich ? shopRevenueCents + ebayRevenueCents : null,
     totalItemCount: ebayChannel.available ? shopItemCount + ebayItemCount : null,
     sales: einzelverkaeufe.slice(0, limit),
+    ...verdichteAufTage(einzelverkaeufe, since, new Date()),
   }, ebayChannel.available ? ["SHOP_DB", "EBAY_READ_API"] : ["SHOP_DB"], availability.available ? availability.freshness : null);
 }

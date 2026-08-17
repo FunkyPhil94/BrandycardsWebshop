@@ -294,6 +294,26 @@ export type AssistantToolDataMap = {
       currency: string;
       soldAt: string | null;
     }>;
+    /** Tagessummen über **alle** Verkäufe des Fensters.
+     *
+     * **Getrennt von `sales`, und das ist der Punkt.** `sales` ist eine
+     * gekürzte Liste für die Textantwort — höchstens `limit` Einträge, während
+     * `totalRevenueCents` über alles rechnet. Ein Diagramm aus `sales` zeigte
+     * bei 161 Verkäufen zwanzig und stünde unter einer Leitzahl, die alle
+     * meint; die Säulen wären stillschweigend zu niedrig.
+     *
+     * Diese Reihe ist vollständig und nach Tag verdichtet — höchstens 90
+     * Einträge, unabhängig davon, wie viel verkauft wurde. Verkäufe ohne
+     * verwertbaren Zeitpunkt zählt `ohneDatum`, statt sie zu verschlucken.
+     */
+    dailySeries: Array<{
+      day: string;
+      shopCents: number;
+      ebayCents: number;
+      shopItems: number;
+      ebayItems: number;
+    }>;
+    ohneDatum: number;
   };
   assistant_statistics: {
     generatedAt: string;
