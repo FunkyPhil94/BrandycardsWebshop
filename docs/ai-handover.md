@@ -9534,3 +9534,8 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 - Was sich **nicht** ändert: Der Adminbereich bleibt vollständig hinter `aal2`.
   Wer sich anmeldet, braucht weiterhin den zweiten Faktor.
 - Status: ABGESCHLOSSEN.
+
+## Nachtrag 2026-08-17: Deploy der MFA-Neueinteilung
+- Version `a846e647-f49e-4d1f-b83a-7276f454e553`. `/` und `/admin` mit 200,
+  die Adminrouten unangemeldet weiterhin 401 — der Schutz steht, nur die
+  Nachfrage mitten in der Arbeit ist weg.
