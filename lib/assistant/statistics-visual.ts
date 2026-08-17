@@ -1,51 +1,85 @@
 import type { AssistantToolDataMap } from "./contracts.ts";
 import { baueTagesreihe, MAX_TAGES_SAEULEN, type Tageswert } from "./statistics-series.ts";
 
-/** Erzeugt das eigenständige HTML-Dokument für Statistikantworten.
+/** Zeichnet die Statistikansicht als eigenständiges SVG.
  *
  * **Serverseitig, und das ist eine Architekturentscheidung.** Phase 4 hat jede
- * Formatierung aus dem Desktop entfernt; ein Test verbietet sie dort. Die Grafik
+ * Formatierung aus dem Desktop entfernt; ein Test verbietet sie dort. Das Bild
  * entsteht deshalb hier, deterministisch aus denselben typisierten DTOs, aus
  * denen auch der Antworttext gebaut wird. Der Desktop zeigt nur an.
  *
- * **Das Diagramm ist fertig gezeichnet, bevor ein Skript läuft.** Am 2026-08-17
- * zeigte eine Vorschau ohne JavaScript Kacheln, Umschalter und Kartenrahmen —
- * und einen leeren Diagrammbereich. Im WebView2 wäre das nie aufgefallen, dort
- * laufen Skripte. Ein Diagramm ohne Rückfall ist trotzdem falsch gebaut.
+ * **Ein Bild, kein Web.** Der Betreiber wollte keine Web-Komponente im Programm.
+ * WinUI stellt SVG über `SvgImageSource` nativ dar — die Umschalter sind echte
+ * Knöpfe daneben und tauschen das mitgelieferte Bild aus.
  *
- * Alle sechs Ansichten (drei Fenster × zwei Kennzahlen) werden deshalb hier
- * gezeichnet; das Skript schaltet nur Sichtbarkeit um und legt den Tooltip
- * darüber. **Eine** Zeichenimplementierung — serverseitig vorzeichnen *und* im
- * Skript neu zeichnen hätte dieselbe Grafik zweimal beschrieben.
+ * Daraus folgen drei Regeln, die beim Ändern gelten:
+ *
+ * 1. **Alles gehört ins Bild** — Leitzahl, Kacheln, Diagramm. Würde WinUI die
+ *    Zahlen als eigene Elemente setzen, formatierte der Client wieder Daten.
+ * 2. **Kein `<style>`, keine CSS-Variablen, keine Media-Queries.** Was
+ *    `SvgImageSource` davon versteht, ist ungewiss; darauf zu bauen hieße raten.
+ *    Farben stehen als Attribute an den Formen.
+ * 3. **Das Thema kommt herein**, weil ein Bild nicht auf `prefers-color-scheme`
+ *    reagieren kann.
  *
  * **Gestaltet nach dem `dataviz`-Verfahren.** Die Farben sind mit
  * `validate_palette.js` gegen die echten Flächen der App gemessen (`#F1EEE8`
  * hell, `#383838` dunkel, Serien aus den validierten Slots 1 und 2). Alle
  * Prüfungen bestanden — mit einer Auflage: Das Orange liegt hell bei 2,76:1,
- * also unter 3:1. Das verpflichtet zu sichtbaren Labels **und** einer
- * Tabellenansicht; beide sind deshalb Pflicht, nicht Zierde.
+ * unter 3:1. Das verpflichtet zu sichtbaren Labels; deshalb trägt jede Säule
+ * ihren Kanal in der Legende und der Spitzenwert sein direktes Label, und die
+ * Zahlen stehen zusätzlich in der Textantwort daneben.
  *
- * **Keine zwei y-Achsen.** Umsatz und Stückzahl sind zwei Skalen und werden
- * umgeschaltet, nicht übereinandergelegt — die willkürliche Ausrichtung zweier
- * Achsen erfindet eine Korrelation, die in den Daten nicht steht.
+ * **Keine zwei y-Achsen.** Umsatz und Stückzahl sind zwei Skalen und bekommen
+ * je ein eigenes Bild — die willkürliche Ausrichtung zweier Achsen erfindet eine
+ * Korrelation, die in den Daten nicht steht.
  */
+
+export type Thema = "hell" | "dunkel";
+export type Metrik = "umsatz" | "stueck";
 
 export type StatistikAnsicht = {
   verkauf?: AssistantToolDataMap["sales_overview"];
   kennzahlen?: AssistantToolDataMap["assistant_statistics"];
 };
 
-type Metrik = "umsatz" | "stueck";
+/** Ein fertiges Bild samt der Angaben, die der Desktop zum Umschalten braucht. */
+export type StatistikBild = {
+  /** Stabiler Schlüssel, z. B. `30-umsatz`. */
+  schluessel: string;
+  fenster: number;
+  metrik: Metrik;
+  /** Beschriftung des Umschalters. */
+  titel: string;
+  /** Was unter dem Bild steht — Auflösung und Bezugsgröße. */
+  hinweis: string;
+  svg: string;
+};
 
-type Saeule = {
-  label: string;
-  kurz: string;
-  shop: number;
-  ebay: number;
+type Farben = {
+  flaeche: string; karte: string; ink: string; ink2: string; muted: string;
+  gitter: string; achse: string; rahmen: string; shop: string; ebay: string;
+};
+
+const PALETTE: Record<Thema, Farben> = {
+  // Slots 1 und 2 der validierten Kategorialpalette, gemessen gegen #F1EEE8.
+  hell: {
+    flaeche: "#F7F3EC", karte: "#F1EEE8", ink: "#1A1A1A", ink2: "#625A53", muted: "#6E665F",
+    gitter: "#DDD7CD", achse: "#C2BAB0", rahmen: "#DCD5CA", shop: "#2a78d6", ebay: "#eb6834",
+  },
+  // Dieselben acht Hues, für die dunkle Fläche gestuft — kein automatischer
+  // Umschlag, sondern eigene, gegen #383838 gemessene Stufen (3,22 / 3,02).
+  dunkel: {
+    flaeche: "#2B2B2B", karte: "#383838", ink: "#F5F5F5", ink2: "#D0CBC4", muted: "#B6B0A8",
+    gitter: "#4A4A4A", achse: "#5C5C5C", rahmen: "#454545", shop: "#3987e5", ebay: "#d95926",
+  },
 };
 
 const FENSTER = [7, 30, 90] as const;
-const PLOT = { breite: 520, hoehe: 190, links: 52, rechts: 8, oben: 12, unten: 26 };
+const SCHRIFT = "system-ui, -apple-system, Segoe UI, sans-serif";
+const B = 520;
+
+type Saeule = { label: string; kurz: string; shop: number; ebay: number };
 
 function maskiere(text: string): string {
   return text
@@ -62,8 +96,18 @@ function euro(cents: number): string {
 
 const tagLabel = (iso: string) => `${iso.slice(8, 10)}.${iso.slice(5, 7)}.`;
 
-/** Verdichtet Tage zu Wochen, sobald das Fenster mehr Säulen ergäbe als lesbar
- *  sind. Die Schwelle steht in `statistics-series.ts` und existiert genau einmal. */
+/** Kürzt an der Wortgrenze statt mitten im Wort.
+ *
+ * SVG kennt keinen Textfluss: Was nicht passt, läuft aus dem Bild oder muss
+ * vorher enden. Ein harter Schnitt bei Zeichen 78 träfe „Versandkos" — das
+ * Auslassungszeichen sagt wenigstens, dass etwas fehlt. */
+export function kuerzeAufWortgrenze(text: string, grenze: number): string {
+  if (text.length <= grenze) return text;
+  const rumpf = text.slice(0, grenze);
+  const luecke = rumpf.lastIndexOf(" ");
+  return `${(luecke > grenze * 0.6 ? rumpf.slice(0, luecke) : rumpf).trimEnd()} …`;
+}
+
 function saeulen(tage: Tageswert[], fenster: number, metrik: Metrik): { liste: Saeule[]; aufloesung: string } {
   const teil = tage.slice(-fenster);
   const wert = (t: Tageswert, kanal: "shop" | "ebay") =>
@@ -89,291 +133,188 @@ function saeulen(tage: Tageswert[], fenster: number, metrik: Metrik): { liste: S
   return { liste, aufloesung: "Wochen" };
 }
 
-/** Die Achsenobergrenze: der größte Wert, aufgerundet auf eine runde Zahl.
- *  Runde Achsenwerte tragen die Werte, die nicht direkt beschriftet werden. */
+/** Runde Achsenwerte tragen die Zahlen, die nicht direkt beschriftet werden. */
 function obergrenze(werte: number[], metrik: Metrik): number {
   const groesster = Math.max(0, ...werte);
   if (groesster === 0) return metrik === "umsatz" ? 100 : 1;
   const stelle = 10 ** Math.floor(Math.log10(groesster));
-  for (const schritt of [1, 2, 2.5, 5, 10]) {
-    if (schritt * stelle >= groesster) return schritt * stelle;
-  }
+  for (const schritt of [1, 2, 2.5, 5, 10]) if (schritt * stelle >= groesster) return schritt * stelle;
   return 10 * stelle;
 }
 
-function zeichne(liste: Saeule[], metrik: Metrik): string {
-  const { breite: B, hoehe: H, links: L, rechts: R, oben: O, unten: U } = PLOT;
-  const zeige = (v: number) => (metrik === "umsatz" ? euro(v) : String(v));
-  const max = obergrenze(liste.map((s) => s.shop + s.ebay), metrik);
-  const plotB = B - L - R;
-  const plotH = H - O - U;
-  const y = (v: number) => O + plotH - (v / max) * plotH;
-  const teile: string[] = [];
+function text(inhalt: string, x: number, y: number, o: { fill: string; size: number; anchor?: string; weight?: number }): string {
+  return `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" fill="${o.fill}" font-family="${SCHRIFT}" font-size="${o.size}"`
+    + `${o.weight ? ` font-weight="${o.weight}"` : ""}${o.anchor ? ` text-anchor="${o.anchor}"` : ""}>${maskiere(inhalt)}</text>`;
+}
 
-  // Gitter: durchgezogene Haarlinien, eine Stufe von der Fläche entfernt.
-  for (let i = 0; i <= 4; i += 1) {
-    const v = (max / 4) * i;
-    teile.push(`<line x1="${L}" x2="${B - R}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}" stroke="var(--grid)" stroke-width="1"/>`);
-    const beschriftung = metrik === "umsatz" ? Math.round(v / 100).toLocaleString("de-DE") : String(Math.round(v));
-    teile.push(`<text x="${L - 7}" y="${(y(v) + 3.5).toFixed(1)}" text-anchor="end" fill="var(--muted)" font-size="10" class="tick">${maskiere(beschriftung)}</text>`);
+function kachel(x: number, y: number, breite: number, label: string, wert: string, f: Farben): string {
+  // Zeilenumbruch von Hand: SVG kennt keinen Textfluss, und ein zu langes Label
+  // würde sonst über die Kachel hinauslaufen statt umzubrechen.
+  const woerter = label.split(" ");
+  const zeilen: string[] = [];
+  let zeile = "";
+  for (const wort of woerter) {
+    const versuch = zeile ? `${zeile} ${wort}` : wort;
+    if (versuch.length > Math.floor((breite - 18) / 5.4) && zeile) {
+      zeilen.push(zeile);
+      zeile = wort;
+    } else {
+      zeile = versuch;
+    }
   }
-  teile.push(`<line x1="${L}" x2="${B - R}" y1="${y(0)}" y2="${y(0)}" stroke="var(--axis)" stroke-width="1"/>`);
+  if (zeile) zeilen.push(zeile);
+  const sichtbar = zeilen.slice(0, 2);
 
-  const band = plotB / Math.max(1, liste.length);
-  const dick = Math.min(24, Math.max(3, band - 4));
-  const spitze = liste.reduce((a, s, i) => (s.shop + s.ebay > liste[a].shop + liste[a].ebay ? i : a), 0);
-
-  liste.forEach((s, i) => {
-    const x = L + band * i + (band - dick) / 2;
-    const gesamt = s.shop + s.ebay;
-    const ecke = Math.min(4, dick / 2);
-
-    // Gestapelt, mit 2px Flächenspalt zwischen den Segmenten — kein Rahmen.
-    if (s.ebay > 0) {
-      const hoehe = Math.max(1, y(s.shop) - y(gesamt) - (s.shop > 0 ? 2 : 0));
-      teile.push(`<rect x="${x.toFixed(1)}" y="${y(gesamt).toFixed(1)}" width="${dick.toFixed(1)}" height="${hoehe.toFixed(1)}" rx="${ecke.toFixed(1)}" fill="var(--s-ebay)"/>`);
-    }
-    if (s.shop > 0) {
-      const hoehe = Math.max(1, y(0) - y(s.shop));
-      teile.push(`<rect x="${x.toFixed(1)}" y="${y(s.shop).toFixed(1)}" width="${dick.toFixed(1)}" height="${hoehe.toFixed(1)}" rx="${s.ebay > 0 ? 0 : ecke.toFixed(1)}" fill="var(--s-shop)"/>`);
-    }
-
-    // Direktes Label **nur** am Spitzenwert — eine Zahl auf jeder Säule wäre Chaos.
-    if (i === spitze && gesamt > 0) {
-      teile.push(`<text x="${(x + dick / 2).toFixed(1)}" y="${Math.max(O + 9, y(gesamt) - 5).toFixed(1)}" text-anchor="middle" fill="var(--ink)" font-size="10" font-weight="600">${maskiere(zeige(gesamt))}</text>`);
-    }
-
-    // Trefferfläche über die volle Bandbreite und Plothöhe. Die Bänder stoßen
-    // lückenlos aneinander — man kann nicht danebenzeigen, auch wenn ein
-    // einzelnes Band bei dreißig Säulen nur rund 15px breit ist.
-    teile.push(
-      `<rect class="ziel" x="${(L + band * i).toFixed(1)}" y="${O}" width="${band.toFixed(1)}" height="${plotH}" fill="transparent" tabindex="0" role="img"`
-      + ` aria-label="${maskiere(`${s.label}: Shop ${zeige(s.shop)}, eBay ${zeige(s.ebay)}`)}"`
-      + ` data-titel="${maskiere(s.label)}" data-shop="${maskiere(zeige(s.shop))}" data-ebay="${maskiere(zeige(s.ebay))}"`
-      + ` data-mitte="${((L + band * i + band / 2) / B).toFixed(4)}"><title>${maskiere(`${s.label}: Shop ${zeige(s.shop)}, eBay ${zeige(s.ebay)}`)}</title></rect>`,
-    );
-
-    if (liste.length <= 12 || i % Math.ceil(liste.length / 8) === 0) {
-      teile.push(`<text x="${(L + band * i + band / 2).toFixed(1)}" y="${H - 8}" text-anchor="middle" fill="var(--muted)" font-size="10">${maskiere(s.kurz)}</text>`);
-    }
-  });
-
-  return teile.join("");
+  return `<rect x="${x}" y="${y}" width="${breite}" height="62" rx="10" fill="${f.karte}" stroke="${f.rahmen}" stroke-width="1"/>`
+    + sichtbar.map((z, i) => text(z, x + 10, y + 17 + i * 11, { fill: f.ink2, size: 10 })).join("")
+    + text(wert, x + 10, y + 51, { fill: f.ink, size: 20, weight: 600 });
 }
 
-function verlaufTabelle(liste: Saeule[], aufloesung: string, metrik: Metrik): string {
-  const zeige = (v: number) => (metrik === "umsatz" ? euro(v) : String(v));
-  const zeilen = liste
-    .map((s) => `<tr><th scope="row">${maskiere(s.label)}</th><td>${maskiere(zeige(s.shop))}</td><td>${maskiere(zeige(s.ebay))}</td></tr>`)
-    .join("");
-  return `<table><caption>Verlauf, ${maskiere(aufloesung)}</caption><thead><tr><th scope="col">Zeitraum</th><th scope="col">Shop</th><th scope="col">eBay</th></tr></thead><tbody>${zeilen}</tbody></table>`;
-}
-
-function kachel(label: string, wert: string): string {
-  return `<div class="tile"><span class="tile-label">${maskiere(label)}</span><span class="tile-value">${maskiere(wert)}</span></div>`;
-}
-
-function kacheln(k: AssistantToolDataMap["assistant_statistics"]): string {
-  return [
-    kachel("Verkaufsfähige Karten", k.sellableCards.toLocaleString("de-DE")),
-    kachel("Offene Preisvorschläge", k.openShopOffers.toLocaleString("de-DE")),
-    kachel("Zu bearbeitende Bestellungen", k.actionableOrders.toLocaleString("de-DE")),
-    kachel("Neue Shop-Anfragen", k.newShopInquiries.toLocaleString("de-DE")),
-    kachel("Offene eBay-Aufträge", k.unresolvedEbayJobs.toLocaleString("de-DE")),
-  ].join("");
-}
-
-function kanalZeile(name: string, kanal: AssistantToolDataMap["sales_overview"]["channels"]["shop"]): string {
-  if (!kanal.available) {
-    return `<tr><th scope="row">${maskiere(name)}</th><td colspan="2" class="nicht-gelesen">nicht gelesen${kanal.unavailableCode ? ` (${maskiere(kanal.unavailableCode)})` : ""}</td></tr>`;
-  }
-  return `<tr><th scope="row">${maskiere(name)}</th><td>${maskiere(String(kanal.itemCount))}</td><td>${maskiere(kanal.revenueCents === null ? "—" : euro(kanal.revenueCents))}</td></tr>`;
-}
-
-export function rendereStatistikAnsicht(ansicht: StatistikAnsicht): string | null {
-  if (!ansicht.verkauf && !ansicht.kennzahlen) return null;
-
+function zeichneBild(
+  ansicht: StatistikAnsicht,
+  tage: Tageswert[] | null,
+  fenster: number,
+  metrik: Metrik,
+  thema: Thema,
+): { svg: string; hinweis: string } {
+  const f = PALETTE[thema];
   const verkauf = ansicht.verkauf;
-  const reihe = verkauf ? baueTagesreihe(verkauf) : null;
-  const vorgabeFenster = verkauf ? Math.min(Math.max(7, verkauf.days), 90) : 0;
+  const teile: string[] = [];
+  let y = 0;
 
-  const kopf = verkauf
-    ? `<p class="hero-label">Umsatz, letzte ${maskiere(String(verkauf.days))} Tage</p>
-<p class="hero">${verkauf.totalRevenueCents === null ? "unvollständig" : maskiere(euro(verkauf.totalRevenueCents))}</p>
-<p class="hero-fuss">${maskiere(verkauf.revenueBasis)}</p>`
-    : `<p class="hero-label">Shop-Kennzahlen</p>`;
-
-  let filterzeile = "";
-  let diagramm = "";
-  let verlauf = "";
-
-  if (reihe && verkauf) {
-    const verfuegbar = (tage: number) => tage <= reihe.tage.length;
-    const gewaehlt = FENSTER.includes(vorgabeFenster as 7 | 30 | 90)
-      ? vorgabeFenster
-      : FENSTER.filter((f) => verfuegbar(f)).at(-1) ?? 7;
-
-    filterzeile = `<div class="filter" role="group" aria-label="Darstellung">
-<div class="gruppe" role="group" aria-label="Zeitfenster">${FENSTER.map((tage) =>
-      `<button type="button" class="knopf" data-fenster="${tage}" aria-pressed="${tage === gewaehlt}"${verfuegbar(tage) ? "" : ` disabled title="Dafür wurden nur ${reihe.tage.length} Tage abgefragt."`}>${tage} Tage</button>`,
-    ).join("")}</div>
-<div class="gruppe" role="group" aria-label="Kennzahl">${(["umsatz", "stueck"] as Metrik[]).map((m) =>
-      `<button type="button" class="knopf" data-metrik="${m}" aria-pressed="${m === "umsatz"}">${m === "umsatz" ? "Umsatz" : "Stückzahl"}</button>`,
-    ).join("")}</div></div>`;
-
-    const gruppen: string[] = [];
-    const tabellen: string[] = [];
-    let hinweisAufloesung = "";
-    for (const fenster of FENSTER) {
-      if (!verfuegbar(fenster)) continue;
-      for (const metrik of ["umsatz", "stueck"] as Metrik[]) {
-        const { liste, aufloesung } = saeulen(reihe.tage, fenster, metrik);
-        const aktiv = fenster === gewaehlt && metrik === "umsatz";
-        if (aktiv) {
-          hinweisAufloesung = `${liste.length} ${aufloesung}, ${metrik === "umsatz" ? "Bruttoumsatz" : "verkaufte Karten"} je Balken.`;
-        }
-        gruppen.push(`<g class="sicht" data-sicht="${fenster}-${metrik}" data-hinweis="${maskiere(`${liste.length} ${aufloesung}, ${metrik === "umsatz" ? "Bruttoumsatz" : "verkaufte Karten"} je Balken.`)}"${aktiv ? "" : ' hidden aria-hidden="true"'}>${zeichne(liste, metrik)}</g>`);
-        tabellen.push(`<div class="sicht-tabelle" data-sicht="${fenster}-${metrik}"${aktiv ? "" : " hidden"}>${verlaufTabelle(liste, aufloesung, metrik)}</div>`);
-      }
-    }
-
-    diagramm = `<figure class="karte">
-<figcaption><span id="diagramm-titel">Verkäufe im Zeitverlauf</span>
-<span class="legende"><span class="key"><span class="swatch s-shop"></span>Shop</span><span class="key"><span class="swatch s-ebay"></span>eBay</span></span></figcaption>
-<div class="plot-huelle">
-<svg id="plot" viewBox="0 0 ${PLOT.breite} ${PLOT.hoehe}" preserveAspectRatio="none" role="img" aria-labelledby="diagramm-titel">${gruppen.join("")}</svg>
-<div id="tooltip" role="status" aria-live="polite"></div>
-</div>
-<p class="aufloesung" id="aufloesung">${maskiere(hinweisAufloesung)}</p></figure>`;
-    verlauf = tabellen.join("");
+  // ---- Leitzahl -----------------------------------------------------------
+  if (verkauf) {
+    teile.push(text(`Umsatz, letzte ${verkauf.days} Tage`, 14, 22, { fill: f.ink2, size: 12 }));
+    teile.push(text(verkauf.totalRevenueCents === null ? "unvollständig" : euro(verkauf.totalRevenueCents), 14, 66, { fill: f.ink, size: 42, weight: 600 }));
+    teile.push(text(kuerzeAufWortgrenze(verkauf.revenueBasis, 78), 14, 84, { fill: f.muted, size: 10 }));
+    y = 98;
+  } else {
+    teile.push(text("Shop-Kennzahlen", 14, 24, { fill: f.ink2, size: 13, weight: 600 }));
+    y = 38;
   }
 
-  const hinweis = reihe && reihe.ohneDatum > 0
-    ? `<p class="hinweis">${reihe.ohneDatum} Verkäufe ohne Datum sind in den Summen enthalten, aber in keiner Säule.</p>`
-    : "";
-
-  const tabelle = verkauf
-    ? `<details class="tabelle"><summary>Zahlen als Tabelle</summary>
-<table><caption>Verkäufe der letzten ${maskiere(String(verkauf.days))} Tage, ab ${maskiere(verkauf.since.slice(0, 10))}</caption>
-<thead><tr><th scope="col">Kanal</th><th scope="col">Karten</th><th scope="col">Umsatz</th></tr></thead>
-<tbody>${kanalZeile("Shop", verkauf.channels.shop)}${kanalZeile("eBay", verkauf.channels.ebay)}</tbody></table>
-${verlauf}</details>`
-    : "";
-
-  return `<meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Statistik</title>
-<style>
-:root {
-  color-scheme: light;
-  --surface: #F1EEE8; --plane: #F7F3EC;
-  --ink: #1A1A1A; --ink-2: #625A53; --muted: #6E665F;
-  --grid: #DDD7CD; --axis: #C2BAB0; --ring: rgba(26,26,26,0.10);
-  --s-shop: #2a78d6; --s-ebay: #eb6834;
-}
-@media (prefers-color-scheme: dark) {
-  :root {
-    color-scheme: dark;
-    --surface: #383838; --plane: #2B2B2B;
-    --ink: #F5F5F5; --ink-2: #D0CBC4; --muted: #B6B0A8;
-    --grid: #4A4A4A; --axis: #5C5C5C; --ring: rgba(255,255,255,0.12);
-    --s-shop: #3987e5; --s-ebay: #d95926;
-  }
-}
-* { box-sizing: border-box; }
-body { margin: 0; padding: 14px; background: var(--plane); color: var(--ink); font: 13px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
-.hero-label { margin: 0; color: var(--ink-2); font-size: 12px; }
-.hero { margin: 2px 0 0; font-size: 48px; font-weight: 600; line-height: 1.05; letter-spacing: -0.01em; }
-.hero-fuss { margin: 4px 0 0; color: var(--muted); font-size: 11px; }
-.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(132px, 1fr)); gap: 8px; margin: 14px 0 0; }
-.tile { background: var(--surface); border: 1px solid var(--ring); border-radius: 10px; padding: 9px 11px; display: flex; flex-direction: column; gap: 3px; }
-.tile-label { color: var(--ink-2); font-size: 11px; }
-.tile-value { font-size: 21px; font-weight: 600; }
-.filter { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 8px; }
-.gruppe { display: flex; gap: 2px; background: var(--surface); border: 1px solid var(--ring); border-radius: 9px; padding: 2px; }
-.knopf { appearance: none; border: 0; background: transparent; color: var(--ink-2); font: inherit; font-size: 12px; padding: 5px 10px; border-radius: 7px; cursor: pointer; min-height: 26px; }
-.knopf:hover:not(:disabled) { background: var(--plane); color: var(--ink); }
-.knopf[aria-pressed="true"] { background: var(--plane); color: var(--ink); font-weight: 600; box-shadow: 0 0 0 1px var(--ring) inset; }
-.knopf:disabled { opacity: 0.4; cursor: default; }
-.knopf:focus-visible { outline: 2px solid var(--s-shop); outline-offset: 1px; }
-.karte { margin: 0; background: var(--surface); border: 1px solid var(--ring); border-radius: 12px; padding: 12px 12px 8px; }
-figcaption { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; justify-content: space-between; color: var(--ink-2); font-size: 12px; }
-.legende { display: flex; gap: 10px; }
-.key { display: inline-flex; align-items: center; gap: 5px; color: var(--ink-2); }
-.swatch { width: 9px; height: 9px; border-radius: 2px; display: inline-block; }
-.s-shop { background: var(--s-shop); } .s-ebay { background: var(--s-ebay); }
-.plot-huelle { position: relative; margin-top: 8px; }
-svg { display: block; width: 100%; height: 190px; }
-.tick { font-variant-numeric: tabular-nums; }
-.ziel:focus-visible { outline: 2px solid var(--s-shop); outline-offset: -2px; }
-#tooltip { position: absolute; pointer-events: none; opacity: 0; transition: opacity .1s; background: var(--plane); color: var(--ink); border: 1px solid var(--ring); border-radius: 8px; padding: 6px 8px; font-size: 12px; white-space: nowrap; box-shadow: 0 2px 10px rgba(0,0,0,0.18); }
-#tooltip.an { opacity: 1; }
-#tooltip b { font-weight: 600; }
-#tooltip .z { display: flex; align-items: center; gap: 5px; }
-.aufloesung, .hinweis { margin: 6px 0 0; color: var(--muted); font-size: 11px; }
-.tabelle { margin: 12px 0 0; }
-summary { cursor: pointer; color: var(--ink-2); font-size: 12px; }
-summary:focus-visible { outline: 2px solid var(--s-shop); outline-offset: 2px; }
-table { border-collapse: collapse; margin: 8px 0 0; width: 100%; font-size: 12px; }
-caption { text-align: left; color: var(--muted); font-size: 11px; padding-bottom: 6px; }
-th, td { text-align: right; padding: 4px 6px; border-bottom: 1px solid var(--grid); font-variant-numeric: tabular-nums; }
-th[scope="row"], thead th:first-child { text-align: left; font-variant-numeric: normal; }
-.nicht-gelesen { color: var(--muted); text-align: left; font-variant-numeric: normal; }
-</style>
-${kopf}
-${ansicht.kennzahlen ? `<div class="tiles">${kacheln(ansicht.kennzahlen)}</div>` : ""}
-${filterzeile}
-${diagramm}
-${hinweis}
-${tabelle}
-${diagramm ? `<script>
-(function () {
-  // **Das Skript zeichnet nichts.** Alle Ansichten sind fertig gerendert; hier
-  // wird nur umgeschaltet und der Tooltip gelegt. Ohne dieses Skript bleibt das
-  // Diagramm vollständig sichtbar -- nur eben ohne Umschalter und Tooltip.
-  var tip = document.getElementById("tooltip");
-  var svg = document.getElementById("plot");
-  var fenster = document.querySelector("[data-fenster][aria-pressed='true']").dataset.fenster;
-  var metrik = "umsatz";
-
-  function stelle() {
-    var schluessel = fenster + "-" + metrik;
-    document.querySelectorAll(".sicht").forEach(function (g) {
-      var an = g.dataset.sicht === schluessel;
-      g.hidden = !an;
-      g.setAttribute("aria-hidden", String(!an));
-      if (an) document.getElementById("aufloesung").textContent = g.dataset.hinweis;
+  // ---- Kacheln ------------------------------------------------------------
+  if (ansicht.kennzahlen) {
+    const k = ansicht.kennzahlen;
+    const werte: [string, string][] = [
+      ["Verkaufsfähige Karten", k.sellableCards.toLocaleString("de-DE")],
+      ["Offene Preisvorschläge", k.openShopOffers.toLocaleString("de-DE")],
+      ["Zu bearbeitende Bestellungen", k.actionableOrders.toLocaleString("de-DE")],
+      ["Neue Shop-Anfragen", k.newShopInquiries.toLocaleString("de-DE")],
+      ["Offene eBay-Aufträge", k.unresolvedEbayJobs.toLocaleString("de-DE")],
+    ];
+    const spalten = 3;
+    const breite = (B - 28 - (spalten - 1) * 8) / spalten;
+    werte.forEach(([label, wert], i) => {
+      const spalte = i % spalten;
+      const reihe = Math.floor(i / spalten);
+      teile.push(kachel(14 + spalte * (breite + 8), y + reihe * 70, breite, label, wert, f));
     });
-    document.querySelectorAll(".sicht-tabelle").forEach(function (d) { d.hidden = d.dataset.sicht !== schluessel; });
-    document.querySelectorAll("[data-fenster]").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.fenster === fenster)); });
-    document.querySelectorAll("[data-metrik]").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.metrik === metrik)); });
-    tip.classList.remove("an");
+    y += Math.ceil(werte.length / spalten) * 70 + 6;
   }
 
-  document.addEventListener("click", function (e) {
-    var knopf = e.target.closest("[data-fenster],[data-metrik]");
-    if (!knopf || knopf.disabled) return;
-    if (knopf.dataset.fenster) fenster = knopf.dataset.fenster;
-    if (knopf.dataset.metrik) metrik = knopf.dataset.metrik;
-    stelle();
-  });
+  // ---- Diagramm -----------------------------------------------------------
+  let hinweis = "";
+  if (tage && verkauf) {
+    const { liste, aufloesung } = saeulen(tage, fenster, metrik);
+    hinweis = `${liste.length} ${aufloesung}, ${metrik === "umsatz" ? "Bruttoumsatz" : "verkaufte Karten"} je Balken.`;
 
-  function an(e) {
-    var z = e.target;
-    tip.innerHTML = "<b>" + z.dataset.titel + "</b>"
-      + '<div class="z"><span class="swatch s-shop"></span>Shop ' + z.dataset.shop + "</div>"
-      + '<div class="z"><span class="swatch s-ebay"></span>eBay ' + z.dataset.ebay + "</div>";
-    tip.classList.add("an");
-    var mitte = Number(z.dataset.mitte) * svg.clientWidth;
-    tip.style.left = Math.min(Math.max(0, mitte - 60), Math.max(0, svg.clientWidth - 132)) + "px";
-    tip.style.top = "0px";
+    const kartenHoehe = 214;
+    teile.push(`<rect x="14" y="${y}" width="${B - 28}" height="${kartenHoehe}" rx="12" fill="${f.karte}" stroke="${f.rahmen}" stroke-width="1"/>`);
+    teile.push(text("Verkäufe im Zeitverlauf", 26, y + 20, { fill: f.ink2, size: 12 }));
+
+    // Legende — bei zwei Serien immer vorhanden, nie Farbe allein.
+    teile.push(`<rect x="${B - 132}" y="${y + 11}" width="9" height="9" rx="2" fill="${f.shop}"/>`);
+    teile.push(text("Shop", B - 119, y + 19, { fill: f.ink2, size: 11 }));
+    teile.push(`<rect x="${B - 78}" y="${y + 11}" width="9" height="9" rx="2" fill="${f.ebay}"/>`);
+    teile.push(text("eBay", B - 65, y + 19, { fill: f.ink2, size: 11 }));
+
+    const L = 66, R = 26, O = y + 34, U = y + kartenHoehe - 34;
+    const plotB = B - L - R;
+    const plotH = U - O;
+    const max = obergrenze(liste.map((s) => s.shop + s.ebay), metrik);
+    const skala = (v: number) => U - (v / max) * plotH;
+    const zeige = (v: number) => (metrik === "umsatz" ? euro(v) : String(v));
+
+    for (let i = 0; i <= 4; i += 1) {
+      const v = (max / 4) * i;
+      teile.push(`<line x1="${L}" x2="${B - R}" y1="${skala(v).toFixed(1)}" y2="${skala(v).toFixed(1)}" stroke="${f.gitter}" stroke-width="1"/>`);
+      teile.push(text(metrik === "umsatz" ? Math.round(v / 100).toLocaleString("de-DE") : String(Math.round(v)), L - 7, skala(v) + 3.5, { fill: f.muted, size: 10, anchor: "end" }));
+    }
+    teile.push(`<line x1="${L}" x2="${B - R}" y1="${skala(0)}" y2="${skala(0)}" stroke="${f.achse}" stroke-width="1"/>`);
+
+    const band = plotB / Math.max(1, liste.length);
+    const dick = Math.min(24, Math.max(3, band - 4));
+    const spitze = liste.reduce((a, s, i) => (s.shop + s.ebay > liste[a].shop + liste[a].ebay ? i : a), 0);
+
+    liste.forEach((s, i) => {
+      const x = L + band * i + (band - dick) / 2;
+      const gesamt = s.shop + s.ebay;
+      const ecke = Math.min(4, dick / 2).toFixed(1);
+      if (s.ebay > 0) {
+        const hoehe = Math.max(1, skala(s.shop) - skala(gesamt) - (s.shop > 0 ? 2 : 0));
+        teile.push(`<rect x="${x.toFixed(1)}" y="${skala(gesamt).toFixed(1)}" width="${dick.toFixed(1)}" height="${hoehe.toFixed(1)}" rx="${ecke}" fill="${f.ebay}"/>`);
+      }
+      if (s.shop > 0) {
+        teile.push(`<rect x="${x.toFixed(1)}" y="${skala(s.shop).toFixed(1)}" width="${dick.toFixed(1)}" height="${Math.max(1, skala(0) - skala(s.shop)).toFixed(1)}" rx="${s.ebay > 0 ? "0" : ecke}" fill="${f.shop}"/>`);
+      }
+      // Direktes Label **nur** am Spitzenwert — eine Zahl auf jeder Säule wäre Chaos.
+      if (i === spitze && gesamt > 0) {
+        teile.push(text(zeige(gesamt), x + dick / 2, Math.max(O + 9, skala(gesamt) - 5), { fill: f.ink, size: 10, weight: 600, anchor: "middle" }));
+      }
+      if (liste.length <= 12 || i % Math.ceil(liste.length / 8) === 0) {
+        teile.push(text(s.kurz, L + band * i + band / 2, U + 14, { fill: f.muted, size: 10, anchor: "middle" }));
+      }
+    });
+
+    teile.push(text(hinweis, 26, y + kartenHoehe - 8, { fill: f.muted, size: 10 }));
+    y += kartenHoehe + 6;
   }
-  function aus() { tip.classList.remove("an"); }
-  svg.addEventListener("mouseover", function (e) { if (e.target.classList.contains("ziel")) an(e); });
-  svg.addEventListener("mouseout", function (e) { if (e.target.classList.contains("ziel")) aus(); });
-  svg.addEventListener("focusin", function (e) { if (e.target.classList.contains("ziel")) an(e); });
-  svg.addEventListener("focusout", aus);
-})();
-</script>` : ""}`;
+
+  const H = Math.round(y + 8);
+  const beschreibung = verkauf
+    ? `Statistik: Umsatz der letzten ${verkauf.days} Tage, ${hinweis}`
+    : "Shop-Kennzahlen";
+
+  return {
+    hinweis,
+    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${B} ${H}" width="${B}" height="${H}" role="img">`
+      + `<title>${maskiere(beschreibung)}</title>`
+      + `<rect width="${B}" height="${H}" fill="${f.flaeche}"/>`
+      + teile.join("")
+      + `</svg>`,
+  };
+}
+
+/** Erzeugt die Bilder für alle sinnvollen Ansichten.
+ *
+ * Alle auf einmal, damit das Umschalten im Desktop sofort geht und keine zweite
+ * Anfrage kostet — dieselbe Überlegung wie bei der Lesartenprüfung, wo die
+ * Ratenbegrenzung das Bündeln erzwang.
+ */
+export function rendereStatistikBilder(ansicht: StatistikAnsicht, thema: Thema = "hell"): StatistikBild[] {
+  if (!ansicht.verkauf && !ansicht.kennzahlen) return [];
+
+  const reihe = ansicht.verkauf ? baueTagesreihe(ansicht.verkauf) : null;
+  if (!reihe || !ansicht.verkauf) {
+    const { svg, hinweis } = zeichneBild(ansicht, null, 0, "umsatz", thema);
+    return [{ schluessel: "kennzahlen", fenster: 0, metrik: "umsatz", titel: "Kennzahlen", hinweis, svg }];
+  }
+
+  const bilder: StatistikBild[] = [];
+  for (const fenster of FENSTER) {
+    if (fenster > reihe.tage.length) continue;
+    for (const metrik of ["umsatz", "stueck"] as Metrik[]) {
+      const { svg, hinweis } = zeichneBild(ansicht, reihe.tage, fenster, metrik, thema);
+      bilder.push({
+        schluessel: `${fenster}-${metrik}`,
+        fenster,
+        metrik,
+        titel: `${fenster} Tage · ${metrik === "umsatz" ? "Umsatz" : "Stückzahl"}`,
+        hinweis,
+        svg,
+      });
+    }
+  }
+  return bilder;
 }

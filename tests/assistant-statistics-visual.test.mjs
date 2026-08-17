@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 const { baueTagesreihe, MAX_TAGES_SAEULEN } = await import("../lib/assistant/statistics-series.ts");
-const { rendereStatistikAnsicht } = await import("../lib/assistant/statistics-visual.ts");
+const { kuerzeAufWortgrenze, rendereStatistikBilder } = await import("../lib/assistant/statistics-visual.ts");
 
 const JETZT = new Date("2026-08-17T12:00:00.000Z");
 
@@ -80,135 +80,108 @@ test("fehlende Menge gilt als eins, fehlender Betrag als null", () => {
   assert.equal(tag.ebayCents, 0, "ein Betrag wird nicht erfunden");
 });
 
-test("ohne Daten entsteht kein Dokument", () => {
-  assert.equal(rendereStatistikAnsicht({}), null);
+
+test("ohne Daten entsteht kein Bild", () => {
+  assert.deepEqual(rendereStatistikBilder({}), []);
 });
 
-test("genau eine Leitzahl, und keine aus halber Grundlage", () => {
-  const mit = rendereStatistikAnsicht({ verkauf: verkauf() });
-  assert.equal((mit.match(/class="hero"/gu) ?? []).length, 1, "genau eine Leitzahl je Ansicht");
-  assert.match(mit, /30,00 €/u);
-
-  // `null` heisst „eine Haelfte fehlt" -- eine Gesamtsumme daraus waere
-  // schlimmer als keine.
-  const ohne = rendereStatistikAnsicht({ verkauf: verkauf({ totalRevenueCents: null }) });
-  assert.match(ohne, /unvollständig/u);
+test("es entsteht ein Bild je Ansicht, und jedes ist ein vollständiges SVG", () => {
+  const bilder = rendereStatistikBilder({ verkauf: verkauf(), kennzahlen });
+  // Sieben Tage abgefragt -> nur das 7-Tage-Fenster ist gedeckt, mal zwei Kennzahlen.
+  assert.deepEqual(bilder.map((b) => b.schluessel), ["7-umsatz", "7-stueck"]);
+  for (const bild of bilder) {
+    assert.match(bild.svg, /^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg"/u);
+    assert.match(bild.svg, /<\/svg>$/u);
+    assert.match(bild.svg, /viewBox="0 0 520 \d+"/u);
+    assert.ok(bild.titel.length > 0 && bild.hinweis.length > 0);
+  }
 });
 
-test("Legende und Tabellenansicht sind Pflicht, nicht Zierde", () => {
-  // Der Validator meldete fuer das Orange auf heller Flaeche 2,76:1 -- unter
-  // 3:1. Das verpflichtet laut Verfahren zu sichtbaren Labels UND einer
-  // Tabellenansicht. Beides muss vorhanden bleiben.
-  const html = rendereStatistikAnsicht({ verkauf: verkauf(), kennzahlen });
-  assert.match(html, /class="legende"/u);
-  assert.match(html, /class="key"><span class="swatch s-shop"><\/span>Shop/u);
-  assert.match(html, /class="key"><span class="swatch s-ebay"><\/span>eBay/u);
-  assert.match(html, /<details class="tabelle">/u);
-  assert.match(html, /Zahlen als Tabelle/u);
+test("das Bild trägt alles — auch Leitzahl und Kacheln", () => {
+  // Wuerde WinUI die Zahlen als eigene Elemente setzen, formatierte der Client
+  // wieder Daten. Genau das hat Phase 4 entfernt.
+  const [bild] = rendereStatistikBilder({ verkauf: verkauf(), kennzahlen });
+  assert.match(bild.svg, /30,00 €/u, "die Leitzahl steht im Bild");
+  assert.match(bild.svg, /Verkaufsfähige Karten/u);
+  assert.match(bild.svg, /277/u);
+  assert.match(bild.svg, /Verkäufe im Zeitverlauf/u);
 });
 
-test("eine Metrik zur Zeit — niemals zwei y-Achsen", () => {
-  // Der haeufigste Diagrammfehler: Die Ausrichtung zweier Skalen erfindet eine
-  // Korrelation. Umsatz und Stueckzahl werden deshalb umgeschaltet.
-  const html = rendereStatistikAnsicht({ verkauf: verkauf() });
-  assert.match(html, /data-metrik="umsatz"/u);
-  assert.match(html, /data-metrik="stueck"/u);
-  // Jede Ansicht ist eine eigene, fertig gezeichnete Gruppe mit **einer** Skala.
-  // Zwei Skalen in einer Gruppe kann es damit gar nicht geben.
-  assert.match(html, /data-sicht="7-umsatz"/u);
-  assert.match(html, /data-sicht="7-stueck"/u);
-  assert.doesNotMatch(html, /y2Achse|rechteAchse|secondAxis/u);
+test("kein style-Block, keine CSS-Variablen, keine Media-Query", () => {
+  // Was SvgImageSource davon versteht, ist ungewiss -- darauf zu bauen hiesse
+  // raten. Farben stehen als Attribute an den Formen.
+  for (const bild of rendereStatistikBilder({ verkauf: verkauf(), kennzahlen })) {
+    assert.doesNotMatch(bild.svg, /<style|var\(--|@media|prefers-color-scheme/u);
+    assert.match(bild.svg, /fill="#[0-9a-fA-F]{6}"/u);
+  }
 });
 
-test("die Verdichtungsschwelle verlässt den Server gar nicht", () => {
-  // Seit alle Ansichten serverseitig gezeichnet werden, wird die Schwelle nur
-  // noch hier angewandt -- sie steht genau einmal, in statistics-series.ts, und
-  // reist nicht mit. Zwei Kopien liefen auseinander, und dann zeigte „7 Tage"
-  // ploetzlich Wochensaeulen.
-  assert.equal(typeof MAX_TAGES_SAEULEN, "number");
-  const html = rendereStatistikAnsicht({ verkauf: verkauf() });
-  assert.doesNotMatch(html, /MAX_TAGES_SAEULEN/u);
+test("das Thema entscheidet der Server, mit eigenen Stufen je Fläche", () => {
+  const [hell] = rendereStatistikBilder({ verkauf: verkauf() }, "hell");
+  const [dunkel] = rendereStatistikBilder({ verkauf: verkauf() }, "dunkel");
+  // Gemessene Slots: hell #2a78d6/#eb6834, dunkel #3987e5/#d95926.
+  assert.match(hell.svg, /#2a78d6/u);
+  assert.match(hell.svg, /#eb6834/u);
+  assert.match(dunkel.svg, /#3987e5/u);
+  assert.match(dunkel.svg, /#d95926/u);
+  // Kein automatischer Umschlag: die dunklen Stufen sind andere Hexwerte.
+  assert.doesNotMatch(dunkel.svg, /#2a78d6/u);
 });
 
-test("das Skript zeichnet nichts — ohne JavaScript steht das Diagramm trotzdem", () => {
-  // **Der Befund vom 2026-08-17**: Eine Vorschau ohne Skript zeigte Kacheln und
-  // Kartenrahmen, aber einen leeren Diagrammbereich. Seitdem sind alle Ansichten
-  // fertig gerendert; das Skript schaltet nur um.
-  const html = rendereStatistikAnsicht({ verkauf: verkauf() });
-  const skript = html.slice(html.indexOf("<script>"));
-  assert.doesNotMatch(skript, /createElementNS|appendChild\(el\(|new Path2D/u,
-    "im Skript darf keine Zeichenlogik stehen");
-  assert.match(skript, /Das Skript zeichnet nichts/u);
-  // Vor dem Skript stehen bereits Saeulen im Dokument.
-  const vorSkript = html.slice(0, html.indexOf("<script>"));
-  assert.ok((vorSkript.match(/<rect /gu) ?? []).length > 3, "die Saeulen sind schon da");
+test("eine Metrik je Bild — niemals zwei y-Achsen", () => {
+  const bilder = rendereStatistikBilder({ verkauf: verkauf() });
+  assert.deepEqual(bilder.map((b) => b.metrik), ["umsatz", "stueck"]);
+  assert.match(bilder[0].hinweis, /Bruttoumsatz/u);
+  assert.match(bilder[1].hinweis, /verkaufte Karten/u);
 });
 
-test("das Dokument lädt nichts aus dem Netz und trägt eine CSP", () => {
-  const html = rendereStatistikAnsicht({ verkauf: verkauf(), kennzahlen });
-  assert.match(html, /Content-Security-Policy/u);
-  assert.match(html, /default-src 'none'/u);
-  // Keine externen Quellen -- die WebView haette ohnehin keinen Zugang.
-  assert.doesNotMatch(html, /(src|href)="https?:/u);
-  assert.doesNotMatch(html, /@import|fonts\.googleapis/u);
+test("Legende und Spitzenlabel sind Pflicht — das Orange liegt hell unter 3:1", () => {
+  // Der Validator meldete 2,76:1. Das verpflichtet zu sichtbaren Labels.
+  const [bild] = rendereStatistikBilder({ verkauf: verkauf() }, "hell");
+  assert.match(bild.svg, />Shop</u);
+  assert.match(bild.svg, />eBay</u);
+  // Genau ein direktes Label am Spitzenwert, nicht auf jeder Saeule.
+  assert.equal((bild.svg.match(/font-weight="600" text-anchor="middle"/gu) ?? []).length, 1);
 });
 
-test("Gitterlinien sind durchgezogene Haarlinien, keine gestrichelten", () => {
-  const html = rendereStatistikAnsicht({ verkauf: verkauf() });
-  assert.doesNotMatch(html, /stroke-dasharray/u);
-  assert.match(html, /stroke="var\(--grid\)" stroke-width="1"/u);
-});
-
-test("beide Farbmodi sind gesetzt, keiner ist ein automatischer Umschlag", () => {
-  const html = rendereStatistikAnsicht({ verkauf: verkauf() });
-  // Hell als Vorgabe, dunkel als eigene, gegen die dunkle Flaeche gemessene Stufen.
-  assert.match(html, /--surface: #F1EEE8;/u);
-  assert.match(html, /--surface: #383838;/u);
-  assert.match(html, /--s-shop: #2a78d6;/u);
-  assert.match(html, /--s-ebay: #eb6834;/u);
-  assert.match(html, /--s-shop: #3987e5;/u);
-  assert.match(html, /--s-ebay: #d95926;/u);
-  assert.match(html, /prefers-color-scheme: dark/u);
+test("Gitterlinien sind durchgezogene Haarlinien", () => {
+  const [bild] = rendereStatistikBilder({ verkauf: verkauf() });
+  assert.doesNotMatch(bild.svg, /stroke-dasharray/u);
+  assert.match(bild.svg, /stroke-width="1"/u);
 });
 
 test("Text trägt Textfarben, nie die Serienfarbe", () => {
-  const html = rendereStatistikAnsicht({ verkauf: verkauf() });
-  // Achsen- und Wertbeschriftungen greifen auf Ink-Rollen zu.
-  assert.match(html, /<text [^>]*fill="var\(--muted\)"/u);
-  assert.match(html, /<text [^>]*fill="var\(--ink\)"/u);
-  // Und nirgends trägt Text eine Serienfarbe — Identität kommt vom farbigen
-  // Plättchen daneben, nie von eingefärbter Schrift.
-  assert.doesNotMatch(html, /color: var\(--s-(shop|ebay)\)/u);
-  assert.doesNotMatch(html, /<text [^>]*fill="var\(--s-/u);
+  const [bild] = rendereStatistikBilder({ verkauf: verkauf() }, "hell");
+  assert.doesNotMatch(bild.svg, /<text[^>]*fill="#2a78d6"/u);
+  assert.doesNotMatch(bild.svg, /<text[^>]*fill="#eb6834"/u);
 });
 
-test("Fremdtext wird maskiert und kann das Dokument nicht verlassen", () => {
-  const boshaft = verkauf({ revenueBasis: '</style><script>alert(1)</script>"' });
-  const html = rendereStatistikAnsicht({ verkauf: boshaft });
-  assert.doesNotMatch(html, /<script>alert\(1\)<\/script>/u);
-  assert.match(html, /&lt;script&gt;alert\(1\)&lt;\/script&gt;/u);
+test("Fremdtext wird maskiert und kann das Bild nicht verlassen", () => {
+  const [bild] = rendereStatistikBilder({ verkauf: verkauf({ revenueBasis: '</text><script>alert(1)</script>' }) });
+  assert.doesNotMatch(bild.svg, /<script>alert/u);
+  assert.match(bild.svg, /&lt;script&gt;/u);
 });
 
-test("eingebettete Daten können den Skriptkontext nicht verlassen", () => {
-  const boshaft = verkauf({ sales: [
-    { channel: "EBAY", reference: "</script><script>alert(1)</script>", title: "x", quantity: 1, amountCents: 1, currency: "EUR", soldAt: "2026-08-13T10:00:00.000Z" },
-  ] });
-  const html = rendereStatistikAnsicht({ verkauf: boshaft });
-  assert.doesNotMatch(html, /<\/script><script>alert/u);
+test("gekürzt wird an der Wortgrenze, nicht mitten im Wort", () => {
+  assert.equal(kuerzeAufWortgrenze("Kurz", 20), "Kurz");
+  assert.equal(kuerzeAufWortgrenze("Bruttoumsatz vor Gebühren und mehr", 20), "Bruttoumsatz vor …");
+  // Ein einzelnes ueberlanges Wort wird hart geschnitten -- sonst bliebe nichts.
+  assert.equal(kuerzeAufWortgrenze("A".repeat(40), 10), "AAAAAAAAAA …");
 });
 
-test("nicht gelesene Kanäle sagen das, statt eine Null zu zeigen", () => {
-  // Dieselbe Linie wie überall: „nichts da" ist nicht „nicht nachgesehen".
-  const daten = verkauf();
-  daten.channels.ebay = { available: false, orderCount: 0, itemCount: 0, revenueCents: null, currency: "EUR", unavailableCode: "SCOPE_NOT_GRANTED", unavailableMessage: "x" };
-  const html = rendereStatistikAnsicht({ verkauf: daten });
-  assert.match(html, /nicht gelesen \(SCOPE_NOT_GRANTED\)/u);
+test("Kennzahlen allein ergeben ein Bild ohne Diagramm", () => {
+  const bilder = rendereStatistikBilder({ kennzahlen });
+  assert.equal(bilder.length, 1);
+  assert.equal(bilder[0].schluessel, "kennzahlen");
+  assert.match(bilder[0].svg, /Shop-Kennzahlen/u);
+  assert.doesNotMatch(bilder[0].svg, /Verkäufe im Zeitverlauf/u);
 });
 
-test("Kennzahlen allein ergeben Kacheln ohne Diagramm", () => {
-  const html = rendereStatistikAnsicht({ kennzahlen });
-  assert.match(html, /class="tiles"/u);
-  assert.match(html, /277/u);
-  assert.doesNotMatch(html, /id="plot"/u, "ohne Verlauf gibt es kein Diagramm");
-  assert.doesNotMatch(html, /data-fenster/u, "und keine Filterzeile für nichts");
+test("ein größeres Fenster liefert mehr Ansichten", () => {
+  const daten = verkauf({ days: 90, since: "2026-05-19T00:00:00.000Z" });
+  const bilder = rendereStatistikBilder(daten.days ? { verkauf: daten } : {});
+  assert.deepEqual(bilder.map((b) => b.schluessel), ["7-umsatz", "7-stueck", "30-umsatz", "30-stueck", "90-umsatz", "90-stueck"]);
+  // Bei 90 Tagen wird auf Wochen verdichtet, bei 7 und 30 nicht.
+  assert.match(bilder.find((b) => b.schluessel === "90-umsatz").hinweis, /Wochen/u);
+  assert.match(bilder.find((b) => b.schluessel === "30-umsatz").hinweis, /Tage/u);
 });
