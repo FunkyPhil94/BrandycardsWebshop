@@ -86,6 +86,33 @@ rücksprachepflichtig.
 vor der Aufruf-Grafik. Jeder Tag ohne Aufzeichnung ist ein Tag, der später fehlt;
 die anderen beiden Stücke verlieren durch Warten nichts.
 
+**Ergebnis: gebaut, 608 Tests grün, Migration produktiv eingespielt, ausgerollt.**
+
+Acht neue Tests in `tests/ebay-traffic-history.test.mjs`. TypeScript fehlerfrei,
+ESLint 0 Fehler.
+
+Migration `0015` auf ausdrückliche Freigabe eingespielt: vorher geprüft, dass die
+Tabelle **nicht** existierte; danach **3 Anweisungen, 5 Zeilen geschrieben**,
+Tabelle und **beide** Indizes vorhanden, Zeilenzahl 0. Keine bestehende Tabelle
+berührt. Ausgerollt als Worker-Version
+`b5fa79e3-1d60-497e-bb89-d2e72fbff6c4`.
+
+**Der Wächter aus Phase 8 schlug an und wurde nachgezogen, nicht abgeschwächt.**
+Er zählt die `onConflictDoUpdate`-Stellen — vier Datentabellen plus
+Zustandstabelle. Mit der Historie sind es fünf plus eine; die Prüfung bleibt eine
+Gleichheit, damit eine ungeschützte Schreibstelle weiterhin auffällt.
+
+**Was zu erwarten ist, damit niemand zu früh urteilt:** Der Traffic-Sync ist auf
+15 Minuten gedrosselt, die Historie zusätzlich auf 20 Stunden. Der erste Lauf
+holt drei Tage (gestern, vorgestern, vorvorgestern) für 277 Karten — rund 831
+Zeilen. Danach kommt **ein** Tag pro Tag hinzu. Für „letzte 7 Tage" ist die
+Historie in etwa einer Woche brauchbar, für „letzte 30 Tage" in einem Monat.
+
+**Bis dahin bleibt `ebay_listing_traffic` die bessere Quelle**, und die künftige
+Statistik muss ausdrücklich sagen, worauf sie sich stützt — sonst sieht ein
+Zeitraum vollständig aus, für den nur drei Tage vorliegen. Das ist dieselbe
+Linie wie überall hier: „nichts gemessen" ist nicht „null".
+
 ### 2026-08-17 - Interaktive Grafik für Statistikfragen
 
 - Stand: **LÄUFT.**
