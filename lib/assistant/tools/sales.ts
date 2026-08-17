@@ -23,9 +23,22 @@ function ebayEventQuantity(value: unknown): number | null {
   return typeof quantity === "number" && Number.isSafeInteger(quantity) && quantity > 0 ? quantity : null;
 }
 
+/** Der zuletzt verkaufte Posten — aus **drei** Quellen, nicht aus zwei.
+ *
+ * **Der Befund vom 2026-08-17.** Ein Verkauf von vor einer Stunde erschien
+ * nicht. Er lag in `ebay_sales` und der Lesesync war gesund; gelesen wurde für
+ * eBay aber allein `avatar_events` (`CARD_SOLD`), also der Webhook. In
+ * Produktion standen dort **5 Ereignisse gegen 156 Verkaufszeilen**, der
+ * neueste Webhook war zwei Tage alt. Die Auskunft war damit nicht um Minuten
+ * veraltet, sondern um Tage — und das von Anfang an, nur unauffällig, solange
+ * niemand einen einzelnen Verkauf nachschlug.
+ *
+ * Der Webhook bleibt trotzdem eine Quelle: Er meldet in Sekunden, was der Sync
+ * erst im 15-Minuten-Takt holt. Genommen wird schlicht die neueste der drei.
+ */
 export async function getLatestSale(): Promise<AssistantToolResult<"latest_sale">> {
   const db = getDb();
-  const [[shopOrder], [ebayEvent]] = await Promise.all([
+  const [[shopOrder], [ebayEvent], [ebaySale], syncStates] = await Promise.all([
     db.select({
       id: orders.id,
       orderNumber: orders.orderNumber,
@@ -45,10 +58,50 @@ export async function getLatestSale(): Promise<AssistantToolResult<"latest_sale"
       .where(and(eq(avatarEvents.eventType, "CARD_SOLD"), eq(avatarEvents.aggregateType, "EBAY_LISTING")))
       .orderBy(desc(sql`datetime(${avatarEvents.createdAt})`), desc(avatarEvents.id))
       .limit(1),
+    db.select({
+      ebayOrderId: ebaySales.ebayOrderId,
+      ebayItemId: ebaySales.ebayItemId,
+      title: ebaySales.title,
+      quantity: ebaySales.quantity,
+      amountCents: ebaySales.amountCents,
+      currency: ebaySales.currency,
+      soldAt: ebaySales.soldAt,
+    }).from(ebaySales)
+      .orderBy(desc(sql`datetime(${ebaySales.soldAt})`), desc(ebaySales.id))
+      .limit(1),
+    readEbayReadSyncStates(db),
   ]);
 
   const shopSoldAt = shopOrder?.paidAt ?? shopOrder?.createdAt ?? null;
-  if (ebayEvent && assistantTimestampValue(ebayEvent.soldAt) > assistantTimestampValue(shopSoldAt)) {
+  const shopZeit = assistantTimestampValue(shopSoldAt);
+  const ereignisZeit = ebayEvent ? assistantTimestampValue(ebayEvent.soldAt) : Number.NEGATIVE_INFINITY;
+  const verkaufZeit = ebaySale ? assistantTimestampValue(ebaySale.soldAt) : Number.NEGATIVE_INFINITY;
+
+  // Die Verkaufszeile zuerst, wenn sie die neueste ist. Sie trägt Titel, Menge
+  // und Betrag bereits mit sich — anders als der Webhook, für den das Angebot
+  // erst nachgeschlagen werden muss.
+  const verkaufAbrufbar = ebayReadAvailability(syncStates.get("SALES"), "eBay-Verkäufe").available;
+  if (ebaySale && verkaufAbrufbar && verkaufZeit > shopZeit && verkaufZeit >= ereignisZeit) {
+    return availableAssistantResult("latest_sale", {
+      sale: {
+        source: "EBAY",
+        reference: ebaySale.ebayOrderId,
+        status: "SOLD",
+        soldAt: assistantTimestamp(ebaySale.soldAt),
+        detailsComplete: ebaySale.title !== null && ebaySale.amountCents !== null,
+        items: [{
+          // Die Verkaufszeile führt keine Produkt-ID; sie nennt das Angebot.
+          productId: null,
+          title: ebaySale.title ?? `Nicht mehr zugeordneter eBay-Verkauf ${ebaySale.ebayItemId ?? ebaySale.ebayOrderId}`,
+          quantity: ebaySale.quantity,
+          amountCents: ebaySale.amountCents,
+          currency: ebaySale.currency,
+        }],
+      },
+    }, ["EBAY_READ_API"], assistantTimestamp(ebaySale.soldAt));
+  }
+
+  if (ebayEvent && ereignisZeit > shopZeit) {
     const [listing] = await db.select({
       productId: products.id,
       title: products.title,

@@ -9009,3 +9009,38 @@ selbst; die Schrittfolge samt Nachprüfung steht in
   Shop-Bestellung. Vorher antwortete derselbe Satz mit 53 Karten und 1.267,41 €
   aus 30 Tagen.
 - Status: ABGESCHLOSSEN.
+
+## Auftrag 2026-08-17: „Letzter Verkauf" verpasst die meisten Verkäufe
+- Status: LÄUFT.
+- Befund des Betreibers: Ein Verkauf von vor 1–2 Stunden wurde nicht als
+  zuletzt verkauftes Stück angezeigt.
+- Diagnose an Produktionsdaten: Der Verkauf **ist** da
+  (`ebay_sales`, 2026-08-17T12:44:36Z, Gravenberch Autograph, 18,50 €), und der
+  Lesesync ist gesund (letzter Erfolg 13:42:56Z, alle vier Datenarten `OK`).
+  Die Ursache liegt in `getLatestSale`: Es liest eBay-Verkäufe aus
+  `avatar_events` (`CARD_SOLD`, der Webhook), nicht aus `ebay_sales` (dem
+  Lesesync). In Produktion stehen **5 CARD_SOLD-Ereignisse gegen 156
+  Verkaufszeilen**; der neueste Webhook ist vom 15.08. Damit war die Auskunft
+  nicht um Stunden, sondern um Tage alt — und das seit immer, nicht seit heute.
+- Umsetzung: `getLatestSale` zieht die neueste der drei Quellen — Shop-Bestellung,
+  `CARD_SOLD`-Ereignis, `ebay_sales`-Zeile. Der Webhook bleibt drin, weil er
+  schneller ist als ein Sync im 15-Minuten-Takt.
+- Nicht Teil dieses Auftrags: **warum** der Webhook nur 5 von 156 Verkäufen
+  gemeldet hat. Das ist ein eigener Befund und gehört in den Arbeitsvorrat.
+- Abnahme: Der Gravenberch-Verkauf erscheint als letzter Verkauf; `npm test`,
+  `npx tsc --noEmit`, `npm run lint`.
+
+## Auftrag 2026-08-17: „Letzter Verkauf" verpasst die meisten Verkäufe — abgeschlossen
+- Ergebnis: `getLatestSale` zieht jetzt die neueste aus drei Quellen —
+  Shop-Bestellung, `CARD_SOLD`-Webhook, `ebay_sales`-Zeile. Die Verkaufszeile
+  zählt nur, wenn der Lesesync sie verantworten kann.
+- Nebenbefund, der beinahe durchgerutscht wäre: `npm test` zählt die Testdateien
+  einzeln in `package.json` auf, statt sie zu suchen. Meine beiden neuen Dateien
+  standen nicht darin und liefen nur von Hand — in der CI nie. Beide sind
+  eingetragen, und `tests/test-registrierung.test.mjs` verhindert die
+  Wiederholung.
+- Prüfung: 643 Tests grün (vorher 629, davon 13 aus den nicht eingetragenen
+  Dateien plus der neue Wächter), `npx tsc --noEmit` sauber, Lint bei der einen
+  bekannten Vorwarnung. Deploy `42245198`; `/`, `/admin`, `/api/products`
+  antworten mit 200.
+- Status: ABGESCHLOSSEN.
