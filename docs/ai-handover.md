@@ -9321,3 +9321,13 @@ selbst; die Schrittfolge samt Nachprüfung steht in
   Push ist ein reines Fast-Forward und nimmt der anderen Sitzung nichts weg.
 - Umsetzung: `git push origin HEAD:main`, danach gegenprüfen, dass `origin/main`
   und `HEAD` auf denselben Commit zeigen.
+
+## Auftrag 2026-08-17: Den Branch auf main bringen — abgeschlossen
+- Ergebnis: `main` per Fast-Forward von `9618024` auf `e4cf6dd` gebracht, 66
+  Commits. `origin/main` und der Branch zeigen jetzt auf denselben Commit.
+- Damit ist der laufende Produktionsstand (`9824c54a`) wieder aus `main`
+  reproduzierbar. Ein Deploy von `main` entfernt die Sprach-Routen nicht mehr —
+  der Fehler von heute Abend kann sich so nicht wiederholen.
+- Nichts überschrieben: `main` hatte vor dem Push null eigene Commits, geprüft
+  mit `git merge-base --is-ancestor`.
+- Status: ABGESCHLOSSEN.
