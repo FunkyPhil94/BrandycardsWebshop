@@ -37,6 +37,12 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
+<!-- Fuer den naechsten Auftrag freihalten. -->
+
+Keine laufenden Aufträge.
+
+## Historie
+
 ### 2026-08-17 - Punkt 6: die zwei Reste am eBay-Schreibpfad
 
 - Stand: **ABGESCHLOSSEN**, ausgerollt. Rest 2 geschlossen; Rest 1 vorbereitet,
@@ -151,7 +157,6 @@ Drei Entscheidungen dazu, jeweils gegen die bequemere Variante:
    Protokollzeile weg. Der **Alarm** im Gegenfall kommt dagegen per E-Mail an
    und überlebt. Ob Logpush eingerichtet wird, ist eine Betreiberentscheidung.
 
-## Historie
 
 ### 2026-08-17 - Freie Formulierungen: den Modell-Planer betriebsfertig machen
 
