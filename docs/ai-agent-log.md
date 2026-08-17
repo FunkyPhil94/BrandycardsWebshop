@@ -1,5 +1,72 @@
 # BrandyCards Agentenprotokoll
 
+## 2026-08-17 - Härtung: Eine Migration ist erst geprüft, wenn sie echte Daten sah
+
+Der Auftrag stand seit Phase 2 als „vor produktiver Assistant-Nutzung offen" und
+nannte drei Punkte: HTTPS-Zielprüfung, DPAPI-Tokenablage, Widerruf/Rotation. Der
+erste Schritt war deshalb nicht Bauen, sondern **Nachsehen, was davon noch
+stimmt** — eine Notiz aus einer früheren Sitzung beschreibt den Zustand von
+damals, nicht den von heute.
+
+Zwei der drei Punkte waren erledigt, ohne dass es jemand nachgetragen hatte:
+`claim/route.ts` setzt eine Gültigkeit von 90 Tagen,
+`authenticateAvatarDevice` prüft sie, Tokens liegen serverseitig nur als
+SHA-256-Hash, und der Widerruf über `revoked_at` wirkt bis in die App, die
+daraufhin eine neue Kopplung verlangt. Übrig blieben das Klartext-Token auf der
+Platte und die fehlende HTTPS-Pflicht.
+
+**Warum das Klartext-Token heute schwerer wiegt als bei der Notiz.** Damals
+öffnete es Lesezugriff auf Geschäftsdaten. Seit demselben Tag, an dem die
+Spracherkennung auf Azure umgestellt wurde, berechtigt dasselbe Token
+zusätzlich dazu, Sprachtoken auf Kosten des Betreibers ausstellen zu lassen.
+Eine Angriffsfläche ist gewachsen, während die Notiz unverändert dastand — das
+ist das eigentliche Argument dafür, alte Sicherheitsnotizen nicht nur
+abzuarbeiten, sondern **neu zu bewerten**.
+
+**Der lehrreiche Teil war ein Fehler, der beinahe durchgegangen wäre.** Vor dem
+ersten Migrationslauf wurde die echte Einstellungsdatei des Betreibers
+strukturell gelesen — Feldnamen und Zeichenlängen, nie der Wert selbst. Dabei
+fiel auf: Auf der Platte heißt das Feld `DeviceToken` mit großem D, im neuen
+Code hieß das Migrationsfeld `deviceToken`. `JsonSerializer` liest ohne
+`PropertyNameCaseInsensitive` case-sensitiv. Die Migration hätte also nicht
+gegriffen; das vorhandene Token wäre als verloren gewertet worden, und der
+Betreiber hätte neu koppeln müssen — ohne eine Meldung, die den Grund nennt.
+
+Bemerkenswert ist, **wodurch** es auffiel: nicht durch einen Test, sondern durch
+den Blick auf echte Daten vor dem Eingriff. Ein selbst geschriebenes
+Testdokument hätte die Annahme des Autors getragen — camelCase, weil der Autor
+camelCase gedacht hat — und den Fehler exakt reproduziert, ohne ihn zu zeigen.
+Eine Formatmigration ist deshalb erst geprüft, wenn sie gegen eine **echte** alte
+Datei lief. Der Test hält die Schreibweise jetzt fest und verbietet zusätzlich
+`PropertyNameCaseInsensitive`, weil eine spätere Ergänzung dieser Option
+stillschweigend ändern würde, welche Dateien noch gelesen werden können.
+
+**Zwei Entscheidungen zum Wesen von DPAPI.** Ein Entschlüsselungsfehler wird als
+„nicht gekoppelt" behandelt und nicht als Defekt: Eine kopierte Datei auf einem
+fremden Rechner *soll* sich nicht öffnen lassen, das ist der Zweck. Und die
+zusätzliche Entropie ist kein Geheimnis, sondern eine Zweckbindung — ein
+anderswo im Profil abgelegter DPAPI-Wert ist hier nicht verwendbar.
+
+**HTTPS wird verlangt, Loopback bleibt frei.** Über diese Adresse geht das Token
+in jeder Anfrage als Kopfzeile hinaus; ein Tippfehler im Schema hätte es
+unverschlüsselt auf die Leitung gelegt, ohne sichtbare Folge. Ausgenommen ist
+nur Loopback, weil `npm run dev` auf `http://localhost:3000` der in der README
+beschriebene Entwicklungsweg ist und dort nichts das Gerät verlässt.
+
+**Ein Nebenbefund wurde mitgenommen, weil er dasselbe Muster hatte:** Die App
+verwarf das `expiresAt` der Kopplung und hätte am 90. Tag ohne Ankündigung eine
+neue verlangt. Dasselbe stille Brechen wie eine ablaufende Cloud-Testversion —
+und derselbe billige Ausweg: den Zeitpunkt speichern und sieben Tage vorher
+etwas sagen. Für eine Kopplung, die älter als dieses Feld ist, wird bewusst
+nichts behauptet; eine erfundene Frist wäre schlechter als keine.
+
+**Zum Schluss der unscheinbarste, aber notwendige Schritt:** Die vor dem
+Migrationslauf angelegte Sicherung enthielt das Token im Klartext. Sie wurde
+nach der Verifikation gelöscht. Eine Sicherung, die genau das Geheimnis
+preisgibt, dessen Schutz die Aufgabe war, hätte die ganze Arbeit aufgehoben —
+und wäre dabei mit dem guten Gewissen einer sorgfältigen Vorsichtsmaßnahme
+liegengeblieben.
+
 ## 2026-08-17 - Variante 3: Der Test, der 30 Sekunden kostete und drei Wege sparte
 
 Zwei Ausbaustufen hatten die Spracherkennung nicht gerettet. Bevor eine dritte

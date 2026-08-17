@@ -37,9 +37,15 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
+<!-- Fuer den naechsten Auftrag freihalten. -->
+
+Keine laufenden Aufträge.
+
+## Historie
+
 ### 2026-08-17 - Geräteverbindung härten (der Rest aus Phase 2)
 
-- Stand: **LÄUFT.**
+- Stand: **ABGESCHLOSSEN**, an der echten Verbindung des Betreibers verifiziert.
 - Auftrag des Betreibers: Punkt 2 der offenen Assistant-Themen — die seit
   Phase 2 als „vor produktiver Assistant-Nutzung offen" notierte Härtung. Die
   Voraussetzung ist eingetreten: Der Assistent ist seit dem 2026-08-17
@@ -91,7 +97,55 @@ Dazu ein echter Nachweis, dass die vorhandene Verbindung die Migration
 **Nicht Teil des Auftrags:** Produktionsdaten, Deployment, Spracherkennung.
 Rein im Desktop; kein Serverdeploy nötig.
 
-## Historie
+**Ergebnis: umgesetzt, `npm test` 557/557, TypeScript fehlerfrei, ESLint 0
+Fehler, WinUI-x64-Build 0 Warnungen und 0 Fehler.** Sechs neue Tests in
+`tests/assistant-device-hardening.test.mjs`.
+
+**Der Fehler, der die Aufgabe fast wertlos gemacht hätte — und wie er auffiel.**
+Vor dem Migrationslauf wurde die echte `settings.json` **strukturell** gelesen
+(Feldnamen und Längen, nie der Wert). Dabei zeigte sich: Das Feld heißt auf der
+Platte `DeviceToken` mit **großem D**, während das Migrationsfeld im Code
+`deviceToken` hieß. `JsonSerializer` liest ohne
+`PropertyNameCaseInsensitive` **case-sensitiv** — die Migration hätte nicht
+gegriffen, das Token wäre als verloren gewertet worden, und der Betreiber hätte
+neu koppeln müssen. Ohne Fehlermeldung, die den Grund nennt.
+
+> **Lehre, die über diesen Fall hinausgeht:** Eine Migration von einem
+> Dateiformat ist erst geprüft, wenn sie gegen eine **echte** alte Datei lief.
+> Ein selbst geschriebenes Testdokument trägt die Annahmen des Autors und
+> reproduziert genau diesen Fehler nicht. Der Test dazu hält die Schreibweise
+> jetzt fest und verbietet zusätzlich `PropertyNameCaseInsensitive`.
+
+**Am echten Gerät verifiziert**, nicht nur an Quelltext:
+
+| Prüfung | Vorher | Nachher |
+|---|---|---|
+| `DeviceToken` (Klartext) | `string`, 69 Zeichen | **`null`** |
+| `DeviceTokenProtected` | fehlt | `string`, 392 Zeichen (DPAPI, Base64) |
+| `bcav_` irgendwo in der Datei | ja | **nein** |
+| App nach dem Start | — | Launcher sichtbar, Panel öffnet, Status „Bereit" |
+
+Der Launcher ist der Beleg, der zählt: Wäre das Token verloren gegangen, stünde
+dort das Pairing-Formular. Zusätzlich lief das Event-Polling im
+Drei-Sekunden-Takt weiter — jeder dieser Aufrufe authentifiziert sich mit dem
+Token, ein 401 hätte die Verbindung getrennt.
+
+**Aufgeräumt:** Die vor dem Lauf angelegte Sicherung enthielt das Token im
+Klartext und wurde nach der erfolgreichen Verifikation **gelöscht** — sie hätte
+die Härtung sonst vollständig aufgehoben. Im Einstellungsverzeichnis liegt kein
+`bcav_` mehr.
+
+**Was bewusst nicht gemacht wurde:** Die Notiz aus Phase 2 nannte auch
+„Rotation". Die gibt es längst — `claim/route.ts` setzt 90 Tage,
+`authenticateAvatarDevice` prüft sie, Tokens liegen serverseitig nur als Hash,
+und Widerruf über `revoked_at` greift. Hinzugekommen ist nur, was fehlte: Die
+App **speichert** das Ablaufdatum jetzt und warnt sieben Tage vorher im Panel.
+
+**Ein Rest, harmlos und benannt:** Die bestehende Kopplung des Betreibers ist
+älter als dieses Feld, ihr `ExpiresAt` ist deshalb `null`. Es wird dann nichts
+behauptet — eine erfundene Frist wäre schlechter als keine. Beim nächsten
+Koppeln füllt sich der Wert von allein. Wann diese Verbindung endet, weiß der
+Shop, nicht die App.
 
 ### 2026-08-17 - Enter sendet, Alt+Enter bricht die Zeile
 

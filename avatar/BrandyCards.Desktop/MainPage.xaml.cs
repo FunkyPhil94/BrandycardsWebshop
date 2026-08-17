@@ -1,4 +1,5 @@
 using System.Net.Http.Json;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -131,7 +132,7 @@ public sealed partial class MainPage : Page
                 throw new InvalidOperationException("Der Shop hat kein Geräte-Token zurückgegeben.");
             }
 
-            _settings = new AvatarSettings { ShopUrl = shopUrl, DeviceToken = claim.DeviceToken };
+            _settings = new AvatarSettings { ShopUrl = shopUrl, DeviceToken = claim.DeviceToken, ExpiresAt = claim.ExpiresAt };
             _cursor = null;
             await SettingsStore.SaveAsync(_settings);
             await StartConnectedAsync();
@@ -531,6 +532,17 @@ public sealed partial class MainPage : Page
         }
     }
 
+    /// <summary>
+    /// Wie viele Tage vor Ablauf der Kopplung gewarnt wird.
+    ///
+    /// Die Verbindung gilt 90 Tage (`claim/route.ts`). Ohne Vorwarnung verlangt
+    /// die App am 90. Tag aus dem Nichts einen neuen Pairing-Code — dieselbe
+    /// Sorte stiller Bruch wie eine ablaufende Cloud-Testversion. Sieben Tage
+    /// sind reichlich Zeit für einen Handgriff, der zwei Minuten dauert, und
+    /// selten genug, um nicht zum Hintergrundrauschen zu werden.
+    /// </summary>
+    private const int PairingExpiryWarningDays = 7;
+
     private void EnsureConversationInitialized()
     {
         if (_conversationInitialized) return;
@@ -538,6 +550,29 @@ public sealed partial class MainPage : Page
         AddConversationMessage(
             "Assistant",
             "Hallo! Stelle mir freie Fragen zu Verkäufen, Listings, Bestellungen, Preisvorschlägen, Bestand, Anfragen, eBay-Daten und Statistiken. Ich verwende dafür ausschließlich registrierte Lesewerkzeuge.",
+            isUser: false);
+        WarnIfPairingExpiresSoon();
+    }
+
+    /// <summary>
+    /// Sagt es, solange man noch handeln kann.
+    ///
+    /// Der Zeitpunkt steht erst seit dem 2026-08-17 in den Einstellungen; bei
+    /// einer älteren, noch gültigen Kopplung ist er <c>null</c>. Dann wird
+    /// nichts behauptet — eine erfundene Frist wäre schlechter als keine.
+    /// </summary>
+    private void WarnIfPairingExpiresSoon()
+    {
+        if (_settings.ExpiresAt is not { } ablauf) return;
+
+        var restTage = (ablauf - DateTimeOffset.UtcNow).TotalDays;
+        if (restTage > PairingExpiryWarningDays) return;
+
+        AddConversationMessage(
+            "Assistant",
+            restTage <= 0
+                ? "Hinweis: Die Verbindung zu diesem Shop ist abgelaufen. Bitte über „Verbindung ändern\" einen neuen Pairing-Code aus dem Adminbereich eingeben."
+                : $"Hinweis: Die Verbindung zu diesem Shop läuft in {Math.Ceiling(restTage):0} Tagen ab. Danach brauchst du über „Verbindung ändern\" einen neuen Pairing-Code aus dem Adminbereich.",
             isUser: false);
     }
 
@@ -635,12 +670,29 @@ public sealed partial class MainPage : Page
         _idleTimer.Start();
     }
 
+    /// <summary>
+    /// Prüft die Shop-Adresse und **verlangt HTTPS**.
+    ///
+    /// Über diese Adresse geht das Gerätetoken in jeder Anfrage als
+    /// `Authorization`-Kopfzeile hinaus. Unverschlüsselt wäre es für jeden
+    /// mitlesbar, der auf dem Weg sitzt — und ein Tippfehler im Schema ist
+    /// schnell passiert, während die Folge unsichtbar bleibt.
+    ///
+    /// **Loopback bleibt erlaubt**, sonst wäre die Entwicklung gegen
+    /// `npm run dev` auf `http://localhost:3000` nicht mehr möglich; das ist der
+    /// in der README beschriebene Weg. Dort verlässt nichts das Gerät.
+    /// </summary>
     private static string NormalizeShopUrl(string value)
     {
         if (!Uri.TryCreate(value.Trim().TrimEnd('/'), UriKind.Absolute, out var uri) ||
             (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
         {
             throw new InvalidOperationException("Bitte eine gültige Shop-Adresse mit http:// oder https:// eingeben.");
+        }
+        if (uri.Scheme == Uri.UriSchemeHttp && !uri.IsLoopback)
+        {
+            throw new InvalidOperationException(
+                $"Die Shop-Adresse muss https:// verwenden. Über „{uri.Host}\" würde das Geräte-Token unverschlüsselt übertragen. Nur localhost darf http:// benutzen.");
         }
         return uri.ToString().TrimEnd('/');
     }
@@ -661,11 +713,50 @@ public sealed partial class MainPage : Page
     private sealed class AvatarSettings
     {
         public string ShopUrl { get; set; } = "http://localhost:3000";
-        public string? DeviceToken { get; set; }
+
+        /// <summary>
+        /// **Nur noch für die Migration da.** Bis zum 2026-08-17 stand das
+        /// Gerätetoken hier im Klartext auf der Platte. `SettingsStore` liest
+        /// das Feld beim Laden noch, verschlüsselt den Wert und leert es wieder;
+        /// geschrieben wird es nie erneut. Ohne diesen Weg müsste jede
+        /// vorhandene Kopplung erneuert werden, nur weil die Ablage sicherer
+        /// wurde.
+        ///
+        /// **Die Schreibweise ist keine Geschmacksfrage.** In den bestehenden
+        /// Dateien steht `DeviceToken` mit großem D, und `JsonSerializer` liest
+        /// ohne `PropertyNameCaseInsensitive` **case-sensitiv**. Ein
+        /// kleingeschriebener Name hier hieße: Migration greift nicht, Token
+        /// gilt als weg, Nutzer muss neu koppeln — und zwar stillschweigend.
+        /// </summary>
+        [JsonPropertyName("DeviceToken")]
+        public string? LegacyDeviceToken { get; set; }
+
+        /// <summary>
+        /// Das Gerätetoken, mit DPAPI an das Windows-Benutzerkonto gebunden
+        /// (Base64). Ein anderes Konto oder ein anderer Rechner kann es nicht
+        /// entschlüsseln — genau das ist der Zweck.
+        /// </summary>
+        [JsonPropertyName("DeviceTokenProtected")]
+        public string? ProtectedDeviceToken { get; set; }
+
+        /// <summary>
+        /// Wann die Kopplung endet, wie vom Shop beim Koppeln gemeldet. Wird
+        /// gespeichert, damit die App **vorher** warnen kann: Ohne diesen Wert
+        /// verlangte sie am 90. Tag ohne Ankündigung eine neue Kopplung.
+        /// </summary>
+        [JsonPropertyName("ExpiresAt")]
+        public DateTimeOffset? ExpiresAt { get; set; }
+
         public DeviceCursor? Cursor { get; set; }
+
+        /// <summary>Das entschlüsselte Token, oder <c>null</c>.</summary>
+        [JsonIgnore]
+        public string? DeviceToken { get; set; }
     }
 
-    private sealed record DeviceClaimResponse([property: JsonPropertyName("deviceToken")] string DeviceToken);
+    private sealed record DeviceClaimResponse(
+        [property: JsonPropertyName("deviceToken")] string DeviceToken,
+        [property: JsonPropertyName("expiresAt")] DateTimeOffset? ExpiresAt);
     private sealed record ApiError([property: JsonPropertyName("error")] string Error);
 
     private sealed class DeviceEventsResponse
@@ -703,29 +794,97 @@ public sealed partial class MainPage : Page
 
     private sealed record PendingAnimation(AnimationSpec Animation, AvatarEvent Event);
 
+    /// <summary>
+    /// Die Einstellungen auf der Platte — mit dem Gerätetoken **nicht** im
+    /// Klartext.
+    ///
+    /// Das Token berechtigt zum Lesen der Geschäftsdaten und seit dem
+    /// 2026-08-17 zusätzlich dazu, Azure-Sprachtoken auf Kosten des Betreibers
+    /// ausstellen zu lassen. Als lesbare Zeile in einer JSON-Datei im
+    /// Benutzerprofil war das zu viel Vertrauen in die Umgebung.
+    ///
+    /// DPAPI bindet den Wert an das Windows-Benutzerkonto. Ein anderes Konto
+    /// auf demselben Rechner kann ihn nicht entschlüsseln, eine kopierte Datei
+    /// auf einem anderen Rechner ebenfalls nicht.
+    /// </summary>
     private static class SettingsStore
     {
         private static readonly string DirectoryPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "BrandyCards", "DesktopAvatar");
         private static readonly string FilePath = Path.Combine(DirectoryPath, "settings.json");
 
+        /// <summary>
+        /// Zusätzliche Entropie. Sie ist kein Geheimnis — sie bindet die
+        /// Verschlüsselung an diesen Zweck, damit ein anderswo im Profil
+        /// abgelegter DPAPI-Wert hier nicht verwendbar ist.
+        /// </summary>
+        private static readonly byte[] Entropy = Encoding.UTF8.GetBytes("BrandyCards.DesktopAvatar.DeviceToken.v1");
+
         public static async Task<AvatarSettings> LoadAsync()
         {
+            AvatarSettings settings;
             try
             {
                 if (!File.Exists(FilePath)) return new AvatarSettings();
                 await using var stream = File.OpenRead(FilePath);
-                return await JsonSerializer.DeserializeAsync<AvatarSettings>(stream) ?? new AvatarSettings();
+                settings = await JsonSerializer.DeserializeAsync<AvatarSettings>(stream) ?? new AvatarSettings();
             }
             catch
             {
                 return new AvatarSettings();
             }
+
+            settings.DeviceToken = Unprotect(settings.ProtectedDeviceToken);
+
+            // **Migration der Klartextablage, genau einmal.** Eine vorhandene
+            // Kopplung soll die Härtung überleben; sie erneut einzurichten wäre
+            // ein Preis, den der Betreiber für eine Verbesserung zahlen müsste.
+            if (settings.DeviceToken is null && !string.IsNullOrWhiteSpace(settings.LegacyDeviceToken))
+            {
+                settings.DeviceToken = settings.LegacyDeviceToken.Trim();
+                await SaveAsync(settings);
+            }
+
+            return settings;
         }
 
         public static async Task SaveAsync(AvatarSettings settings)
         {
             Directory.CreateDirectory(DirectoryPath);
+            settings.ProtectedDeviceToken = Protect(settings.DeviceToken);
+            // Der Klartext verschwindet aus der Datei, sobald einmal gespeichert
+            // wurde -- sonst waere die Verschluesselung nur eine zweite Kopie.
+            settings.LegacyDeviceToken = null;
             await File.WriteAllTextAsync(FilePath, JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true }));
+        }
+
+        private static string? Protect(string? token)
+        {
+            if (string.IsNullOrWhiteSpace(token)) return null;
+            var geschuetzt = ProtectedData.Protect(Encoding.UTF8.GetBytes(token), Entropy, DataProtectionScope.CurrentUser);
+            return Convert.ToBase64String(geschuetzt);
+        }
+
+        /// <summary>
+        /// Entschlüsselt das Token, oder gibt <c>null</c> zurück.
+        ///
+        /// **Ein Fehlschlag ist hier der gewünschte Effekt, kein Defekt.** Eine
+        /// Datei aus einem anderen Konto oder von einem anderen Rechner *soll*
+        /// sich nicht entschlüsseln lassen. Die App gilt dann als nicht
+        /// gekoppelt und fragt nach einem neuen Pairing-Code.
+        /// </summary>
+        private static string? Unprotect(string? geschuetzt)
+        {
+            if (string.IsNullOrWhiteSpace(geschuetzt)) return null;
+            try
+            {
+                var klar = ProtectedData.Unprotect(Convert.FromBase64String(geschuetzt), Entropy, DataProtectionScope.CurrentUser);
+                var token = Encoding.UTF8.GetString(klar);
+                return string.IsNullOrWhiteSpace(token) ? null : token;
+            }
+            catch (Exception exception) when (exception is CryptographicException or FormatException)
+            {
+                return null;
+            }
         }
     }
 }
