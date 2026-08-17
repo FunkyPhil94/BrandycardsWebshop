@@ -37,9 +37,62 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-<!-- Fuer den naechsten Auftrag freihalten. -->
+### 2026-08-17 - Interaktive Grafik für Statistikfragen
 
-Keine laufenden Aufträge.
+- Stand: **LÄUFT.**
+- Auftrag: Der Betreiber möchte bei Statistikfragen „eine richtig schöne,
+  interaktive Grafik". Aus drei Vorschlägen gewählt: **Verlauf plus
+  Kennzahlen**.
+
+**Die architektonische Entscheidung, die alles bestimmt.** Phase 4 hat jede
+Formatierung aus dem Desktop entfernt; ein Test verbietet, dass der Client Daten
+selbst aufbereitet. Eine Grafik im Client aus Rohdaten zu zeichnen würde das
+umkehren. **Der Server erzeugt deshalb die Grafik** als eigenständiges
+HTML-Dokument, der Desktop zeigt sie nur an — deterministisch, testbar (eine
+Zeichenkette) und ohne Nachladen aus dem Netz.
+
+**Gestaltung nach dem `dataviz`-Verfahren, nicht nach Gefühl.** Was daraus folgt:
+
+- **Keine zwei y-Achsen.** „Umsatz und Stückzahl in einem Diagramm" war mein
+  erster Gedanke und ist der häufigste Diagrammfehler überhaupt — die Ausrichtung
+  zweier Skalen erfindet eine Korrelation. Stattdessen **eine Metrik zur Zeit,
+  umschaltbar.**
+- **Form nach Aufgabe:** Die Zähler aus `assistant_statistics` sind Zahlen, kein
+  Diagramm → Kennzahlenkacheln, dazu **eine** Leitzahl (Gesamtumsatz). Der
+  Verlauf aus `sales_overview` → gestapelte Säulen je Zeitraum, Shop und eBay.
+- **Bucketierung nach Fensterbreite**, damit nie 90 Säulen entstehen: bis 30 Tage
+  täglich, darüber wöchentlich. Der gewählte Eimer wird benannt, nicht
+  verschwiegen.
+- **Farben gemessen, nicht geschätzt.** `validate_palette.js` gegen die echten
+  Flächen der App (`#F1EEE8` hell, `#383838` dunkel) mit den validierten Slots 1
+  und 2 (blau/orange). Ergebnis: alle Prüfungen bestanden, **aber** das Orange
+  liegt hell bei 2,76:1 unter 3:1. Das ist laut Skill nicht abtubar und
+  verpflichtet zu sichtbaren Labels **und** einer Tabellenansicht — beides kommt
+  ohnehin, jetzt aber als Pflicht statt als Zierde.
+- Filterzeile **über** der Karte, nicht darin. Legende immer vorhanden (zwei
+  Serien). Direkte Werte **sparsam** — Spitzenwert statt jeder Säule. Hover mit
+  Tooltip, Trefferfläche größer als die Marke.
+
+**Zwei Nebenwirkungen, die genannt sein müssen.**
+
+1. **Der Launcher braucht ein `WebView2`.** Das ist eine neue Abhängigkeit; die
+   Laufzeit ist auf Windows 11 üblicherweise vorhanden. Und es verschiebt das
+   Vertrauensmodell: Heute zeigt der Desktop nur Text, künftig führt er vom
+   Server geliefertes Markup aus. Bei eigenem Server vertretbar — die WebView
+   wird abgeriegelt (keine Host-Objekte, keine Navigation nach außen, CSP im
+   Dokument).
+2. **Die Antwortgrenze von 64 KiB im Desktop reicht nicht mehr.** Sie war
+   bemessen auf „längste Textantwort"; ein HTML-Dokument sprengt das. Sie wird
+   angehoben und die Begründung im Code ersetzt — der alte Kommentar behauptet
+   sonst etwas Falsches.
+
+**Der Text bleibt.** Die Grafik tritt **neben** die Textantwort, nicht an ihre
+Stelle: Ein Screenreader bekommt weiterhin die Zahlen, und ohne WebView2 bleibt
+der Assistent voll benutzbar.
+
+**Abnahme:** `npm test`, `npx tsc --noEmit`, `npm run lint`, WinUI-Build. Dazu
+der Schritt, den das Verfahren ausdrücklich verlangt: **die Ausgabe ansehen** —
+als eigenständige Datei mit echten Zahlen, vor dem Einbau.
 
 ## Historie
 
