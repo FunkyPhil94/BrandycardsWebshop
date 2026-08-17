@@ -45,8 +45,9 @@ Keine laufenden Aufträge.
 
 ### 2026-08-17 - Freie Formulierungen: den Modell-Planer betriebsfertig machen
 
-- Stand: **ABGESCHLOSSEN**, ausgerollt. **Wartet auf `OPENAI_API_KEY`** des
-  Betreibers — nur er kann den Zugang anlegen.
+- Stand: **ABGESCHLOSSEN und ABGENOMMEN.** Der Betreiber hat den Schlüssel
+  gesetzt (`wrangler secret list`: 15 Secrets, `OPENAI_API_KEY` dabei) und beide
+  Proben durchgeführt — **beide bestanden.**
 - Auftrag: Punkt 1 der offenen Assistant-Themen. Produktiv läuft nur der
   Regelplaner; unbekannte Formulierungen enden in `UNSUPPORTED`. Seit die
   Spracherkennung fehlerfrei arbeitet, ist **das** die Obergrenze des
@@ -149,20 +150,30 @@ npx wrangler secret put OPENAI_API_KEY
 Optional `OPENAI_ASSISTANT_MODEL`; ohne ihn gilt `gpt-5.6-luna`. Secrets wirken
 sofort, ohne erneuten Deploy.
 
-**Abnahme danach:** Eine Frage stellen, die der Regelplaner **nicht** kennt, etwa
-„Wie geht es meinem Laden so?". Vorher: „Der freie Modell-Planer ist
-serverseitig noch nicht konfiguriert." Danach muss sie beantwortet werden. Und
-gegenzuprüfen: „Erzähl mir einen Witz über Sammelkarten." muss weiterhin
-`UNSUPPORTED` bleiben — das Modell darf keine Werkzeuge erfinden, wo keine
-passen.
+**Abnahme: beide Proben vom Betreiber durchgeführt, beide bestanden.**
 
-**Was offen bleibt:**
+| Probe | Erwartung | Ergebnis |
+|---|---|---|
+| „Wie geht es meinem Laden so?" — vom Regelplaner **nicht** abgedeckt | wird jetzt beantwortet | **beantwortet** |
+| „Erzähl mir einen Witz über Sammelkarten." | bleibt abgelehnt | **abgelehnt** |
 
-1. Der Durchstich mit echtem Schlüssel.
-2. **Der Fragetext geht an OpenAI**, sobald der Regelplaner nicht greift.
-   Antworttexte und Geschäftsdaten nicht — die entstehen weiter deterministisch
-   aus den Werkzeug-DTOs, das Modell wählt ausschließlich Werkzeugnamen. Nach
-   der Freigabe für Azure-Audio die kleinere Erweiterung, aber eine bewusste.
+**Die zweite Probe war die wichtigere.** Ein Modell, das auf eine fachfremde
+Frage Werkzeuge auswählt, erfindet Zuordnungen — die Aktivierung wäre damit
+schlechter als kein Modell. Dass sie abgelehnt bleibt, belegt: Die Registry ist
+geschlossen, und der `strict`-Schemazwang wirkt.
+
+**Was offen bleibt:** Nur noch eines, und es ist eine benannte Entscheidung, keine
+Aufgabe. **Der Fragetext geht an OpenAI**, sobald der Regelplaner nicht greift.
+Antworttexte und Geschäftsdaten nicht — die entstehen weiter deterministisch aus
+den Werkzeug-DTOs, das Modell wählt ausschließlich Werkzeugnamen. Nach der
+Freigabe für Azure-Audio die kleinere Erweiterung, aber eine bewusste.
+
+> **Für später, falls die freie Erkennung plötzlich aussetzt:** OpenAI arbeitet
+> mit vorausbezahltem Guthaben. Ist es aufgebraucht, meldet der Assistent
+> „…war gerade nicht erreichbar… ist damit offen" — bekannte Fragen laufen
+> weiter. Das ist derselbe erste Verdacht wie die abgelaufene Azure-Testversion,
+> nur an einer zweiten Stelle. Im Worker-Log steht dann
+> `assistant model planner failed` mit dem HTTP-Status.
 
 
 ### 2026-08-17 - Geräteverbindung härten (der Rest aus Phase 2)

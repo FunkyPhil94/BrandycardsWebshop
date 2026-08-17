@@ -11,6 +11,36 @@ dabei, damit niemand den Gesprächsverlauf braucht.
 
 ---
 
+## Der Desktop-Assistent ist fertig — Stand 2026-08-17
+
+**Für den Assistenten steht derzeit nichts offen.** Wer hier nach dem nächsten
+Schritt sucht, geht weiter zu den `N`-Punkten oder Punkt 6.
+
+Zwei Notizen aus früheren Phasen sind damit erledigt und **sollen nicht erneut
+aufgegriffen werden** — sie stehen in der Historie von
+[ai-handover.md](ai-handover.md) noch als offen:
+
+- **„Vor produktiver Assistant-Nutzung: HTTPS-Zielprüfung, DPAPI-Tokenablage,
+  Widerruf/Rotation"** (Phase 2). Erledigt am 2026-08-17. Rotation und Widerruf
+  gab es längst (90 Tage, serverseitig geprüft, `revoked_at` wirkt); ergänzt
+  wurden DPAPI für das Gerätetoken, HTTPS-Pflicht außer Loopback und eine
+  Warnung sieben Tage vor Ablauf der Kopplung.
+- **„Für freie Formulierungen muss serverseitig `OPENAI_API_KEY` gesetzt
+  werden"** (Phase 4). Erledigt und abgenommen am 2026-08-17. Der Schlüssel
+  liegt, zwei Proben sind durch: Eine dem Regelplaner unbekannte Frage wird
+  beantwortet, eine fachfremde bleibt abgelehnt.
+
+**Drei Betriebsabhängigkeiten, die still ausfallen können** — bei „der Assistent
+kann plötzlich weniger" hier zuerst nachsehen, nicht im Code:
+
+| Was | Symptom | Wo nachsehen |
+|---|---|---|
+| Azure-Testversion (läuft ~2026-09-16 ab) | Statuszeile „lokale Erkennung, eingeschränkte Genauigkeit" | Azure-Abonnement auf nutzungsbasierte Bezahlung umstellen |
+| OpenAI-Guthaben aufgebraucht | „…war gerade nicht erreichbar… ist damit offen"; bekannte Fragen laufen weiter | Worker-Log `assistant model planner failed` mit HTTP-Status |
+| Kopplung nach 90 Tagen abgelaufen | App verlangt neuen Pairing-Code (warnt jetzt sieben Tage vorher) | Adminbereich, neuen Code erzeugen |
+
+---
+
 ## ~~Treffsicherheit der Spracheingabe~~ — ERLEDIGT und ABGENOMMEN am 2026-08-17
 
 **Urteil des Betreibers nach dem Umstieg auf Azure Speech: „es funktioniert
