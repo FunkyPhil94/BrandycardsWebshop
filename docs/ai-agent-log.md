@@ -1,5 +1,57 @@
 # BrandyCards Agentenprotokoll
 
+## 2026-08-17 - Modell-Planer: Ein alter Test hatte recht, aber nicht ganz
+
+Punkt 1 der offenen Assistant-Themen bestand nominell aus einem einzigen
+Handgriff: `OPENAI_API_KEY` setzen, und freie Formulierungen funktionieren. Der
+Code stand seit Phase 4, getestet bis in die Prompt-Injektionen. Genau solche
+Aufgaben sind die verräterischen — es gibt nichts zu bauen, also prüft man
+nichts.
+
+**Zwei Vorflugprüfungen, deren Ergebnis „unverändert" war.** Der Modellname
+`gpt-5.6-luna` stammte aus einer früheren Sitzung; er ist gültig, beherrscht
+`reasoning.effort` und Funktionsaufrufe und kostet 0,20 $ / 1,20 $ je Million
+Token — für einen Planer, der nur Werkzeugnamen wählt, die sachlich richtige
+Wahl statt der teuren Variante. Und die Responses-API erwartet **flache**
+Tool-Definitionen ohne verschachteltes `function`-Feld; das Vertauschen mit der
+Chat-Completions-Form ist die häufigste Ursache für „invalid parameter". Der
+Code hatte beides richtig. Dass eine Prüfung nichts findet, macht sie nicht
+überflüssig — sie war die Voraussetzung dafür, den Betreiber überhaupt einen
+Zugang anlegen zu lassen.
+
+**Die Lücke lag im Fehlerfall, und sie war ein Rückschritt in Wartestellung.**
+`HybridAssistantPlanner` rief den Modell-Planer ohne Auffangnetz. Ein falscher
+Schlüssel hätte damit ein generisches 503 für die ganze Anfrage erzeugt — also
+*weniger* Auskunft als der heutige Zustand ohne Schlüssel, der eine erklärende
+Antwort liefert. Die Aktivierung hätte das Verhalten verschlechtert, wenn sie
+misslingt. Und der Betreiber hätte nicht erkennen können, ob Schlüssel,
+Guthaben oder Modellname schuld ist.
+
+**Dann widersprach ein Test aus Phase 5, und das war der lehrreiche Moment.**
+Er hieß „der Hybridplaner verschluckt einen Modellfehler nicht" und verlangte
+einen durchgeworfenen Fehler. Der erste Reflex — der Test ist veraltet, er muss
+weg — war falsch. Hinter ihm stand ein Einwand, den mein Entwurf tatsächlich
+verletzte: Ich hatte den Anbieterausfall als `UNSUPPORTED` ausgegeben, also als
+„diese Frage ist nicht beantwortbar". Das ist eine Behauptung über etwas, das
+nie geprüft wurde. Ob die Frage beantwortbar wäre, war unbekannt.
+
+Diesen Unterschied hält das Projekt an mehreren Stellen sorgfältig auseinander:
+`AssistantSalesChannel.available` trennt „null Verkäufe" von „Kanal nicht
+gelesen", und die `ASSISTANT_UNAVAILABLE_CODES` unterscheiden „es gibt nichts"
+von „ich darf nicht nachsehen" von „ich habe noch nie nachgesehen". Mein Entwurf
+hätte genau diese Linie verwischt.
+
+Die Auflösung war deshalb kein Kompromiss, sondern ein dritter Zustand:
+`MODEL_FAILED` führt zu `status: "FAILED"` — die Anfrage versinkt nicht in einem
+503, der Nutzer bekommt einen brauchbaren deutschen Satz, und trotzdem behauptet
+niemand, die Frage sei unbeantwortbar. Der Fehler wird serverseitig mit
+Statuscode protokolliert; zum Gerät geht kein Anbieterdetail.
+
+Der Phase-5-Test wurde umgeschrieben, aber mit seiner Begründung daneben: Form
+geändert, Absicht behalten. **Ein widersprechender Test ist zuerst ein Zeuge,
+nicht ein Hindernis** — hier hat er einen echten Denkfehler abgefangen, und die
+Aufgabe wurde dadurch besser gelöst als geplant.
+
 ## 2026-08-17 - Härtung: Eine Migration ist erst geprüft, wenn sie echte Daten sah
 
 Der Auftrag stand seit Phase 2 als „vor produktiver Assistant-Nutzung offen" und

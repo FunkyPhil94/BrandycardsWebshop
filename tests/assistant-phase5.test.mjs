@@ -47,13 +47,33 @@ test("die Modellplanung läuft unter einem Abbruchsignal und endet im Timeout", 
   assert.ok(seenSignal instanceof AbortSignal, "ohne Signal könnte eine Modellanfrage endlos hängen");
 });
 
-test("der Hybridplaner verschluckt einen Modellfehler nicht", async () => {
-  const planner = new HybridAssistantPlanner(new RuleBasedAssistantPlanner(), {
-    async plan() { throw new Error("Provider nicht erreichbar"); },
-  });
-  // Lokal erkannte Fragen bleiben von einem kaputten Provider unberührt.
-  assert.equal((await planner.plan("Welche Bestellungen sind neu?")).tools[0].tool, "new_orders");
-  await assert.rejects(() => planner.plan("Eine völlig freie Formulierung ohne Schlüsselwort."), /Provider nicht erreichbar/u);
+test("der Hybridplaner versteckt einen Modellfehler nicht", async () => {
+  // **Diese Prüfung hat am 2026-08-17 ihre Form geändert, nicht ihre Absicht.**
+  // Bis dahin verlangte sie, dass der Fehler durchgeworfen wird. Das erzeugte
+  // in der Route ein 503 für die ganze Anfrage — und damit bei einem falsch
+  // gesetzten Schlüssel *weniger* Auskunft, als ein gar nicht eingerichtetes
+  // Modell liefert. Eine Aktivierung darf das Verhalten nicht verschlechtern,
+  // wenn sie misslingt.
+  //
+  // Versteckt wird der Fehler trotzdem nicht: Er wird serverseitig
+  // protokolliert, und die Antwort trägt `FAILED` — ausdrücklich **nicht**
+  // `UNSUPPORTED`, denn ob die Frage beantwortbar wäre, ist unbekannt.
+  // Einzelheiten in tests/assistant-model-planner.test.mjs.
+  const originalError = console.error;
+  console.error = () => {};
+  try {
+    const planner = new HybridAssistantPlanner(new RuleBasedAssistantPlanner(), {
+      async plan() { throw new Error("Provider nicht erreichbar"); },
+    });
+    // Lokal erkannte Fragen bleiben von einem kaputten Provider unberührt.
+    assert.equal((await planner.plan("Welche Bestellungen sind neu?")).tools[0].tool, "new_orders");
+    assert.deepEqual(
+      await planner.plan("Eine völlig freie Formulierung ohne Schlüsselwort."),
+      { tools: [], reason: "MODEL_FAILED" },
+    );
+  } finally {
+    console.error = originalError;
+  }
 });
 
 test("ein fehlgeschlagener Planer erzeugt keine Antwort, sondern einen Fehler", async () => {

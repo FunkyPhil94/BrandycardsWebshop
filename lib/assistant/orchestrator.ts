@@ -39,6 +39,25 @@ export class AssistantOrchestrator {
   async ask(input: AssistantQuestionInput): Promise<AssistantOrchestratorResponse> {
     const plan = await this.planner.plan(input.message);
     if (!plan.tools.length) {
+      // **Ein Anbieterausfall ist kein `UNSUPPORTED`.** Drei Lagen führen zu
+      // derselben leeren Werkzeugliste und sind grundverschieden: „nichts
+      // eingerichtet", „eingerichtet und gerade kaputt" und „fachlich nicht
+      // beantwortbar". Nur der letzte Fall ist endgültig — beim zweiten wissen
+      // wir gar nicht, ob die Frage beantwortbar wäre, und dürfen deshalb nicht
+      // behaupten, sie sei es nicht. Denselben Unterschied halten
+      // `AssistantSalesChannel.available` und die `UNAVAILABLE`-Codes auseinander:
+      // „nichts da" ist nicht „nicht nachgesehen".
+      if (plan.reason === "MODEL_FAILED") {
+        return {
+          status: "FAILED",
+          readOnly: true,
+          answer: "Diese Formulierung kennt der lokale Planer nicht, und die erweiterte Fragenerkennung war gerade nicht erreichbar. Ob sie beantwortbar wäre, ist damit offen. Bekannte Fragen funktionieren unverändert — frage zum Beispiel nach Verkäufen, Bestellungen, Preisvorschlägen, Lagerbestand, Shop-Anfragen, eBay-Daten oder Statistiken, oder versuche es in einem Moment erneut.",
+          tools: [],
+          sources: [],
+          freshness: null,
+        };
+      }
+
       const answer = plan.reason === "MODEL_NOT_CONFIGURED"
         ? "Diese Formulierung konnte keinem lokalen Lesewerkzeug sicher zugeordnet werden. Der freie Modell-Planer ist serverseitig noch nicht konfiguriert. Frage zum Beispiel nach Verkäufen, Einstellungen, Bestellungen, Preisvorschlägen, Lagerbestand, Shop-Anfragen, eBay-Daten oder Statistiken."
         : "Dazu gibt es kein passendes registriertes Read-only-Werkzeug. Ich kann Fragen zu Verkäufen, Einstellungen, Bestellungen, Preisvorschlägen, Lagerbestand, Shop-Anfragen, eBay-Daten und Statistiken beantworten.";

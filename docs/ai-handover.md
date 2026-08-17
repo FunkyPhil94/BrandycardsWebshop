@@ -37,9 +37,16 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
+<!-- Fuer den naechsten Auftrag freihalten. -->
+
+Keine laufenden Aufträge.
+
+## Historie
+
 ### 2026-08-17 - Freie Formulierungen: den Modell-Planer betriebsfertig machen
 
-- Stand: **LÄUFT.**
+- Stand: **ABGESCHLOSSEN**, ausgerollt. **Wartet auf `OPENAI_API_KEY`** des
+  Betreibers — nur er kann den Zugang anlegen.
 - Auftrag: Punkt 1 der offenen Assistant-Themen. Produktiv läuft nur der
   Regelplaner; unbekannte Formulierungen enden in `UNSUPPORTED`. Seit die
   Spracherkennung fehlerfrei arbeitet, ist **das** die Obergrenze des
@@ -94,7 +101,69 @@ Durchstich mit echtem Schlüssel bleibt beim Betreiber.
 **Nicht Teil des Auftrags:** Ein Schlüssel wird nicht angelegt und nicht
 gesetzt. Keine Produktionsdaten, keine Migration.
 
-## Historie
+**Ergebnis: `npm test` 565/565, TypeScript fehlerfrei, ESLint 0 Fehler,
+ausgerollt als Worker-Version `8ff94960-4b9a-45ae-89a9-d5f82df970ca`.** Acht
+neue Tests in `tests/assistant-model-planner.test.mjs`.
+
+`npx wrangler secret list` bestätigt den Zustand: 14 Secrets, darunter
+`AZURE_SPEECH_KEY` und `AZURE_SPEECH_REGION`, **kein** `OPENAI_API_KEY`.
+Produktiv läuft also weiter allein der Regelplaner.
+
+**Ein bestehender Test verlangte das Gegenteil — und hatte teilweise recht.**
+`tests/assistant-phase5.test.mjs` hielt fest: „der Hybridplaner verschluckt
+einen Modellfehler nicht", und verlangte einen durchgeworfenen Fehler. Der
+Einwand dahinter ist berechtigt: Ein Anbieterausfall darf nicht als
+`UNSUPPORTED` erscheinen, denn das behauptete, die Frage sei nicht beantwortbar
+— und ob sie es wäre, wurde nie geprüft.
+
+Der erste Entwurf tat genau das und war damit falsch. Die Auflösung ist ein
+**eigener Status**:
+
+- `MODEL_FAILED` führt jetzt zu `status: "FAILED"`, ausdrücklich **nicht**
+  `UNSUPPORTED`. Denselben Unterschied halten `AssistantSalesChannel.available`
+  und die `UNAVAILABLE`-Codes auseinander: „nichts da" ist nicht „nicht
+  nachgesehen".
+- Die Anfrage endet trotzdem **nicht** in einem 503 für alles. Der Nutzer
+  bekommt einen deutschen Satz, der sagt, was offen ist und dass Bekanntes
+  weiter funktioniert.
+- Der Fehler wird serverseitig mit Statuscode protokolliert, damit falscher
+  Schlüssel, erschöpftes Guthaben und falscher Modellname unterscheidbar
+  bleiben. Zum Gerät geht kein Anbieterdetail.
+
+Der Phase-5-Test wurde entsprechend umgeschrieben — **Form geändert, Absicht
+behalten**, mit der Begründung direkt daneben, damit die Änderung nicht als
+Aufweichung missverstanden wird.
+
+**Vorflugprüfung, deren Ergebnis „nichts zu tun" war** — und die deshalb
+festgehalten gehört, damit sie nicht wiederholt wird: `gpt-5.6-luna` ist
+gültig, kann `reasoning.effort` und Funktionsaufrufe, kostet 0,20 $ / 1,20 $ je
+Million Token. Die Responses-API erwartet flache Tool-Definitionen und liefert
+`function_call`-Ausgaben — genau die Form, die der Code seit Phase 4 verwendet.
+
+**Was der Betreiber tun muss:**
+
+```
+npx wrangler secret put OPENAI_API_KEY
+```
+
+Optional `OPENAI_ASSISTANT_MODEL`; ohne ihn gilt `gpt-5.6-luna`. Secrets wirken
+sofort, ohne erneuten Deploy.
+
+**Abnahme danach:** Eine Frage stellen, die der Regelplaner **nicht** kennt, etwa
+„Wie geht es meinem Laden so?". Vorher: „Der freie Modell-Planer ist
+serverseitig noch nicht konfiguriert." Danach muss sie beantwortet werden. Und
+gegenzuprüfen: „Erzähl mir einen Witz über Sammelkarten." muss weiterhin
+`UNSUPPORTED` bleiben — das Modell darf keine Werkzeuge erfinden, wo keine
+passen.
+
+**Was offen bleibt:**
+
+1. Der Durchstich mit echtem Schlüssel.
+2. **Der Fragetext geht an OpenAI**, sobald der Regelplaner nicht greift.
+   Antworttexte und Geschäftsdaten nicht — die entstehen weiter deterministisch
+   aus den Werkzeug-DTOs, das Modell wählt ausschließlich Werkzeugnamen. Nach
+   der Freigabe für Azure-Audio die kleinere Erweiterung, aber eine bewusste.
+
 
 ### 2026-08-17 - Geräteverbindung härten (der Rest aus Phase 2)
 

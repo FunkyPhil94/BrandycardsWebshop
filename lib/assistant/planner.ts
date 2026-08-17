@@ -12,7 +12,15 @@ const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
 const DEFAULT_OPENAI_MODEL = "gpt-5.6-luna";
 const MODEL_TIMEOUT_MS = 15_000;
 
-export type AssistantPlanReason = "READY" | "UNSUPPORTED" | "MODEL_NOT_CONFIGURED";
+/** Warum ein Plan so aussieht, wie er aussieht.
+ *
+ * `MODEL_NOT_CONFIGURED` und `MODEL_FAILED` sehen für den Nutzer ähnlich aus,
+ * sind für den Betreiber aber gegensätzlich: Im ersten Fall ist nichts
+ * eingerichtet, im zweiten ist etwas eingerichtet und **kaputt**. Ein
+ * gemeinsamer Zustand für beide würde die Fehlersuche in genau dem Moment
+ * verschleiern, in dem sie gebraucht wird.
+ */
+export type AssistantPlanReason = "READY" | "UNSUPPORTED" | "MODEL_NOT_CONFIGURED" | "MODEL_FAILED";
 
 export type AssistantPlan = {
   tools: AssistantToolInput[];
@@ -312,11 +320,33 @@ export class HybridAssistantPlanner implements AssistantPlanner {
     this.modelPlanner = modelPlanner;
   }
 
+  /** Erst die Regeln, dann — falls nötig und möglich — das Modell.
+   *
+   * **Die Reihenfolge ist auch die Absicherung.** Bekannte Fragen erreichen den
+   * Modellpfad nie; ein Ausfall beim Anbieter kann sie deshalb nicht treffen.
+   * Was hier schiefgehen kann, betrifft ausschließlich Formulierungen, die
+   * ohne Modell ohnehin unbeantwortbar wären.
+   *
+   * Ein Fehlschlag des Modells wird deshalb **aufgefangen statt
+   * durchgelassen.** Ungefangen erzeugte er eine 503-Antwort für die ganze
+   * Anfrage und damit weniger, als ein gar nicht eingerichtetes Modell liefert:
+   * nämlich statt einer erklärenden Auskunft eine Absage. Eine Aktivierung darf
+   * das Verhalten nicht verschlechtern, wenn sie misslingt.
+   */
   async plan(message: string): Promise<AssistantPlan> {
     const local = await this.localPlanner.plan(message);
     if (local.tools.length) return local;
     if (!this.modelPlanner) return { tools: [], reason: "MODEL_NOT_CONFIGURED" };
-    return this.modelPlanner.plan(message);
+
+    try {
+      return await this.modelPlanner.plan(message);
+    } catch (error) {
+      // **Serverseitig laut, gegenüber dem Gerät stumm.** Der Betreiber muss
+      // Schlüssel, Guthaben und Modellnamen unterscheiden können; der Desktop
+      // hat mit Anbieterdetails nichts zu tun.
+      console.error("assistant model planner failed", error);
+      return { tools: [], reason: "MODEL_FAILED" };
+    }
   }
 }
 
