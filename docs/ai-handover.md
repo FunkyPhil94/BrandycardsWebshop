@@ -9398,3 +9398,33 @@ selbst; die Schrittfolge samt Nachprüfung steht in
   Zeilen in `card_submission_assets`, dann `card_submissions`. Andersherum wären
   die Speicherschlüssel weg, bevor die Dateien gelöscht sind — die Objekte
   blieben als Waisen liegen.
+
+## Auftrag 2026-08-17: Die fünf Testangebote entfernen — abgeschlossen, mit Rest
+- **Datenbank: erledigt.** `card_submissions` und `card_submission_assets`
+  enthalten je 0 Zeilen (vorher 5 und 5, `changes: 5` bei beiden Löschungen).
+  Im Adminbereich sind die Testangebote damit weg.
+- **R2: nicht erledigt, und zwar nicht aus Nachlässigkeit.**
+  `npx wrangler r2 object delete` meldete fünfmal „Delete complete.", die
+  Objekte lagen danach unverändert im Bucket (nachgemessen: gleiche Bytezahl,
+  `r2 bucket info` weiterhin `object_count: 5`, 3,64 MB = genau die Summe der
+  fünf Dateien). Auch mit wrangler 4.123.0 statt 4.119.0 dasselbe.
+- **Ursache gefunden:** `npx wrangler whoami` listet die Bereiche der
+  OAuth-Anmeldung — `d1 (write)`, `workers (write)`, `queues (write)` und so
+  fort, **aber keinen einzigen R2-Bereich**. Deshalb ging die D1-Löschung durch
+  und die R2-Löschung nicht. Die CLI meldet den Fehlschlag nicht, sie behauptet
+  Erfolg. Steht jetzt als Falle in CLAUDE.md.
+- **Wie die Dateien trotzdem verschwinden:** Sie sind jetzt Waisen — die
+  Datenbankzeilen, die sie kannten, sind fort. `cleanupOrphanedUploads()` läuft
+  im Cron (`*/3 * * * *`, `worker/index.ts`) und löscht verwaiste Objekte über
+  die Worker-Bindung, sobald sie älter als 24 Stunden sind (`ORPHAN_GRACE_MS`).
+  Die Dateien stammen vom 2026-08-17 ~18:26, werden also **ab dem 2026-08-18
+  gegen 18:26 innerhalb von drei Minuten selbsttätig entfernt**.
+- Die Karenz von 24 Stunden ist kein Hindernis, sondern Absicht: Sie verhindert,
+  dass ein Objekt gelöscht wird, dessen Datenbankzeile gerade erst geschrieben
+  wird. Sie zu verkürzen wäre ein Eingriff mit Deploy — dafür ist der Anlass zu
+  klein.
+- **Nachzuprüfen am 2026-08-18 nach 18:30:**
+  `npx wrangler r2 bucket info brandycards-uploads` muss `object_count: 0`
+  zeigen. Tut es das nicht, läuft der Cron nicht wie gedacht — das wäre dann ein
+  eigener Befund.
+- Status: ABGESCHLOSSEN, mit der oben benannten Nachprüfung.

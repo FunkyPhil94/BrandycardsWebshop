@@ -70,6 +70,16 @@ npx tsc --noEmit     # Typprüfung -- NICHT Teil von npm test, separat ausführe
   SEC-14 einen Schritt `Type check` und auditiert zusätzlich. Diese Stelle
   behauptete bis zum 2026-08-09 das Gegenteil. Der Rat bleibt derselbe, die
   Begründung ist eine andere.)*
+- **`npx wrangler r2 object delete` meldet Erfolg und löscht nichts.** Die
+  OAuth-Anmeldung der CLI trägt **keinen R2-Bereich** (`npx wrangler whoami`
+  zeigt `d1 (write)`, `workers (write)` … aber nichts für R2). Die CLI prüft das
+  nicht und schreibt trotzdem „Delete complete." — am 2026-08-17 fünfmal
+  hintereinander, während die Objekte nachweislich liegen blieben. Lesen
+  (`r2 object get`) funktioniert, das täuscht zusätzlich. **Nach jedem
+  R2-Schreibvorgang gegenprüfen:** `npx wrangler r2 bucket info <bucket>` oder
+  das Objekt erneut holen. Wirklich löschen kann nur der Worker über seine
+  Bindung — also die Anwendung selbst oder der geplante Waisen-Aufräumer in
+  `lib/card-submission-cleanup.ts` (Karenz: 24 Stunden).
 - **`drizzle/meta/_journal.json` ist veraltet** (endet bei `0002`, während
   `0003`–`0008` handgeschrieben dazukamen). `npm run db:generate` würde gegen den
   alten Snapshot diffen und die Migrationen erneut erzeugen.
