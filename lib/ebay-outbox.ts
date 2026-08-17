@@ -3,6 +3,7 @@ import { getDb } from "../db";
 import { ebayListings, ebayOutbox } from "../db/schema";
 import { reviseEbayItemQuantity, withdrawEbayOffer } from "./ebay-client";
 import { REVISE_QUANTITY, WITHDRAW_OFFER, bestimmeAuftragsziel, planeEbayRuecknahme } from "./ebay-outbox-plan";
+import { pruefeMengeNach } from "./ebay-outbox-readback";
 import { notifyOperationalAlert } from "./ops-alerts";
 
 type Db = ReturnType<typeof getDb>;
@@ -84,12 +85,17 @@ export async function processEbayOutbox(db: Db = getDb(), optionen: { timeoutMs?
     }
     try {
       const ergebnis = await runJob(job, optionen.timeoutMs);
+      if (ergebnis === "REVISED") await pruefeMengeNach(job);
       // Welcher Weg es war, gehört ins Protokoll. `SUCCEEDED` allein
       // unterscheidet nicht zwischen „eBay hat die Menge geändert" und „eBay
       // meldete bereits beendet, und unsere Fehlernummern haben gegriffen" —
       // beim Abnahmetest am 2026-08-08 war deshalb nicht feststellbar, welcher
-      // Fall eingetreten war. Die Nummern in ALREADY_ENDED_CODES sind geraten;
-      // diese Zeile ist die einzige Stelle, an der sie sich bestätigen lassen.
+      // Fall eingetreten war.
+      //
+      // Seit dem 2026-08-17 steht daneben, **welche** Nummer griff
+      // (`reviseEbayItemQuantity`), und bei `REVISED` zusätzlich die
+      // nachgelesene Menge — die beiden Zeilen sind über `ebayItemId`
+      // zusammenzuführen.
       console.log("[ebay-outbox] Auftrag erledigt.", { jobId: job.id, operation: job.operation, ebayItemId: job.ebayItemId, ergebnis: ergebnis ?? "OHNE_RUECKMELDUNG" });
       const now = new Date().toISOString();
       await db.update(ebayOutbox).set({ status: "SUCCEEDED", succeededAt: now, lockedAt: null, lastError: null, updatedAt: now }).where(eq(ebayOutbox.id, job.id));

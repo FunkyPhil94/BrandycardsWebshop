@@ -1092,6 +1092,10 @@ Anmeldung, Anfrageformat, Fehlerzuordnung und Outbox-Lauf nachgewiesen.
 `EBAY_WRITE_ENABLED` steht auf `true` und wird von einem Test dort gehalten —
 ein Rückfall auf `false` wäre **lautlos**.
 
+**Stand 2026-08-17:** Rest 2 ist geschlossen, Rest 1 ist vorbereitet. Die
+Produktion zeigte an dem Tag zwei Outbox-Aufträge, beide `SUCCEEDED`, neuester
+vom 08.08. — seither hat kein Shop-Verkauf den Pfad berührt.
+
 **Ein Rest bleibt offen, und er ist klein:**
 
 1. **Der Erfolgsfall ist unbewiesen.** Dass die Menge eines *laufenden*
@@ -1099,6 +1103,17 @@ ein Rückfall auf `false` wäre **lautlos**.
    beendetes. Dafür bräuchte es ein Wegwerf-Angebot (siehe Warnung unten).
    **Der nächste echte Verkauf beweist es ohnehin**, und dann steht es im
    Protokoll.
+
+   **Seit dem 2026-08-17 beweist er es von allein:** Nach einem `REVISED` liest
+   `lib/ebay-outbox-readback.ts` die Menge zurück und protokolliert sie. Und der
+   Gegenfall — eBay meldet Erfolg, die Menge steht aber nicht auf 0 — löst
+   dauerhaft einen Betriebsalarm aus. Das ist der stille Doppelverkauf, den
+   dieser Punkt verhindern soll, und er wäre ohne Nachlesen unsichtbar geblieben.
+
+   > **Achtung bei der Auswertung:** Die *positive* Protokollzeile ist flüchtig.
+   > Ohne Logpush zeigt `wrangler tail` nur laufenden Verkehr. Der **Alarm** im
+   > Gegenfall kommt per E-Mail und überlebt; das Ausbleiben eines Alarms ist
+   > aber kein Beweis, weil es auch bei fehlgeschlagenem Nachlesen ausbleibt.
 2. ~~**`ALREADY_ENDED_CODES` sind geraten.**~~ **Bestätigt am 2026-08-08.** Das
    Worker-Protokoll meldet für den Testauftrag
    `[ebay-outbox] Auftrag erledigt. { ergebnis: 'ALREADY_ENDED' }` — eBay

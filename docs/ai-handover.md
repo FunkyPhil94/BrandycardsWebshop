@@ -39,7 +39,8 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ### 2026-08-17 - Punkt 6: die zwei Reste am eBay-Schreibpfad
 
-- Stand: **LÄUFT.**
+- Stand: **ABGESCHLOSSEN**, ausgerollt. Rest 2 geschlossen; Rest 1 vorbereitet,
+  aber erst durch den nächsten echten Verkauf beweisbar.
 - Auftrag des Betreibers: Punkt 6 aus dem Arbeitsvorrat.
 
 **Zustand erhoben, bevor geplant wurde** (lesend an der Produktion):
@@ -92,6 +93,63 @@ Betreiberentscheidung; sie wird als solche notiert statt vorweggenommen.
 
 **Abnahme:** `npm test`, `npx tsc --noEmit`, `npm run lint`, Deploy. Rot-Nachweis
 für die neuen Tests. Kein eBay-Schreibzugriff, keine Produktionsdatenänderung.
+
+**Ergebnis: `npm test` 573/573, TypeScript fehlerfrei, ESLint 0 Fehler,
+ausgerollt als Worker-Version `9d7b3fe5-42ef-4f9f-ad5c-7b1060b10708`.** Acht
+neue Tests in `tests/ebay-outbox-readback.test.mjs`.
+
+**Ein Befund beim Testen, der mehr wert ist als die Aufgabe selbst:**
+`lib/ebay-outbox.ts` importiert `../db` als **Verzeichnis**. Node-ESM kann das
+nicht auflösen (`ERR_UNSUPPORTED_DIR_IMPORT`) — die Datei ist aus den Tests
+**gar nicht ladbar**. Deshalb prüft bis heute kein einziger Test die
+Outbox-Schleife; die 15 vorhandenen Tests treffen den Client und das
+Planmodul. Das war nie beabsichtigt, sondern eine unbemerkte Nebenwirkung.
+
+Die neue Logik liegt deshalb in `lib/ebay-outbox-readback.ts`, auf derselben
+Seite der Grenze wie `ebay-outbox-plan.ts` — dort, wo das Projekt den
+entscheidbaren Teil schon einmal abgetrennt hat. Erkennungszeichen: Testbare
+Module importieren **mit** `.ts`-Endung, gebündelte ohne.
+
+> **Für später, als eigener kleiner Punkt:** `processEbayOutbox` selbst bleibt
+> ungetestet. Wer das ändern will, muss `getDb` injizierbar machen oder den
+> Verzeichnisimport auflösen. Kein Notfall — der Pfad ist an echten Daten
+> belegt —, aber es sollte bewusst dastehen statt unbemerkt zu bleiben.
+
+**Rest 2 — geschlossen.** `reviseEbayItemQuantity` protokolliert jetzt, **welche**
+der drei `ALREADY_ENDED_CODES` gegriffen hat, samt aller gemeldeten Nummern. Der
+Rückgabetyp blieb die schlichte Zeichenkette; vier bestehende Tests hängen daran,
+und ein Vertragsumbau nur zur Protokollierung wäre der falsche Preis. Die beiden
+Zeilen sind über `ebayItemId` zusammenzuführen.
+
+**Rest 1 — nicht beweisbar, aber vorbereitet.** Nach einem `REVISED` wird die
+Menge über `getEbayAvailability` zurückgelesen und protokolliert. Damit belegt
+der nächste echte Verkauf von allein, dass die Menge eines **laufenden**
+Angebots auf 0 fällt — ohne dass jemand im richtigen Moment mitlesen muss.
+
+**Der bleibende Gewinn ist aber der Gegenfall:** Meldet eBay Erfolg, während die
+Menge danach nicht 0 ist, wäre die Karte im Shop verkauft und dort weiter
+käuflich. Genau der stille Doppelverkauf, den Punkt 6 verhindern soll — und er
+wäre ohne Nachlesen unsichtbar. Dieser Fall alarmiert jetzt dauerhaft.
+
+Drei Entscheidungen dazu, jeweils gegen die bequemere Variante:
+
+- **`null` alarmiert nicht.** „Nicht ablesbar" ist nicht „nicht null", sonst
+  meldete jede unvollständige eBay-Antwort einen Doppelverkauf.
+- **Ein Fehlschlag beim Nachlesen wirft nicht.** Der Auftrag bleibt
+  `SUCCEEDED`; ein Wurf schickte ihn in `RETRY_WAIT` und setzte dieselbe Menge
+  ein zweites Mal. Eine Diagnose darf den Geschäftsvorgang nicht gefährden.
+- **Nur bei `REVISED`, nicht bei `ALREADY_ENDED`.** Dort ist nichts mehr zu
+  prüfen, und der Trading-Topf von 5 000 Aufrufen/Tag ist geteilt.
+
+**Was offen bleibt — und beim Betreiber liegt:**
+
+1. **Der Erfolgsfall selbst.** Beweisbar durch den nächsten echten Verkauf, oder
+   vorgezogen über ein Wegwerf-Angebot. Letzteres wäre ein **Schreibzugriff auf
+   eBay** und wurde nicht eigenmächtig vorgenommen.
+2. **Worker-Protokolle sind flüchtig.** Ohne Logpush zeigt `wrangler tail` nur
+   laufenden Verkehr; passiert der Verkauf, während niemand mitliest, ist die
+   Protokollzeile weg. Der **Alarm** im Gegenfall kommt dagegen per E-Mail an
+   und überlebt. Ob Logpush eingerichtet wird, ist eine Betreiberentscheidung.
 
 ## Historie
 

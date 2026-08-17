@@ -1,5 +1,62 @@
 # BrandyCards Agentenprotokoll
 
+## 2026-08-17 - Punkt 6: Was nicht beweisbar ist, kann man wenigstens bezeugen lassen
+
+Der eBay-Schreibpfad war seit dem 2026-08-08 abgenommen, mit zwei kleinen
+Resten. Der erste — fällt die Menge eines **laufenden** Angebots wirklich auf 0?
+— ist der wichtigere: Er ist die Richtung, die Doppelverkäufe verhindert. Der
+Abnahmetest lief gegen ein bereits beendetes Angebot und konnte ihn nicht zeigen.
+
+**Zuerst der Zustand, dann der Plan.** Die Produktion meldete lesend zwei
+Outbox-Aufträge, beide `SUCCEEDED`, den neuesten vom 08.08. Nichts hängt, nichts
+ist fehlgeschlagen — aber auch nichts Neues: Seit der Abnahme hat kein
+Shop-Verkauf den Pfad berührt. Rest 1 war also nicht durch Warten erledigt
+worden, wie man hätte hoffen können.
+
+**Beweisen konnte ich ihn nicht, und das ist eine Grenze, keine Bequemlichkeit.**
+Es bräuchte einen echten Verkauf — nicht herbeiführbar — oder ein
+Wegwerf-Angebot, also einen Schreibzugriff auf ein Fremdsystem. Der ist
+ausdrücklich rücksprachepflichtig, und ihn eigenmächtig vorzunehmen wäre genau
+die Art von Eigeninitiative, die in einem Shop mit Einzelstücken teuer wird.
+
+**Also die Frage gedreht: Wenn ich es nicht beweisen kann, kann ich dafür sorgen,
+dass der nächste echte Verkauf es von allein bezeugt?** Bisher belegte ein
+erfolgreicher Auftrag nur, dass eBay die Anfrage angenommen hat. `Ack: Success`
+ist aber nicht dasselbe wie „die Menge steht jetzt auf 0". Nach einem `REVISED`
+wird sie deshalb über das vorhandene `getEbayAvailability` zurückgelesen.
+
+**Der eigentliche Gewinn stellte sich dabei als der Gegenfall heraus.** Meldet
+eBay Erfolg, während die Menge danach nicht 0 ist, wäre die Karte im Shop
+verkauft und dort weiter käuflich — genau der stille Doppelverkauf, dessen
+Verhinderung der Sinn dieses Punktes ist. Ohne Nachlesen ist dieser Zustand
+unsichtbar: Die Outbox stünde auf `SUCCEEDED`, und niemand hätte einen Anlass
+nachzusehen. Aus einer einmaligen Beweisführung wurde damit eine dauerhafte
+Kontrolle — das ist mehr wert als der Beweis selbst.
+
+Drei Entscheidungen fielen dabei jeweils gegen die bequemere Variante. `null`
+alarmiert nicht, weil „nicht ablesbar" nicht „nicht null" ist — dieselbe Linie,
+die `AssistantSalesChannel.available` zieht. Ein Fehlschlag beim Nachlesen wirft
+nicht, weil der Auftrag sonst in `RETRY_WAIT` liefe und dieselbe Menge ein
+zweites Mal setzte; eine Diagnose darf den Geschäftsvorgang nicht gefährden. Und
+nachgelesen wird nur bei `REVISED`, weil bei einem beendeten Angebot nichts mehr
+zu prüfen ist und der Trading-Topf geteilt wird.
+
+**Der lehrreichste Fund kam beim Testen und hat mit der Aufgabe nichts zu tun.**
+Der erste Testlauf scheiterte an `ERR_UNSUPPORTED_DIR_IMPORT`:
+`lib/ebay-outbox.ts` importiert `../db` als Verzeichnis, und Node-ESM kann das
+nicht auflösen. Die Datei ist aus den Tests **gar nicht ladbar** — weshalb kein
+einziger der fünfzehn Outbox-Tests die Schleife selbst prüft. Sie treffen alle
+den Client und das Planmodul. Niemand hat das entschieden; es ist eine
+unbemerkte Nebenwirkung der Importform.
+
+Sichtbar wurde es nur, weil ich neue Logik zunächst in die falsche Datei
+geschrieben hatte und sie testen wollte. Wäre ich dem Muster der bestehenden
+Tests gefolgt, ohne einen eigenen zu schreiben, wäre die Lücke weiter unbemerkt
+geblieben — und mein Code mit ihr ungetestet. **Ein Testlauf, der an der
+Modulauflösung scheitert, ist deshalb kein Werkzeugärgernis, sondern eine
+Aussage über die Architektur.** Die Grenze verläuft in diesem Projekt sichtbar
+an der Dateiendung: Testbare Module importieren mit `.ts`, gebündelte ohne.
+
 ## 2026-08-17 - Modell-Planer: Ein alter Test hatte recht, aber nicht ganz
 
 Punkt 1 der offenen Assistant-Themen bestand nominell aus einem einzigen

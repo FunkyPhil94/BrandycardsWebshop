@@ -405,7 +405,17 @@ export async function reviseEbayItemQuantity(ebayItemId: string, quantity: numbe
   const ack = xmlValue(xml, "Ack")?.toUpperCase();
   if (ack === "FAILURE" || ack === "PARTIAL_FAILURE") {
     // An already-ended listing is the outcome we wanted, not a failure.
-    if (tradingErrorCodes(xml).some((code) => ALREADY_ENDED_CODES.has(code))) return "ALREADY_ENDED" as const;
+    const codes = tradingErrorCodes(xml);
+    const getroffen = codes.filter((code) => ALREADY_ENDED_CODES.has(code));
+    if (getroffen.length) {
+      // **Welche der drei Nummern es war.** `ALREADY_ENDED_CODES` entstand aus
+      // der Dokumentation, nicht aus Beobachtung; der Abnahmetest am
+      // 2026-08-08 belegte nur, dass *eine* davon griff. Ohne diese Zeile
+      // bleibt unbekannt, welche — und damit auch, ob die beiden anderen je
+      // vorkommen oder Ballast sind.
+      console.log("[ebay] ReviseInventoryStatus: Angebot war bereits beendet.", { itemId, getroffen, alleCodes: codes });
+      return "ALREADY_ENDED" as const;
+    }
     throw new Error(`eBay ReviseInventoryStatus fehlgeschlagen: ${xmlValue(xml, "LongMessage") ?? "Unbekannter eBay-Fehler."}`);
   }
   return "REVISED" as const;
