@@ -574,6 +574,20 @@ export const pageViews = sqliteTable("page_views", {
   index("page_views_bucket_idx").on(table.bucketStart),
 ]);
 
+/** Aufrufe, deren Eimer die Aufbewahrungsfrist verlassen haben.
+ *
+ * Damit „insgesamt" auch wirklich insgesamt heißt: `SUM(page_views)` allein
+ * wäre „letzte 90 Tage" und würde ab Tag 91 schrumpfen, während der Shop
+ * wächst. Der geplante Lauf summiert ablaufende Eimer hierher, bevor er sie
+ * löscht — siehe `lib/page-views-retention.ts`.
+ */
+export const pageViewArchive = sqliteTable("page_view_archive", {
+  id: id(),
+  path: text("path").notNull(),
+  viewCount: integer("view_count").notNull().default(0),
+  updatedAt: timestamp("updated_at"),
+}, (table) => [uniqueIndex("page_view_archive_path_unique").on(table.path)]);
+
 export type User = typeof users.$inferSelect;
 export type Product = typeof products.$inferSelect;
 export type Order = typeof orders.$inferSelect;

@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "app/globals.css"
+        ],
+        "createdAt": "2026-08-17T17:56:12.826Z",
+        "reason": "user confirmed: Rahmen so lassen -- 3px-Akzent links ist die durchgehende Akzentsprache des Shops (Gold = beachten, Rot = Fehler)"
+      }
+    ]
+  }
+}

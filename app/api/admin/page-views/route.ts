@@ -1,7 +1,7 @@
 import { gte, sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { getDb } from "../../../../db";
-import { pageViews } from "../../../../db/schema";
+import { pageViewArchive, pageViews } from "../../../../db/schema";
 import { requireAdmin } from "../../../../lib/admin-access";
 import { AUFRUF_FENSTER, fensterBeginn, type AufrufFenster } from "../../../../lib/page-views";
 
@@ -26,7 +26,7 @@ export async function GET(request: Request) {
     const summe = (fenster: AufrufFenster) =>
       sql<number>`coalesce(sum(case when ${pageViews.bucketStart} >= ${beginn[fenster]} then ${pageViews.viewCount} else 0 end), 0)`;
 
-    const [zeilen, [erfassung]] = await Promise.all([
+    const [zeilen, [erfassung], [alleEimer], [archiv]] = await Promise.all([
       db.select({
         pfad: pageViews.path,
         tag: summe("tag"),
@@ -40,6 +40,12 @@ export async function GET(request: Request) {
       // alles, was es überhaupt gibt — und der Betreiber muss das sehen können,
       // statt es zu erraten.
       db.select({ erstesEimer: sql<string | null>`min(${pageViews.bucketStart})` }).from(pageViews),
+      // Der Gesamtstand steht in **zwei** Tabellen, und das ist kein Versehen:
+      // `page_views` hält nur, was jünger als die Aufbewahrungsfrist ist. Wer
+      // hier `page_view_archive` wegließe, bekäme keine Gesamtzahl, sondern
+      // eine, die ab Tag 91 schrumpft. Siehe `lib/page-views-retention.ts`.
+      db.select({ summe: sql<number>`coalesce(sum(${pageViews.viewCount}), 0)` }).from(pageViews),
+      db.select({ summe: sql<number>`coalesce(sum(${pageViewArchive.viewCount}), 0)` }).from(pageViewArchive),
     ]);
 
     // Die Aufschlüsselung folgt dem größten Fenster, damit die Reihenfolge
@@ -58,6 +64,7 @@ export async function GET(request: Request) {
         tag: { titel: AUFRUF_FENSTER.tag.titel, gesamt: gesamt("tag") },
         woche: { titel: AUFRUF_FENSTER.woche.titel, gesamt: gesamt("woche") },
         monat: { titel: AUFRUF_FENSTER.monat.titel, gesamt: gesamt("monat") },
+        insgesamt: { titel: "Insgesamt", gesamt: Number(alleEimer?.summe ?? 0) + Number(archiv?.summe ?? 0) },
       },
       seiten,
     });

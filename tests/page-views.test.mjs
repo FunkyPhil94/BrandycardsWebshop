@@ -14,7 +14,10 @@ const {
 } = await import("../lib/page-views.ts");
 
 const migration = await readFile(new URL("../drizzle/0014_page_views.sql", import.meta.url), "utf8");
+const archivMigration = await readFile(new URL("../drizzle/0015_page_view_archive.sql", import.meta.url), "utf8");
 const beaconRoute = await readFile(new URL("../app/api/page-views/route.ts", import.meta.url), "utf8");
+const adminRoute = await readFile(new URL("../app/api/admin/page-views/route.ts", import.meta.url), "utf8");
+const aufbewahrung = await readFile(new URL("../lib/page-views-retention.ts", import.meta.url), "utf8");
 const worker = await readFile(new URL("../worker/index.ts", import.meta.url), "utf8");
 
 const NOW = new Date("2026-08-17T14:37:12.480Z");
@@ -152,6 +155,41 @@ test("die Beacon-Route antwortet dem Besucher nie mit einem Fehler", () => {
 });
 
 test("die Aufbewahrung hängt im geplanten Lauf", () => {
-  assert.match(worker, /aufrufAufbewahrungGrenze/u);
-  assert.match(worker, /delete\(pageViews\)/u);
+  assert.match(worker, /foldExpiredPageViews\(getDb\(\)\)/u);
+});
+
+// --- Der Gesamtstand -------------------------------------------------------
+// „Insgesamt" darf nicht heimlich „letzte 90 Tage" heißen. Genau das wäre es,
+// wenn die Aufbewahrungsfrist Eimer löschte, ohne sie vorher zu summieren:
+// Die Zahl finge ab Tag 91 an zu schrumpfen, während der Shop wächst.
+
+test("abgelaufene Eimer werden archiviert, bevor sie gelöscht werden", () => {
+  const archivStelle = aufbewahrung.indexOf("insert(pageViewArchive)");
+  const loeschStelle = aufbewahrung.indexOf("delete(pageViews)");
+  assert.ok(archivStelle > 0 && loeschStelle > 0, "Archivierung oder Löschung fehlt");
+  assert.ok(archivStelle < loeschStelle, "gelöscht wird vor dem Archivieren — der Gesamtstand ginge verloren");
+});
+
+test("Archivieren und Löschen gehen gemeinsam oder gar nicht", () => {
+  // Zwei einzelne Anweisungen hätten zwei stille Fehlschläge: nach dem
+  // Archivieren abgebrochen zählt doppelt, nach dem Löschen abgebrochen
+  // verliert. `batch` ist auf D1 eine Transaktion.
+  assert.match(aufbewahrung, /db\.batch\(\[/u);
+  const batchStelle = aufbewahrung.indexOf("db.batch([");
+  assert.ok(batchStelle < aufbewahrung.indexOf("insert(pageViewArchive)"));
+  assert.ok(batchStelle < aufbewahrung.indexOf("delete(pageViews)"));
+});
+
+test("das Archiv addiert auf, statt zu überschreiben", () => {
+  // `set: { viewCount: <neuer Wert> }` wäre der Fehler, der bei jedem zweiten
+  // Ablauf alles Ältere verwirft.
+  assert.match(aufbewahrung, /viewCount: sql`\$\{pageViewArchive\.viewCount\} \+ excluded\.view_count`/u);
+  assert.match(archivMigration, /CREATE UNIQUE INDEX[^\n]*page_view_archive_path_unique[^\n]*\(`path`\)/u);
+});
+
+test("der Gesamtstand liest beide Tabellen", () => {
+  // Ohne das Archiv wäre „insgesamt" nur der Inhalt der Aufbewahrungsfrist.
+  assert.match(adminRoute, /sum\(\$\{pageViews\.viewCount\}\)/u);
+  assert.match(adminRoute, /sum\(\$\{pageViewArchive\.viewCount\}\)/u);
+  assert.match(adminRoute, /insgesamt:/u);
 });

@@ -7374,3 +7374,10 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 - Offen vor dem Deploy: Migration 0014 muss auf der produktiven D1 laufen, und der Zweig muss nach `main`. Vorher zählt nichts.
 - Hinweis: Rückwirkende Zahlen gibt es nicht. Der erste Eimer entsteht mit dem Deploy; 7- und 30-Tage-Werte sind bis dahin unvollständig und sagen das in der Kachel auch.
 - Status: ABGESCHLOSSEN (Code), Deploy ausstehend.
+
+## Auftrag 2026-08-17: Gesamtzähler und Produktivsetzung
+- Status: LÄUFT.
+- Ziel: Zusätzlich zu 24h/7d/30d eine Zahl „insgesamt" seit Beginn der Erfassung; anschließend Zweig nach `main`, Migration auf die produktive D1 und Deploy.
+- Fallstrick: Ein einfaches `SUM(page_views)` wäre **nicht** „insgesamt", sondern „letzte 90 Tage" — die Aufbewahrungsfrist löscht ältere Eimer, und die Zahl würde ab Tag 91 stillschweigend schrumpfen statt zu wachsen.
+- Umsetzung: Neue Tabelle `page_view_archive`; der Cron summiert ablaufende Eimer dorthin, **bevor** er sie löscht, und zwar in einem `batch` (auf D1 atomar). Gesamt = Archiv + vorhandene Eimer. Der heiße Pfad bleibt bei einem Schreibvorgang je Aufruf.
+- Prüfung: erweiterter `tests/page-views.test.mjs`, `npm test`, `npm run lint`, `npx tsc --noEmit`; danach Deploy-Verifikation an einer Seite, die Client-Konfiguration braucht.

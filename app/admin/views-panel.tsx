@@ -7,7 +7,7 @@ type Seite = { pfad: string; tag: number; woche: number; monat: number };
 
 type Aufrufe = {
   erfasstSeit: string | null;
-  fenster: Record<"tag" | "woche" | "monat", { titel: string; gesamt: number }>;
+  fenster: Record<"tag" | "woche" | "monat" | "insgesamt", { titel: string; gesamt: number }>;
   seiten: Seite[];
 };
 
@@ -81,9 +81,12 @@ export function ViewsPanel() {
   return <section className="admin-section">
     <h2>Aufrufe im Shop</h2>
     <div className="admin-stats admin-views-stats">
-      {(["tag", "woche", "monat"] as const).map((fenster) => <div key={fenster}>
-        <strong>{ZAHL.format(aufrufe.fenster[fenster].gesamt)}</strong>
-        <span>{aufrufe.fenster[fenster].titel}</span>
+      {/* „Insgesamt" steht am Ende, nicht am Anfang: Die Zeiträume sind die
+          Zahlen, an denen man ablesen kann, ob es gerade läuft. Der
+          Gesamtstand wächst immer und beantwortet keine Frage über heute. */}
+      {(["tag", "woche", "monat", "insgesamt"] as const).map((fenster) => <div key={fenster}>
+        <strong>{ZAHL.format(aufrufe.fenster[fenster]?.gesamt ?? 0)}</strong>
+        <span>{aufrufe.fenster[fenster]?.titel ?? fenster}</span>
       </div>)}
     </div>
     <p className="admin-views-note">{erfassungstext(aufrufe.erfasstSeit)}</p>
