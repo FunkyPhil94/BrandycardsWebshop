@@ -9428,3 +9428,18 @@ selbst; die Schrittfolge samt Nachprüfung steht in
   zeigen. Tut es das nicht, läuft der Cron nicht wie gedacht — das wäre dann ein
   eigener Befund.
 - Status: ABGESCHLOSSEN, mit der oben benannten Nachprüfung.
+
+## Auftrag 2026-08-17: Bilder im Admin vergrößern
+- Status: LÄUFT.
+- Anlass: Der Betreiber braucht die eingesendeten Karten in groß, um Zustand
+  und Details zu beurteilen — 56×56 Vorschaubilder reichen dafür nicht.
+- Vorgehen: **Keine neue Lightbox.** Die Kartendetailseite hat seit Längerem
+  eine (`app/karten/[id]/page.tsx`, Klassen `.lightbox` / `.lightbox-close`).
+  Der Adminbereich bekommt dieselbe — gleiche Klassen, gleiche Escape-Taste,
+  gleiche Sperre des Hintergrundscrollens. Zwei Lösungen für dasselbe Problem
+  wären doppelte Pflege und säßen beim nächsten Umbau garantiert auseinander.
+- Zusätzlich: Die Vorschaubilder werden zu Schaltflächen, damit sie auch mit der
+  Tastatur erreichbar sind.
+- Vorher geprüft (echtes Foto vom Betreiber, `acf91b90…`): 2 767 422 Byte in R2,
+  identisch zur Datenbank, echtes PNG mit Bilddaten, 1024×1536. Die Anzeige im
+  Admin funktioniert damit — die Kette Formular → R2 → Admin ist bewiesen.
