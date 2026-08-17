@@ -59,12 +59,22 @@ export async function GET(request: Request) {
       db.select({ count: count() }).from(cardSubmissions),
       db.select({ count: count() }).from(orders),
     ]);
-    const recentRows = await db.select({ id: cardSubmissions.id, email: cardSubmissions.guestEmail, name: cardSubmissions.name, message: cardSubmissions.message, status: cardSubmissions.status, createdAt: cardSubmissions.createdAt }).from(cardSubmissions).orderBy(desc(cardSubmissions.createdAt)).limit(20);
+    // **`requestedAmountCents` und der Nachrichtentext fehlten hier bis zum
+    // 2026-08-17.** Beides füllt der Anbieter im Formular aus („Gewünschter
+    // Preis", „Nachricht"), beides wird gespeichert — nur gelesen wurde es
+    // nie. Im Adminbereich stand ein Angebot ohne Preisvorstellung und ohne
+    // den Hinweis dazu; wer verhandeln wollte, musste in die Datenbank sehen.
+    const recentRows = await db.select({ id: cardSubmissions.id, email: cardSubmissions.guestEmail, name: cardSubmissions.name, message: cardSubmissions.message, requestedAmountCents: cardSubmissions.requestedAmountCents, status: cardSubmissions.status, createdAt: cardSubmissions.createdAt }).from(cardSubmissions).orderBy(desc(cardSubmissions.createdAt)).limit(20);
     const recentSubmissions = await Promise.all(recentRows.map(async (submission) => {
       const assets = await db.select({ id: cardSubmissionAssets.id, originalName: cardSubmissionAssets.originalName, mimeType: cardSubmissionAssets.mimeType, byteSize: cardSubmissionAssets.byteSize }).from(cardSubmissionAssets).where(eq(cardSubmissionAssets.submissionId, submission.id));
       let title = "Kartenangebot";
-      try { title = typeof submission.message === "string" ? (JSON.parse(submission.message) as { title?: string }).title ?? title : title; } catch { /* keep safe fallback */ }
-      return { id: submission.id, email: submission.email, name: submission.name, title, status: submission.status, createdAt: submission.createdAt, assets };
+      let text: string | null = null;
+      try {
+        const inhalt = typeof submission.message === "string" ? JSON.parse(submission.message) as { title?: string; message?: string | null } : null;
+        title = inhalt?.title ?? title;
+        text = typeof inhalt?.message === "string" && inhalt.message.trim() ? inhalt.message : null;
+      } catch { /* keep safe fallback */ }
+      return { id: submission.id, email: submission.email, name: submission.name, title, text, requestedAmountCents: submission.requestedAmountCents, status: submission.status, createdAt: submission.createdAt, assets };
     }));
 
     return NextResponse.json({

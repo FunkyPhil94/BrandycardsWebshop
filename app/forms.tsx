@@ -70,22 +70,36 @@ export function PrivacyNotice() {
   return <p className="form-feedback">{t("Wir verwenden deine Angaben nur zur Bearbeitung deiner Anfrage. Mehr dazu in unserer")} <Link href="/datenschutz">{t("Datenschutz- und Löschinformation")}</Link>.</p>;
 }
 
-function errorMessage(data: unknown, fallback: string) {
+/** Die Meldung, die der Absender zu sehen bekommt.
+ *
+ * **Nicht jede Fehlerantwort kommt aus unseren Routen.** Die antworten mit
+ * `{error:{message}}`, aber davor liegen Rahmenwerk und Cloudflare, und die
+ * schicken Klartext: ein zu großer Upload wird zu `413 Payload Too Large`,
+ * lange bevor eine Route ihn sieht. Bis zum 2026-08-17 fiel das auf den
+ * allgemeinen Ersatztext zurück — der Betreiber las „Die Anfrage konnte nicht
+ * gesendet werden" und hatte keine Möglichkeit zu erkennen, dass schlicht das
+ * Bild zu groß war. Deshalb hat der Statuscode hier eigene Sätze.
+ */
+function errorMessage(data: unknown, fallback: string, status?: number) {
   const error = (data as { error?: { message?: unknown } })?.error;
-  return typeof error?.message === "string" ? error.message : fallback;
+  if (typeof error?.message === "string") return error.message;
+  if (status === 413) return "Die Daten sind zu groß. Bitte kleinere oder weniger Bilder wählen.";
+  if (status === 429) return "Zu viele Anfragen. Bitte einen Moment warten und erneut versuchen.";
+  if (status === 403) return "Die Anfrage wurde abgewiesen. Bitte die Seite neu laden und erneut versuchen.";
+  return fallback;
 }
 
 export async function postJson(path: string, payload: Record<string, unknown>, successMessage = "Danke! Deine Anfrage ist bei uns eingegangen. Wir melden uns per E-Mail.", fallback = "Die Anfrage konnte nicht gesendet werden.") {
   const response = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(errorMessage(data, fallback));
+  if (!response.ok) throw new Error(errorMessage(data, fallback, response.status));
   return successMessage;
 }
 
 export async function postMultipart(path: string, form: HTMLFormElement, successMessage = "Danke! Dein Kartenangebot und die Bilder sind sicher bei uns eingegangen.", fallback = "Die Anfrage konnte nicht gesendet werden.") {
   const response = await fetch(path, { method: "POST", body: new FormData(form) });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(errorMessage(data, fallback));
+  if (!response.ok) throw new Error(errorMessage(data, fallback, response.status));
   return successMessage;
 }
 

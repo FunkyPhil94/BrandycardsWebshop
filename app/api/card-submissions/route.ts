@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { cardSubmissionAssets, cardSubmissions } from "../../../db/schema";
 import { getAssetBucket, getDb } from "../../../db";
 import { eq } from "drizzle-orm";
-import { notifyCardSubmissionReceived } from "../../../lib/email/notify.ts";
+import { notifyCardSubmissionReceived, notifySellerEvent } from "../../../lib/email/notify.ts";
 import { enforcePublicRateLimit } from "../../../lib/rate-limit";
 import { localeFromRequest } from "../../../lib/i18n";
 import { HONEYPOT_FIELD, RENDERED_AT_FIELD } from "../../../lib/form-bot-guard";
@@ -41,6 +41,12 @@ export async function POST(request: Request) {
       requestedAmountCents: requestedAmount === null ? null : Math.round(requestedAmount * 100),
       message: formMetadata(title, message, { imageMetadata }),
     }).returning({ id: cardSubmissions.id });
+    await notifySellerEvent("Kartenangebot", title, [
+      { label: "Von", wert: name ? `${name} · ${email}` : email },
+      { label: "Preisvorstellung", wert: preistext(requestedAmount) },
+      { label: "Bilder", wert: `${imageMetadata.length} (nur Angaben, ohne Dateien)` },
+      ...(message ? [{ label: "Nachricht", wert: message }] : []),
+    ], `card-submission:${row?.id ?? "unbekannt"}`);
     return NextResponse.json({ ok: true, cardSubmissionId: row?.id, uploads: "METADATA_ONLY" }, { status: 201 });
   } catch (error) {
     return jsonError(error);
@@ -101,7 +107,22 @@ async function handleMultipartSubmission(request: Request) {
   // das Angebot bei einem Uploadfehler wieder ab — eine Bestätigung für etwas,
   // das gleich wieder gelöscht wird, wäre schlimmer als keine.
   await notifyCardSubmissionReceived(email, title, localeFromRequest(request));
+  await notifySellerEvent("Kartenangebot", title, [
+    { label: "Von", wert: name ? `${name} · ${email}` : email },
+    { label: "Preisvorstellung", wert: preistext(requestedAmount) },
+    { label: "Bilder", wert: `${uploads.length}` },
+    ...(message ? [{ label: "Nachricht", wert: message }] : []),
+  ], `card-submission:${submission.id}`);
   return NextResponse.json({ ok: true, cardSubmissionId: submission.id, uploads: uploads.length }, { status: 201 });
+}
+
+/** Die Preisvorstellung für die Betreibernachricht.
+ *
+ * „Keine genannt" muss ausgeschrieben dastehen: Das Feld ist freiwillig, und
+ * eine leere Zeile wäre in einer E-Mail nicht von einem Fehler zu unterscheiden.
+ */
+function preistext(betrag: number | null) {
+  return betrag === null ? "keine genannt" : new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(betrag);
 }
 
 async function validateAndReadImage(file: File) {

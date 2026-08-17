@@ -63,6 +63,32 @@ export function OfferForm({ productId, listPriceCents, currency }: { productId: 
     return () => { cancelled = true; };
   }, [productId, reloadToken]);
 
+  /** Noch einmal nachfragen, sobald sich die Anmeldung ändert.
+   *
+   * **Ohne das entscheidet ein Wettlauf über den Kasten.** Die Prüfung oben
+   * läuft einmal beim Aufbau der Seite. Liegt in dem Moment noch kein Token
+   * vor — Supabase liest die Sitzung asynchron aus dem Speicher und erneuert
+   * ein abgelaufenes Zugriffstoken erst im Hintergrund —, kommt `signedIn:
+   * false` zurück, und der Kasten fordert zum Anmelden auf. Bei jemandem, der
+   * angemeldet ist. Er blieb bis zum 2026-08-17 auch dabei, weil nichts die
+   * Frage je wiederholte.
+   *
+   * `onAuthStateChange` meldet sich, sobald die Sitzung steht (auch bei
+   * `TOKEN_REFRESHED` und nach dem Abmelden), und der Zähler stößt die Prüfung
+   * erneut an.
+   */
+  useEffect(() => {
+    let subscription: { unsubscribe: () => void } | undefined;
+    try {
+      subscription = getSupabaseBrowserClient().auth.onAuthStateChange(() => {
+        setReloadToken((token) => token + 1);
+      }).data.subscription;
+    } catch {
+      // Ohne Supabase-Konfiguration bleibt es beim einmaligen Versuch oben.
+    }
+    return () => subscription?.unsubscribe();
+  }, []);
+
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = event.currentTarget;

@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 const {
   cardSubmissionReceived, escapeHtml, formatMoney, inquiryReceived,
-  bestandshinweis, offerAccepted, offerRejected, operationalAlert, orderConfirmation, sanitizeSubject, sellerOrderNotification,
+  bestandshinweis, offerAccepted, offerRejected, operationalAlert, orderConfirmation, sanitizeSubject, sellerEventNotification, sellerOrderNotification,
 } = await import("../lib/email/templates.ts");
 
 const SHOP = "https://shop.brandycards.de";
@@ -478,4 +479,75 @@ test("der Hinweis wird maskiert und kann kein Markup einschleusen", () => {
   const nachricht = sellerOrderNotification({ ...VERKAUF, bestandspruefung: "FEHLGESCHLAGEN" });
   assert.ok(!/<script/i.test(nachricht.html));
   assert.ok(nachricht.html.includes("&mdash;") || !nachricht.html.includes("<b>"), "kein rohes Markup aus dem Hinweis");
+});
+
+// --- Betreiberhinweise ------------------------------------------------------
+// Bis zum 2026-08-17 bekam bei Anfragen, Ankaufsangeboten und Preisvorschlägen
+// nur der Kunde eine Nachricht. Der Betreiber erfuhr davon erst, wenn er von
+// sich aus in den Adminbereich sah — bei einem Shop, den niemand hauptberuflich
+// beobachtet, heißt das: manchmal tagelang gar nicht.
+
+const routen = Object.fromEntries(await Promise.all([
+  ["anfragen", "../app/api/inquiries/route.ts"],
+  ["vormerkung", "../app/api/prelisted-interest/route.ts"],
+  ["ankauf", "../app/api/card-submissions/route.ts"],
+  ["preisvorschlag", "../app/api/price-offers/route.ts"],
+].map(async ([name, pfad]) => [name, await readFile(new URL(pfad, import.meta.url), "utf8")])));
+
+test("jeder Vorgang im Shop meldet sich beim Betreiber", () => {
+  for (const [name, quelle] of Object.entries(routen)) {
+    assert.match(quelle, /notifySellerEvent\(/u, `${name} benachrichtigt den Betreiber nicht`);
+  }
+});
+
+test("die Benachrichtigung steht hinter dem Speichern, nicht davor", () => {
+  // Andersherum wäre ein misslungener Versand ein Fehler im Formular des
+  // Kunden — für einen Vorgang, der längst angekommen ist.
+  for (const [name, quelle] of Object.entries(routen)) {
+    const speichern = Math.max(quelle.indexOf(".returning("), quelle.indexOf("db.batch("));
+    assert.ok(speichern > 0, `${name}: kein Speichern gefunden`);
+    assert.ok(quelle.indexOf("notifySellerEvent(") > speichern, `${name}: benachrichtigt vor dem Speichern`);
+  }
+});
+
+test("der Ankauf nennt die Preisvorstellung, auch wenn keine da ist", () => {
+  // Eine fehlende Zeile wäre in einer E-Mail nicht von einem Fehler zu
+  // unterscheiden.
+  assert.match(routen.ankauf, /Preisvorstellung/u);
+  assert.match(routen.ankauf, /keine genannt/u);
+});
+
+test("der Preisvorschlag nennt den Listenpreis daneben", () => {
+  // Ein Betrag ohne Vergleichswert beantwortet nicht, ob er annehmbar ist.
+  assert.match(routen.preisvorschlag, /Listenpreis/u);
+});
+
+test("die Betreibernachricht trägt Anlass und Karte im Betreff", () => {
+  const nachricht = sellerEventNotification({
+    ereignis: "Kartenangebot",
+    titel: "2023-24 Panini Prizm Saka",
+    zeilen: [{ label: "Von", wert: "kunde@example.com" }, { label: "Preisvorstellung", wert: "200,00 €" }],
+    shopUrl: SHOP,
+  });
+  assert.match(nachricht.subject, /Kartenangebot/u);
+  assert.match(nachricht.subject, /Saka/u);
+  assert.ok(nachricht.text.includes("kunde@example.com"), "die Adresse gehört in den Text");
+  assert.ok(nachricht.text.includes("200,00 €"), "der Betrag auch");
+  assert.ok(nachricht.text.includes(`${SHOP}/admin`), "und der Weg in den Adminbereich");
+});
+
+test("fremde Eingaben können kein Markup einschleusen", () => {
+  // Titel und Nachricht kommen aus einem öffentlichen Formular.
+  const nachricht = sellerEventNotification({
+    ereignis: "Kartenanfrage",
+    titel: "<script>alert(1)</script>",
+    zeilen: [{ label: "Nachricht", wert: "<img src=x onerror=alert(1)>" }],
+    shopUrl: SHOP,
+  });
+  // Geprüft wird die spitze Klammer, nicht das Wort: `onerror=` darf als
+  // *Text* dastehen — gefährlich wird es erst, wenn daraus ein Element wird.
+  assert.ok(!/<script/iu.test(nachricht.html), "kein Skript im HTML");
+  assert.ok(!/<img/iu.test(nachricht.html), "kein eingeschleustes Element im HTML");
+  assert.ok(nachricht.html.includes("&lt;img"), "die Eingabe steht maskiert da, statt zu fehlen");
+  assert.ok(!/[\r\n]/u.test(nachricht.subject), "kein Zeilenumbruch im Betreff");
 });

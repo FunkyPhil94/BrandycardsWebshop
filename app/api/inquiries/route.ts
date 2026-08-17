@@ -11,7 +11,7 @@ import {
   requiredEmail,
   requiredString,
 } from "../../../lib/public-form";
-import { notifyInquiryReceived } from "../../../lib/email/notify.ts";
+import { notifyInquiryReceived, notifySellerEvent } from "../../../lib/email/notify.ts";
 import { enforcePublicRateLimit } from "../../../lib/rate-limit";
 import { localeFromRequest } from "../../../lib/i18n";
 
@@ -35,6 +35,10 @@ export async function POST(request: Request) {
     // Nach dem Speichern, nie davor: Die Anfrage ist auch dann angekommen,
     // wenn die Bestätigung nicht hinausgeht.
     await notifyInquiryReceived(email, title, localeFromRequest(request));
+    await notifySellerEvent("Kartenanfrage", title, [
+      { label: "Von", wert: name ? `${name} · ${email}` : email },
+      { label: "Nachricht", wert: message },
+    ], `inquiry:${row?.id ?? "unbekannt"}`);
     return NextResponse.json({ ok: true, inquiryId: row?.id }, { status: 201 });
   } catch (error) {
     return jsonError(error);
