@@ -37,9 +37,47 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-<!-- Fuer den naechsten Auftrag freihalten. -->
+### 2026-08-17 - Messen, welche Fragen der Assistent nicht versteht
 
-Keine laufenden Aufträge.
+- Stand: **LÄUFT.**
+- Auftrag: Vom Betreiber aus vier vorgelegten Wegen gewählt. Für den Assistenten
+  stand im Vorrat nichts mehr offen; dies ist ein neuer Punkt.
+
+**Warum dieser zuerst.** Der Assistent hat zwölf Werkzeuge. Welche fehlen, weiß
+niemand — Fragen, die in `UNSUPPORTED` enden, verschwinden spurlos. Jeder
+Ausbau wäre damit geraten. Der heutige Tag hat zweimal gezeigt, was Messen
+gegenüber Vermuten wert ist: Der Win+H-Test klärte in dreißig Sekunden, was zwei
+Ausbaustufen nicht geschafft hatten, und der Blick in die echte
+Einstellungsdatei verhinderte eine stillschweigend fehlschlagende Migration.
+
+**Bauweise.**
+
+- Neue Tabelle `assistant_unanswered` (Migration `0014`, handgeschrieben wie
+  `0003`–`0013`; `db:generate` würde gegen den veralteten Snapshot in
+  `drizzle/meta/_journal.json` diffen).
+- Aufgezeichnet wird **nur, was unbeantwortet blieb**: Zeitpunkt, Grund
+  (`UNSUPPORTED`, `MODEL_NOT_CONFIGURED`, `MODEL_FAILED`) und der Fragetext.
+  **Beantwortete Fragen werden nicht gespeichert** — dort ist bereits bekannt,
+  welche Werkzeuge griffen, und ein Mitschnitt jeder Frage wäre ein wachsendes
+  Tätigkeitsprotokoll ohne zusätzlichen Nutzen. Datensparsamkeit als
+  Voreinstellung, nicht als Nachgedanke.
+- Der Grund wird mitgeschrieben, weil er die Fälle trennt, die gleich aussehen:
+  „kein Werkzeug passt" ist eine Werkzeuglücke, „Modell nicht erreichbar" ein
+  Betriebsproblem. Ohne diese Spalte würde eine Störung als Werkzeugbedarf
+  gezählt.
+- **Die Aufzeichnung darf die Antwort nie gefährden.** Sie läuft nach der
+  fertigen Antwort und wird gefangen; ein Schreibfehler in D1 macht aus einer
+  gültigen Auskunft keinen Fehler.
+- Verdrahtet über einen **injizierbaren Recorder** am Orchestrator statt über ein
+  neues Feld in der Antwort. Der Antwortvertrag zum Desktop bleibt unangetastet,
+  und die Aufzeichnung ist ohne Datenbank testbar.
+
+**Abnahme:** `npm test`, `npx tsc --noEmit`, `npm run lint`, Migration **lokal**
+angewendet und wiederholbar. Rot-Nachweis für die neuen Tests.
+
+**Rücksprachepflichtig und deshalb nicht Teil dieses Durchlaufs:** die Migration
+auf der **produktiven** D1. Sie wird vorbereitet und lokal belegt; das Einspielen
+braucht eine ausdrückliche Freigabe.
 
 ## Historie
 
