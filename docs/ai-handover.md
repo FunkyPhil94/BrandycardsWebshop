@@ -37,9 +37,30 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-<!-- Fuer den naechsten Auftrag freihalten. -->
+### 2026-08-17 - Enter sendet, Alt+Enter bricht die Zeile
 
-Keine laufenden Aufträge.
+- Stand: **LÄUFT.**
+- Vorgeschichte: **Variante 3 ist abgenommen.** Der Betreiber hat nach dem
+  Setzen der Secrets gesprochen geprüft: „es funktioniert perfekt". Damit ist
+  die Spracherkennung nach drei Anläufen erledigt.
+- Auftrag: Im Nachrichtenfeld soll `Enter` senden und `Alt+Enter` eine neue
+  Zeile einfügen. Heute ist es umgekehrt — `AcceptsReturn="True"` lässt jedes
+  `Enter` eine Zeile einfügen, und gesendet wird nur über den Knopf.
+- Umsetzung: `PreviewKeyDown` am Feld statt `KeyDown`. Die bubbelnde Fassung
+  käme zu spät — die TextBox hat das `Enter` dann bereits selbst verarbeitet
+  und die Zeile eingefügt.
+- Mehrzeiligkeit bleibt erhalten: `AcceptsReturn` wird **nicht** abgeschaltet.
+  Bei `Alt+Enter` wird der Umbruch an der Einfügemarke selbst gesetzt, weil das
+  unterdrückte Standardverhalten ihn sonst nicht mehr erzeugt.
+- Der gemeinsame Sendepfad bleibt ungeteilt: Knopf und `Enter` laufen über
+  dieselbe Methode wie bisher, damit die Zusicherung aus Phase 4 gilt.
+- Zugänglichkeit: Die neue Belegung gehört in den Hilfetext des Feldes,
+  sonst ist sie unauffindbar.
+
+**Abnahme:** `npm test`, `npx tsc --noEmit`, `npm run lint`, WinUI-x64-Build.
+
+**Nicht Teil des Auftrags:** Produktionsdaten, Deployment, Spracherkennung.
+Kein Serverdeploy nötig — die Änderung ist rein im Desktop.
 
 ## Historie
 
