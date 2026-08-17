@@ -95,6 +95,46 @@ protokolliert.
 `reviseEbayItemQuantity`, die auch der Worker benutzt — kein Sonderpfad, kein
 Deployment nötig.
 
+**Ergebnis: abgebrochen bei Schritt 1. Es wurde nichts geschrieben.**
+
+```
+eBay OAuth fehlgeschlagen (400): {"error":"invalid_grant",
+ "error_description":"the provided authorization refresh token is invalid or
+  was issued to another client"}
+```
+
+**Der `EBAY_REFRESH_TOKEN` in `.env.local` ist veraltet.** Das passt zur
+Historie: Am 2026-08-16 lief die dritte Zustimmungsrunde, und der neue Token
+wurde als Cloudflare-Secret hinterlegt — die lokale Datei trägt noch den
+vorherigen.
+
+**Das Angebot `398292430657` ist unberührt und steht auf 6.** Ohne gültigen
+Token kam kein einziger Aufruf durch; `reviseEbayItemQuantity` wurde nie
+erreicht. Dass der Ablauf mit dem **Lesen** beginnt und nicht mit dem
+Schreiben, hat hier genau das getan, wofür diese Reihenfolge gedacht war.
+
+**Wie es weitergeht — und was ausdrücklich *nicht* geht:**
+
+- Den produktiven Token kann die KI nicht verwenden: Secret-Werte sind über
+  `wrangler` nicht auslesbar, und ein Geheimnis gehört auch nicht in einen
+  Gesprächsverlauf.
+- **Der Betreiber trägt den aktuellen Token in `.env.local` nach**, dann läuft
+  der Beweislauf unverändert durch. Die Datei hält eBay-Zugangsdaten ohnehin
+  schon; sie ist ignoriert und verlässt das Gerät nicht.
+- Woher der Token kommt, falls er nicht mehr vorliegt: im Adminbereich
+  **„eBay OAuth verbinden"**. Der Weg parkt den Token in `ebay_oauth_claims`
+  und zeigt ihn dort genau einmal an (SEC-12).
+- **Verworfen: eine Adminroute für den Test.** Die einzige Stelle mit gültigem
+  Token ist der Worker. Eine Route, die beliebige eBay-Mengen setzen kann, wäre
+  dauerhaft gefährlicher als der Beweis wert ist — und Produktionscode nur für
+  einen Testlauf einzubauen und wieder zu entfernen, ist der falsche Handel.
+
+**Nebenbefund, unabhängig von dieser Aufgabe:** `.env.local` und die
+produktiven Secrets sind auseinandergelaufen. Für den Build ist das ohne Belang
+(dort zählen nur die `NEXT_PUBLIC_SUPABASE_*`-Werte), für jede lokale Arbeit
+gegen echte eBay-Daten aber eine Stolperfalle, die sich als „eBay antwortet
+nicht" tarnt.
+
 ## Historie
 
 ### 2026-08-17 - Punkt 6: die zwei Reste am eBay-Schreibpfad
