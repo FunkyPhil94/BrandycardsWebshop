@@ -9675,3 +9675,34 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 - Der Titel eines Kartenangebots steckt als JSON in `card_submissions.message`.
   Das Auslesen stand bisher nur inline in `app/api/admin/dashboard/route.ts` —
   es wandert zu `formMetadata` in `lib/public-form.ts`, wo es hingehört.
+
+## Auftrag 2026-08-17: U2 — abgeschlossen
+- Neu: `/account/preisvorschlaege` und `/account/kartenangebote`, dazu
+  `GET /api/account/price-offers`, `GET /api/account/card-submissions` und
+  `GET /api/account/card-submissions/assets`. Navigation und Übersichtskacheln
+  ergänzt, englische Texte in `lib/i18n.ts`.
+- Eigentümerschaft: `kontoZuordnung` aus `lib/account-data.ts` wird jetzt
+  exportiert statt abgeschrieben. Beim Bildabruf steht sie **in der Abfrage**
+  (`innerJoin` plus `and`), nicht als `if` dahinter — fremd und nicht vorhanden
+  geben dieselbe 404, sonst verriete der Status, welche Kennungen existieren.
+- `readFormMetadata` ersetzt den eingebauten `JSON.parse` im Admin-Dashboard.
+  Beide Formularfunktionen liegen jetzt in `lib/form-metadata.ts`; `public-form`
+  gibt sie weiter. Grund: Node kann `public-form.ts` wegen einer
+  TypeScript-Parametereigenschaft nicht laden — dasselbe Muster wie bei
+  `lib/rate-limit-policy.ts`, und erst dadurch ist die Funktion prüfbar.
+- Statusnamen für Kunden in `app/account/status.ts`, an einer Stelle.
+  `CLOSED` heißt „Erledigt", nicht „Abgeschlossen" — Letzteres ist bereits der
+  Stand einer Bestellung, und derselbe Text für zwei Vorgänge im selben Konto
+  verwirrt. Ein Test hält das fest.
+- Neue Datei `tests/account-views.test.mjs` (4 Tests): Eigentümerprüfung in allen
+  drei Routen, Unberührtheit des Kassen-Endpunkts, Statusnamen, Metadatenleser.
+- Prüfkette: **698 Tests grün**, `npx tsc --noEmit` sauber, Lint ohne Warnung.
+- Deploy `a6da2332-a6cb-49c1-91db-260043a46b9c`, nach dem bekannten zweiten
+  Build. Seiten 200, alle drei Endpunkte unangemeldet 401.
+- **Angemeldet im Browser geprüft:** Beide Ansichten laden fehlerfrei, die
+  Navigation trägt sechs Einträge, die Leerzustände stehen richtig da
+  (das Testkonto hat weder Vorschläge noch Einsendungen), `card-submissions`
+  antwortet mit 200 und leerer Liste.
+- **Nicht geprüft:** Ansichten mit echten Daten. Das Konto mit den drei
+  abgelehnten Vorschlägen ist ein anderes als die Browsersitzung hier.
+- Status: ABGESCHLOSSEN.
