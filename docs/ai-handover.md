@@ -37,6 +37,49 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
+### 2026-08-17 - Statistikansicht neu aufbauen: Text nativ, Vollbildfenster
+
+- Stand: **LÄUFT.**
+
+**Der Befund, und er widerlegt meine eigene Entscheidung.** Der Betreiber
+schickte Screenshots aus dem laufenden Assistenten: Balken, Gitterlinien und die
+farbigen Plättchen sind da — **jeder Text fehlt.** Keine Leitzahl, keine
+Kacheln, keine Achse, keine Legendenbeschriftung.
+
+Nachgeschlagen statt vermutet: **Direct2D unterstützt `<text>` nicht**, und
+`SvgImageSource` erbt diese Grenze. Nicht unterstützte Elemente werden
+stillschweigend übersprungen, der Rest wird gezeichnet — genau das Bild.
+
+> **Der vermeidbare Teil:** Ich hatte angekündigt zu messen, was
+> `SvgImageSource` darstellt, und mich dann dagegen entschieden mit der
+> Begründung, ich umgehe das Risiko durch Verzicht auf CSS. Text war eine
+> andere Lücke — und die Messung, die sie gefunden hätte, war genau die, die ich
+> mir gespart habe. „Risiko entfernt statt gemessen" trägt nur, wenn man alle
+> Risiken kennt.
+
+**Damit fällt „alles gehört ins Bild".** Der neue Zuschnitt:
+
+- **Der Server liefert eine fertig formatierte Ansicht:** Leitzahl, Kacheltexte,
+  Achsenbeschriftungen, Legende, Hinweis — alles als fertige Zeichenketten —
+  **plus das Diagramm als textfreies SVG** (nur Balken und Gitterlinien).
+- **WinUI setzt die Texte als echte Steuerelemente.** Die Trennung aus Phase 4
+  bleibt gewahrt: Der Client formatiert nichts, er **platziert** nur. Nebenbei
+  wird der Text scharf, skaliert mit der DPI und ist endlich vorlesbar — vom
+  Bild bekam ein Screenreader bisher nichts.
+- **Achsenbeschriftung ohne Millimeterarbeit:** Die y-Werte sitzen an denselben
+  vier Teilungen wie die Gitterlinien; die x-Achse nennt Anfang und Ende des
+  Zeitraums statt jeder Säule. Ein Datum unter jeder Säule wäre im Panel ohnehin
+  unlesbar und würde bei nativer Platzierung gegen die Balken verrutschen.
+
+**Vollbild als eigenes Fenster**, vom Betreiber so gewählt: großes Diagramm,
+Kacheln nebeneinander, alle Umschalter in einer Reihe. Im Panel bleibt eine
+**kompakte** Fassung — Leitzahl, Diagramm, Hinweis, ein Knopf „Groß anzeigen".
+Auf 520 Punkten Breite werden Kacheln und sechs Umschalter zwangsläufig
+gequetscht; der Screenshot zeigt es, der letzte Knopf ist abgeschnitten.
+
+**Unberührt bleiben** Pet-Overlay, Sprachpfad und die Textantwort. Der Text
+steht weiterhin über dem Bild und trägt die Zahlen.
+
 ### 2026-08-17 - Aufruf-Historie sammeln (Vorstufe der Aufruf-Statistik)
 
 - Stand: **LÄUFT.**
