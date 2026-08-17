@@ -9635,3 +9635,31 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 - Der eBay-Rückweg zeigt auf `/admin?ebayClaim=…`
   (`app/api/admin/ebay/oauth/callback/route.ts:82`). Das Abholen des Tokens
   wandert nach `/admin/ebay`, die Weiterleitung muss mitgeändert werden.
+
+## Auftrag 2026-08-17: U1 — abgeschlossen
+- **Admin**, sieben Bereiche: `/admin` (Kennzahlen, Aufrufe), `/bestellungen`,
+  `/preisvorschlaege`, `/ankauf`, `/karten`, `/ebay`, `/system`. Gemeinsame
+  Hülle `app/admin/admin-shell.tsx` mit MFA-Sperre und Navigation; das Layout
+  ruft sie auf. Zwei Tests halten fest, dass die Sperre dort und **nicht** in
+  den einzelnen Seiten steht. Der eBay-Rückweg zeigt auf `/admin/ebay`.
+- **Konto**, vier Bereiche: `/account` (Anmeldung **oder** Übersicht),
+  `/bestellungen`, `/profil`, `/daten`. Gemeinsame Hülle
+  `app/account/account-shell.tsx` mit Sitzung, Navigation und `NurAngemeldet`.
+  Die Hülle unterscheidet „noch nicht geprüft" von „abgemeldet" — dieselbe
+  Verwechslung, die heute auf der Kartenseite den Anmeldekasten erzeugt hat.
+- Prüfkette: 694 Tests grün, `npx tsc --noEmit` sauber, `npm run lint` **ohne
+  Warnung** (die alte Warnung zu `syncProfile` ist mit dem Umzug entfallen).
+- Deploy: `fe27a9ff-84fd-4222-bbdc-f463d36245c5`. Alle elf Adressen mit 200,
+  `/karten` und `/verkaufen` unverändert 200.
+- **Neue Falle, zweimal reproduziert und in CLAUDE.md eingetragen:** Der erste
+  Build nach dem Anlegen neuer Routen liefert sie nicht aus — 404, obwohl die
+  Buildtabelle sie listet. Zweiter Build und Deploy mit identischem Quellstand:
+  200. Erst beim Admin (`/admin/ebay`, `/admin/system`), dann beim Konto (alle
+  drei Unterseiten). Ursache ungeklärt, Verhalten belegt.
+- **Im Browser geprüft, soweit ohne Anmeldung möglich:** `/admin/ebay` rendert
+  die Hülle und meldet sauber „Nicht authentifiziert" (die Sitzung dort ist kein
+  Admin). `/account` zeigt die Anmeldung, `/account/bestellungen` den Hinweis
+  „Bitte melde dich an" statt eines Absturzes, ohne Konsolenfehler.
+- **Nicht geprüft, weil kein angemeldetes Konto zur Verfügung stand:** die
+  Ansichten hinter der Anmeldung. Der Betreiber klickt sie durch.
+- Status: ABGESCHLOSSEN.

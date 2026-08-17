@@ -70,6 +70,14 @@ npx tsc --noEmit     # Typprüfung -- NICHT Teil von npm test, separat ausführe
   SEC-14 einen Schritt `Type check` und auditiert zusätzlich. Diese Stelle
   behauptete bis zum 2026-08-09 das Gegenteil. Der Rat bleibt derselbe, die
   Begründung ist eine andere.)*
+- **Der erste Build nach einer neuen Route liefert sie nicht aus.** Am
+  2026-08-17 zweimal hintereinander erlebt, mit identischem Quellstand: Nach dem
+  Anlegen neuer Seitenverzeichnisse listet `npm run build` die Routen zwar in
+  seiner Tabelle auf, der daraus ausgerollte Worker antwortet auf die zuletzt
+  hinzugekommenen aber mit **404**. Ein zweiter Build und Deploy — ohne jede
+  Änderung am Code — liefert sie dann aus. Die Ursache ist nicht geklärt, das
+  Verhalten ist es. **Nach jedem Deploy mit neuen Routen jede neue Adresse
+  einzeln abfragen**, ein 404 heißt hier „nochmal bauen", nicht „Code kaputt".
 - **`npx wrangler r2 object delete` meldet Erfolg und löscht nichts.** Die
   OAuth-Anmeldung der CLI trägt **keinen R2-Bereich** (`npx wrangler whoami`
   zeigt `d1 (write)`, `workers (write)` … aber nichts für R2). Die CLI prüft das
