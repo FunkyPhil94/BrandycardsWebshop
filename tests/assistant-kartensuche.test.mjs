@@ -118,6 +118,11 @@ test("die Antwort nennt das Angebot und zählt die Historie, ohne sie aufzuzähl
   // **Der Nebensatz ist die eigentliche Auskunft.** Ohne ihn klingt die Antwort
   // wie „du hast genau eine", und wer zwei im Kopf hat, hält das für einen Fehler.
   assert.match(text, /1 weitere\(r\) Titeltreffer ist nicht mehr im Angebot/u);
+  // **Auf eigener Zeile.** Angehängt las er sich im Screenshot vom 2026-08-18
+  // als „70,00 € 1 weitere(r) Titeltreffer …" — Preis und Trefferzahl klebten
+  // zu einer Zahlenfolge zusammen.
+  assert.match(text, /^1 weitere\(r\) Titeltreffer/mu);
+  assert.doesNotMatch(text, /€ \d+ weitere/u);
   assert.match(text, /Quelle: Shop-Datenbank, eBay-Abgleich · Stand:/u);
   // Eine Einzelkarte bekommt kein „1× vorhanden" angehängt.
   assert.doesNotMatch(text, /1× vorhanden/u);

@@ -100,12 +100,17 @@ export function formatAssistantToolResult(result: AnyAssistantToolResult): strin
       // Listing. Wer nur „keine gefunden" hört, obwohl er zwei im Kopf hat,
       // hält den Assistenten für kaputt — der Nebensatz ist die eigentliche
       // Auskunft.
+      //
+      // **Eigene Zeile, nicht angehängt.** In der ersten Fassung stand der Satz
+      // hinter der letzten Kartenzeile, und im Screenshot vom 2026-08-18 las
+      // sich das als „70,00 € 1 weitere(r) Titeltreffer …" — der Preis und die
+      // Trefferzahl klebten zu einer Zahlenfolge zusammen.
       const historie = data.nichtAngebotenAnzahl === 0
-        ? ""
-        : ` ${data.nichtAngebotenAnzahl} weitere(r) Titeltreffer ist nicht mehr im Angebot (beendet, verkauft oder inaktiv).`;
+        ? []
+        : [`${data.nichtAngebotenAnzahl} weitere(r) Titeltreffer ist nicht mehr im Angebot (beendet, verkauft oder inaktiv).`];
 
       if (!data.angeboten.length) {
-        return withSource(`Zu „${data.suche}" ist aktuell keine Karte im Angebot.${historie}`, result);
+        return withSource([`Zu „${data.suche}" ist aktuell keine Karte im Angebot.`, ...historie].join("\n"), result);
       }
 
       const lines = data.angeboten.map((karte) => {
@@ -116,11 +121,13 @@ export function formatAssistantToolResult(result: AnyAssistantToolResult): strin
         const menge = karte.menge !== null && karte.menge > 1 ? `, ${karte.menge}× vorhanden` : "";
         return `• ${karte.title} — ${bereich}${preis ? `, ${preis}` : ", Preis nicht hinterlegt"}${menge}`;
       });
-      const gekuerzt = data.gekuerzt ? "\n(Es gibt mehr Treffer; gezeigt werden die ersten.)" : "";
-      return withSource(
-        `Zu „${data.suche}" ${data.angeboten.length === 1 ? "ist eine Karte" : `sind ${data.angeboten.length} Karten`} im Angebot:\n${lines.join("\n")}${gekuerzt}${historie}`,
-        result,
-      );
+      const gekuerzt = data.gekuerzt ? ["(Es gibt mehr Treffer; gezeigt werden die ersten.)"] : [];
+      return withSource([
+        `Zu „${data.suche}" ${data.angeboten.length === 1 ? "ist eine Karte" : `sind ${data.angeboten.length} Karten`} im Angebot:`,
+        ...lines,
+        ...gekuerzt,
+        ...historie,
+      ].join("\n"), result);
     }
     case "latest_sale": {
       const sale = result.data.sale;
