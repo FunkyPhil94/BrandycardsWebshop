@@ -17,7 +17,10 @@ export const CATALOGUE_CACHE_CONTROL = "public, max-age=30, stale-while-revalida
 const MAX_ID_LOOKUP = 50;
 const MAX_SEARCH_LENGTH = 100;
 const MAX_PRICE_CENTS = 10_000_000;
-const CATEGORIES = ["fixed", "manual", "prelisted"] as const;
+// „manual" ist hier bewusst **keine** Kategorie mehr: Vorverkaufskarten
+// erscheinen im Katalog gar nicht, eine Kategorie dafür wäre ein Filter auf
+// eine leere Menge. Wer sie will, fragt `origin=MANUAL` — das tut `/vorverkauf`.
+const CATEGORIES = ["fixed", "prelisted"] as const;
 
 type Category = (typeof CATEGORIES)[number];
 
@@ -74,7 +77,6 @@ function visibleInSql() {
 }
 
 function categoryCondition(category: Category) {
-  if (category === "manual") return eq(products.origin, "MANUAL");
   if (category === "prelisted") return and(eq(products.origin, "EBAY"), eq(products.kind, "PRELISTED"));
   return and(eq(products.origin, "EBAY"), ne(products.kind, "PRELISTED"));
 }
@@ -105,6 +107,16 @@ export async function GET(request: Request) {
       visibleInSql(),
     ];
     if (ids.length) conditions.push(inArray(products.id, ids));
+    // **Vorverkaufskarten gehören in den Vorverkauf, nicht in den Katalog.**
+    // Sie tauchen in Listen nur auf, wenn ausdrücklich `origin=MANUAL` gefragt
+    // wird — so wie `/vorverkauf` es tut.
+    //
+    // Die Ausnahme für `ids` ist **kein Schlupfloch, sondern die Bedingung
+    // dafür, dass die Karte überhaupt kaufbar bleibt**: Die Detailseite, der
+    // Warenkorb und die Bestellprüfung holen Karten über ihre Kennung. Ohne
+    // die Ausnahme wäre eine Vorverkaufskarte zwar im Vorverkauf sichtbar,
+    // aber beim Anklicken verschwunden.
+    if (!byId && origin !== "MANUAL") conditions.push(ne(products.origin, "MANUAL"));
     if (q) {
       const searchable = sql`lower(coalesce(${products.title}, '') || ' ' || coalesce(${products.description}, '') || ' ' || coalesce(${ebayListings.sku}, ''))`;
       conditions.push(sql`${searchable} LIKE ${`%${q}%`}`);

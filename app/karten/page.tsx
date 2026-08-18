@@ -21,7 +21,7 @@ type Product = {
   imageUrls: string[];
 };
 
-type CatalogCategory = "" | "fixed" | "manual" | "prelisted";
+type CatalogCategory = "" | "fixed" | "prelisted";
 
 type CatalogResponse = {
   products?: Product[];
@@ -75,7 +75,7 @@ export default function KartenPage() {
       const params = new URLSearchParams(window.location.search);
       const urlCategory = params.get("category");
       setQuery(params.get("q") ?? "");
-      setCategory(urlCategory === "fixed" || urlCategory === "manual" || urlCategory === "prelisted" ? urlCategory : "");
+      setCategory(urlCategory === "fixed" || urlCategory === "prelisted" ? urlCategory : "");
       setMinPrice(params.get("min") ?? "");
       setMaxPrice(params.get("max") ?? "");
       setPageSize(toPageSize(params.get("pro")));
@@ -169,7 +169,6 @@ export default function KartenPage() {
           <select id="catalog-category" value={category} onChange={(event) => { setCategory(event.target.value as CatalogCategory); setPage(1); }}>
             <option value="">{t("Alle Kategorien")}</option>
             <option value="fixed">{t("Festpreis")}</option>
-            <option value="manual">{t("Vorverkauf")}</option>
             <option value="prelisted">{t("Vormerkliste")}</option>
           </select>
         </label>

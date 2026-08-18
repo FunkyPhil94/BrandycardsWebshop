@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { eq } from "drizzle-orm";
+import { and, eq, ne } from "drizzle-orm";
 import { getDb } from "../db";
 import { ebayListings, inventory, products } from "../db/schema";
 import { istImKatalogSichtbar } from "../lib/catalog-availability";
@@ -50,7 +50,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .from(products)
       .leftJoin(ebayListings, eq(ebayListings.productId, products.id))
       .leftJoin(inventory, eq(inventory.productId, products.id))
-      .where(eq(products.status, "ACTIVE"));
+      // **Vorverkaufskarten gehören nicht in den Sitemap.** Sie stehen nicht im
+      // Katalog, also soll eine Suchmaschine sie auch nicht dort erwarten.
+      // Erreichbar bleiben ihre Detailseiten trotzdem — über `/vorverkauf`.
+      .where(and(eq(products.status, "ACTIVE"), ne(products.origin, "MANUAL")));
 
     const productEntries = rows.flatMap((row) => {
       const isManual = row.origin === "MANUAL";

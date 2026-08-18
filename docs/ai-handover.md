@@ -9909,3 +9909,187 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 - **Nicht geprüft:** die angemeldeten Ansichten. Die Browsersitzung hier ist
   erneut abgelaufen; `/account/profil` zeigt korrekt „Bitte melde dich an".
 - Status: ABGESCHLOSSEN.
+
+## Auftrag 2026-08-18: Massenanlage von Vorverkaufskarten aus Tabelle und Bildordner
+- Status: GEBAUT UND GEPRÜFT, NICHT AUSGEROLLT — siehe Ergebnis am Ende.
+- **Anlass:** 144 Karten aus „Topps Premier League Flagship 26/27" liegen als
+  Bilddateien in `G:\Meine Ablage\BrandyCards\Fotos\ToDo_PL_Flagship_26_27`,
+  benannt nach `nachname[_zweitname]_variante[_nummerierung]`. Dazu die
+  Topps-Checkliste als PDF (301 nummerierte Karten, Vorname, Nachname, Verein,
+  Rookie-Kennzeichen, dazu die Insert-Sets). Bisher entstünde daraus 144-mal
+  Handarbeit in der Adminkonsole.
+- **Zwei Teile.** (a) Eine Excel-Liste, erzeugt aus Dateinamen plus Checkliste,
+  mit allen Kontrollspalten und dem fertigen Titel nach Hausformat
+  `Topps Premier League Flagship 26/27 <Verein> <Spieler> <Variante> [Rookie]
+  [xx/yy]`. (b) Eine Massenanlage in der Adminkonsole, die diese Liste samt
+  Bildordner entgegennimmt und daraus Vorverkaufskarten anlegt.
+- **Warum keine Tabellenbibliothek:** Das Projekt trägt vier Laufzeit-
+  Abhängigkeiten. Eine `.xlsx` ist ein ZIP mit XML darin; `DecompressionStream`
+  steht im Browser wie in Node bereit. Der Leser wird von Hand geschrieben und
+  getestet, statt SheetJS aufzunehmen.
+- **Grenzen, die den Entwurf bestimmen:** `POST /api/admin/products` nimmt
+  22 MB je Anfrage und höchstens zwei Bilder je Karte. Die 144 Bilder wiegen
+  zusammen 164 MB (Schnitt 1,2 MB). Der Import muss deshalb kartenweise
+  hochladen, Fortschritt zeigen, nach Abbruch fortsetzbar sein und bereits
+  angelegte Titel überspringen — sonst entstehen bei jedem zweiten Versuch
+  Doppelkarten.
+- **Vorverkaufskarten haben bewusst keinen Preis** (`/vorverkauf` zeigt „Preis
+  auf Anfrage"). Eine Preisspalte gibt es deshalb nicht.
+- Betroffen: `app/admin/`, `app/api/admin/products/`, `lib/`, `tests/`.
+
+### Ergebnis
+
+- **Die Tabelle steht** als `import_pl_flagship_26_27.xlsx` im Bilderordner
+  selbst (nicht im Repository — sie gehört zur Ware, nicht zum Code). 144
+  Zeilen, jedes Bild zugeordnet, keine zwei gleichen Titel, längster Titel 97
+  von 200 erlaubten Zeichen.
+- **Sechs Dateinamen weichen von der Checkliste ab** und stehen mit Grund in
+  der Spalte „Hinweis": `estevao` → Estêvão Willian, `fredericson` →
+  Fredricson, `gabriel` → JJ Gabriel (#198), `larson` → Strand Larsen, `rowe`
+  → Smith Rowe. `johnson_blue_pink` war zwischen Brennan Johnson (#114) und
+  Ben Johnson (#278) nicht zu entscheiden — **am Kartenbild nachgesehen**,
+  es ist Brennan Johnson, Crystal Palace.
+- **Der Tabellenleser ist neu und eigen** (`lib/xlsx-lesen.ts`): ZIP von Hand,
+  `DecompressionStream("deflate-raw")`, XML über Muster. Keine neue
+  Abhängigkeit. Zwei Fallen sind ausdrücklich getestet: `deflate` statt
+  `deflate-raw` bricht sofort ab, und **ausgelassene Zellen** — Excel schreibt
+  leere Zellen gar nicht erst, wer der Reihe nach zählt statt den Zellbezug zu
+  lesen, hängt ab der ersten Lücke jeden Titel an das falsche Bild.
+- **Der Plan entsteht vollständig, bevor etwas hochgeladen wird**
+  (`lib/karten-import.ts`). Eine Zeile ohne auffindbares Bild ist ein Fehler,
+  keine Karte ohne Bild — die Route nähme sie sonst klaglos an, und im
+  Vorverkauf stünden stumme Karten.
+- **Fortsetzbar statt verdoppelnd:** Vor jedem Lauf holt die Oberfläche die
+  Titel aller manuellen Karten (`GET /api/admin/products?titel=manuell`, neu)
+  und überspringt, was schon dasteht. Nach fünf Fehlern in Folge hält der Lauf
+  an — das ist keine Zeilenfrage mehr, sondern eine abgelaufene Anmeldung.
+- **Kartenweise hochgeladen, über die bestehende Route.** Kein neuer
+  Schreibweg, keine Bündelgrenze, keine D1-Parametergrenze; ein Fehler betrifft
+  eine Zeile statt den ganzen Lauf.
+- Prüfkette: **725 Tests grün** (15 neue), `npx tsc --noEmit` sauber, Lint ohne
+  Warnung. Der Build listet `/admin/karten/import`, das Client-Bündel trägt die
+  Supabase-Konfiguration (`.env.local` ins Worktree kopiert — der bekannte
+  Stolperstein).
+- **Nicht geprüft: die Oberfläche selbst.** `/admin/karten/import` antwortet im
+  Entwicklungsserver mit „Nicht authentifiziert."; hinter die Anmeldung kommt
+  nur der Betreiber. Der erste echte Lauf gehört beobachtet.
+- **Nicht ausgerollt.** Der Stand liegt auf
+  `claude/excel-list-images-checklist-1d0264`, nicht auf `main`.
+
+### Nachtrag am selben Tag: mehrdeutige Bilddateien
+
+Auf die Frage des Betreibers, ob die Bilder wirklich richtig zugeordnet werden,
+kam eine Lücke ans Licht — und eine Bestätigung.
+
+- **Bestätigung:** Stichprobe von fünf Karten am Bild selbst geprüft
+  (Barry Nitro Boost 01/99, Ndiaye Cracked Ice 044/399, Mukasa Future Stars
+  Blue & Pink, Čech 8 Bit Ballers, Johnson Blue & Pink). Spieler, Verein,
+  Reihe, Parallele und Nummerierung stimmen mit dem erzeugten Titel überein.
+- **Lücke:** Zwei ausgewählte Dateien, die sich nur in der Schreibweise
+  unterscheiden, fielen im Abgleich auf denselben Schlüssel. Die Zeile hätte
+  **stumm** eines von beiden bekommen. Ein fehlendes Bild meldet sich, ein
+  vertauschtes nicht.
+- Behoben: `planBauen` erkennt mehrdeutige Namen und macht die betroffene Zeile
+  zum Fehler. **Der Plan bekommt jetzt die volle Dateiliste**, nicht die Werte
+  der Nachschlage-Map — in der wären die Doppel längst zu einem verschmolzen
+  gewesen, und die Prüfung liefe ins Leere. Oberfläche und Prüfung teilen sich
+  dafür `dateischluessel`; griffen sie unterschiedlich zu, könnte der Plan
+  „bereit" sagen und der Upload danach ein anderes Bild finden als das geprüfte.
+- 726 Tests grün, `tsc` und Lint sauber.
+
+## Auftrag 2026-08-18: Vorverkaufskarten aus dem Katalog nehmen
+- Status: ABGESCHLOSSEN. Deploy `302211ec`. Katalog 420 → 276 Karten, davon 0
+  manuelle; `/vorverkauf` zeigt 144; die Suche nach „Flagship 26/27" im Katalog
+  findet nichts mehr. **Detailseite einer Vorverkaufskarte antwortet weiter mit
+  200**, die Abfrage über die Kennung liefert sie — das war die Gegenprobe, an
+  der die Karten sonst unverkäuflich geworden wären.
+- **Der Import ist durch und nachgezählt:** 144 Karten, je eine Bestandszeile
+  (1 Stück, `AVAILABLE`), je ein Bild, 144 verschiedene Titel, keine Abweichung
+  bei Status, Art oder Preis.
+- **Neue Regel vom Betreiber:** Diese Karten sollen nur unter `/vorverkauf`
+  erscheinen, nicht unter `/karten`.
+- Umgesetzt in `app/api/products/route.ts`, nicht bloß im Aufruf der Seite —
+  eine Regel im Aufruf gilt nur bis zur nächsten Liste. Listen schließen
+  `origin='MANUAL'` aus, solange nicht ausdrücklich `origin=MANUAL` gefragt ist.
+- **Die Ausnahme für `ids` ist tragend:** Detailseite, Warenkorb und
+  Bestellprüfung holen Karten über ihre Kennung. Ohne sie stünde eine Karte im
+  Vorverkauf und wäre beim Anklicken verschwunden.
+- Die Kategorie „manual" ist entfallen, samt Auswahlpunkt im Katalog — ein
+  Filter auf eine Menge, die es dort nicht mehr gibt.
+
+## Auftrag 2026-08-18: Startseite und Sitemap ebenfalls ohne Vorverkaufskarten
+- Status: ABGESCHLOSSEN, siehe Ergebnis unten.
+- **Anlass:** Nach dem Import bestand die Galerie der Startseite aus fünf
+  Vorverkaufskarten und sonst nichts — die 144 neuen Karten sind die jüngsten
+  und verdrängten alles. Im Sitemap für Suchmaschinen standen sie ebenfalls.
+- Betroffen: `app/api/products/highlights/route.ts` (Bedingung `live`),
+  `app/sitemap.ts`, `tests/n7-catalog.test.mjs`.
+- **Der Test `N7 keeps manual cards in the highlights` behauptet ab jetzt das
+  Gegenteil dessen, was gilt** — er wird mit umgestellt, nicht gelöscht.
+
+### Ergebnis
+
+- `live` in der Galerie-Abfrage verlangt jetzt `origin = 'EBAY'`; die
+  Oder-Verzweigung, die manuelle Karten hereinließ, ist fort. Der Sitemap
+  schließt sie in der `WHERE`-Bedingung aus.
+- **Zwei Kommentare in `highlights/route.ts` behaupteten danach das Gegenteil
+  des Codes** — der zum `leftJoin` („ein innerer Verbund entfernte genau die
+  manuellen Karten") und der zur Sortierung („gibt einer manuellen Karte einen
+  fairen Platz"). Beide nachgezogen, mit Datum, statt sie stehen zu lassen.
+- Der Test `N7 keeps manual cards in the highlights` ist umgestellt, nicht
+  gelöscht: Die Weichen in Galerie und Katalog, die einer Vorverkaufskarte
+  „Preis vorschlagen" statt eines Warenkorbknopfs geben, **bleiben geprüft**.
+  Sie sind heute unerreichbar; ein Kauf zum Preis `null` wäre der teure Fehler,
+  falls je eine durchrutscht.
+- 728 Tests grün, `tsc` und Lint sauber.
+
+## Auftrag 2026-08-18: Suchleiste im Vorverkauf
+- Status: ABGESCHLOSSEN. Deploy `d7dc9a2d`.
+- **Beim Hinsehen ein Fund, der dringender war als der Auftrag:** Die Seite holte
+  `pro=100` ohne Blätterleiste. 100 ist die größte Seitengröße aus
+  `lib/pagination.ts`. Seit dem Import von 144 Karten waren **44 davon auf
+  keiner Seite zu sehen** — im Shop vorhanden, bezahlbar, verlinkt, unsichtbar.
+- Umgesetzt: Suchfeld (serverseitig über dasselbe `q` wie der Katalog,
+  entprellt), Blätterleiste, Trefferzahl, `q` und `seite` in der Adresse.
+- **Zwei Leerzustände statt einem** — „nichts gefunden" ist eine Auskunft über
+  die Suche, „gerade nichts im Vorverkauf" eine über den Shop.
+- Fünf neue Texte in `lib/i18n.ts`; dazu „Weiter", „Zurück" und
+  „Seite {{number}}", die der Katalog seit jeher benutzt, ohne dass sie je
+  übersetzt waren.
+- Der Test prüfte bisher die wörtliche Abfragezeichenkette `origin=MANUAL&pro=100`
+  und brach am Umbau. Umgeschrieben auf die Absicht.
+
+### Ergebnis, am echten Bestand im Browser geprüft
+
+`/vorverkauf` ist öffentlich — anders als der Adminbereich ließ sich das hier
+wirklich durchklicken, nicht nur behaupten:
+
+- Zähler „144 Karten im Vorverkauf", Seite 1 zeigt 100, **Seite 2 zeigt 44** —
+  zusammen 144. Vor dem Umbau waren diese 44 auf keiner Seite zu erreichen.
+- Suche „Haaland": 2 Treffer (Beast Mode und Base), Adresse wird zu `?q=Haaland`,
+  die Blätterleiste verschwindet.
+- Suche ohne Treffer: „Keine Karte passt zu dieser Suche." mit
+  „Suche zurücksetzen" — nicht der Text für den leeren Shop.
+- Zurücksetzen leert Feld und Adresse, der Zähler steht wieder bei 144.
+- Alle Kacheln tragen das Kennzeichen „Vorverkauf", keine eBay-Karte
+  dazwischen (die Positivliste im Browser greift weiterhin).
+- 729 Tests grün, `tsc` und Lint sauber.
+
+## Auftrag 2026-08-18: Vorverkauf in Kacheln und Fußzeile
+- **Protokollverstoß, offen notiert:** Dieser Eintrag entstand *nach* der Arbeit,
+  nicht davor. Die Regel in CLAUDE.md verlangt es umgekehrt. Kein Schaden
+  entstanden, aber der nächste Durchlauf trägt zuerst ein.
+- Status: ABGESCHLOSSEN.
+- **Das Burgermenü brauchte nichts.** Es teilt sich `NAV` mit der Kopfzeile, und
+  dort steht der Vorverkauf seit dem 2026-08-08. Geändert wurden nur die
+  Kachelreihe der Startseite (vier → fünf) und die Fußzeile.
+- **Fünf Kacheln brauchen ein anderes Raster.** Die Zwischenräume sind keine
+  Lücken, sondern 1px auf farbigem Grund: Eine unbesetzte Zelle in der letzten
+  Reihe steht als linienfarbener Block da und sieht aus wie ein Fehler. Deshalb
+  fünf Spalten ab 1180px, darunter drei — und die letzte Kachel überspannt die
+  Restbreite, wenn sie sonst allein neben einer leeren Zelle stünde.
+- Gemessen im Browser, nicht geschätzt: 1600px → 5 × 316px, kein Überlauf;
+  1100px → 3 Spalten, letzte Kachel 723px breit, keine leere Zelle; 375px →
+  eine Spalte, Burgermenü führt „Vorverkauf". Auf Englisch stehen alle fünf
+  Kacheln und die Fußzeile übersetzt da.
+- 729 Tests grün, `tsc` und Lint sauber.

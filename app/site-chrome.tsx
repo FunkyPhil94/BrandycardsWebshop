@@ -197,6 +197,9 @@ export function SiteFooter() {
       <p>Collect the moment.</p>
       <div className="footer-links">
         <Link href="/karten">{t("Karten")}</Link>
+        {/* Der Vorverkauf steht seit dem 2026-08-18 nicht mehr im Katalog. Fehlt
+            er hier, führt aus der Fußzeile kein einziger Weg mehr dorthin. */}
+        <Link href="/vorverkauf">{t("Vorverkauf")}</Link>
         <Link href="/anfragen">{t("Karte anfragen")}</Link>
         <Link href="/verkaufen">{t("Karten verkaufen")}</Link>
         <Link href="/ueber-uns">{t("Über uns")}</Link>

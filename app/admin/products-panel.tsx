@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import Link from "next/link";
 import { adminFetch, authHeaders } from "./admin-auth";
 import { formatPrice } from "../site-chrome";
 
@@ -127,6 +128,7 @@ export function ProductsPanel() {
       <button type="button" className="button button-outline" onClick={() => setAnlegen((wert) => !wert)}>
         {anlegen ? "Abbrechen" : "Karte von Hand einstellen"}
       </button>
+      <Link className="button button-outline" href="/admin/karten/import">Aus Tabelle anlegen</Link>
     </div>
     {note && <p className="form-feedback" role="status">{note}</p>}
 

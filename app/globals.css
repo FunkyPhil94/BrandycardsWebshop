@@ -500,7 +500,18 @@ footer { background:var(--ink); color:#fff; padding:52px max(48px,calc((100vw - 
 .gallery-dots button.active { background:var(--red); width:24px; border-radius:4px; }
 .gallery-live { color:var(--muted); font-family:'DM Mono',monospace; font-size:9px; grid-area:live; letter-spacing:.1em; margin:16px 0 0; }
 .gallery-empty { color:var(--muted); font-size:13px; grid-column:1/-1; margin:0; padding:60px 0; text-align:center; }
-.destinations { display:grid; gap:1px; background:var(--line); grid-template-columns:repeat(4,1fr); margin:56px 0 0; }
+/* Fünf Kacheln seit dem 2026-08-18 (der Vorverkauf kam dazu), vorher vier.
+   **Der Zwischenschritt auf drei Spalten braucht die Regel darunter:** Die
+   Zwischenräume sind keine Lücken, sondern 1px Abstand auf farbigem Grund. Eine
+   unbesetzte Zelle in der letzten Reihe bleibt deshalb nicht unsichtbar — sie
+   steht als linienfarbener Block da und sieht aus wie ein Fehler. */
+.destinations { display:grid; gap:1px; background:var(--line); grid-template-columns:repeat(5,1fr); margin:56px 0 0; }
+@media (max-width:1179px) and (min-width:851px) {
+  .destinations { grid-template-columns:repeat(3,1fr); }
+  /* Die letzte Kachel füllt die Reihe, wenn sie sonst allein neben einer
+     leeren Zelle stünde. */
+  .destinations > :last-child:nth-child(3n+2) { grid-column:span 2; }
+}
 .destination-card { background:var(--paper); display:block; padding:56px 34px 48px; transition:background .15s; }
 .destination-card { display:flex; flex-direction:column; min-height:292px; }.destination-card .text-link { margin-top:auto; width:100%; }
 .destination-card:hover { background:#e9e5dd; }
@@ -759,6 +770,26 @@ footer { background:var(--ink); color:#fff; padding:52px max(48px,calc((100vw - 
 .admin-product-body select { background:#fff; border:1px solid var(--line); font-size:13px; padding:13px 14px; width:100%; }
 @media (max-width:640px) { .admin-product-head { grid-template-columns:1fr; } }
 
+/* --- Massenanlage aus Tabelle --- */
+.admin-import-quellen { display:grid; gap:14px; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); margin:14px 0; }
+.admin-import-quellen input[type=file] { background:#fff; border:1px solid var(--line); font-size:12px; padding:11px 12px; width:100%; }
+.admin-import-quellen small { color:var(--muted); font-size:11px; margin-top:6px; }
+.admin-import-zahlen { display:grid; gap:8px; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); list-style:none; margin:14px 0; padding:0; }
+.admin-import-zahlen li { background:#ebe8e1; font-size:11px; padding:12px 14px; }
+.admin-import-zahlen strong { display:block; font-size:22px; line-height:1.2; }
+/* Gold, nicht Rot: Fehlerhafte Zeilen halten den Lauf nicht auf, sie werden
+   übersprungen. Rot hieße „hier ist etwas kaputt" und stimmt nicht. */
+.admin-import-zahlen li.warnung { background:var(--gold); color:var(--ink); }
+.admin-import-tabelle { border-collapse:collapse; font-size:12px; margin-top:14px; width:100%; }
+.admin-import-tabelle th,.admin-import-tabelle td { border-bottom:1px solid var(--line); padding:9px 10px; text-align:left; vertical-align:top; }
+.admin-import-tabelle th { color:var(--muted); font-size:10px; letter-spacing:.06em; text-transform:uppercase; }
+.admin-import-tabelle td:first-child { font-family:'DM Mono',monospace; white-space:nowrap; }
+.admin-import-tabelle td.warnung { color:var(--red); }
+.admin-import-tabelle td.gut { color:#2f7d3b; }
+.admin-import-uebrig { font-size:12px; margin-top:14px; }
+.admin-import-uebrig summary { cursor:pointer; }
+.admin-import-uebrig p { margin-top:8px; overflow-wrap:anywhere; }
+
 /* --- Bestellungen im Adminbereich --- */
 .admin-orders-heading { align-items:baseline; display:flex; gap:18px; justify-content:space-between; }
 .admin-orders-heading h2 { margin:0; }
@@ -812,6 +843,14 @@ footer { background:var(--ink); color:#fff; padding:52px max(48px,calc((100vw - 
   .catalog-select,.catalog-price { justify-content:space-between; }
   .catalog-select select,.catalog-price input { flex:1; }
 }
+
+/* --- Suche im Vorverkauf --- */
+.shop-toolbar-count { color:var(--muted); font-family:'DM Mono',monospace; font-size:10px; letter-spacing:.06em; margin:0; white-space:nowrap; }
+/* Zurücksetzen ist eine Schaltfläche, kein Verweis — sie führt nirgendwohin,
+   sie räumt das Feld. Sie soll nur aussehen wie ein Verweis, und dafür müssen
+   die Vorgaben des Browsers für <button> weg. */
+button.text-link-inline { background:none; border:0; color:inherit; cursor:pointer; font:inherit; padding:0 0 2px; }
+@media (max-width:640px) { .shop-toolbar-count { align-self:flex-start; } }
 
 /* Keep the split copy's growing desktop padding from consuming its content
    box at wide viewports. The text paragraphs retain their own readable max
