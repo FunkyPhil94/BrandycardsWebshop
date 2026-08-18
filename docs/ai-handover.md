@@ -9722,3 +9722,38 @@ selbst; die Schrittfolge samt Nachprüfung steht in
   ohne Mail bliebe der Stand so wirkungslos wie vorher.
 - **U5:** `username` und `display_name` entfernen, samt Index, Profilformular,
   Registrierung, Datenexport und Datenschutztext.
+
+## Auftrag 2026-08-17: U3, U4 und U5 — abgeschlossen
+- **U3:** nichts zu bauen. Bereits vorhanden **und** durch
+  `tests/n5-orders.test.mjs` abgedeckt (DHL-Adresse, `trackingUrl(…, null)`,
+  Versandmail mit Link). Offen bleibt nur der Blick beim ersten echten Versand.
+- **U4a, Vorschlag zurückziehen:** `PATCH /api/account/price-offers`. Eigentümer,
+  Kennung und Stand stehen in **einer** Bedingung — zwischen Prüfen und Schreiben
+  passt so kein zweiter Aufruf. Fremd, unbekannt und längst entschieden geben
+  dieselbe 409. Der Versuch wird wirklich frei, weil `offerAttempts` `WITHDRAWN`
+  nicht mitzählt.
+- **U4b, Rückfrage:** Spalte `admin_question` (Migration 0017, in Produktion
+  angewandt und nachgeprüft). Der Betreiber **muss** die Frage mitgeben, sonst
+  weist die Route den Stand ab. Der Kunde bekommt sie per E-Mail (neue Vorlage
+  `cardSubmissionQuestion`, deutsch und englisch) **und** sieht sie im Konto.
+  Antwort per Antwort auf die E-Mail — derselbe Weg, den die übrigen Nachrichten
+  anbieten, ohne einen Posteingang im Shop zu bauen.
+- **U5:** `username` und `display_name` sind aus Code, Schema und Datenbank weg
+  (Migration 0018: erst der Index, dann die Spalten — SQLite verweigert sonst
+  `DROP COLUMN`). Betroffen waren 3 Konten mit Benutzername, 2 mit Anzeigename;
+  die Werte sind fort, das war der Zweck. **Reihenfolge mit Absicht:** erst der
+  Code ausgerollt (er fasst die Spalten nicht mehr an), dann die Spalten
+  gelöscht. Andersherum hätte der laufende Worker auf fehlende Spalten gegriffen.
+- `/api/account/validate-registration` ist mitentfallen — der Benutzername war
+  ihr einziger Zweck. Bei der Registrierung geht damit **gar nichts** mehr an den
+  eigenen Server; die Eigenschaft aus SEC-07 gilt stärker als vorher, der Test
+  hält jetzt genau das fest.
+- Die Anrede blieb unangetastet: „Danke für deine Bestellung!", ohne Namen.
+- Prüfkette: **701 Tests grün**, `npx tsc --noEmit` sauber, Lint ohne Warnung.
+  Deploys `8e053074` (U4) und `b5da79c4` (U5), je nach dem bekannten zweiten
+  Build. Seiten 200, `validate-registration` erwartungsgemäß 404, Adminrouten
+  und Kontoendpunkte unangemeldet 401. Nach der Migration: `users` trägt die
+  beiden Spalten nicht mehr, alle 3 Konten samt E-Mail unversehrt.
+- **Nicht geprüft:** die angemeldeten Ansichten. Die Browsersitzung hier ist
+  erneut abgelaufen; `/account/profil` zeigt korrekt „Bitte melde dich an".
+- Status: ABGESCHLOSSEN.

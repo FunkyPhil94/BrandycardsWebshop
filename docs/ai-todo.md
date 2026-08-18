@@ -11,7 +11,7 @@ dabei, damit niemand den Gesprächsverlauf braucht.
 
 ---
 
-## U1. Gerüst: Konto und Admin in Unterseiten aufteilen
+## U1. ~~Gerüst: Konto und Admin in Unterseiten aufteilen~~ — ERLEDIGT am 2026-08-17
 
 **Vom Betreiber abgenommen am 2026-08-17.** Beides liegt heute auf je einer
 Seite: das Kundenkonto als 374 Zeilen mit vier Blöcken untereinander, die
@@ -75,7 +75,7 @@ inhaltlich unverändert; es ist ein Umzug, keine Neuentwicklung.
 
 ---
 
-## U2. Zwei neue Kundenansichten, und was dafür im Backend fehlt
+## U2. ~~Zwei neue Kundenansichten~~ — ERLEDIGT am 2026-08-17
 
 Hängt an U1.
 
@@ -135,7 +135,7 @@ landet.
 
 ---
 
-## U4. Zwei Lücken, die mit den neuen Ansichten sichtbar werden
+## U4. ~~Zwei Lücken, die mit den neuen Ansichten sichtbar werden~~ — ERLEDIGT am 2026-08-17
 
 Keine Aufräumarbeit, sondern Funktionen — deshalb getrennt von U1 bis U3.
 
@@ -151,7 +151,7 @@ Keine Aufräumarbeit, sondern Funktionen — deshalb getrennt von U1 bis U3.
 
 ---
 
-## U5. Entscheidung offen: Benutzername und Anzeigename
+## U5. ~~Benutzername und Anzeigename~~ — ERLEDIGT am 2026-08-17
 
 **Befund vom 2026-08-17, im gesamten Code gemessen.** `users.username` und
 `users.display_name` werden **nirgends angezeigt**. Treffer gibt es nur an den
