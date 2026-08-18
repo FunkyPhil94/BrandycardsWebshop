@@ -39,7 +39,8 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ### 2026-08-18 - K.A.R.L. bekommt eine Persönlichkeit, die Oberfläche wird modernisiert
 
-- Stand: **ABGESCHLOSSEN** im Code, **noch nicht ausgerollt.**
+- Stand: **ABGESCHLOSSEN und AUSGEROLLT**, an der laufenden App gegen den
+  produktiven Shop verifiziert.
 - Auftrag: Der Betreiber möchte zweierlei — K.A.R.L. soll „persönlicher" sein
   und eine eigene Persönlichkeit haben, und die Desktop-Oberfläche soll moderner
   und ansehnlicher werden.
@@ -119,10 +120,16 @@ neuen Erfolgstext. `assistant-phase5` prüft die Tab-Reihe jetzt auf
 2 gehört den Chips, die aus `KarlPersona.Beispielfragen` im Code entstehen, und
 die Lücke im XAML wird ausdrücklich belegt.
 
-**Offen und ausdrücklich nicht getan: der Rollout.** Die Serverhälfte wirkt erst
-nach einem Deploy; im Screenshot fehlt der Rahmen um die Antwort genau deshalb.
-Der Deploy gehört aus dem Hauptverzeichnis gebaut (`.env.local`!), nicht aus
-diesem Worktree.
+**Ausgerollt und nachgemessen.** Gebaut wurde aus dem Hauptverzeichnis mit
+`.env.local`; `grep -rl "supabase.co" dist/client/assets` fand das Browser-Bündel,
+`/admin` antwortet mit 200 und **ohne** den Text „noch nicht konfiguriert“.
+Worker-Version `5a646e98-26ba-4c22-b311-2c0d2d1f5d06`.
+
+Danach dieselbe Messung noch einmal an der laufenden App, diesmal gegen den
+ausgerollten Server: „Zeig offene Preisvorschläge“ kam als „Hab nachgesehen:“,
+zwei unveränderte Datenblöcke samt Quelle und Stand, darunter „Ansonsten Stille
+im Karton.“ — der Rahmen sitzt, die Zeilen sind unangetastet. „Wer bist du?“
+wurde als Smalltalk beantwortet, ohne Planer und ohne Werkzeug.
 
 
 ## Historie
