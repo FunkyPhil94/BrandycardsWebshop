@@ -245,6 +245,7 @@ const EINLEITUNGEN: Record<"geld" | "andrang" | "lager" | "ebay" | "allgemein", 
 };
 
 const GRUPPEN: Record<AssistantToolName, keyof typeof EINLEITUNGEN> = {
+  card_search: "lager",
   latest_sale: "geld",
   sales_overview: "geld",
   latest_listing: "lager",

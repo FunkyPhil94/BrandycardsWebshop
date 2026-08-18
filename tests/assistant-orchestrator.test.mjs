@@ -127,16 +127,41 @@ test("der OpenAI-Planer stellt nur strikte Registry-Funktionen bereit und übern
   assert.equal(requestBody.tools.length, ASSISTANT_TOOL_NAMES.length);
   assert.deepEqual(requestBody.tools.map((tool) => tool.name), [...ASSISTANT_TOOL_NAMES]);
   assert.ok(requestBody.tools.every((tool) => tool.strict === true && tool.parameters.additionalProperties === false));
-  // Drei Parameter: `limit` (Ergebniszahl), `days` (Fensterlaenge) und seit dem
-  // 2026-08-17 `bis` (Fensterende), beides nur von sales_overview ausgewertet.
-  // Die Liste ist hier festgenagelt, damit kein Freitextfeld dazukommt, ueber
-  // das eine Abfrage von aussen hereinkaeme.
-  assert.ok(requestBody.tools.every((tool) => Object.keys(tool.parameters.properties).join(",") === "limit,days,bis"));
+  // Vier Parameter: `limit` (Ergebniszahl), `days` (Fensterlaenge), seit dem
+  // 2026-08-17 `bis` (Fensterende) und seit dem 2026-08-18 `suche` (Kartenname).
+  // Die Liste bleibt festgenagelt -- kein *weiteres* Feld soll unbemerkt
+  // dazukommen.
+  assert.ok(requestBody.tools.every((tool) => Object.keys(tool.parameters.properties).join(",") === "limit,days,bis,suche"));
   assert.ok(requestBody.tools.every((tool) => tool.parameters.properties.days.maximum === 90));
-  // `bis` ist die einzige Zeichenkette im Schema und deshalb auf die
-  // Datumsform festgelegt -- ein freies Textfeld waere genau das, was dieser
-  // Test verhindern soll. Die serverseitige Pruefung gilt zusaetzlich.
+  // `bis` bleibt auf die Datumsform festgelegt.
   assert.ok(requestBody.tools.every((tool) => tool.parameters.properties.bis.pattern === "^\\d{4}-\\d{2}-\\d{2}$"));
+});
+
+/** **Dieser Test hat am 2026-08-18 seine Form geaendert, und der Anlass gehoert
+ *  benannt.** Bis dahin verlangte er, dass das Modellschema *ueberhaupt kein*
+ *  Freitextfeld hat -- die Begruendung stand daneben: "damit kein Freitextfeld
+ *  dazukommt, ueber das eine Abfrage von aussen hereinkaeme."
+ *
+ *  Die Kartensuche braucht eines. Ein Kartentitel laesst sich nicht als Muster
+ *  festlegen, und "habe ich eine Karte von Lewandowski?" ist ohne den Namen
+ *  keine Frage. Die Absicht des alten Tests bleibt trotzdem gueltig, sie
+ *  wandert nur eine Ebene tiefer: Nicht das Schema haelt den Freitext im Zaum,
+ *  sondern die serverseitige Pruefung -- und **die** wird hier geprueft.
+ */
+test("das Freitextfeld ist serverseitig eingezaeunt, nicht nur im Schema beschrieben", async () => {
+  const { normalisiereSuchbegriff, alsSuchmuster, parseAssistantToolInput, SUCHE_MAX_LAENGE } =
+    await import("../lib/assistant/contracts.ts");
+
+  // Das Modell darf `suche` senden; die Pruefung entscheidet, was davon bleibt.
+  assert.throws(() => normalisiereSuchbegriff("x".repeat(SUCHE_MAX_LAENGE + 1)), /höchstens/u);
+  assert.throws(() => normalisiereSuchbegriff(""), /mindestens/u);
+  // Steuerzeichen fliegen raus, statt in die Abfrage zu wandern.
+  assert.equal(normalisiereSuchbegriff("Lewan\u0000dowski"), "Lewan dowski");
+  // LIKE-Platzhalter werden entwertet -- eine Suche nach "%" ist keine Suche
+  // nach allem.
+  assert.equal(alsSuchmuster("%"), "%\\%%");
+  // Und nichts anderes kommt durch: Das Feldgatter bleibt geschlossen.
+  assert.throws(() => parseAssistantToolInput({ tool: "card_search", sql: "SELECT 1" }), /Nicht unterstützte Felder/u);
 });
 
 test("der Orchestrator erzeugt Antworten nur aus Tool-Daten und nennt Quelle sowie Datenstand", async () => {

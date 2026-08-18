@@ -12,6 +12,7 @@ export const ASSISTANT_TOOL_NAMES = [
   "assistant_statistics",
   "sales_overview",
   "traffic_overview",
+  "card_search",
 ] as const;
 
 export type AssistantToolName = (typeof ASSISTANT_TOOL_NAMES)[number];
@@ -53,6 +54,7 @@ export const ASSISTANT_TOOL_DEFINITIONS = [
   // Lesesync — und beide haben einen Messbeginn, vor dem es schlicht nichts
   // gibt. Das Werkzeug muss das sagen dürfen, statt Null zu melden.
   { name: "traffic_overview", description: "Seitenaufrufe des Shops und Aufrufe der eBay-Angebote", availability: "SOURCE_DEPENDENT" },
+  { name: "card_search", description: "Angebotene Karten nach Titel durchsuchen, etwa nach Spieler, Verein oder Serie; braucht suche", availability: "READY" },
 ] as const satisfies readonly {
   name: AssistantToolName;
   description: string;
@@ -101,6 +103,17 @@ export const ASSISTANT_SPEECH_PHRASES = [
 export type AssistantToolInput<K extends AssistantToolName = AssistantToolName> = {
   tool: K;
   limit: number;
+  /** Der Suchbegriff — **das erste Freitextfeld in diesem Schema.**
+   *
+   *  Bis zum 2026-08-18 gab es hier nur Zahlen und ein auf `JJJJ-MM-TT`
+   *  festgenageltes Datum, ausdrücklich damit kein Freitext hereinkommt. Für
+   *  „habe ich eine Karte von Lewandowski?" führt daran kein Weg vorbei: Der
+   *  Name *ist* die Frage.
+   *
+   *  Die Schranken stehen deshalb in {@link parseAssistantToolInput} und sind
+   *  nicht verhandelbar — Länge begrenzt, `%` und `_` entwertet, gebunden als
+   *  Parameter. Nur `card_search` liest das Feld. */
+  suche?: string;
   /** Zeitraum in Tagen — nur `sales_overview` liest ihn. Bleibt er weg, gilt
    *  `SALES_OVERVIEW_DEFAULT_DAYS`. */
   days?: number;
@@ -173,6 +186,32 @@ export type AssistantSaleItem = {
 };
 
 export type AssistantToolDataMap = {
+  /** Treffer der Titelsuche über die **angebotenen** Karten.
+   *
+   * **Warum `nichtAngebotenAnzahl` dabeisteht und die Titel nicht.** Produktiv
+   * gemessen am 2026-08-18: „Lewandowski" trifft zwei Karten — eine aktiv im
+   * Angebot, eine mit beendetem Listing und Bestand 0. Die beendete zu
+   * verschweigen wäre irreführend („ich habe doch zwei"), sie mitaufzuzählen
+   * würde die Antwort mit Historie fluten. Gezählt statt genannt ist der
+   * Mittelweg, und er sagt die Wahrheit: *es gab* mehr Treffer, angeboten ist
+   * dieser eine.
+   */
+  card_search: {
+    suche: string;
+    angeboten: Array<{
+      productId: string;
+      title: string;
+      bereich: "KATALOG" | "VORVERKAUF";
+      priceAmountCents: number | null;
+      priceCurrency: string;
+      /** Verfügbare Menge, oder `null` für eine Vormerkung ohne Bestand. */
+      menge: number | null;
+    }>;
+    nichtAngebotenAnzahl: number;
+    /** Mehr angebotene Treffer als `limit`. Ohne diese Angabe sähe eine
+     *  gekürzte Liste aus wie eine vollständige. */
+    gekuerzt: boolean;
+  };
   latest_sale: {
     sale: null | {
       source: "SHOP" | "EBAY";
@@ -602,7 +641,7 @@ export function parseAssistantToolInput(value: unknown): AssistantToolInput {
   }
 
   const input = value as Record<string, unknown>;
-  const allowedFields = new Set(["tool", "limit", "days", "bis"]);
+  const allowedFields = new Set(["tool", "limit", "days", "bis", "suche"]);
   const unexpected = Object.keys(input).filter((field) => !allowedFields.has(field));
   if (unexpected.length) {
     throw new AssistantRequestError(`Nicht unterstützte Felder: ${unexpected.join(", ")}.`);
@@ -635,12 +674,59 @@ export function parseAssistantToolInput(value: unknown): AssistantToolInput {
     throw new AssistantRequestError("bis muss ein Datum der Form JJJJ-MM-TT sein.");
   }
 
+  const suche = input.suche === undefined ? undefined : normalisiereSuchbegriff(input.suche);
+
   return {
     tool: input.tool as AssistantToolName,
     limit,
     ...(input.days === undefined ? {} : { days: input.days as number }),
     ...(input.bis === undefined ? {} : { bis: input.bis as string }),
+    ...(suche === undefined ? {} : { suche }),
   };
+}
+
+/** Kürzeste und längste zulässige Suche.
+ *
+ * Unter zwei Zeichen findet eine Titelsuche über Hunderte Karten alles und
+ * damit nichts; über 60 Zeichen ist es kein Suchbegriff mehr, sondern ein Satz.
+ */
+export const SUCHE_MIN_LAENGE = 2;
+export const SUCHE_MAX_LAENGE = 60;
+
+/** Prüft und entschärft den Suchbegriff.
+ *
+ * **Die zwei Schranken, die wirklich zählen:**
+ *
+ * 1. **`%` und `_` werden entwertet.** Beide sind LIKE-Platzhalter. Eine Suche
+ *    nach „50%" träfe ungebremst jede Karte, und `_` jede mit beliebigem
+ *    Zeichen an der Stelle — das Ergebnis sähe aus wie eine Antwort und wäre
+ *    keine. Der Rückstrich davor macht sie zu Zeichen; das Werkzeug setzt
+ *    dazu `ESCAPE`.
+ * 2. **Keine Steuerzeichen, begrenzte Länge.** Der Begriff wird gebunden, nie
+ *    in SQL eingesetzt; die Grenze schützt nicht gegen Einschleusung, sondern
+ *    gegen sinnlose Abfragen.
+ *
+ * Abgewiesen wird, statt zurechtgebogen — aus demselben Grund wie bei `days`:
+ * Eine leere Suche wäre eine andere Frage als die gestellte.
+ */
+export function normalisiereSuchbegriff(value: unknown): string {
+  if (typeof value !== "string") {
+    throw new AssistantRequestError("suche muss Text enthalten.");
+  }
+  const sauber = value.replaceAll(/[\p{Cc}\p{Cf}]/gu, " ").replaceAll(/\s+/gu, " ").trim();
+  if (sauber.length < SUCHE_MIN_LAENGE) {
+    throw new AssistantRequestError(`suche braucht mindestens ${SUCHE_MIN_LAENGE} Zeichen.`);
+  }
+  if (sauber.length > SUCHE_MAX_LAENGE) {
+    throw new AssistantRequestError(`suche darf höchstens ${SUCHE_MAX_LAENGE} Zeichen lang sein.`);
+  }
+  return sauber;
+}
+
+/** Der Suchbegriff als LIKE-Muster, mit entwerteten Platzhaltern. */
+export function alsSuchmuster(suche: string): string {
+  const entwertet = suche.replaceAll("\\", "\\\\").replaceAll("%", "\\%").replaceAll("_", "\\_");
+  return `%${entwertet.toLowerCase()}%`;
 }
 
 export function parseAssistantQuestionInput(value: unknown): AssistantQuestionInput {

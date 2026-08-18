@@ -6,6 +6,7 @@ import type {
 } from "./contracts.ts";
 
 export const ASSISTANT_TOOL_LABELS: Record<AssistantToolName, string> = {
+  card_search: "Kartensuche",
   latest_sale: "Letzter Verkauf",
   latest_listing: "Letzte Einstellung",
   new_orders: "Neue Bestellungen",
@@ -92,6 +93,35 @@ export function formatAssistantToolResult(result: AnyAssistantToolResult): strin
   }
 
   switch (result.tool) {
+    case "card_search": {
+      const data = result.data;
+      // **„Nicht im Angebot" ist nicht „gibt es nicht".** Produktiv gemessen am
+      // 2026-08-18: „Lewandowski" trifft zwei Karten, davon eine mit beendetem
+      // Listing. Wer nur „keine gefunden" hört, obwohl er zwei im Kopf hat,
+      // hält den Assistenten für kaputt — der Nebensatz ist die eigentliche
+      // Auskunft.
+      const historie = data.nichtAngebotenAnzahl === 0
+        ? ""
+        : ` ${data.nichtAngebotenAnzahl} weitere(r) Titeltreffer ist nicht mehr im Angebot (beendet, verkauft oder inaktiv).`;
+
+      if (!data.angeboten.length) {
+        return withSource(`Zu „${data.suche}" ist aktuell keine Karte im Angebot.${historie}`, result);
+      }
+
+      const lines = data.angeboten.map((karte) => {
+        const preis = formatMoney(karte.priceAmountCents, karte.priceCurrency);
+        const bereich = karte.bereich === "VORVERKAUF" ? "Vorverkauf" : "Shop-Katalog";
+        // Die Menge nur, wenn sie etwas hinzufügt: Bei Einzelstücken — und das
+        // sind fast alle — wäre „(1×)" hinter jeder Zeile bloß Rauschen.
+        const menge = karte.menge !== null && karte.menge > 1 ? `, ${karte.menge}× vorhanden` : "";
+        return `• ${karte.title} — ${bereich}${preis ? `, ${preis}` : ", Preis nicht hinterlegt"}${menge}`;
+      });
+      const gekuerzt = data.gekuerzt ? "\n(Es gibt mehr Treffer; gezeigt werden die ersten.)" : "";
+      return withSource(
+        `Zu „${data.suche}" ${data.angeboten.length === 1 ? "ist eine Karte" : `sind ${data.angeboten.length} Karten`} im Angebot:\n${lines.join("\n")}${gekuerzt}${historie}`,
+        result,
+      );
+    }
     case "latest_sale": {
       const sale = result.data.sale;
       if (!sale) return withSource("Es wurde kein Verkauf gefunden.", result);

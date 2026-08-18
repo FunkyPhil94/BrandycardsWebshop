@@ -1,4 +1,5 @@
 import { createAssistantToolRegistry, type AssistantToolHandlers } from "./tool-registry";
+import { searchCards } from "./tools/catalog";
 import { getEbayBuyerOffers, getEbayMostViewed, getEbaySyncHealth } from "./tools/ebay";
 import { getEbayMessages, listNewShopInquiries } from "./tools/messages";
 import { listOpenShopOffers } from "./tools/offers";
@@ -8,6 +9,7 @@ import { getAssistantStatistics } from "./tools/statistics";
 import { getTrafficOverview } from "./tools/traffic";
 
 const handlers: AssistantToolHandlers = {
+  card_search: (input) => searchCards(input),
   latest_sale: () => getLatestSale(),
   latest_listing: () => getLatestListing(),
   new_orders: (input) => listNewOrders(input),

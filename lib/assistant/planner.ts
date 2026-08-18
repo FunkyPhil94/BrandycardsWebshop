@@ -176,6 +176,56 @@ export function requestedRange(message: string, jetzt: Date): { days: number; bi
   return { days: tage, bis };
 }
 
+/** „Karte von X" — die eindeutige Form, die für sich steht. */
+const KARTENSUCHE_STARK = /\bkarten?\s+von\s+(.{2,60}?)\s*[?.!]*$/iu;
+
+/** Formen, die **nur mit** einem Kartenwort in der Frage zählen.
+ *
+ * „Hast du Lewandowski?" ist ohne weiteren Zusammenhang nicht von „Hast du
+ * Feierabend?" zu unterscheiden. Diese Muster verlangen deshalb, dass irgendwo
+ * „Karte" oder „Karten" steht; alles andere überlässt der Regelplaner dem
+ * Modell, das den Zusammenhang beurteilen kann.
+ */
+const KARTENSUCHE_LOSE = [
+  /\b(?:hast du|haben wir|habe ich|hab ich|gibt es|gibts)\s+(?:noch\s+)?(?:eine\s+|ein\s+|alle\s+|welche\s+)?(?:karten?\s+)?(?:von\s+|mit\s+)?(.{2,60}?)\s*[?.!]*$/iu,
+  /\b(?:suche|such|finde|find|zeig|zeige)\s+(?:mir\s+)?(?:die\s+|alle\s+|eine\s+)?(?:karten?\s+)?(?:von\s+|mit\s+)?(.{2,60}?)\s*[?.!]*$/iu,
+];
+
+/** Füllwörter am Ende, die nicht zum Namen gehören. */
+const SUCH_FUELLWOERTER = /\s+(?:im\s+(?:shop|angebot|katalog|sortiment|bestand|lager)|noch|bitte|denn|eigentlich|karten?)$/iu;
+
+/** Zieht den gesuchten Namen aus der Frage — oder gibt `undefined` zurück.
+ *
+ * **Der Anlass:** „habe ich eine karte von Lewandowski?" endete am 2026-08-18
+ * in einer Absage, weil es kein Werkzeug für die Frage gab. Jetzt gibt es eines,
+ * und der Name muss lokal aus dem Satz kommen — sonst kostet die häufigste
+ * Frage des Betreibers jedes Mal einen Modellaufruf.
+ *
+ * **Warum das gefahrlos ist, obwohl die Muster weit greifen:** Diese Funktion
+ * wird ausschließlich aufgerufen, wenn **kein anderes Werkzeug** gegriffen hat.
+ * „Zeig offene Preisvorschläge" fängt an wie eine Suche, wird aber längst von
+ * `open_shop_offers` beantwortet und erreicht diese Stelle nie. Die Reihenfolge
+ * ist die Absicherung — dieselbe Bauweise wie beim Modellplaner, der auch erst
+ * hinter den Regeln steht.
+ */
+export function kartensuche(message: string): string | undefined {
+  const roh = message.trim();
+  const hatKartenwort = /\bkarten?\b/iu.test(roh);
+
+  const treffer = KARTENSUCHE_STARK.exec(roh)
+    ?? (hatKartenwort ? KARTENSUCHE_LOSE.map((muster) => muster.exec(roh)).find(Boolean) : undefined);
+  if (!treffer) return undefined;
+
+  let begriff = treffer[1]!.trim();
+  // Mehrfach, weil sich Füllwörter stapeln: „von Lewandowski Karten im Shop".
+  let vorher = "";
+  while (begriff !== vorher) {
+    vorher = begriff;
+    begriff = begriff.replace(SUCH_FUELLWOERTER, "").replace(/[?.!,;:]+$/u, "").trim();
+  }
+  return begriff.length >= 2 ? begriff : undefined;
+}
+
 function uniqueInputs(inputs: AssistantToolInput[]): AssistantToolInput[] {
   const names = new Set<AssistantToolName>();
   return inputs.filter((input) => {
@@ -329,6 +379,13 @@ export class RuleBasedAssistantPlanner implements AssistantPlanner {
     }
 
     const selected = uniqueInputs(tools);
+    // **Die Kartensuche steht am Ende, und das ist ihre Absicherung.** Sie
+    // greift nur, wenn keine Fachfrage erkannt wurde; damit kann sie keine
+    // beantwortbare Frage an sich ziehen. Siehe {@link kartensuche}.
+    if (selected.length === 0) {
+      const suche = kartensuche(message);
+      if (suche) return { tools: [{ tool: "card_search", limit, suche }], reason: "READY" };
+    }
     return { tools: selected, reason: selected.length ? "READY" : "UNSUPPORTED" };
   }
 }
@@ -439,11 +496,20 @@ export class OpenAIResponsesAssistantPlanner implements AssistantPlanner {
                 pattern: "^\\d{4}-\\d{2}-\\d{2}$",
                 description: "Letzter Tag des Zeitraums als JJJJ-MM-TT, einschließlich; null, wenn der Zeitraum heute endet.",
               },
+              suche: {
+                // Das zweite Zeichenkettenfeld, und das erste ohne Form: Ein
+                // Kartentitel lässt sich nicht als Muster festlegen. Die
+                // Schranken stehen deshalb hinter dem Modell, in
+                // `normalisiereSuchbegriff` — Länge und entwertete
+                // LIKE-Platzhalter, unabhängig davon, was hier ankommt.
+                type: ["string", "null"],
+                description: "Nur für card_search: der gesuchte Name, etwa Spieler, Verein oder Serie. Ohne Zusätze wie „Karte von“. null bei allen anderen Funktionen.",
+              },
             },
             // `strict: true` verlangt, dass jede Eigenschaft in `required`
             // steht. Der Zeitraum ist deshalb Pflicht im Schema und bekommt
             // seine Vorgabe erst dahinter -- siehe `boundedOverviewDays`.
-            required: ["limit", "days", "bis"],
+            required: ["limit", "days", "bis", "suche"],
             additionalProperties: false,
           },
         })),
