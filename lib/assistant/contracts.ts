@@ -13,6 +13,8 @@ export const ASSISTANT_TOOL_NAMES = [
   "sales_overview",
   "traffic_overview",
   "card_search",
+  "ebay_least_viewed",
+  "activity_digest",
 ] as const;
 
 export type AssistantToolName = (typeof ASSISTANT_TOOL_NAMES)[number];
@@ -54,7 +56,14 @@ export const ASSISTANT_TOOL_DEFINITIONS = [
   // Lesesync — und beide haben einen Messbeginn, vor dem es schlicht nichts
   // gibt. Das Werkzeug muss das sagen dürfen, statt Null zu melden.
   { name: "traffic_overview", description: "Seitenaufrufe des Shops und Aufrufe der eBay-Angebote", availability: "SOURCE_DEPENDENT" },
-  { name: "card_search", description: "Angebotene Karten nach Titel durchsuchen, etwa nach Spieler, Verein oder Serie; braucht suche", availability: "READY" },
+  { name: "card_search", description: "Angebotene Karten nach Titel und Beschreibung durchsuchen, etwa nach Spieler, Verein oder Serie; braucht suche", availability: "READY" },
+  // **Getrennt von `ebay_most_viewed`, nicht als Richtungsfeld.** Der Betreiber
+  // meldete am 2026-08-18, dass "am meisten" und "am wenigsten" dieselbe Antwort
+  // gaben -- die Sortierung war fest verdrahtet. Ein Werkzeugname sagt dem Modell
+  // deutlicher, was gemeint ist, als ein Wahrheitswert im Schema, und die
+  // Feldliste bleibt so, wie ein Wächtertest sie festnagelt.
+  { name: "ebay_least_viewed", description: "Eigene eBay-Angebote mit den wenigsten Aufrufen, aufsteigend; zeigt auch Angebote ohne einen einzigen Aufruf", availability: "SOURCE_DEPENDENT" },
+  { name: "activity_digest", description: "Was in den letzten Stunden passiert ist: Bestellungen, Verkäufe, Preisvorschläge, Anfragen, neu eingestellte Karten; braucht stunden", availability: "SOURCE_DEPENDENT" },
 ] as const satisfies readonly {
   name: AssistantToolName;
   description: string;
@@ -114,6 +123,13 @@ export type AssistantToolInput<K extends AssistantToolName = AssistantToolName> 
    *  nicht verhandelbar — Länge begrenzt, `%` und `_` entwertet, gebunden als
    *  Parameter. Nur `card_search` liest das Feld. */
   suche?: string;
+  /** Das Fenster des Ereignisüberblicks in **Stunden**.
+   *
+   *  **Nicht über `days` abbildbar**, und das ist der Grund für ein eigenes
+   *  Feld: `days` ist eine ganze Zahl ab 1, „die letzten drei Stunden" wären
+   *  ein Achtel davon. Nur `activity_digest` liest es; ohne Angabe gilt
+   *  {@link ACTIVITY_DIGEST_DEFAULT_HOURS}. */
+  stunden?: number;
   /** Zeitraum in Tagen — nur `sales_overview` liest ihn. Bleibt er weg, gilt
    *  `SALES_OVERVIEW_DEFAULT_DAYS`. */
   days?: number;
@@ -185,7 +201,54 @@ export type AssistantSaleItem = {
   currency: string;
 };
 
+/** Vorgabe und Grenzen des Ereignisüberblicks, in Stunden.
+ *
+ * 24 als Vorgabe, weil „was ist passiert?" ohne Zeitangabe den Tag meint. Die
+ * Obergrenze ist eine Woche: Darüber ist der Tagesbegriff die richtige Einheit,
+ * und dafür gibt es die Verkaufsübersicht.
+ */
+export const ACTIVITY_DIGEST_DEFAULT_HOURS = 24;
+export const ACTIVITY_DIGEST_MAX_HOURS = 168;
+
+/** Ein einzelner Vorgang im Ereignisüberblick.
+ *
+ * **`betragCents` ist nullbar und wird es bleiben.** Ein eBay-Verkauf ohne
+ * gemeldeten Betrag ist ein bekannter Fall; eine Null wäre dort eine erfundene
+ * Zahl. Dieselbe Linie wie überall hier.
+ */
+export type AssistantActivityEntry = {
+  art:
+    | "SHOP_BESTELLUNG"
+    | "EBAY_VERKAUF"
+    | "SHOP_PREISVORSCHLAG"
+    | "SHOP_ANFRAGE"
+    | "KARTE_EINGESTELLT"
+    | "VORSCHLAG_ANGENOMMEN"
+    | "VORSCHLAG_ABGELEHNT";
+  /** Worum es ging — Kartentitel, Bestellnummer oder Kennung. */
+  bezeichnung: string;
+  betragCents: number | null;
+  currency: string;
+  zeitpunkt: string | null;
+};
+
 export type AssistantToolDataMap = {
+  /** Der Ereignisüberblick über ein Stundenfenster.
+   *
+   * **`leer` steht ausdrücklich dabei.** Ein Bericht ohne Einträge sieht sonst
+   * wie ein Fehler aus, und anders als bei den Aufrufzahlen ist die Aussage hier
+   * belastbar: Diese Tabellen sind vollständig, es gibt keinen Messbeginn,
+   * hinter dem sich etwas verstecken könnte. „Nichts passiert" ist hier also
+   * wirklich „nichts passiert" — und darf deshalb gesagt werden.
+   */
+  activity_digest: {
+    stunden: number;
+    seit: string;
+    eintraege: AssistantActivityEntry[];
+    /** Wie viele Vorgänge es insgesamt gab; `eintraege` kann gekürzt sein. */
+    gesamtAnzahl: number;
+    leer: boolean;
+  };
   /** Treffer der Titelsuche über die **angebotenen** Karten.
    *
    * **Warum `nichtAngebotenAnzahl` dabeisteht und die Titel nicht.** Produktiv
@@ -272,6 +335,23 @@ export type AssistantToolDataMap = {
     }>;
   };
   ebay_most_viewed: {
+    /** Das ausgewertete Zeitfenster als `YYYYMMDD`. eBay liefert keine
+     *  Momentaufnahme, sondern eine Summe — ohne das Fenster wäre die Zahl
+     *  nicht einzuordnen. */
+    rangeStart: string | null;
+    rangeEnd: string | null;
+    listings: Array<{
+      ebayItemId: string;
+      title: string | null;
+      listingUrl: string | null;
+      viewsTotal: number | null;
+      impressionsTotal: number | null;
+    }>;
+  };
+  /** Dieselbe Form wie `ebay_most_viewed`, andere Richtung. Die Datenform zu
+   *  teilen ist Absicht: Der Formatierer unterscheidet nur die Überschrift, und
+   *  zwei getrennte Typen liefen beim nächsten Feld auseinander. */
+  ebay_least_viewed: {
     /** Das ausgewertete Zeitfenster als `YYYYMMDD`. eBay liefert keine
      *  Momentaufnahme, sondern eine Summe — ohne das Fenster wäre die Zahl
      *  nicht einzuordnen. */
@@ -641,7 +721,7 @@ export function parseAssistantToolInput(value: unknown): AssistantToolInput {
   }
 
   const input = value as Record<string, unknown>;
-  const allowedFields = new Set(["tool", "limit", "days", "bis", "suche"]);
+  const allowedFields = new Set(["tool", "limit", "days", "bis", "suche", "stunden"]);
   const unexpected = Object.keys(input).filter((field) => !allowedFields.has(field));
   if (unexpected.length) {
     throw new AssistantRequestError(`Nicht unterstützte Felder: ${unexpected.join(", ")}.`);
@@ -674,6 +754,16 @@ export function parseAssistantToolInput(value: unknown): AssistantToolInput {
     throw new AssistantRequestError("bis muss ein Datum der Form JJJJ-MM-TT sein.");
   }
 
+  // Abgewiesen statt zurechtgebogen, aus demselben Grund wie bei `days`: Ein
+  // unsinniges Fenster ist ein Fehler des Aufrufers und soll als solcher
+  // zurückkommen, nicht stillschweigend als 24 Stunden durchgehen.
+  if (input.stunden !== undefined) {
+    const stunden = input.stunden;
+    if (typeof stunden !== "number" || !Number.isSafeInteger(stunden) || stunden < 1 || stunden > ACTIVITY_DIGEST_MAX_HOURS) {
+      throw new AssistantRequestError(`stunden muss eine ganze Zahl zwischen 1 und ${ACTIVITY_DIGEST_MAX_HOURS} sein.`);
+    }
+  }
+
   const suche = input.suche === undefined ? undefined : normalisiereSuchbegriff(input.suche);
 
   return {
@@ -682,6 +772,7 @@ export function parseAssistantToolInput(value: unknown): AssistantToolInput {
     ...(input.days === undefined ? {} : { days: input.days as number }),
     ...(input.bis === undefined ? {} : { bis: input.bis as string }),
     ...(suche === undefined ? {} : { suche }),
+    ...(input.stunden === undefined ? {} : { stunden: input.stunden as number }),
   };
 }
 

@@ -69,6 +69,12 @@ test("der Suchbegriff wird geprüft und entschärft, nicht zurechtgebogen", () =
   const werkzeug = "lib/assistant/tools/catalog.ts";
   return read(werkzeug).then((quelle) => {
     assert.match(quelle, /ESCAPE '\\\\'/u, `${werkzeug} braucht die ESCAPE-Klausel`);
+    // **Titel *und* Beschreibung**, auf ausdrücklichen Wunsch des Betreibers vom
+    // 2026-08-18. `coalesce` gehört dazu: `description` ist nullbar, und ohne
+    // sie wäre die ganze Verkettung `NULL` — die Zeile fiele dann
+    // stillschweigend aus jedem Treffer, also genau die Sorte Fehler, die
+    // niemandem auffällt.
+    assert.match(quelle, /products\.title\} \|\| ' ' \|\| coalesce\(\$\{products\.description\}/u);
     // Die Sichtbarkeitsregel wird benutzt, nicht nachgebaut.
     assert.match(quelle, /istImKatalogSichtbar\(/u);
     assert.doesNotMatch(quelle, /listingType === "AUCTION"/u, "die Auktionsregel gehört nicht kopiert");

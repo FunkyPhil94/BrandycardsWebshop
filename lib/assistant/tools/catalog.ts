@@ -31,6 +31,15 @@ export async function searchCards(input: AssistantToolInput): Promise<AssistantT
   }
 
   const muster = alsSuchmuster(suche);
+  // **Titel *und* Beschreibung**, auf ausdrücklichen Wunsch des Betreibers vom
+  // 2026-08-18, nachdem die Unschärfe benannt war: Eine Beschreibung nennt
+  // Serie, Verein und Zustand, manchmal auch Spieler, die im Titel keinen Platz
+  // hatten. Der Preis dafür sind weichere Treffer — „Barcelona" findet auch
+  // Karten, in deren Beschreibung der Verein nur als Vergleich vorkommt.
+  //
+  // `coalesce`, weil `description` nullbar ist: Ohne sie wäre die ganze
+  // Verkettung `NULL` und die Zeile fiele stillschweigend aus jedem Treffer.
+  const durchsucht = sql`lower(${products.title} || ' ' || coalesce(${products.description}, ''))`;
   // **`ESCAPE` gehört dazu, nicht dahinter.** `alsSuchmuster` setzt Rückstriche
   // vor `%` und `_`; ohne diese Klausel wäre der Rückstrich für SQLite ein
   // gewöhnliches Zeichen und die Entwertung wirkungslos.
@@ -55,7 +64,7 @@ export async function searchCards(input: AssistantToolInput): Promise<AssistantT
     .leftJoin(inventory, eq(inventory.productId, products.id))
     .where(and(
       eq(products.status, "ACTIVE"),
-      sql`lower(${products.title}) LIKE ${muster} ESCAPE '\\'`,
+      sql`${durchsucht} LIKE ${muster} ESCAPE '\\'`,
     ))
     .orderBy(products.title);
 
@@ -67,7 +76,7 @@ export async function searchCards(input: AssistantToolInput): Promise<AssistantT
   const [{ anzahl: gesamtTreffer } = { anzahl: 0 }] = await getDb()
     .select({ anzahl: sql<number>`count(*)`.mapWith(Number) })
     .from(products)
-    .where(sql`lower(${products.title}) LIKE ${muster} ESCAPE '\\'`);
+    .where(sql`${durchsucht} LIKE ${muster} ESCAPE '\\'`);
 
   const angeboten: AssistantToolDataMap["card_search"]["angeboten"] = [];
   for (const zeile of treffer) {

@@ -127,11 +127,13 @@ test("der OpenAI-Planer stellt nur strikte Registry-Funktionen bereit und übern
   assert.equal(requestBody.tools.length, ASSISTANT_TOOL_NAMES.length);
   assert.deepEqual(requestBody.tools.map((tool) => tool.name), [...ASSISTANT_TOOL_NAMES]);
   assert.ok(requestBody.tools.every((tool) => tool.strict === true && tool.parameters.additionalProperties === false));
-  // Vier Parameter: `limit` (Ergebniszahl), `days` (Fensterlaenge), seit dem
-  // 2026-08-17 `bis` (Fensterende) und seit dem 2026-08-18 `suche` (Kartenname).
-  // Die Liste bleibt festgenagelt -- kein *weiteres* Feld soll unbemerkt
-  // dazukommen.
-  assert.ok(requestBody.tools.every((tool) => Object.keys(tool.parameters.properties).join(",") === "limit,days,bis,suche"));
+  // Fuenf Parameter: `limit` (Ergebniszahl), `days` (Fensterlaenge), seit dem
+  // 2026-08-17 `bis` (Fensterende) und seit dem 2026-08-18 `suche` (Kartenname)
+  // sowie `stunden` (Fenster des Ereignisueberblicks). Die Liste bleibt
+  // festgenagelt -- kein *weiteres* Feld soll unbemerkt dazukommen.
+  assert.ok(requestBody.tools.every((tool) => Object.keys(tool.parameters.properties).join(",") === "limit,days,bis,stunden,suche"));
+  // Das Stundenfenster ist im Schema begrenzt, nicht nur serverseitig.
+  assert.ok(requestBody.tools.every((tool) => tool.parameters.properties.stunden.maximum === 168));
   assert.ok(requestBody.tools.every((tool) => tool.parameters.properties.days.maximum === 90));
   // `bis` bleibt auf die Datumsform festgelegt.
   assert.ok(requestBody.tools.every((tool) => tool.parameters.properties.bis.pattern === "^\\d{4}-\\d{2}-\\d{2}$"));

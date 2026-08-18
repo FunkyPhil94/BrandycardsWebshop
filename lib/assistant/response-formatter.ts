@@ -1,5 +1,6 @@
 import type {
   AnyAssistantToolResult,
+  AssistantActivityEntry,
   AssistantDataSource,
   AssistantOrchestratorToolSummary,
   AssistantToolName,
@@ -7,6 +8,8 @@ import type {
 
 export const ASSISTANT_TOOL_LABELS: Record<AssistantToolName, string> = {
   card_search: "Kartensuche",
+  ebay_least_viewed: "eBay-Angebote mit den wenigsten Aufrufen",
+  activity_digest: "Was war los",
   latest_sale: "Letzter Verkauf",
   latest_listing: "Letzte Einstellung",
   new_orders: "Neue Bestellungen",
@@ -29,6 +32,27 @@ const SOURCE_LABELS: Record<AssistantDataSource, string> = {
   EBAY_WEBHOOK: "eBay-Ereignisse",
   SYSTEM: "Systemstatus",
 };
+
+/** Wie ein Vorgang im Ereignisüberblick heißt.
+ *
+ * Ausgeschrieben statt als Kürzel: Der Bericht wird gelesen, oft nebenbei, und
+ * `SHOP_PREISVORSCHLAG` in einer Zeile zu entschlüsseln ist Arbeit, die niemand
+ * machen will.
+ */
+const AKTIVITAETS_LABELS: Record<AssistantActivityEntry["art"], string> = {
+  SHOP_BESTELLUNG: "Shop-Bestellung",
+  EBAY_VERKAUF: "eBay-Verkauf",
+  SHOP_PREISVORSCHLAG: "Preisvorschlag im Shop",
+  SHOP_ANFRAGE: "Shop-Anfrage",
+  KARTE_EINGESTELLT: "Karte eingestellt",
+  VORSCHLAG_ANGENOMMEN: "Preisvorschlag angenommen",
+  VORSCHLAG_ABGELEHNT: "Preisvorschlag abgelehnt",
+};
+
+/** „in den letzten 3 Stunden" → „In den letzten 3 Stunden". */
+function grossErsterBuchstabe(text: string): string {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
 
 function formatMoney(amountCents: number | null, currency: string): string | null {
   if (amountCents === null) return null;
@@ -93,6 +117,51 @@ export function formatAssistantToolResult(result: AnyAssistantToolResult): strin
   }
 
   switch (result.tool) {
+    case "activity_digest": {
+      const data = result.data;
+      const fenster = data.stunden === 1 ? "in der letzten Stunde" : `in den letzten ${data.stunden} Stunden`;
+      // **„Nichts passiert" wird ausgesprochen.** Ein leerer Bericht sieht sonst
+      // wie ein Fehler aus — und anders als bei den Aufrufzahlen ist die Aussage
+      // hier belastbar: Diese Tabellen sind vollständig und haben keinen
+      // Messbeginn, hinter dem sich etwas verstecken könnte.
+      if (data.leer) {
+        return withSource(`${grossErsterBuchstabe(fenster)} ist nichts passiert: keine Bestellungen, keine Verkäufe, keine Preisvorschläge, keine Anfragen, keine neuen Karten.`, result);
+      }
+
+      const lines = data.eintraege.map((eintrag) => {
+        const betrag = formatMoney(eintrag.betragCents, eintrag.currency);
+        return `• ${formatDate(eintrag.zeitpunkt)} · ${AKTIVITAETS_LABELS[eintrag.art]}: ${eintrag.bezeichnung}${betrag ? ` (${betrag})` : ""}`;
+      });
+      const gekuerzt = data.gesamtAnzahl > data.eintraege.length
+        ? [`(${data.gesamtAnzahl} Vorgänge insgesamt; gezeigt werden die ${data.eintraege.length} neuesten.)`]
+        : [];
+      return withSource([
+        `${grossErsterBuchstabe(fenster)} ${data.gesamtAnzahl === 1 ? "ist ein Vorgang" : `sind ${data.gesamtAnzahl} Vorgänge`} zusammengekommen, neueste zuerst:`,
+        ...lines,
+        ...gekuerzt,
+      ].join("\n"), result);
+    }
+    case "ebay_least_viewed": {
+      const listings = result.data.listings;
+      if (!listings.length) {
+        return withSource("eBay hat für den ausgewerteten Zeitraum zu keinem Angebot Aufrufzahlen gemeldet.", result);
+      }
+      const lines = listings.map((listing) => {
+        const title = listing.title ?? `eBay-Angebot ${listing.ebayItemId}`;
+        // **Null Aufrufe wird als Null benannt**, nicht als „nicht gemeldet"
+        // verkleidet: Genau diese Karten sucht die Frage. Fehlende Zahlen kommen
+        // hier ohnehin nicht an, sie fallen im Werkzeug heraus.
+        const views = listing.viewsTotal === null
+          ? "nicht gemeldet"
+          : listing.viewsTotal === 0 ? "kein einziger Aufruf" : `${listing.viewsTotal} Aufrufe`;
+        const impressions = listing.impressionsTotal === null ? "" : `, ${listing.impressionsTotal} Einblendungen`;
+        return `• ${title}: ${views}${impressions}`;
+      });
+      return withSource(
+        `${formatRange(result.data.rangeStart, result.data.rangeEnd)}, die mit den wenigsten Aufrufen zuerst:\n${lines.join("\n")}`,
+        result,
+      );
+    }
     case "card_search": {
       const data = result.data;
       // **„Nicht im Angebot" ist nicht „gibt es nicht".** Produktiv gemessen am
