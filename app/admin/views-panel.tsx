@@ -79,7 +79,7 @@ export function ViewsPanel() {
   if (!aufrufe) return null;
 
   return <section className="admin-section">
-    <h2>Aufrufe im Shop</h2>
+    <h2>Besucher im Shop</h2>
     <div className="admin-stats admin-views-stats">
       {/* „Insgesamt" steht am Ende, nicht am Anfang: Die Zeiträume sind die
           Zahlen, an denen man ablesen kann, ob es gerade läuft. Der
@@ -92,6 +92,12 @@ export function ViewsPanel() {
     <p className="admin-views-note">{erfassungstext(aufrufe.erfasstSeit)}</p>
     {aufrufe.seiten.length > 0 && <>
       <p className="admin-subheading">Nach Seitenbereich, letzte 30 Tage</p>
+      {/* **Der Satz, ohne den die Tabelle wie ein Rechenfehler aussieht.** Die
+          Zeilen summieren sich absichtlich zu mehr als die Kachel oben: Dort
+          zählt ein Besucher einmal, hier in jedem Bereich, den er angesehen
+          hat. Ohne den Hinweis addiert der Betreiber die Spalte und hält die
+          Kachel für falsch. */}
+      <p className="admin-views-note">Ein Besucher zählt hier in jedem Bereich, den er an dem Tag angesehen hat — oben dagegen genau einmal. Die Spalten ergeben deshalb mehr als die Kacheln.</p>
       <table className="admin-views-table">
         <thead><tr><th scope="col">Bereich</th><th scope="col">24 Std.</th><th scope="col">7 Tage</th><th scope="col">30 Tage</th></tr></thead>
         <tbody>
@@ -107,6 +113,6 @@ export function ViewsPanel() {
     {/* Eine Erwartung geraderücken, bevor sie entsteht: Der Zähler misst den
         Shop. Wer wissen will, wie oft eine Karte bei eBay angesehen wurde,
         findet das nicht hier. */}
-    <p className="admin-views-note">Gezählt werden Seitenaufrufe im Shop — ohne den Adminbereich, ohne Suchmaschinen und ohne Cookies oder Kennungen. Aufrufe der Angebote bei eBay sind etwas anderes und werden getrennt von dort abgeholt.</p>
+    <p className="admin-views-note">Gezählt wird im Shop — ohne den Adminbereich, ohne Suchmaschinen und ohne Cookies. Eine Besucheradresse zählt einmal am Tag; gespeichert wird davon nur ein täglich neu verschlüsselter Prüfwert, nie die Adresse selbst. Die Entdopplung beginnt um Mitternacht UTC neu. Aufrufe der Angebote bei eBay sind etwas anderes und werden getrennt von dort abgeholt.</p>
   </section>;
 }

@@ -1,9 +1,9 @@
-import { gte, sql } from "drizzle-orm";
+import { eq, gte, sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { getDb } from "../../../../db";
 import { pageViewArchive, pageViews } from "../../../../db/schema";
 import { requireAdmin } from "../../../../lib/admin-access";
-import { AUFRUF_FENSTER, fensterBeginn, type AufrufFenster } from "../../../../lib/page-views";
+import { AUFRUF_FENSTER, BESUCHER_ZEILE, fensterBeginn, type AufrufFenster } from "../../../../lib/page-views";
 
 /** Die Aufrufzahlen für die drei Fenster des Adminbereichs.
  *
@@ -44,26 +44,43 @@ export async function GET(request: Request) {
       // `page_views` hält nur, was jünger als die Aufbewahrungsfrist ist. Wer
       // hier `page_view_archive` wegließe, bekäme keine Gesamtzahl, sondern
       // eine, die ab Tag 91 schrumpft. Siehe `lib/page-views-retention.ts`.
-      db.select({ summe: sql<number>`coalesce(sum(${pageViews.viewCount}), 0)` }).from(pageViews),
-      db.select({ summe: sql<number>`coalesce(sum(${pageViewArchive.viewCount}), 0)` }).from(pageViewArchive),
+      // Beide auf die Besucherzeile eingeschränkt: Ohne das stünde in „Insgesamt"
+      // die Summe aus Besuchern **und** Bereichsaufrufen — eine Zahl, die nichts
+      // bedeutet und etwa fünfmal zu groß wäre.
+      db.select({ summe: sql<number>`coalesce(sum(${pageViews.viewCount}), 0)` })
+        .from(pageViews).where(eq(pageViews.path, BESUCHER_ZEILE)),
+      db.select({ summe: sql<number>`coalesce(sum(${pageViewArchive.viewCount}), 0)` })
+        .from(pageViewArchive).where(eq(pageViewArchive.path, BESUCHER_ZEILE)),
     ]);
+
+    const alleZeilen = zeilen
+      .map((zeile) => ({ pfad: zeile.pfad, tag: Number(zeile.tag), woche: Number(zeile.woche), monat: Number(zeile.monat) }));
+
+    // **Die Kacheln zählen Besucher, die Tabelle zählt Bereiche.** Seit dem
+    // 2026-08-18 zählt eine Adresse je Bereich einmal am Tag, in der Kachel
+    // aber genau einmal — egal in wie vielen Bereichen sie war. Die Summe der
+    // Tabellenzeilen ist deshalb **größer** als die Kachel, und das ist kein
+    // Rechenfehler: Es sind zwei Fragen. Wer die Kacheln wieder aus der Summe
+    // der Bereiche bildet, macht daraus stillschweigend eine Aufrufzahl.
+    const besucher = alleZeilen.find((zeile) => zeile.pfad === BESUCHER_ZEILE);
 
     // Die Aufschlüsselung folgt dem größten Fenster, damit die Reihenfolge
     // nicht springt, sobald in den letzten 24 Stunden wenig los war.
-    const seiten = zeilen
-      .map((zeile) => ({ pfad: zeile.pfad, tag: Number(zeile.tag), woche: Number(zeile.woche), monat: Number(zeile.monat) }))
-      .filter((zeile) => zeile.monat > 0)
+    const seiten = alleZeilen
+      .filter((zeile) => zeile.pfad !== BESUCHER_ZEILE && zeile.monat > 0)
       .sort((a, b) => b.monat - a.monat || a.pfad.localeCompare(b.pfad));
 
-    const gesamt = (fenster: AufrufFenster) => seiten.reduce((summe, zeile) => summe + zeile[fenster], 0);
+    const besucherFenster = (fenster: AufrufFenster) => besucher?.[fenster] ?? 0;
 
     return NextResponse.json({
       ok: true,
       erfasstSeit: erfassung?.erstesEimer ?? null,
       fenster: {
-        tag: { titel: AUFRUF_FENSTER.tag.titel, gesamt: gesamt("tag") },
-        woche: { titel: AUFRUF_FENSTER.woche.titel, gesamt: gesamt("woche") },
-        monat: { titel: AUFRUF_FENSTER.monat.titel, gesamt: gesamt("monat") },
+        tag: { titel: AUFRUF_FENSTER.tag.titel, gesamt: besucherFenster("tag") },
+        woche: { titel: AUFRUF_FENSTER.woche.titel, gesamt: besucherFenster("woche") },
+        monat: { titel: AUFRUF_FENSTER.monat.titel, gesamt: besucherFenster("monat") },
+        // Gesamtstand: vorhandene Eimer plus Archiv, beides nur die
+        // Besucherzeile — sonst mischte sich die Aufrufsumme darunter.
         insgesamt: { titel: "Insgesamt", gesamt: Number(alleEimer?.summe ?? 0) + Number(archiv?.summe ?? 0) },
       },
       seiten,

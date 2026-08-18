@@ -673,6 +673,27 @@ export const pageViews = sqliteTable("page_views", {
   index("page_views_bucket_idx").on(table.bucketStart),
 ]);
 
+/** Wer heute schon gezählt wurde — **ohne zu wissen, wer das ist.**
+ *
+ * Eine Zeile trägt einen SHA-256-Wert aus Tagessalz, Besucheradresse und (für
+ * die Bereichszeile) dem Pfadmuster. Das Salz liegt als Cloudflare-Secret und
+ * geht mit dem Datum ein; es erreicht die Datenbank nie. Wer diese Tabelle
+ * liest, hat 64 Hexzeichen und ein Datum — die Adresse lässt sich daraus ohne
+ * das Secret nicht zurückrechnen, und morgen passt sie zu keinem Hash mehr.
+ *
+ * **Der Tag steckt im Schlüssel, nicht nur in der Spalte.** Deshalb braucht es
+ * keine Ablauflogik beim Schreiben: Der Schlüssel von gestern kollidiert mit
+ * nichts, ein `ON CONFLICT DO NOTHING` genügt, und der Tag in der Spalte dient
+ * allein dem Aufräumen.
+ */
+export const pageViewVisits = sqliteTable("page_view_visits", {
+  visitKey: text("visit_key").primaryKey().notNull(),
+  /** `YYYY-MM-DD` in UTC. Nur zum Löschen alter Zeilen. */
+  day: text("day").notNull(),
+}, (table) => [
+  index("page_view_visits_day_idx").on(table.day),
+]);
+
 /** Aufrufe, deren Eimer die Aufbewahrungsfrist verlassen haben.
  *
  * Damit „insgesamt" auch wirklich insgesamt heißt: `SUM(page_views)` allein
