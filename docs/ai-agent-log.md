@@ -1,5 +1,93 @@
 # BrandyCards Agentenprotokoll
 
+## 2026-08-18 - Ein Sortierfehler, ein fehlendes Zeitmaß, und eine Zahl, die keine Uhrzeit hat
+
+Drei Punkte des Betreibers, und jeder hat etwas über den Code gesagt, das vorher
+niemand wusste.
+
+**Der gemeldete Fehler war eine fehlende Frage, keine falsche Antwort.** „Am
+meisten Aufrufe" und „am wenigsten" gaben dasselbe zurück, weil es die
+Gegenrichtung schlicht nicht gab: `orderBy(desc(viewsTotal), …)` stand fest im
+Code, und der Regelplaner routete beide Sätze auf dasselbe Werkzeug. Der
+Assistent hat also nicht falsch sortiert — er konnte die zweite Frage gar nicht
+stellen und hat sie stillschweigend in die erste umgedeutet. **Das ist die
+gefährlichere Sorte Fehler:** Eine falsche Zahl fällt auf, eine beantwortete
+andere Frage nicht.
+
+Behoben als zweites Werkzeug statt als Richtungsfeld. Ein Werkzeugname sagt dem
+Modell deutlicher, was gemeint ist, als ein Wahrheitswert — und die Feldliste im
+Modellschema bleibt so, wie ein Wächtertest sie festnagelt. Die Reihenfolge im
+Planer ist dabei der eigentliche Kniff: „am wenigsten angesehen" enthält
+„angesehen" und wird deshalb **zuerst** auf die Gegenrichtung geprüft.
+
+**`isNotNull` blieb stehen, und das ist die Pointe der Gegenfrage.** „Nicht
+gemeldet" ist keine niedrige Zahl, sondern eine fehlende; eine echte Null
+dagegen ist eine Messung. Produktiv sind das die interessantesten Zeilen
+überhaupt — Karten mit hunderten Einblendungen und **keinem einzigen Aufruf**.
+Sie werden ausgeschrieben, nicht als „0" verkleidet.
+
+**Stunden gehen in `days` nicht auf, und deshalb gab es sie nicht.**
+`requestedDays` rechnet Wochen und Monate in Tage um, weil ein Tag die kleinste
+Einheit ist, die das Feld ausdrücken kann. „Die letzten drei Stunden" wäre ein
+Achtel davon. Ein eigenes Feld war der einzige ehrliche Weg — und der zweite an
+einem Tag, in einem Schema, das bis zum Morgen nur Zahlen und ein festgenageltes
+Datum kannte.
+
+**Der Überblick liest die Fachtabellen, nicht das Ereignisprotokoll.**
+`avatar_events` wäre die naheliegende Quelle gewesen und ist die falsche: Es
+kennt vier Ereignisarten und verschwiege Bestellungen, Anfragen und
+Einstellungen — stillschweigend. Zu einem angenommenen Vorschlag steht dort
+außerdem nur eine Kennung; in `price_offers` stehen Kartentitel und Betrag.
+
+**Dann die Nachfrage, und mit ihr die interessanteste Grenze des Tages.** Der
+Betreiber wollte auch eingegangene und abgeschickte Preisvorschläge sowie
+eBay-Nachrichten im Bericht. Beim Nachsehen zeigte sich ein Unterschied, den man
+den beiden Tabellen nicht ansieht:
+
+- `ebay_inbox_messages.receivedAt` kommt aus eBays Antwort (`excluded.received_at`)
+  — ein echter Eingangszeitpunkt.
+- `ebay_buyer_offers` hat **keinen**. Die einzige Zeitspalte `collectedAt` wird
+  bei jedem Lesesync neu gesetzt, und Zeilen, die nicht mehr kommen, werden
+  gelöscht.
+
+Ein Zeitfenster auf `collectedAt` hätte funktioniert, gut ausgesehen und **alle
+15 Minuten jeden offenen Vorschlag als neu eingegangen gemeldet** — eine
+erfundene Zeitangabe für eine echte Zahl. Die Vorschläge stehen deshalb als
+Zustand neben dem Bericht, ausdrücklich ohne Uhrzeit, mit dem Grund im Satz.
+Dieselbe Linie wie beim Aufrufzähler: Eine Zahl ohne belastbaren Zeitbezug wird
+als solche ausgewiesen, nicht in einen Zeitraum hineingelogen.
+
+Nebenbei: Die eBay-Nachrichten tragen den Vorschlagsverkehr ohnehin mit
+(„Käufer hat einen neuen Preisvorschlag gesendet", „Gegenvorschlag an Käufer").
+Die Anforderung war damit erfüllbar, ohne eine Zeitangabe zu erfinden.
+
+**Und wieder hat erst das laufende Fenster zwei Fehler gezeigt.** Alle Tests
+grün, ausgerollt, Frage gestellt — und die Antwort auf „was ist in den letzten
+48 Stunden passiert" bestand aus zehn eBay-Nachrichten. 168 Vorgänge, davon 144
+eingestellte Karten und 14 Nachrichten; die zeitlich sortierte, gekürzte Liste
+zeigte nur die häufigste Sorte, und die Verkäufe fielen hinten heraus. **Der
+Betreiber hatte „ein Update zu allem" verlangt, und genau das leistete die
+Liste nicht.** Eine Zusammenfassung je Art steht jetzt darüber.
+
+Im selben Screenshot der zweite Fund: `requestedLimit` nimmt die erste Zahl im
+Satz, bei „48 Stunden" also die 48 — die Stundenzahl wurde zur Ergebnisanzahl,
+und ein Bericht über drei Stunden hätte drei Zeilen gezeigt. Genau diese
+Verwechslung steht bei `days` seit Wochen im Code dokumentiert. **Ich habe die
+Notiz gelesen, als ich die Stundenerkennung daneben schrieb, und den Fehler
+trotzdem neu eingebaut** — dasselbe Muster wie heute Mittag beim Fachwort-Riegel.
+Eine dokumentierte Falle schützt nur den, der sie auf den eigenen neuen Code
+anwendet.
+
+**Zur Messtechnik, weil sie zweimal Zeit gekostet hat.** Der Desktop führt zwei
+Fenster mit dem Titel „BrandyCards Assistant", eines davon ohne gültige Ausmaße,
+und `MainWindowHandle` zeigt zeitweise auf das Pet-Overlay (Titel „B"). Ein
+Screenshot des falschen Handles ist ein grauer Streifen. Verlässlich: über
+UI-Automation alle Fenster dieses Titels holen und das mit endlichem
+`BoundingRectangle` nehmen — und die Antworten **als Text** über die
+Automation-Namen auslesen statt sie aus einem Bild abzulesen. Nichts
+abgeschnitten, nichts zu entziffern.
+
+
 ## 2026-08-18 - Die Kartensuche, und warum sie am Ende der Kette steht
 
 Der Betreiber fragte „habe ich eine karte von Lewandowski?" und bekam eine

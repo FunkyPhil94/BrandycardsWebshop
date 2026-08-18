@@ -39,7 +39,7 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ### 2026-08-18 - Beschreibungssuche, Aufrufe in beide Richtungen, Stundenbericht
 
-- Stand: **LÄUFT.**
+- Stand: **ABGESCHLOSSEN und AUSGEROLLT**, alle drei Punkte in Produktion nachgemessen.
 - Auftrag: Drei Punkte vom Betreiber, einer davon ein gemeldeter Fehler.
 
 **Punkt 1 — die Kartensuche soll auch die Beschreibung lesen.** Bisher nur den
@@ -90,6 +90,76 @@ darüber der Tagesbegriff die richtige Einheit ist.
 Punkte an der laufenden App gegen den ausgerollten Shop, mit Screenshot: Die
 Gegenfrage nach den wenigsten Aufrufen muss ein **anderes** Ergebnis liefern als
 die nach den meisten.
+
+**Ergebnis: alle drei Punkte gebaut, ausgerollt und in Produktion nachgemessen.
+763 Tests grün, TypeScript fehlerfrei, ESLint 0 Fehler. Worker-Version
+`dfd6b47a-ca17-46b5-9512-98756f1b8dd9`.**
+
+**Punkt 1 — Beschreibungssuche.** `lower(title || ' ' || coalesce(description,
+''))`. Das `coalesce` ist kein Beiwerk: `description` ist nullbar, und ohne es
+wäre die ganze Verkettung `NULL` — die Zeile fiele stillschweigend aus jedem
+Treffer. Gemessen: „Gibt es Karten von Barcelona?" liefert 10 Karten im Angebot.
+
+**Punkt 2 — der gemeldete Fehler.** Bestätigt und behoben. Produktiv gegenüber
+gestellt:
+
+| Frage | Antwort |
+|---|---|
+| am meisten Aufrufe | Yamal Rookie 98, Yamal Purple 95, Messi PSA 10 70 … |
+| am wenigsten Aufrufe | Carragher Snapshot, J.J. Watt Rookie, Aguero Heritage … je **kein einziger Aufruf** |
+
+`ebay_least_viewed` als eigenes Werkzeug neben `ebay_most_viewed`, eine Abfrage
+mit Richtung. `isNotNull` bleibt stehen — „nicht gemeldet" ist keine niedrige
+Zahl, sondern eine fehlende; eine echte Null dagegen ist eine Messung und wird
+als „kein einziger Aufruf" ausgeschrieben. **Genau diese Karten sucht die
+Frage.**
+
+**Punkt 3 — der Stundenbericht.** Neues Werkzeug `activity_digest`, neues
+Schemafeld `stunden` (1–168, Vorgabe 24). Gelesen werden die Fachtabellen mit
+Zeitfenster: Shop-Bestellungen, eBay-Verkäufe, Shop-Preisvorschläge,
+Shop-Anfragen, neu eingestellte Karten, eBay-Nachrichten und die beantworteten
+Vorschläge.
+
+**Auf Nachfrage erweitert**, und dabei eine harte Grenze gefunden:
+
+- **eBay-Nachrichten lassen sich datieren** — `receivedAt` kommt aus eBays
+  Antwort. Sie tragen nebenbei genau den Vorschlagsverkehr, nach dem gefragt
+  war: „Käufer hat einen neuen Preisvorschlag gesendet", „Gegenvorschlag an
+  Käufer".
+- **Die eBay-Preisvorschläge lassen sich *nicht* datieren.** Ihre einzige
+  Zeitspalte `collectedAt` wird bei **jedem** Lesesync neu gesetzt. Als
+  Eingangszeit gelesen gälte alle 15 Minuten jeder offene Vorschlag als neu
+  eingegangen — eine erfundene Zeitangabe für eine echte Zahl. Sie stehen
+  deshalb als **Zustand** neben dem Bericht, ausdrücklich ohne Uhrzeit und mit
+  dem Grund im Satz.
+- **Die abgeschickte Seite** kommt aus `price_offers` über `updatedAt` und
+  Endzustand, nicht aus `avatar_events`: Dort steht nur eine Kennung, hier
+  Kartentitel und Betrag. `IN_REVIEW` gehört nicht dazu — „in Prüfung" ist keine
+  abgeschickte Antwort.
+
+**Zwei Schwächen wurden erst am laufenden Fenster sichtbar**, beide behoben und
+mit Test abgesichert:
+
+1. **Eine Sorte erdrückte alle anderen.** 168 Vorgänge in 48 Stunden, fast alles
+   eBay-Nachrichten — die zeitlich sortierte, gekürzte Liste bestand damit nur
+   aus Nachrichten, die Verkäufe fielen hinten heraus. Der Betreiber wollte „ein
+   Update zu allem"; eine Zeitliste allein leistet das nicht. Jetzt steht eine
+   Zusammenfassung je Art darüber: *144× Karte eingestellt, 14× eBay-Nachricht,
+   3× Preisvorschlag im Shop, 3× Preisvorschlag abgelehnt, 2× eBay-Verkauf, 2×
+   Shop-Anfrage.*
+2. **Die Stundenzahl wurde zur Ergebnisanzahl.** `requestedLimit` nimmt die
+   erste Zahl im Satz — bei „3 Stunden" also die 3. Ein Bericht über drei
+   Stunden zeigte damit drei Zeilen. Dieselbe Verwechslung ist bei `days` seit
+   Wochen dokumentiert; hier war sie neu eingebaut.
+
+**Zur Messung selbst, weil es beim nächsten Mal Zeit spart:** Der Prozess führt
+**zwei** Fenster mit dem Titel „BrandyCards Assistant" — eines davon ohne
+gültige Ausmaße. `Get-Process().MainWindowHandle` zeigt zudem zeitweise auf das
+Pet-Overlay (Titel „B"). Verlässlich ist: über UI-Automation **alle** Fenster
+dieses Titels holen und das mit endlichem `BoundingRectangle` nehmen. Der Text
+der Antworten lässt sich dabei direkt über die Automation-Namen auslesen — das
+ist belastbarer als ein Screenshot, weil nichts abgeschnitten ist.
+
 
 ## Historie
 
