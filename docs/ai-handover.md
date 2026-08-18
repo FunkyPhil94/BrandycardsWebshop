@@ -37,6 +37,55 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
+### 2026-08-18 - K.A.R.L. soll die angebotenen Karten kennen
+
+- Stand: **LÄUFT.**
+- Auftrag: Der Betreiber fragte „habe ich eine karte von Lewandowski?" und
+  bekam eine Absage. Seine Erwartung, wörtlich: „ich hätte erwartet, dass er
+  alle Karten kennt, die im Shop angeboten werden." Sie ist berechtigt — es gibt
+  bis jetzt **kein** Werkzeug, das den Katalog nach einem Namen durchsucht.
+
+**Der Datenstand, an dem sich der Zuschnitt bemisst** (produktiv gelesen, nicht
+geschätzt): Zwei Karten tragen „Lewandowski" im Titel. Eine ist aktiv im
+Angebot, Festpreis, 70,00 €. Die andere ist `INACTIVE`, ihr Listing `ENDED`,
+Bestand 0 — **gewollte Historie, kein Angebot.** Das Werkzeug muss diese beiden
+auseinanderhalten, sonst behauptet es ein Angebot, das es nicht gibt. Insgesamt:
+275 aktive eBay-Karten, 263 inaktive, 144 Vorverkaufskarten.
+
+**Bauweise — vier Festlegungen.**
+
+1. **Die Sichtbarkeitsregel wird nicht neu geschrieben, sondern benutzt.** Was
+   „im Shop angeboten" heißt, steht in `lib/catalog-availability.ts` und als SQL
+   in `app/api/products/route.ts`. Eine zweite, eigene Fassung im Assistenten
+   würde auseinanderlaufen — und dann sagt K.A.R.L. etwas anderes als die Seite,
+   auf die der Betreiber schaut.
+2. **Vorverkauf zählt mit, wird aber benannt.** 144 Karten liegen dort. Sie sind
+   angeboten, aber nicht auf demselben Weg kaufbar wie eine eBay-Karte; die
+   Antwort nennt deshalb den Bereich je Treffer.
+3. **Nicht mehr angebotene Treffer werden gezählt, nicht aufgezählt.** Wer nach
+   Lewandowski fragt, soll hören: eine im Angebot, ein weiterer Treffer nicht
+   mehr. Das Verschweigen wäre irreführend, das Aufzählen würde die Antwort mit
+   Historie fluten.
+4. **Das erste Freitextfeld im ganzen Werkzeugschema.** Bisher gab es nur
+   Zahlen und ein auf `JJJJ-MM-TT` festgenageltes Datum — ausdrücklich, damit
+   kein Freitext hereinkommt. `suche` bricht das und braucht deshalb eigene
+   Schranken: Länge begrenzt, `%` und `_` entwertet (sonst ist eine Suche nach
+   „50%" ein Platzhalter über alles), Bindung als Parameter.
+
+**Der Riegel gegen Entführung anderer Fragen.** „Zeig offene Preisvorschläge"
+fängt an wie eine Suchanfrage („zeig …"). Das neue Werkzeug greift deshalb im
+Regelplaner **nur, wenn sonst kein Werkzeug gegriffen hat**, und nur, wenn der
+gefundene Suchbegriff kein Fachwort enthält. Dieselbe Linie wie beim
+Smalltalk-Riegel, und mit derselben Lehre von heute Mittag: Wortanfang statt
+Teilzeichenkette.
+
+**Abnahme:** `npm test`, `npx tsc --noEmit`, `npm run lint`, `dotnet build`.
+Danach die echte Frage an der laufenden App gegen den ausgerollten Shop — sie
+muss die aktive Karte mit Preis nennen und den beendeten Treffer als „nicht mehr
+im Angebot" ausweisen.
+
+## Historie
+
 ### 2026-08-18 - Fachwort-Riegel schärfen, dann Ereignis-Kommentare
 
 - Stand: **ABGESCHLOSSEN und AUSGEROLLT**, in Betrieb gemessen.
@@ -135,9 +184,6 @@ wiederverwendbar.
 > das Weitermachen entscheidet.** Und: Bei parallelen Sitzungen vor dem Deploy
 > `git log HEAD..main` lesen, statt `--ff-only` als Wächter zu benutzen — es ist
 > einer, aber nur wenn man seinen Ausgang auch prüft.
-
-
-## Historie
 
 ### 2026-08-18 - K.A.R.L. bekommt eine Persönlichkeit, die Oberfläche wird modernisiert
 
