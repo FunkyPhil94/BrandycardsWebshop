@@ -32,3 +32,27 @@ test("N7 keeps manual cards in the highlights and out of fixed-price actions", a
   assert.match(checkout, /\/api\/products\?ids=/, "checkout must load the cart cards, not only page one");
   assert.match(presale, /origin=MANUAL&pro=100/, "pre-sale must be queried as its own server-side slice");
 });
+
+test("Vorverkaufskarten stehen im Vorverkauf, nicht im Katalog", async () => {
+  // Der Betreiber hat es am 2026-08-18 so entschieden: Die 144 von Hand
+  // eingestellten Karten sollen ausschließlich unter /vorverkauf auftauchen.
+  const [route, cards] = await Promise.all([
+    read("app/api/products/route.ts"),
+    read("app/karten/page.tsx"),
+  ]);
+
+  // Die Regel steht in der API, nicht bloß im Aufruf der Seite. Stünde sie nur
+  // dort, gälte sie genau so lange, bis jemand eine zweite Liste baut.
+  assert.match(route, /if \(!byId && origin !== "MANUAL"\) conditions\.push\(ne\(products\.origin, "MANUAL"\)\)/,
+    "Listen müssen manuelle Karten ausschließen, solange sie nicht ausdrücklich gefragt sind");
+
+  // **Die Ausnahme für `ids` ist der Teil, der leicht wegoptimiert wird.**
+  // Detailseite, Warenkorb und Bestellprüfung holen Karten über ihre Kennung.
+  // Ohne sie stünde die Karte im Vorverkauf und wäre beim Anklicken fort.
+  assert.match(route, /!byId/, "Abfragen über Kennungen dürfen der Ausschluss nicht treffen");
+
+  assert.doesNotMatch(route, /category === "manual"/,
+    "eine Kategorie „Vorverkauf“ im Katalog filterte auf eine leere Menge");
+  assert.doesNotMatch(cards, /<option value="manual">/,
+    "der Katalog darf keinen Filter auf etwas anbieten, das er nicht zeigt");
+});

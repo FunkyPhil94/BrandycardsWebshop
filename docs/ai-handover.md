@@ -9947,3 +9947,19 @@ kam eine Lücke ans Licht — und eine Bestätigung.
   dafür `dateischluessel`; griffen sie unterschiedlich zu, könnte der Plan
   „bereit" sagen und der Upload danach ein anderes Bild finden als das geprüfte.
 - 726 Tests grün, `tsc` und Lint sauber.
+
+## Auftrag 2026-08-18: Vorverkaufskarten aus dem Katalog nehmen
+- Status: LÄUFT.
+- **Der Import ist durch und nachgezählt:** 144 Karten, je eine Bestandszeile
+  (1 Stück, `AVAILABLE`), je ein Bild, 144 verschiedene Titel, keine Abweichung
+  bei Status, Art oder Preis.
+- **Neue Regel vom Betreiber:** Diese Karten sollen nur unter `/vorverkauf`
+  erscheinen, nicht unter `/karten`.
+- Umgesetzt in `app/api/products/route.ts`, nicht bloß im Aufruf der Seite —
+  eine Regel im Aufruf gilt nur bis zur nächsten Liste. Listen schließen
+  `origin='MANUAL'` aus, solange nicht ausdrücklich `origin=MANUAL` gefragt ist.
+- **Die Ausnahme für `ids` ist tragend:** Detailseite, Warenkorb und
+  Bestellprüfung holen Karten über ihre Kennung. Ohne sie stünde eine Karte im
+  Vorverkauf und wäre beim Anklicken verschwunden.
+- Die Kategorie „manual" ist entfallen, samt Auswahlpunkt im Katalog — ein
+  Filter auf eine Menge, die es dort nicht mehr gibt.
