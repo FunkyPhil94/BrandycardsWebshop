@@ -1,5 +1,79 @@
 # BrandyCards Agentenprotokoll
 
+## 2026-08-18 - Der Riegel sperrte genau die Fälle, für die er gebaut war
+
+Zwei Aufträge, und der erste ist eine Korrektur an der Arbeit vom Vormittag.
+
+**Die Messtabelle hat mich widerlegt, und das ist ihr Zweck.** Auf die Frage,
+wie sich der Assistent erweitern lässt, habe ich zuerst
+`assistant_unanswered` in der Produktion abgefragt statt zu spekulieren. Drei
+Zeilen standen dort — und **zwei davon waren genau der Fall, für den ich am
+Vormittag die Smalltalk-Schicht gebaut hatte.** Sie fielen trotzdem durch.
+
+Nachgemessen am laufenden Code, nicht überlegt: „Erzähle mir einen Witz über
+Sammelkarten" scheiterte an `karte` in „Sammel**karten**", „Karl, wie geht's dir
+heute?" an `heute`, und — der Fund, der die Ursache benennt — **„Erzähl mir
+einen Witz" scheiterte an `zahl` in „er**zähl**".**
+
+Die Fachwortliste war nicht das Problem, die Prüfung war es: Sie suchte
+Teilzeichenketten. Genau diese Falle steht im Regelplaner seit Wochen
+dokumentiert, dort traf „gebot" einmal „an**gebot**e" gleich mit. Ich habe die
+Notiz gelesen, als ich die Stichwörter durchging, und den eigenen Code trotzdem
+mit derselben Konstruktion gebaut. **Eine dokumentierte Falle schützt nur, wenn
+man sie auf den Code anwendet, den man gerade schreibt** — nicht nur auf den,
+den man liest.
+
+Gesucht wird jetzt am Wortanfang. Das erhält die Absicherung dort, wo sie zählt
+(„Kartenpreis" bleibt eine Fachfrage), und entfernt sie dort, wo das Fachwort
+nur zufällig im Wortinneren steht. Die Zeitwörter sind ganz gefallen: Eine bloße
+Zeitangabe kann keine Frage zu Smalltalk machen — dafür muss zusätzlich ein
+enges Muster greifen —, aber sie kostete nachweislich einen echten Fall.
+
+**Ein bestehender Test benutzte ausgerechnet dieselbe Zeile als Gegenbeispiel.**
+`assistant-question-log` prüfte die Aufzeichnung mit „Erzähl mir einen Witz über
+Sammelkarten." als Beispiel für „nicht zuordenbar". Seit der Assistent das
+beantwortet, taugt die Zeile dafür nicht mehr — das Beispiel wurde ersetzt, die
+Absicht blieb. Zwei Tests derselben Sache haben sich hier gegenseitig gefunden,
+und das ist genau, was ein Test leisten soll.
+
+**Der zweite Auftrag: von selbst sprechen.** Der Desktop rief die Ereignisse
+schon vorher alle drei Sekunden ab und animierte die Figur. Wer nicht hinsah,
+erfuhr nichts, und wer hinsah, wusste aus einer Animation nicht, *was* passiert
+war.
+
+**Zwei Grenzen bestimmen jeden Wortlaut dieser Kommentare**, und sie stehen im
+Code als Begründung dabei. Erstens trägt das Ereignis nur `eventType`,
+`aggregateType`, `aggregateId` und `createdAt` — **keinen Kartennamen, keinen
+Betrag.** Der Kommentar nennt deshalb den Anlass und lädt zur Frage ein; die
+Zahlen kommen danach aus einem Lesewerkzeug mit Quelle und Stand. Zweitens
+**keine Anzahl**: Fünf Ereignisse desselben Typs sind nicht fünf offene
+Vorschläge, einer kann längst zurückgezogen sein. Ein Kommentar je Art und
+Abruf, ohne Zahl.
+
+**Gemessen mit echten Ereignissen, ohne Produktionsdaten anzufassen.** Der
+lokale Ereigniszeiger in `settings.json` wurde — nach Sicherung — auf den 17.08.
+20:00 zurückgestellt; damit liefen die sechs echten Ereignisse jenes Abends
+erneut ein. Im Panel standen danach genau zwei Kommentare, einer je Art. Die
+Datei wurde aus der Sicherung wiederhergestellt. Der Weg ist gegenüber dem Shop
+rein lesend und für die nächste Messung wiederverwendbar.
+
+**Der Rollout ging beim ersten Versuch daneben, und die Ursache ist eine
+Shell-Feinheit.** `git merge --ff-only` scheiterte, weil `main` inzwischen
+sieben fremde Commits einer parallelen Sitzung trug. Der Befehl stand aber in
+einer Kette `git merge … | tail -2 && npm run build && … && npx wrangler deploy`
+— **und der Rückgabewert einer Pipe ist der des letzten Glieds**, hier `tail`.
+Der Fehlschlag war damit unsichtbar; ausgerollt wurde `main` ohne die beiden
+Commits dieses Auftrags, dafür mit der fremden Vorverkaufsarbeit, deren Eintrag
+keinen Rollout nennt.
+
+Behoben durch einen echten Merge, die vollständige Prüfkette auf dem
+zusammengeführten Stand und einen zweiten Rollout. Zwei Lehren, beide konkret:
+**Kein `git`-Befehl in einer Pipe, wenn sein Erfolg über das Weitermachen
+entscheidet.** Und: `--ff-only` ist ein Wächter, aber nur, wenn man seinen
+Ausgang tatsächlich liest — bei parallelen Sitzungen gehört vor den Deploy ein
+Blick auf `git log HEAD..main`.
+
+
 ## 2026-08-18 - K.A.R.L. bekommt eine Stimme, ohne dass eine Zahl wackelt
 
 Der Betreiber wollte zweierlei: einen persönlicheren Assistenten mit eigener

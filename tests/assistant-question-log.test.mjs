@@ -73,10 +73,16 @@ test("der Orchestrator zeichnet auf und antwortet trotzdem unverändert", async 
     { async execute() { throw new Error("darf nicht ausgefuehrt werden"); } },
     s,
   );
-  const antwort = await orchestrator.ask({ message: "Erzähl mir einen Witz über Sammelkarten." });
+  // **Das Beispiel hat am 2026-08-18 gewechselt, die Absicht nicht.** Hier stand
+  // „Erzähl mir einen Witz über Sammelkarten." — genau eine der drei Zeilen, die
+  // produktiv in `assistant_unanswered` lagen. Seit K.A.R.L. Smalltalk selbst
+  // beantwortet, ist sie beantwortet und gehört damit *nicht* mehr in die
+  // Messtabelle; als Beispiel für „nicht zuordenbar" taugt sie nicht länger.
+  // Eine Wetterfrage ist und bleibt eine.
+  const antwort = await orchestrator.ask({ message: "Wie ist das Wetter in Köln?" });
 
   assert.equal(antwort.status, "UNSUPPORTED");
-  assert.deepEqual(s.eintraege, [{ question: "Erzähl mir einen Witz über Sammelkarten.", reason: "UNSUPPORTED" }]);
+  assert.deepEqual(s.eintraege, [{ question: "Wie ist das Wetter in Köln?", reason: "UNSUPPORTED" }]);
 });
 
 test("eine beantwortete Frage hinterlässt keine Spur in der Messtabelle", async () => {
