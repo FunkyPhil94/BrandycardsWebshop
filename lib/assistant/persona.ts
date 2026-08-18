@@ -60,16 +60,55 @@ export function streutext(frage: string, jetzt: Date): string {
  *
  * **Der teuerste denkbare Fehler dieser Schicht** wäre, eine echte Fachfrage mit
  * einem Spruch abzuspeisen. „Na, wie läuft der Verkauf?" fängt an wie Smalltalk
- * und ist keiner. Die Liste ist deshalb absichtlich weit gefasst: Lieber
- * rutscht ein „hallo" in den Planer (der antwortet dann sachlich und niemandem
- * fehlt etwas) als eine Umsatzfrage in die Witzeschublade.
+ * und ist keiner. Lieber rutscht ein „hallo" in den Planer (der antwortet dann
+ * sachlich und niemandem fehlt etwas) als eine Umsatzfrage in die
+ * Witzeschublade.
+ *
+ * **Am 2026-08-18 aus der Produktion widerlegt, in der Gegenrichtung.** Die
+ * Messtabelle `assistant_unanswered` enthielt drei Zeilen, und zwei davon waren
+ * genau der Fall, für den diese Schicht am Vortag gebaut worden war — sie
+ * fielen trotzdem durch. „Erzähle mir einen Witz über Sammelkarten" scheiterte
+ * an `karte` in „Sammelkarten", und **„Erzähl mir einen Witz" scheiterte an
+ * `zahl` in „erzähl".** Ein Riegel, der die Fälle sperrt, für die er gebaut
+ * wurde, ist keiner.
+ *
+ * Die Ursache war die Prüfung, nicht die Liste: Sie suchte Teilzeichenketten.
+ * Dieselbe Falle steht im Regelplaner längst dokumentiert — dort traf „gebot"
+ * einmal „an**gebot**e" gleich mit. Gesucht wird jetzt am **Wortanfang**
+ * (siehe {@link enthaeltFachwort}); die Absicherung bleibt damit für
+ * zusammengesetzte Wörter wie „Kartenpreis" bestehen und verschwindet dort, wo
+ * das Fachwort nur zufällig im Inneren steht.
+ *
+ * **Zeitwörter stehen bewusst nicht mehr dabei** („heute", „gestern", „Woche",
+ * „Monat"). Eine bloße Zeitangabe kann aus keiner Frage Smalltalk machen — dazu
+ * muss zusätzlich eines der engen Muster unten greifen —, aber sie kostete
+ * nachweislich einen echten Fall: „Karl, wie geht's dir heute?". Jede Fachfrage
+ * in der Messung trägt ohnehin ein echtes Fachwort.
  */
 const FACHWOERTER = [
   "verkauf", "verkauft", "umsatz", "bestell", "auftrag", "angebot", "vorschlag",
   "preis", "bestand", "lager", "karte", "karten", "ebay", "shop", "anfrage",
   "nachricht", "statistik", "zahl", "aufruf", "sync", "abgleich", "kunde",
-  "eingestellt", "einstellung", "euro", "€", "heute", "gestern", "woche", "monat",
+  "eingestellt", "einstellung", "euro", "€",
 ] as const;
+
+/** Trägt der Text ein Fachwort **am Anfang eines Wortes**?
+ *
+ * Ein Wortanfang statt einer beliebigen Stelle im Wort: `preis` trifft
+ * „Preisvorschläge" (die Absicherung soll für Zusammensetzungen gelten), `zahl`
+ * trifft nicht „erzähl", `karte` nicht „Sammelkarten".
+ *
+ * Das Eurozeichen kann keine Wortgrenze haben — `\b` steht zwischen Wort- und
+ * Nicht-Wort-Zeichen, und `€` ist keins. Für solche Zeichen bleibt es bei der
+ * einfachen Suche; sie kann dort auch nichts falsch treffen.
+ */
+export function enthaeltFachwort(text: string): boolean {
+  return FACHWOERTER.some((wort) => {
+    const gesucht = normalisiere(wort);
+    if (!/^\p{Letter}/u.test(gesucht)) return text.includes(gesucht);
+    return new RegExp(`\\b${gesucht}`, "u").test(text);
+  });
+}
 
 /** Höchstlänge einer Nachricht, die noch als Smalltalk durchgeht.
  *
@@ -143,7 +182,7 @@ export function smalltalkAntwort(nachricht: string, jetzt: Date): string | null 
   if (woerter.length > SMALLTALK_MAX_WOERTER) return null;
 
   const text = normalisiere(roh);
-  if (FACHWOERTER.some((wort) => text.includes(normalisiere(wort)))) return null;
+  if (enthaeltFachwort(text)) return null;
 
   const treffer = SMALLTALK_MUSTER.find((eintrag) => eintrag.muster.test(text));
   if (!treffer) return null;

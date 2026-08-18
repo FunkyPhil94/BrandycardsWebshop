@@ -5,6 +5,7 @@ import test from "node:test";
 const {
   absageEinleitung,
   einleitung,
+  enthaeltFachwort,
   schlusskommentar,
   smalltalkAntwort,
   streutext,
@@ -83,6 +84,36 @@ test("Smalltalk wird beantwortet, eine Fachfrage niemals", () => {
   }
   // Eine lange Nachricht ist nie Smalltalk, egal wie sie anfängt.
   assert.equal(smalltalkAntwort("Hallo, ich hätte gerne einmal eine Übersicht bitte", jetzt), null);
+});
+
+/** Die drei Zeilen, die am 2026-08-18 wirklich in `assistant_unanswered` standen.
+ *
+ * **Sie sind der Grund, dass es diesen Test gibt.** Zwei davon waren genau der
+ * Fall, für den die Smalltalk-Schicht am Vortag gebaut worden war — und sie
+ * fielen trotzdem durch, weil der Fachwort-Riegel Teilzeichenketten suchte:
+ * `karte` traf „Sammelkarten", und `zahl` traf „erzähl". Ein Riegel, der die
+ * Fälle sperrt, für die er gebaut wurde, ist keiner.
+ */
+test("die produktiv gemessenen Fragen werden beantwortet", () => {
+  assert.match(smalltalkAntwort("Erzähle mir einen Witz über Sammelkarten", jetzt) ?? "", /Karten|Leserechte/u);
+  assert.ok(smalltalkAntwort("Erzähl mir einen Witz", jetzt), "„erzähl\" enthält „zahl\" — das darf nicht sperren");
+  assert.ok(smalltalkAntwort("Karl, wie geht's dir heute?", jetzt), "eine Zeitangabe allein macht keine Fachfrage");
+
+  // Die dritte Zeile bleibt eine echte Werkzeuglücke und **muss** zum Planer
+  // durchlaufen: Für den Shop-Link gibt es kein Werkzeug, und das gehört als
+  // Absage gesagt, nicht als Spruch.
+  assert.equal(smalltalkAntwort("Kannst du mir eben den link zum shop geben", jetzt), null);
+});
+
+test("ein Fachwort zählt am Wortanfang, nicht irgendwo im Wort", () => {
+  // Die Absicherung muss für Zusammensetzungen gelten …
+  assert.ok(enthaeltFachwort("wie ist der kartenpreis"));
+  assert.ok(enthaeltFachwort("preisvorschlage offen"));
+  assert.ok(enthaeltFachwort("100 euro"));
+  // … und darf nicht im Inneren eines fremden Wortes zuschlagen.
+  assert.ok(!enthaeltFachwort("erzahl mir einen witz"), "„erzähl\" ist kein „zahl\"");
+  assert.ok(!enthaeltFachwort("ein witz uber sammelkarten"), "„Sammelkarten\" trägt „karte\" nur im Inneren");
+  assert.ok(!enthaeltFachwort("wie geht es dir heute"), "Zeitwörter sperren nicht mehr");
 });
 
 test("Smalltalk kostet weder Planer noch Messtabelle", async () => {
@@ -169,6 +200,51 @@ test("die Einleitung kündigt nur an, was auch kommt", () => {
   const gemischt = einleitung(["sales_overview", "inventory_review"], "x");
   assert.doesNotMatch(gemischt, /Kasse|Schatzkiste/u);
   assert.ok(absageEinleitung("x").length > 0);
+});
+
+test("jedes animierte Ereignis wird auch kommentiert", async () => {
+  const [page, persona] = await Promise.all([
+    read("avatar/BrandyCards.Desktop/MainPage.xaml.cs"),
+    read("avatar/BrandyCards.Desktop/KarlPersona.cs"),
+  ]);
+
+  // Die Ereignisarten stehen in der Animationstabelle. Eine, die die Figur
+  // bewegt, aber stumm bleibt, wäre genau die halbe Sache, die dieser Auftrag
+  // beseitigt hat.
+  const arten = [...page.matchAll(/\["([A-Z_]+)"\] = new\(/gu)].map((treffer) => treffer[1]);
+  assert.ok(arten.length >= 4, "die Animationstabelle sollte die Shop-Ereignisse führen");
+  for (const art of arten) {
+    assert.match(persona, new RegExp(`"${art}" =>`, "u"), `${art} braucht einen Kommentar`);
+  }
+
+  // Ein Kommentar je Art und Abruf, nicht je Ereignis: Drei eingegangene
+  // Vorschläge sind ein Anlass, nicht drei Sprechblasen.
+  assert.match(page, /new HashSet<string>\(StringComparer\.OrdinalIgnoreCase\)/u);
+  assert.match(page, /if \(kommentiert\.Add\(avatarEvent\.EventType\)\) KommentiereEreignis\(avatarEvent\.EventType\)/u);
+  // Bei zugeklapptem Panel muss der Hinweis sichtbar werden, sonst spricht er
+  // in einen geschlossenen Schrank.
+  assert.match(page, /if \(!_assistantPanelExpanded\) LauncherSubtitleTextBlock\.Text = KarlPersona\.LauncherHatNeues;/u);
+  // Die Begrüßung steht vor dem ersten Kommentar.
+  assert.match(page, /EnsureConversationInitialized\(\);\s*AddConversationMessage\(AssistantName, kommentar, isUser: false\);/u);
+});
+
+test("ein Ereigniskommentar behauptet weder Karte noch Betrag noch Anzahl", async () => {
+  const persona = await read("avatar/BrandyCards.Desktop/KarlPersona.cs");
+  const anfang = persona.indexOf("internal static string? Ereigniskommentar");
+  const ende = persona.indexOf("LauncherHatNeues");
+  assert.ok(anfang > 0 && ende > anfang);
+  const block = persona.slice(anfang, ende);
+
+  // **Das Ereignis trägt nur Typ und Zeitpunkt** — keinen Kartennamen, keinen
+  // Betrag. Eine Zahl im Kommentar wäre deshalb entweder erfunden oder eine
+  // Ereigniszahl, die als Bestandszahl gelesen würde: Fünf eingegangene
+  // Vorschläge sind nicht fünf offene.
+  const texte = [...block.matchAll(/"([^"]{12,})"/gu)].map((treffer) => treffer[1]);
+  assert.ok(texte.length >= 8, "je Ereignisart sollten mehrere Varianten dastehen");
+  for (const text of texte) {
+    assert.doesNotMatch(text, /\d/u, `„${text}" nennt eine Zahl`);
+    assert.doesNotMatch(text, /€|EUR/u, `„${text}" nennt einen Betrag`);
+  }
 });
 
 test("die Persona formatiert keine Daten und ruft kein Modell", async () => {

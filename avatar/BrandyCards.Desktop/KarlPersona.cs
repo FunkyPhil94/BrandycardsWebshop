@@ -108,6 +108,61 @@ internal static class KarlPersona
     internal const string EingabePlatzhalter = "Frag mich was …";
 
     /// <summary>
+    /// Was K.A.R.L. zu einem Shop-Ereignis sagt — <c>null</c> bei einem Typ, den
+    /// er nicht kennt.
+    ///
+    /// <para><b>Die harte Grenze, und sie bestimmt jeden Wortlaut hier:</b> Das
+    /// Ereignis trägt nur <c>eventType</c>, <c>aggregateType</c>,
+    /// <c>aggregateId</c> und <c>createdAt</c> — <b>keinen Kartennamen und
+    /// keinen Betrag.</b> Kein Satz darf deshalb behaupten, <i>welche</i> Karte
+    /// oder <i>wie viel</i>. Er nennt den Anlass und lädt zur Frage ein; die
+    /// Antwort darauf kommt dann aus einem Lesewerkzeug mit Quelle und Stand.</para>
+    ///
+    /// <para><b>Und keine Anzahl.</b> Fünf Ereignisse desselben Typs in einem
+    /// Abruf sind nicht fünf offene Vorschläge — einer kann längst
+    /// zurückgezogen sein. Der Aufrufer macht daraus deshalb einen Kommentar
+    /// ohne Zahl, statt zu zählen.</para>
+    /// </summary>
+    internal static string? Ereigniskommentar(string eventType, int folge) => eventType?.ToUpperInvariant() switch
+    {
+        "OFFER_RECEIVED" => Waehle(
+            [
+                "Da feilscht jemand: Ein Preisvorschlag ist reingekommen. Frag mich nach den offenen Vorschlägen, dann zähle ich sie dir auf.",
+                "Neuer Preisvorschlag im Haus. Ich sage nicht, ob er frech ist — frag mich nach den offenen Vorschlägen.",
+            ],
+            $"offer-received {folge}"),
+        "OFFER_ACCEPTED" => Waehle(
+            [
+                "Ein Preisvorschlag ist angenommen. Handel ist Handel.",
+                "Angenommen. Da geht eine Karte auf Reisen.",
+            ],
+            $"offer-accepted {folge}"),
+        "OFFER_REJECTED" => Waehle(
+            [
+                "Ein Preisvorschlag wurde abgelehnt. Manchmal ist Nein die richtige Antwort.",
+                "Abgelehnt. Kommt vor — der Nächste bietet mehr.",
+            ],
+            $"offer-rejected {folge}"),
+        "CARD_SOLD" => Waehle(
+            [
+                "Verkauft! Eine Karte ist weg. Frag mich nach dem letzten Verkauf, dann sage ich dir, welche.",
+                "Da ist was rausgegangen. Frag mich nach dem letzten Verkauf für die Einzelheiten.",
+            ],
+            $"card-sold {folge}"),
+        _ => null,
+    };
+
+    /// <summary>
+    /// Was auf dem zugeklappten Launcher steht, wenn K.A.R.L. etwas gesagt hat,
+    /// das noch niemand gelesen hat.
+    ///
+    /// Ohne diese Zeile wäre der Kommentar bei geschlossenem Panel unsichtbar —
+    /// ein Assistent, der von selbst spricht, aber nur ins Leere, hätte nichts
+    /// gewonnen.
+    /// </summary>
+    internal const string LauncherHatNeues = "K.A.R.L. hat etwas gesagt";
+
+    /// <summary>
     /// Die anklickbaren Beispielfragen.
     ///
     /// <b>Sie sind mehr als Zierde:</b> Vor dieser Fassung stand dieselbe

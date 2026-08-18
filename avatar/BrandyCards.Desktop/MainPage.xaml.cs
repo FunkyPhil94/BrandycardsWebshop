@@ -75,6 +75,8 @@ public sealed partial class MainPage : Page
     /// <summary>Die Blase, die während des Nachschlagens im Verlauf steht.
     ///  <c>null</c>, solange nichts läuft.</summary>
     private Border? _tippanzeige;
+    /// <summary>Zählt kommentierte Ereignisse — nur zur Variantenwahl.</summary>
+    private int _ereignisNummer;
 
     private static readonly IReadOnlyDictionary<string, AnimationSpec> Animations = new Dictionary<string, AnimationSpec>(StringComparer.OrdinalIgnoreCase)
     {
@@ -231,12 +233,17 @@ public sealed partial class MainPage : Page
 
             var feed = await response.Content.ReadFromJsonAsync<DeviceEventsResponse>(_jsonOptions);
             if (feed is null) return;
+            // **Ein Kommentar je Ereignisart und Abruf, nicht je Ereignis.** Drei
+            // eingegangene Preisvorschläge in einem Abruf sind ein Anlass, nicht
+            // drei Sprechblasen; die Figur animiert weiterhin jedes einzelne.
+            var kommentiert = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var avatarEvent in feed.Events)
             {
                 if (Animations.TryGetValue(avatarEvent.EventType, out var animation))
                 {
                     _animationQueue.Enqueue(new PendingAnimation(animation, avatarEvent));
                 }
+                if (kommentiert.Add(avatarEvent.EventType)) KommentiereEreignis(avatarEvent.EventType);
             }
             StartNextAnimationIfIdle();
 
@@ -260,6 +267,36 @@ public sealed partial class MainPage : Page
         {
             _polling = false;
         }
+    }
+
+    /// <summary>
+    /// Lässt K.A.R.L. ein Shop-Ereignis kommentieren, ohne gefragt worden zu sein.
+    ///
+    /// <para><b>Warum das mehr ist als eine hübsche Zeile:</b> Bis hierher
+    /// bewegte sich bei einem Ereignis nur die Figur. Wer nicht hinsah, erfuhr
+    /// nichts — und wer hinsah, wusste aus einer Animation nicht, <i>was</i>
+    /// passiert war.</para>
+    ///
+    /// <para>Der Kommentar behauptet nichts Konkretes: Das Ereignis trägt weder
+    /// Kartennamen noch Betrag (siehe
+    /// <see cref="KarlPersona.Ereigniskommentar"/>). Er nennt den Anlass und
+    /// lädt zur Frage ein — die Zahlen kommen dann aus einem Lesewerkzeug, mit
+    /// Quelle und Stand, so wie jede andere Auskunft auch.</para>
+    ///
+    /// <para>Bei zugeklapptem Panel wandert der Hinweis zusätzlich auf den
+    /// Launcher. Sonst spräche K.A.R.L. in einen geschlossenen Schrank.</para>
+    /// </summary>
+    private void KommentiereEreignis(string eventType)
+    {
+        _ereignisNummer += 1;
+        if (KarlPersona.Ereigniskommentar(eventType, _ereignisNummer) is not { } kommentar) return;
+
+        // Die Begrüßung gehört vor den ersten Kommentar: Ein Panel, das mit
+        // „Verkauft!" aufgeht, ohne dass sich jemand vorgestellt hat, liest sich
+        // wie ein Systemfehler.
+        EnsureConversationInitialized();
+        AddConversationMessage(AssistantName, kommentar, isUser: false);
+        if (!_assistantPanelExpanded) LauncherSubtitleTextBlock.Text = KarlPersona.LauncherHatNeues;
     }
 
     private void StartNextAnimationIfIdle()
