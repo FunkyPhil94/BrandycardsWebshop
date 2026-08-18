@@ -10189,3 +10189,54 @@ wirklich durchklicken, nicht nur behaupten:
   eine Spalte, Burgermenü führt „Vorverkauf". Auf Englisch stehen alle fünf
   Kacheln und die Fußzeile übersetzt da.
 - 729 Tests grün, `tsc` und Lint sauber.
+
+## Auftrag 2026-08-18: Aufrufzähler auf 0 und Entdopplung je IP
+- Status: ABGESCHLOSSEN. Deploy `21592881`, Migration 0019 angewandt, Secret
+  `PAGE_VIEW_SALT` gesetzt, Zähler steht auf 0.
+- **Drei Teile.** (a) Den Zählerstand in Produktion auf 0 setzen. (b) Die
+  Aufschlüsselung nach Seitenbereichen zählt jede IP je Bereich einmal in 24
+  Stunden. (c) **Die vier Kacheln oben zählen jede IP genau einmal** — egal wie
+  viele Bereiche sie besucht hat. Die Summe der Bereiche ist damit absichtlich
+  größer als die Kachel; das sind zwei verschiedene Fragen.
+- **Das kippt eine ausdrückliche Zusage.** `app/datenschutz/page.tsx`,
+  Abschnitt 11: „keine IP-Adressen, Geräte- oder Sitzungskennungen gespeichert".
+  Genau darauf stützt sich, dass der Zähler ohne Einwilligung auskommt. Der
+  Abschnitt wird mitgeändert; er ist ein Rechtstext, kein Kommentar.
+- **Entwurf, datensparsam:** Die Adresse selbst wird nie geschrieben. Gespeichert
+  werden zwei SHA-256-Werte: aus (Tagessalz + Adresse) für die Kachel und aus
+  (Tagessalz + Adresse + Pfadmuster) für den Bereich. Das Salz liegt als
+  Cloudflare-Secret, wechselt mit dem Datum und erreicht die Datenbank nie —
+  ein Hash von gestern lässt sich damit keiner Adresse mehr zuordnen.
+- **Das Fenster ist der UTC-Tag, nicht rollierend.** Beides zugleich geht nicht:
+  Der Salzwechsel *ist* der Datenschutz, und über ihn hinweg gibt es keinen
+  stabilen Schlüssel, an dem ein rollierendes Fenster hängen könnte. Ein
+  durchgehender Schlüssel wäre eine dauerhafte Besucherkennung — genau das, was
+  hier nicht entstehen soll.
+- **Vor dem Löschen wird der Stand in eine Datei gesichert.** Das Zurücksetzen
+  ist ausdrücklich gewünscht, bleibt aber ein unumkehrbarer Eingriff in
+  Produktionsdaten.
+- Betroffen: `db/schema.ts`, `drizzle/` (Migration von Hand, `_journal.json` ist
+  veraltet), `app/api/page-views/route.ts`, `app/api/admin/page-views/route.ts`,
+  `lib/page-views.ts`, `app/admin/views-panel.tsx`, `app/datenschutz/page.tsx`,
+  `tests/page-views.test.mjs`.
+
+### Ergebnis
+
+- **In Produktion nachgemessen, nicht behauptet.** Von einer Adresse aus:
+  3 × `/vorverkauf` → Kachel 1, Bereich +1. Danach 3 × `/karten` → Kachel
+  **weiterhin 1**, Bereich +1. Nach dem Zurücksetzen erneut fünf Aufrufe über
+  drei Bereiche → `*besucher` 1, jeder Bereich 1.
+- **Zurückgesetzt:** 56 Zeilen gelöscht (54 Eimer mit 136 Aufrufen, Archiv war
+  leer). Der Stand davor liegt als
+  `aufrufzaehler-stand-vor-reset-2026-08-18.json` im Projektverzeichnis.
+- **Reihenfolge mit Absicht:** erst Migration, dann Secret, dann Code, **dann**
+  Reset. Umgekehrt hätte der alte Code zwischen Reset und Deploy weiter
+  unentdoppelt gezählt, und der frische Zähler wäre schon verfälscht gestartet.
+- **`main` war inzwischen um vier fremde Commits weitergezogen** (Fachwort-
+  Riegel aus dem KARL-Strang). Kein Fast-Forward mehr; `main` wurde in den Zweig
+  gemerged und die Kette danach erneut geprüft — 744 Tests grün.
+- **Nicht geprüft:** die Kacheln im Adminbereich selbst. Hinter die Anmeldung
+  komme ich nicht; gemessen wurde an der Datenbank und am Endpunkt.
+- **Offen und bewusst so gelassen:** Die Absätze der Datenschutzseite sind
+  durchgehend deutsch, auch in der englischen Fassung. Der neue Abschnitt 11
+  ist ebenfalls nur deutsch — einen Rechtstext übersetzt nicht die KI.

@@ -1,7 +1,7 @@
 import { lt, sql } from "drizzle-orm";
 import type { getDb } from "../db";
-import { pageViewArchive, pageViews } from "../db/schema";
-import { aufrufAufbewahrungGrenze } from "./page-views";
+import { pageViewArchive, pageViewVisits, pageViews } from "../db/schema";
+import { aufrufAufbewahrungGrenze, tagesEimer } from "./page-views";
 
 /**
  * Lässt abgelaufene Aufrufeimer verfallen — **ohne den Gesamtstand zu
@@ -22,6 +22,15 @@ import { aufrufAufbewahrungGrenze } from "./page-views";
  */
 export async function foldExpiredPageViews(db: ReturnType<typeof getDb>, jetzt: Date = new Date()) {
   const grenze = aufrufAufbewahrungGrenze(jetzt);
+
+  // **Die Prüfwerte von gestern haben keinen Zweck mehr und müssen weg.** Sie
+  // entdoppeln genau einen Tag; ihr Schlüssel enthält das Datum, ein alter
+  // Wert kann also nie wieder treffen. Ohne dieses Löschen wüchse die Tabelle
+  // um eine Zeile je Besucher und Bereich und Tag — unbegrenzt, für nichts.
+  // Steht **vor** dem Archivieren und außerhalb dessen Transaktion: Es ist
+  // unabhängig davon, und ein Fehlschlag hier darf den Gesamtstand nicht
+  // gefährden.
+  await db.delete(pageViewVisits).where(lt(pageViewVisits.day, tagesEimer(jetzt)));
 
   const abgelaufen = await db.select({
     pfad: pageViews.path,
