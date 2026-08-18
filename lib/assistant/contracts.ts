@@ -223,8 +223,11 @@ export type AssistantActivityEntry = {
     | "SHOP_PREISVORSCHLAG"
     | "SHOP_ANFRAGE"
     | "KARTE_EINGESTELLT"
+    | "EBAY_NACHRICHT"
     | "VORSCHLAG_ANGENOMMEN"
-    | "VORSCHLAG_ABGELEHNT";
+    | "VORSCHLAG_ABGELEHNT"
+    | "VORSCHLAG_ZURUECKGEZOGEN"
+    | "VORSCHLAG_ABGELAUFEN";
   /** Worum es ging — Kartentitel, Bestellnummer oder Kennung. */
   bezeichnung: string;
   betragCents: number | null;
@@ -248,6 +251,19 @@ export type AssistantToolDataMap = {
     /** Wie viele Vorgänge es insgesamt gab; `eintraege` kann gekürzt sein. */
     gesamtAnzahl: number;
     leer: boolean;
+    /** Offene Käufer-Preisvorschläge bei eBay — **ein Zustand, kein Ereignis.**
+     *
+     * **Warum sie nicht im Zeitfenster stehen können.** `ebay_buyer_offers`
+     * trägt keinen Eingangszeitpunkt: Die Spalte `collectedAt` wird bei *jedem*
+     * Lesesync neu gesetzt (`set: { collectedAt: stamp }`), und Zeilen, die
+     * nicht mehr kommen, werden gelöscht. Als Eingangszeit gelesen würde damit
+     * alle 15 Minuten jeder offene Vorschlag als „neu eingegangen" gelten — eine
+     * erfundene Zeitangabe für eine echte Zahl.
+     *
+     * Deshalb steht die Zahl daneben und ausdrücklich ohne Zeitbezug. Der
+     * Betreiber hat am 2026-08-18 gefragt, eBay-Preisvorschläge in den Bericht
+     * aufzunehmen; das ist die ehrliche Fassung dieser Aufnahme. */
+    offeneEbayVorschlaege: number;
   };
   /** Treffer der Titelsuche über die **angebotenen** Karten.
    *

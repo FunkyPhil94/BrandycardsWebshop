@@ -94,6 +94,7 @@ test("das Stundenfenster wird geprüft, nicht zurechtgebogen", () => {
 test("ein leeres Fenster wird ausgesprochen, nicht durch Schweigen angedeutet", () => {
   const leer = availableAssistantResult("activity_digest", {
     stunden: 3, seit: "2026-08-18T07:00:00.000Z", eintraege: [], gesamtAnzahl: 0, leer: true,
+    offeneEbayVorschlaege: 0,
   }, ["SHOP_DB", "EBAY_CACHE"], null);
 
   const text = formatAssistantToolResult(leer);
@@ -115,6 +116,7 @@ test("der Bericht mischt alle Arten und sortiert neueste zuerst", () => {
     ],
     gesamtAnzahl: 5,
     leer: false,
+    offeneEbayVorschlaege: 0,
   }, ["SHOP_DB", "EBAY_CACHE"], "2026-08-18T09:30:00.000Z");
 
   const text = formatAssistantToolResult(ergebnis);
@@ -130,16 +132,66 @@ test("der Bericht mischt alle Arten und sortiert neueste zuerst", () => {
   assert.equal(ACTIVITY_DIGEST_DEFAULT_HOURS, 24);
 });
 
-test("der Überblick liest die Fachtabellen, nicht nur das Ereignisprotokoll", async () => {
+test("der Überblick liest alle Fachtabellen, nicht nur das Ereignisprotokoll", async () => {
   const { readFile } = await import("node:fs/promises");
   const quelle = await readFile(new URL("../lib/assistant/tools/activity.ts", import.meta.url), "utf8");
   // **`avatar_events` kennt nur vier Ereignisarten.** Ein Überblick daraus
   // verschwiege neue Bestellungen, Anfragen und Einstellungen — stillschweigend,
-  // was hier die schlechteste aller Eigenschaften ist.
-  for (const tabelle of ["orders", "ebaySales", "priceOffers", "inquiries", "products", "avatarEvents"]) {
+  // was hier die schlechteste aller Eigenschaften ist. Und zu einem angenommenen
+  // Vorschlag stünde dort nur eine Kennung statt Kartentitel und Betrag.
+  for (const tabelle of [
+    "orders", "ebaySales", "priceOffers", "inquiries", "products",
+    "ebayInboxMessages", "ebayBuyerOffers",
+  ]) {
     assert.match(quelle, new RegExp(`\\b${tabelle}\\b`, "u"), `${tabelle} gehört in den Überblick`);
   }
-  // Verkauf und eingegangener Vorschlag kommen über die Fachtabellen; aus dem
-  // Ereignisprotokoll nur, was sonst nirgends steht.
-  assert.match(quelle, /IN \('OFFER_ACCEPTED', 'OFFER_REJECTED'\)/u);
+  assert.doesNotMatch(quelle, /avatarEvents/u, "die Antworten kommen aus price_offers, nicht aus dem Ereignisprotokoll");
+
+  // Die abgeschickte Seite: Endzustände über `updatedAt`, `IN_REVIEW` gehört
+  // nicht dazu — „in Prüfung" ist keine Antwort.
+  assert.match(quelle, /IN \('ACCEPTED', 'REJECTED', 'WITHDRAWN', 'EXPIRED'\)/u);
+  // Nur der Code zählt: Die Begründung *nennt* `IN_REVIEW`, um zu sagen, warum
+  // es dort nicht steht. (Dieselbe Falle wie beim `Math.random`-Wächter.)
+  const code = quelle.split("\n").filter((zeile) => !/^\s*(\/\/|\*|\/\*)/u.test(zeile)).join("\n");
+  assert.doesNotMatch(code, /IN_REVIEW/u);
+
+  // **Die eBay-Preisvorschläge werden ausdrücklich *nicht* gefiltert.** Ihre
+  // einzige Zeitspalte ist ein Sync-Stempel; ein Zeitfenster darauf würde alle
+  // 15 Minuten jeden offenen Vorschlag als neu eingegangen ausgeben.
+  assert.doesNotMatch(quelle, /imFenster\(ebayBuyerOffers/u);
+  assert.match(quelle, /imFenster\(ebayInboxMessages\.receivedAt\)/u);
+});
+
+test("eBay-Nachrichten und beantwortete Vorschläge stehen im Bericht", () => {
+  const ergebnis = availableAssistantResult("activity_digest", {
+    stunden: 6,
+    seit: "2026-08-18T14:00:00.000Z",
+    eintraege: [
+      { art: "EBAY_NACHRICHT", bezeichnung: "Frage zur Karte (von sammler_88)", betragCents: null, currency: "EUR", zeitpunkt: "2026-08-18T18:00:00.000Z" },
+      { art: "VORSCHLAG_ANGENOMMEN", bezeichnung: "Yamal Rookie", betragCents: 4500, currency: "EUR", zeitpunkt: "2026-08-18T17:00:00.000Z" },
+      { art: "VORSCHLAG_ABGELEHNT", bezeichnung: "Kane Base", betragCents: 900, currency: "EUR", zeitpunkt: "2026-08-18T16:00:00.000Z" },
+    ],
+    gesamtAnzahl: 3,
+    leer: false,
+    offeneEbayVorschlaege: 2,
+  }, ["SHOP_DB", "EBAY_CACHE"], "2026-08-18T18:00:00.000Z");
+
+  const text = formatAssistantToolResult(ergebnis);
+  assert.match(text, /eBay-Nachricht: Frage zur Karte \(von sammler_88\)/u);
+  assert.match(text, /Preisvorschlag angenommen: Yamal Rookie \(45,00/u);
+  assert.match(text, /Preisvorschlag abgelehnt: Kane Base \(9,00/u);
+  // **Der Zustandssatz steht getrennt und sagt, warum er keine Uhrzeit hat.**
+  assert.match(text, /^Unabhängig vom Zeitfenster: 2 offene\(r\) Käufer-Preisvorschlag/mu);
+  assert.match(text, /liefert eBay keinen Eingangszeitpunkt/u);
+});
+
+test("ohne offene eBay-Vorschläge wird kein Zustandssatz behauptet", () => {
+  const ergebnis = availableAssistantResult("activity_digest", {
+    stunden: 3, seit: "2026-08-18T07:00:00.000Z", eintraege: [], gesamtAnzahl: 0, leer: true,
+    offeneEbayVorschlaege: 0,
+  }, ["SHOP_DB"], null);
+  const text = formatAssistantToolResult(ergebnis);
+  assert.doesNotMatch(text, /Unabhängig vom Zeitfenster/u);
+  // Die Aufzählung des Leeren nennt jetzt auch die eBay-Nachrichten.
+  assert.match(text, /keine eBay-Nachrichten/u);
 });

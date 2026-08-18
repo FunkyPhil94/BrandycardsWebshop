@@ -45,8 +45,11 @@ const AKTIVITAETS_LABELS: Record<AssistantActivityEntry["art"], string> = {
   SHOP_PREISVORSCHLAG: "Preisvorschlag im Shop",
   SHOP_ANFRAGE: "Shop-Anfrage",
   KARTE_EINGESTELLT: "Karte eingestellt",
+  EBAY_NACHRICHT: "eBay-Nachricht",
   VORSCHLAG_ANGENOMMEN: "Preisvorschlag angenommen",
   VORSCHLAG_ABGELEHNT: "Preisvorschlag abgelehnt",
+  VORSCHLAG_ZURUECKGEZOGEN: "Preisvorschlag zurückgezogen",
+  VORSCHLAG_ABGELAUFEN: "Preisvorschlag abgelaufen",
 };
 
 /** „in den letzten 3 Stunden" → „In den letzten 3 Stunden". */
@@ -124,8 +127,19 @@ export function formatAssistantToolResult(result: AnyAssistantToolResult): strin
       // wie ein Fehler aus — und anders als bei den Aufrufzahlen ist die Aussage
       // hier belastbar: Diese Tabellen sind vollständig und haben keinen
       // Messbeginn, hinter dem sich etwas verstecken könnte.
+      // **Der Zustandssatz steht getrennt vom Zeitfenster**, weil die Zahl kein
+      // Ereignis ist: `ebay_buyer_offers` trägt keinen Eingangszeitpunkt (die
+      // Begründung steht am Vertragsfeld). Sie in die Liste zu mischen hieße,
+      // eine Zeitangabe zu erfinden.
+      const ebayZustand = data.offeneEbayVorschlaege === 0 ? [] : [
+        `Unabhängig vom Zeitfenster: ${data.offeneEbayVorschlaege} offene(r) Käufer-Preisvorschlag/-vorschläge bei eBay. Zu ihnen liefert eBay keinen Eingangszeitpunkt, deshalb stehen sie hier ohne Uhrzeit.`,
+      ];
+
       if (data.leer) {
-        return withSource(`${grossErsterBuchstabe(fenster)} ist nichts passiert: keine Bestellungen, keine Verkäufe, keine Preisvorschläge, keine Anfragen, keine neuen Karten.`, result);
+        return withSource([
+          `${grossErsterBuchstabe(fenster)} ist nichts passiert: keine Bestellungen, keine Verkäufe, keine Preisvorschläge, keine Anfragen, keine eBay-Nachrichten, keine neuen Karten.`,
+          ...ebayZustand,
+        ].join("\n"), result);
       }
 
       const lines = data.eintraege.map((eintrag) => {
@@ -139,6 +153,7 @@ export function formatAssistantToolResult(result: AnyAssistantToolResult): strin
         `${grossErsterBuchstabe(fenster)} ${data.gesamtAnzahl === 1 ? "ist ein Vorgang" : `sind ${data.gesamtAnzahl} Vorgänge`} zusammengekommen, neueste zuerst:`,
         ...lines,
         ...gekuerzt,
+        ...ebayZustand,
       ].join("\n"), result);
     }
     case "ebay_least_viewed": {

@@ -1,6 +1,6 @@
 import { and, desc, eq, gte, sql } from "drizzle-orm";
 import { getDb } from "../../../db";
-import { avatarEvents, ebayListings, ebaySales, inquiries, orders, priceOffers, products } from "../../../db/schema";
+import { ebayBuyerOffers, ebayInboxMessages, ebayListings, ebaySales, inquiries, orders, priceOffers, products } from "../../../db/schema";
 import {
   ACTIVITY_DIGEST_DEFAULT_HOURS,
   availableAssistantResult,
@@ -9,6 +9,17 @@ import {
   type AssistantToolResult,
 } from "../contracts";
 import { assistantTimestamp } from "../time";
+
+/** Welcher Endzustand eines Shop-Preisvorschlags welche Vorgangsart ist.
+ *
+ * Ausgeschrieben statt als Bedingungskette, damit ein neuer Zustand hier
+ * auffällt statt stillschweigend als „abgelehnt" durchzugehen. */
+const ANTWORT_ARTEN: Record<string, AssistantActivityEntry["art"]> = {
+  ACCEPTED: "VORSCHLAG_ANGENOMMEN",
+  REJECTED: "VORSCHLAG_ABGELEHNT",
+  WITHDRAWN: "VORSCHLAG_ZURUECKGEZOGEN",
+  EXPIRED: "VORSCHLAG_ABGELAUFEN",
+};
 
 /** Was in den letzten Stunden passiert ist.
  *
@@ -40,7 +51,7 @@ export async function getActivityDigest(input: AssistantToolInput): Promise<Assi
   // ebenfalls, und aus demselben Grund.
   const imFenster = (spalte: unknown) => gte(sql`datetime(${spalte})`, sql`datetime(${seit})`);
 
-  const [shopBestellungen, ebayVerkaeufe, vorschlaege, anfragen, eingestellt, ereignisse] = await Promise.all([
+  const [shopBestellungen, ebayVerkaeufe, vorschlaege, anfragen, eingestellt, beantwortet, nachrichten, [offeneVorschlaege]] = await Promise.all([
     db.select({
       orderNumber: orders.orderNumber,
       totalAmountCents: orders.totalAmountCents,
@@ -83,18 +94,41 @@ export async function getActivityDigest(input: AssistantToolInput): Promise<Assi
       .where(imFenster(products.createdAt))
       .orderBy(desc(sql`datetime(${products.createdAt})`)),
 
-    // Nur die beiden Arten, die sonst nirgends stehen. `CARD_SOLD` und
-    // `OFFER_RECEIVED` kämen über `ebay_sales` und `price_offers` doppelt.
+    // **Die beantworteten Vorschläge — die „abgeschickte" Seite.** Der Betreiber
+    // wollte am 2026-08-18 ausdrücklich auch die eigenen Antworten im Bericht
+    // sehen. Gelesen wird `price_offers` über `updatedAt` und den Endzustand,
+    // **nicht** `avatar_events`: Dort steht zu einem angenommenen Vorschlag nur
+    // eine Kennung, hier stehen Kartentitel und Betrag. `IN_REVIEW` fehlt
+    // absichtlich — „in Prüfung" ist keine abgeschickte Antwort.
     db.select({
-      eventType: avatarEvents.eventType,
-      aggregateId: avatarEvents.aggregateId,
-      createdAt: avatarEvents.createdAt,
-    }).from(avatarEvents)
+      title: products.title,
+      proposedAmountCents: priceOffers.proposedAmountCents,
+      currency: priceOffers.currency,
+      status: priceOffers.status,
+      updatedAt: priceOffers.updatedAt,
+    }).from(priceOffers)
+      .leftJoin(products, eq(products.id, priceOffers.productId))
       .where(and(
-        imFenster(avatarEvents.createdAt),
-        sql`${avatarEvents.eventType} IN ('OFFER_ACCEPTED', 'OFFER_REJECTED')`,
+        imFenster(priceOffers.updatedAt),
+        sql`${priceOffers.status} IN ('ACCEPTED', 'REJECTED', 'WITHDRAWN', 'EXPIRED')`,
       ))
-      .orderBy(desc(sql`datetime(${avatarEvents.createdAt})`)),
+      .orderBy(desc(sql`datetime(${priceOffers.updatedAt})`)),
+
+    // **eBay-Nachrichten lassen sich datieren**, anders als die
+    // eBay-Preisvorschläge: `receivedAt` kommt aus eBays Antwort
+    // (`excluded.received_at`), ist also ein echter Eingangszeitpunkt und kein
+    // Sync-Stempel.
+    db.select({
+      subject: ebayInboxMessages.subject,
+      sender: ebayInboxMessages.sender,
+      receivedAt: ebayInboxMessages.receivedAt,
+    }).from(ebayInboxMessages)
+      .where(imFenster(ebayInboxMessages.receivedAt))
+      .orderBy(desc(sql`datetime(${ebayInboxMessages.receivedAt})`)),
+
+    // Der Zustand, nicht das Ereignis — Begründung an
+    // `offeneEbayVorschlaege` im Vertrag.
+    db.select({ anzahl: sql<number>`count(*)`.mapWith(Number) }).from(ebayBuyerOffers),
   ]);
 
   const eintraege: AssistantActivityEntry[] = [
@@ -135,12 +169,19 @@ export async function getActivityDigest(input: AssistantToolInput): Promise<Assi
       currency: zeile.currency,
       zeitpunkt: assistantTimestamp(zeile.createdAt),
     })),
-    ...ereignisse.map((zeile): AssistantActivityEntry => ({
-      art: zeile.eventType === "OFFER_ACCEPTED" ? "VORSCHLAG_ANGENOMMEN" : "VORSCHLAG_ABGELEHNT",
-      bezeichnung: zeile.aggregateId,
+    ...beantwortet.map((zeile): AssistantActivityEntry => ({
+      art: ANTWORT_ARTEN[zeile.status] ?? "VORSCHLAG_ABGELEHNT",
+      bezeichnung: zeile.title ?? "unbekannte Karte",
+      betragCents: zeile.proposedAmountCents,
+      currency: zeile.currency,
+      zeitpunkt: assistantTimestamp(zeile.updatedAt),
+    })),
+    ...nachrichten.map((zeile): AssistantActivityEntry => ({
+      art: "EBAY_NACHRICHT",
+      bezeichnung: zeile.sender ? `${zeile.subject} (von ${zeile.sender})` : zeile.subject,
       betragCents: null,
       currency: "EUR",
-      zeitpunkt: assistantTimestamp(zeile.createdAt),
+      zeitpunkt: assistantTimestamp(zeile.receivedAt),
     })),
   ];
 
@@ -155,5 +196,6 @@ export async function getActivityDigest(input: AssistantToolInput): Promise<Assi
     eintraege: eintraege.slice(0, input.limit),
     gesamtAnzahl: eintraege.length,
     leer: eintraege.length === 0,
+    offeneEbayVorschlaege: offeneVorschlaege?.anzahl ?? 0,
   }, ["SHOP_DB", "EBAY_CACHE"], eintraege[0]?.zeitpunkt ?? null);
 }
