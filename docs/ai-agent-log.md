@@ -1,5 +1,75 @@
 # BrandyCards Agentenprotokoll
 
+## 2026-08-18 - Die Kartensuche, und warum sie am Ende der Kette steht
+
+Der Betreiber fragte „habe ich eine karte von Lewandowski?" und bekam eine
+Absage. Seine Reaktion war keine Beschwerde, sondern eine Erwartung: „ich hätte
+erwartet, dass er alle Karten kennt, die im Shop angeboten werden." Sie war
+berechtigt — dreizehn Werkzeuge, und keines konnte einen Titel suchen.
+
+**Die Daten haben den Zuschnitt bestimmt, nicht die Vorstellung davon.**
+Produktiv gelesen, bevor eine Zeile entstand: „Lewandowski" trifft zwei Karten.
+Eine ist aktiv, Festpreis, 70,00 €. Die andere ist `INACTIVE`, ihr Listing
+`ENDED`, Bestand 0. Hätte ich ohne diesen Blick gebaut, wäre die naheliegende
+Antwort „du hast zwei Lewandowski-Karten" gewesen — und damit ein behauptetes
+Angebot, das es nicht gibt. Mit dem Blick wurde daraus: eine im Angebot, ein
+weiterer Titeltreffer nicht mehr. Gezählt, nicht aufgezählt; Historie soll die
+Antwort nicht fluten, aber verschweigen darf man sie auch nicht — wer zwei im
+Kopf hat und „genau eine" hört, hält den Assistenten für kaputt.
+
+**Die Sichtbarkeitsregel wurde benutzt, nicht nachgebaut.** Was „im Shop
+angeboten" heißt, ist die schwierige Frage dieses Projekts: Vormerkungen ohne
+Bestand bleiben sichtbar, Auktionen nie, manuelle Karten hängen am Bestand, und
+`origin` wird vor `kind` gefragt. Diese Frage ist im Repository nachweislich
+schon viermal falsch beantwortet worden — Bestellroute, Preisvorschlag,
+Detailseite, Warenkorb. Eine fünfte eigene Fassung im Assistenten hätte gut
+ausgesehen und wäre auseinandergelaufen; dann sagt K.A.R.L. etwas anderes als
+die Seite, auf die der Betreiber schaut. Vorgefiltert wird in SQL nur das
+Billige und Unstrittige, **die Entscheidung fällt an `istImKatalogSichtbar`**,
+und ein Test verlangt ausdrücklich, dass die Auktionsregel nicht kopiert wird.
+
+**Das erste Freitextfeld, und der Wächter, der dagegen stand.** Das Schema
+kannte bisher nur Zahlen und ein auf `JJJJ-MM-TT` festgenageltes Datum — mit
+Absicht, und ein Test hielt fest: kein Freitextfeld. Ein Kartentitel lässt sich
+aber nicht als Muster ausdrücken; der Name *ist* die Frage. Also musste der
+Wächter seine Form ändern, und das ist der Punkt, an dem man sich selbst
+belügen könnte: „Test angepasst" klingt harmlos. Die Absicht ist deshalb
+ausdrücklich weitergewandert statt gestrichen — sie prüft jetzt die
+serverseitige Schranke: Länge, Steuerzeichen, entwertete LIKE-Platzhalter samt
+`ESCAPE`, geschlossenes Feldgatter. Die Feldliste bleibt festgenagelt, damit
+kein *weiteres* Feld unbemerkt dazukommt. **Ein Wächter, dessen Grund entfällt,
+wird ersetzt, nicht entfernt.**
+
+**Warum die Suche am Ende des Regelplaners steht.** „Zeig offene
+Preisvorschläge" fängt an wie eine Suchanfrage. Ein Muster auf „zeig …" hätte
+die Frage entführt und mit einer Kartensuche nach „offene Preisvorschläge"
+beantwortet — eine Regression an einer Stelle, die seit Wochen funktioniert. Die
+Lösung ist keine klügere Regex, sondern die Reihenfolge: Die Kartensuche wird
+nur befragt, wenn **kein** anderes Werkzeug gegriffen hat. Damit ist die
+Entführung strukturell ausgeschlossen statt sorgfältig vermieden. Dieselbe
+Bauweise wie beim Modellplaner, der auch erst hinter den Regeln steht.
+
+Für „Hast du Lewandowski?" ohne das Wort „Karte" greift die Regel absichtlich
+nicht: Der Satz ist allein nicht von „Hast du Feierabend?" zu unterscheiden. Das
+beurteilt das Modell, dem `suche` jetzt zur Verfügung steht.
+
+**Und wieder war der Screenshot die Korrektur.** Alle Tests grün, ausgerollt,
+Frage gestellt — und im Fenster stand „70,00 € 1 weitere(r) Titeltreffer", weil
+der Historiensatz an der Preiszeile klebte. Preis und Trefferzahl zu einer
+Zahlenfolge verklebt, in einer Antwort, deren ganzer Zweck die Genauigkeit von
+Zahlen ist. **Kein Unit-Test hätte das gefunden**, denn beide Teile waren
+einzeln korrekt; sichtbar wird es nur im Umbruch eines 520 Punkte breiten
+Fensters. Behoben, mit Test gegen die Verklebung.
+
+**Zum Rollout, nach dem Fehlgriff vom Nachmittag:** Jeder Schritt einzeln, jeder
+Rückgabewert gelesen. `main` war zweimal fremd vorgelaufen (Vorverkauf,
+Besucherzählung); beide Male wurde gemerged und die vollständige Kette auf dem
+zusammengeführten Stand gefahren. Vor dem Deploy wurde zusätzlich geprüft, ob
+die fremde Migration `0019` produktiv liegt — sie lag. Das ist die Lehre von
+heute Mittag, angewandt: Bei parallelen Sitzungen reicht es nicht, den eigenen
+Stand zu prüfen.
+
+
 ## 2026-08-18 - Der Riegel sperrte genau die Fälle, für die er gebaut war
 
 Zwei Aufträge, und der erste ist eine Korrektur an der Arbeit vom Vormittag.

@@ -39,7 +39,7 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ### 2026-08-18 - K.A.R.L. soll die angebotenen Karten kennen
 
-- Stand: **LÄUFT.**
+- Stand: **ABGESCHLOSSEN und AUSGEROLLT**, an der Ausgangsfrage nachgemessen.
 - Auftrag: Der Betreiber fragte „habe ich eine karte von Lewandowski?" und
   bekam eine Absage. Seine Erwartung, wörtlich: „ich hätte erwartet, dass er
   alle Karten kennt, die im Shop angeboten werden." Sie ist berechtigt — es gibt
@@ -83,6 +83,66 @@ Teilzeichenkette.
 Danach die echte Frage an der laufenden App gegen den ausgerollten Shop — sie
 muss die aktive Karte mit Preis nennen und den beendeten Treffer als „nicht mehr
 im Angebot" ausweisen.
+
+**Ergebnis: gebaut, ausgerollt, an der Ausgangsfrage nachgemessen. 753 Tests
+grün, TypeScript fehlerfrei, ESLint 0 Fehler. Worker-Version
+`962805ff-7b52-459c-9a68-23663a4cf3ea`.**
+
+Die Frage des Betreibers, wörtlich gestellt und beantwortet:
+
+> Karteikasten durchgeblättert:
+> Zu „Lewandowski" ist eine Karte im Angebot:
+> • Topps UCC Gold 25/26 FC Barcelona Robert Lewandowski Base 3/5 — Shop-Katalog, 70,00 €
+> 1 weitere(r) Titeltreffer ist nicht mehr im Angebot (beendet, verkauft oder inaktiv).
+> Quelle: Shop-Datenbank, eBay-Abgleich · Stand: 10.08.26, 20:00
+
+Genau der Zuschnitt, der geplant war: das Angebot mit Preis und Bereich, die
+Historie gezählt statt aufgezählt.
+
+**Neu entstanden:**
+
+- `lib/assistant/tools/catalog.ts` — die Titelsuche. Sie entscheidet **nicht
+  selbst**, was „angeboten" heißt, sondern fragt `istImKatalogSichtbar`. Ein
+  Test verlangt ausdrücklich, dass die Auktionsregel nicht kopiert wird.
+- `suche` als erstes Freitextfeld im Werkzeugschema, mit
+  `normalisiereSuchbegriff` (Länge, Steuerzeichen) und `alsSuchmuster`
+  (`%`/`_` entwertet, `ESCAPE` im SQL).
+- `kartensuche()` im Regelplaner — der Name kommt ohne Modellaufruf aus dem
+  Satz. **Sie steht am Ende der Kette**, deshalb kann sie keine beantwortbare
+  Frage an sich ziehen: „Zeig offene Preisvorschläge" wird längst von den
+  Vorschlagswerkzeugen bedient und erreicht sie nie. Ein Test hält das fest.
+- `tests/assistant-kartensuche.test.mjs` — acht Tests, darunter die beiden
+  echten Lewandowski-Zeilen als Sichtbarkeitsprobe.
+
+**Ein Wächtertest hat seine Form geändert, und das gehört benannt.**
+`assistant-orchestrator` verlangte bisher, dass das Modellschema **überhaupt
+kein** Freitextfeld hat — mit genau dieser Begründung im Kommentar. Ein
+Kartentitel lässt sich nicht als Muster festlegen, also war das Feld
+unvermeidlich. Die Absicht bleibt und wandert eine Ebene tiefer: Ein neuer Test
+prüft, dass die serverseitige Schranke greift (Länge, Steuerzeichen,
+LIKE-Platzhalter, geschlossenes Feldgatter). Die Feldliste bleibt festgenagelt,
+damit kein *weiteres* Feld unbemerkt dazukommt.
+
+**Was der erste Rollout gezeigt hat.** Der Screenshot war die Korrektur: Der
+Historiensatz hing an der Preiszeile und las sich als „70,00 € 1 weitere(r)
+Titeltreffer" — Preis und Trefferzahl zu einer Zahlenfolge verklebt. Jetzt steht
+er auf eigener Zeile, mit Test dagegen. **Ein Formatfehler dieser Art ist in
+keinem Unit-Test sichtbar, nur im Fenster.**
+
+**Diesmal mit geprüftem Merge.** Nach dem Fehlgriff von heute Nachmittag wurde
+jeder Schritt einzeln ausgeführt und sein Rückgabewert gelesen. `main` war
+zweimal fremd vorgelaufen (Vorverkauf, Besucherzählung); beide Male wurde
+gemerged, die vollständige Kette auf dem zusammengeführten Stand gefahren und
+erst dann ausgerollt. Vor dem Deploy wurde außerdem geprüft, ob die fremde
+Migration `0019` produktiv liegt — sie lag, samt Secret und eigenem Deploy.
+
+**Offen geblieben:** „Hast du Lewandowski?" ohne das Wort „Karte" erkennt der
+Regelplaner nicht; dafür ist der Modellplaner zuständig, dem `suche` jetzt zur
+Verfügung steht. Das ist Absicht — der Satz allein ist nicht von „Hast du
+Feierabend?" zu unterscheiden. Ebenfalls offen: Die Suche findet nur im Titel,
+nicht in der Beschreibung, und der `Stand` stammt aus `lastSyncedAt` der
+getroffenen Listings und kann deshalb älter aussehen als der letzte Sync.
+
 
 ## Historie
 
