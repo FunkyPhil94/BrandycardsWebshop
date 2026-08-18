@@ -71,7 +71,10 @@ test("Stunden werden erkannt, und zwar nur als Stunden", () => {
 
 test("der Ereignisüberblick nimmt das genannte Fenster, sonst die Vorgabe", async () => {
   const mitFenster = await planer().plan("Was ist in den letzten 3 Stunden passiert?");
-  assert.deepEqual(mitFenster.tools, [{ tool: "activity_digest", limit: 3, stunden: 3 }]);
+  // **Die Stundenzahl darf nicht zur Ergebnisanzahl werden.** `requestedLimit`
+  // nimmt die erste Zahl im Satz; ohne Gegenmaßnahme zeigte ein Bericht über
+  // drei Stunden genau drei Zeilen.
+  assert.deepEqual(mitFenster.tools, [{ tool: "activity_digest", limit: 10, stunden: 3 }]);
 
   const ohneFenster = await planer().plan("Was war los?");
   assert.deepEqual(ohneFenster.tools, [{ tool: "activity_digest", limit: 10 }]);
@@ -93,7 +96,7 @@ test("das Stundenfenster wird geprüft, nicht zurechtgebogen", () => {
 
 test("ein leeres Fenster wird ausgesprochen, nicht durch Schweigen angedeutet", () => {
   const leer = availableAssistantResult("activity_digest", {
-    stunden: 3, seit: "2026-08-18T07:00:00.000Z", eintraege: [], gesamtAnzahl: 0, leer: true,
+    stunden: 3, seit: "2026-08-18T07:00:00.000Z", eintraege: [], gesamtAnzahl: 0, zusammenfassung: [], leer: true,
     offeneEbayVorschlaege: 0,
   }, ["SHOP_DB", "EBAY_CACHE"], null);
 
@@ -115,12 +118,17 @@ test("der Bericht mischt alle Arten und sortiert neueste zuerst", () => {
       { art: "SHOP_ANFRAGE", bezeichnung: "ohne Kartenbezug", betragCents: null, currency: "EUR", zeitpunkt: "2026-08-18T07:15:00.000Z" },
     ],
     gesamtAnzahl: 5,
+    zusammenfassung: [
+      { art: "EBAY_VERKAUF", anzahl: 3 },
+      { art: "SHOP_ANFRAGE", anzahl: 1 },
+      { art: "SHOP_PREISVORSCHLAG", anzahl: 1 },
+    ],
     leer: false,
     offeneEbayVorschlaege: 0,
   }, ["SHOP_DB", "EBAY_CACHE"], "2026-08-18T09:30:00.000Z");
 
   const text = formatAssistantToolResult(ergebnis);
-  assert.match(text, /In den letzten 24 Stunden sind 5 Vorgänge zusammengekommen, neueste zuerst/u);
+  assert.match(text, /In den letzten 24 Stunden sind 5 Vorgänge zusammengekommen\./u);
   // Ausgeschriebene Bezeichnungen, keine Kürzel aus der Datenform.
   assert.match(text, /eBay-Verkauf: Lewandowski Base 3\/5 \(70,00/u);
   assert.match(text, /Preisvorschlag im Shop: Yamal Rookie \(45,00/u);
@@ -128,7 +136,11 @@ test("der Bericht mischt alle Arten und sortiert neueste zuerst", () => {
   // Ein Vorgang ohne Betrag bekommt keine erfundene Null in Klammern.
   assert.match(text, /Shop-Anfrage: ohne Kartenbezug$/mu);
   // Gekürzt heißt gekürzt, und das steht dabei.
-  assert.match(text, /5 Vorgänge insgesamt; gezeigt werden die 3 neuesten/u);
+  // **Die Zusammenfassung nennt jede Art**, auch wenn ihr jüngster Vorgang nicht
+  // mehr in die gekürzte Liste passt -- sonst besteht eine Antwort aus 168
+  // Vorgängen nur aus der häufigsten Sorte.
+  assert.match(text, /^3× eBay-Verkauf, 1× Shop-Anfrage, 1× Preisvorschlag im Shop$/mu);
+  assert.match(text, /Die 3 neuesten davon:/u);
   assert.equal(ACTIVITY_DIGEST_DEFAULT_HOURS, 24);
 });
 
@@ -172,6 +184,7 @@ test("eBay-Nachrichten und beantwortete Vorschläge stehen im Bericht", () => {
       { art: "VORSCHLAG_ABGELEHNT", bezeichnung: "Kane Base", betragCents: 900, currency: "EUR", zeitpunkt: "2026-08-18T16:00:00.000Z" },
     ],
     gesamtAnzahl: 3,
+    zusammenfassung: [{ art: "EBAY_NACHRICHT", anzahl: 1 }, { art: "VORSCHLAG_ABGELEHNT", anzahl: 1 }, { art: "VORSCHLAG_ANGENOMMEN", anzahl: 1 }],
     leer: false,
     offeneEbayVorschlaege: 2,
   }, ["SHOP_DB", "EBAY_CACHE"], "2026-08-18T18:00:00.000Z");
@@ -187,7 +200,7 @@ test("eBay-Nachrichten und beantwortete Vorschläge stehen im Bericht", () => {
 
 test("ohne offene eBay-Vorschläge wird kein Zustandssatz behauptet", () => {
   const ergebnis = availableAssistantResult("activity_digest", {
-    stunden: 3, seit: "2026-08-18T07:00:00.000Z", eintraege: [], gesamtAnzahl: 0, leer: true,
+    stunden: 3, seit: "2026-08-18T07:00:00.000Z", eintraege: [], gesamtAnzahl: 0, zusammenfassung: [], leer: true,
     offeneEbayVorschlaege: 0,
   }, ["SHOP_DB"], null);
   const text = formatAssistantToolResult(ergebnis);

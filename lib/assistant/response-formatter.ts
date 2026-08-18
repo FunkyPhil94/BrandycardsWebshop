@@ -146,13 +146,23 @@ export function formatAssistantToolResult(result: AnyAssistantToolResult): strin
         const betrag = formatMoney(eintrag.betragCents, eintrag.currency);
         return `• ${formatDate(eintrag.zeitpunkt)} · ${AKTIVITAETS_LABELS[eintrag.art]}: ${eintrag.bezeichnung}${betrag ? ` (${betrag})` : ""}`;
       });
-      const gekuerzt = data.gesamtAnzahl > data.eintraege.length
-        ? [`(${data.gesamtAnzahl} Vorgänge insgesamt; gezeigt werden die ${data.eintraege.length} neuesten.)`]
+      // **Die Zusammenfassung steht über der Liste, nicht darunter.** Im
+      // Screenshot vom 2026-08-18 bestand eine 48-Stunden-Antwort aus 168
+      // Vorgängen, fast alles eBay-Nachrichten — die zeitlich sortierte Liste
+      // zeigte deshalb nur Nachrichten, und die Verkäufe fielen heraus. Der
+      // Betreiber wollte „ein Update zu allem"; diese Zeile leistet das, die
+      // Liste allein kann es nicht.
+      const uebersicht = data.zusammenfassung.length
+        ? [data.zusammenfassung.map((teil) => `${teil.anzahl}× ${AKTIVITAETS_LABELS[teil.art]}`).join(", ")]
         : [];
+      const gekuerzt = data.gesamtAnzahl > data.eintraege.length
+        ? [`Die ${data.eintraege.length} neuesten davon:`]
+        : ["Einzeln:"];
       return withSource([
-        `${grossErsterBuchstabe(fenster)} ${data.gesamtAnzahl === 1 ? "ist ein Vorgang" : `sind ${data.gesamtAnzahl} Vorgänge`} zusammengekommen, neueste zuerst:`,
-        ...lines,
+        `${grossErsterBuchstabe(fenster)} ${data.gesamtAnzahl === 1 ? "ist ein Vorgang" : `sind ${data.gesamtAnzahl} Vorgänge`} zusammengekommen.`,
+        ...uebersicht,
         ...gekuerzt,
+        ...lines,
         ...ebayZustand,
       ].join("\n"), result);
     }

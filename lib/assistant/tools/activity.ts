@@ -190,11 +190,20 @@ export async function getActivityDigest(input: AssistantToolInput): Promise<Assi
   // ist die Frage: *was* ist passiert, in welcher Reihenfolge.
   eintraege.sort((a, b) => (b.zeitpunkt ?? "").localeCompare(a.zeitpunkt ?? ""));
 
+  // Häufigste Art zuerst, bei Gleichstand nach Namen — damit dieselbe Lage
+  // zweimal dieselbe Reihenfolge ergibt und nicht die Laune der Map-Iteration.
+  const jeArt = new Map<AssistantActivityEntry["art"], number>();
+  for (const eintrag of eintraege) jeArt.set(eintrag.art, (jeArt.get(eintrag.art) ?? 0) + 1);
+  const zusammenfassung = [...jeArt.entries()]
+    .map(([art, anzahl]) => ({ art, anzahl }))
+    .sort((a, b) => b.anzahl - a.anzahl || a.art.localeCompare(b.art));
+
   return availableAssistantResult("activity_digest", {
     stunden,
     seit,
     eintraege: eintraege.slice(0, input.limit),
     gesamtAnzahl: eintraege.length,
+    zusammenfassung,
     leer: eintraege.length === 0,
     offeneEbayVorschlaege: offeneVorschlaege?.anzahl ?? 0,
   }, ["SHOP_DB", "EBAY_CACHE"], eintraege[0]?.zeitpunkt ?? null);

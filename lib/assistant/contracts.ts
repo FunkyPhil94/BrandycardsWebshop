@@ -250,6 +250,19 @@ export type AssistantToolDataMap = {
     eintraege: AssistantActivityEntry[];
     /** Wie viele Vorgänge es insgesamt gab; `eintraege` kann gekürzt sein. */
     gesamtAnzahl: number;
+    /** Wie viele Vorgänge je Art, häufigste zuerst.
+     *
+     * **Der Grund steht in einem Screenshot vom 2026-08-18.** „Was ist in den
+     * letzten 48 Stunden passiert?" ergab 168 Vorgänge, davon fast alles
+     * eBay-Nachrichten — und weil die Liste nach Zeit sortiert und gekürzt ist,
+     * bestand die ganze Antwort aus Nachrichten. Die Verkäufe, nach denen
+     * eigentlich gefragt war, fielen hinten heraus.
+     *
+     * Der Betreiber wollte „ein Update zu allem". Eine Zeitliste allein leistet
+     * das nicht, sobald eine Art die anderen zahlenmäßig erdrückt; die
+     * Zusammenfassung nennt jede Art, auch wenn ihr jüngster Vorgang nicht mehr
+     * in die Liste passt. */
+    zusammenfassung: Array<{ art: AssistantActivityEntry["art"]; anzahl: number }>;
     leer: boolean;
     /** Offene Käufer-Preisvorschläge bei eBay — **ein Zustand, kein Ereignis.**
      *

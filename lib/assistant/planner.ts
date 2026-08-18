@@ -315,7 +315,13 @@ export class RuleBasedAssistantPlanner implements AssistantPlanner {
       "was ist passiert", "was war los", "passiert ist", "vorgefallen",
       "update zu allem", "letzten stunden", "letzte stunde",
     ]) || (stunden !== undefined && enthaelt(["passiert", "los", "update", "neues", "vorgange"]))) {
-      tools.push({ tool: "activity_digest", limit, ...(stunden === undefined ? {} : { stunden }) });
+      // **Nicht `limit`, sondern `DEFAULT_LIMIT`.** `requestedLimit` nimmt die
+      // erste Zahl im Satz — bei „was ist in den letzten 48 Stunden passiert"
+      // also die 48, gedeckelt auf 20. Die Stundenzahl würde damit zur
+      // Ergebnisanzahl, und ein Bericht über drei Stunden zeigte drei Zeilen.
+      // Genau dieselbe Verwechslung ist bei `days` schon dokumentiert; hier
+      // wurde sie am 2026-08-18 im Screenshot sichtbar.
+      tools.push({ tool: "activity_digest", limit: DEFAULT_LIMIT, ...(stunden === undefined ? {} : { stunden }) });
     }
 
     if (enthaelt(["statistik", "kennzahl", "ubersicht", "shop status", "wie lauft der shop"])) {
