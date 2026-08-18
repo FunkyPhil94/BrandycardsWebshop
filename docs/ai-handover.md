@@ -37,6 +37,62 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
+### 2026-08-18 - Beschreibungssuche, Aufrufe in beide Richtungen, Stundenbericht
+
+- Stand: **LÄUFT.**
+- Auftrag: Drei Punkte vom Betreiber, einer davon ein gemeldeter Fehler.
+
+**Punkt 1 — die Kartensuche soll auch die Beschreibung lesen.** Bisher nur den
+Titel. Der Betreiber hat der Unschärfe ausdrücklich zugestimmt, nachdem sie
+benannt war.
+
+**Punkt 2 — ein echter Fehler, vom Betreiber gemeldet und im Code bestätigt.**
+„Welche Karten haben am meisten Aufrufe?" und „welche am wenigsten?" liefern
+dieselbe Antwort. Der Grund steht in `lib/assistant/tools/ebay.ts`: Die
+Sortierung ist fest verdrahtet — `orderBy(desc(viewsTotal), …)`. Es gibt keine
+Richtung, also gibt es auch keine Gegenfrage; der Regelplaner routet beide Sätze
+auf dasselbe Werkzeug, und das antwortet zweimal gleich.
+
+**Die Behebung als zweites Werkzeug, nicht als Schemafeld.** `ebay_least_viewed`
+tritt neben `ebay_most_viewed`, beide auf einer gemeinsamen Abfrage mit
+Richtungsparameter. Begründung: Das Modellschema wird gerade dafür gehütet, dass
+kein Feld unbemerkt dazukommt (ein Wächtertest nagelt die Feldliste fest), und
+ein Werkzeugname sagt dem Modell dasselbe deutlicher als ein Wahrheitswert. Für
+den Regelplaner sind es ohnehin verschiedene Stichwörter.
+
+**Der interessante Teil dieser Antwort sind die Nullen.** Früher gemessen: 63 von
+277 Karten hatten in 30 Tagen null Aufrufe. Genau die will die Frage „welche am
+wenigsten" sehen — sie dürfen nicht wegfallen.
+
+**Punkt 3 — „was ist in den letzten X Stunden passiert?"** Zwei Lücken
+gleichzeitig: Es gibt kein Werkzeug für einen Ereignisüberblick, und der
+Regelplaner kennt **Stunden** nicht (nur Tage, Wochen, Monate).
+
+**Bauweise des Überblicks.** Neues Werkzeug `activity_digest` mit einem Fenster
+in Stunden. Es liest die Fachtabellen mit Zeitfenster, **nicht** `avatar_events`
+allein: Diese Tabelle kennt nur vier Ereignisarten (Vorschlag eingegangen,
+angenommen, abgelehnt, Karte verkauft) und würde neue Bestellungen, Anfragen und
+Einstellungen verschweigen. Aufgenommen werden Shop-Bestellungen, eBay-Verkäufe,
+Shop-Preisvorschläge, Shop-Anfragen, neu eingestellte Karten und die
+Vorschlagsereignisse.
+
+**„Nichts passiert" wird ausgesprochen, nicht durch Schweigen angedeutet.** Ein
+leerer Bericht sieht sonst wie ein Fehler aus. Anders als bei den Aufrufzahlen
+ist die Aussage hier auch belastbar: Diese Tabellen sind vollständig, es gibt
+keinen Messbeginn, hinter dem sich etwas verstecken könnte.
+
+**Neues Schemafeld `stunden`**, und damit das zweite an einem Tag. Es ist nicht
+über `days` abbildbar: `days` ist eine ganze Zahl ab 1, „die letzten drei
+Stunden" wären ein Achtel davon. Grenze 1 bis 168 Stunden — eine Woche —, weil
+darüber der Tagesbegriff die richtige Einheit ist.
+
+**Abnahme:** `npm test`, `npx tsc --noEmit`, `npm run lint`. Danach alle drei
+Punkte an der laufenden App gegen den ausgerollten Shop, mit Screenshot: Die
+Gegenfrage nach den wenigsten Aufrufen muss ein **anderes** Ergebnis liefern als
+die nach den meisten.
+
+## Historie
+
 ### 2026-08-18 - K.A.R.L. soll die angebotenen Karten kennen
 
 - Stand: **ABGESCHLOSSEN und AUSGEROLLT**, an der Ausgangsfrage nachgemessen.
@@ -142,9 +198,6 @@ Verfügung steht. Das ist Absicht — der Satz allein ist nicht von „Hast du
 Feierabend?" zu unterscheiden. Ebenfalls offen: Die Suche findet nur im Titel,
 nicht in der Beschreibung, und der `Stand` stammt aus `lastSyncedAt` der
 getroffenen Listings und kann deshalb älter aussehen als der letzte Sync.
-
-
-## Historie
 
 ### 2026-08-18 - Fachwort-Riegel schärfen, dann Ereignis-Kommentare
 
