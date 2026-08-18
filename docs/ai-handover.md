@@ -37,9 +37,57 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-### 2026-08-17 - Statistikansicht neu aufbauen: Text nativ, Vollbildfenster
+### 2026-08-18 - K.A.R.L. bekommt eine Persoenlichkeit, die Oberflaeche wird modernisiert
 
 - Stand: **LÄUFT.**
+- Auftrag: Der Betreiber möchte zweierlei — K.A.R.L. soll „persönlicher" sein
+  und eine eigene Persönlichkeit haben, und die Desktop-Oberfläche soll moderner
+  und ansehnlicher werden.
+
+**Drei Weichenstellungen hat der Betreiber ausdrücklich gewählt** (vorgelegt als
+Auswahl, bevor eine Zeile geschrieben wurde):
+
+1. **Rahmen ja, Zahlen fest.** Die Persönlichkeit entsteht deterministisch im
+   Code — Begrüßung, Überleitungen, Kommentare zur Lage, Smalltalk. Kein Modell
+   formuliert die Datenzeilen um. Der Grund ist der bekannte: Ein zweiter
+   Modellaufruf über fertige Zahlen kann sie verdrehen, und dieser Assistent ist
+   entlang der Linie „lieber keine Auskunft als eine erfundene" gebaut.
+2. **Sichtbare Modernisierung** der Oberfläche, nicht bloß Kosmetik und kein
+   Neuentwurf: Farb- und Abstandssprache, Chat-Blasen mit Avatarkopf,
+   Tippanzeige, anklickbare Beispielfragen, aufgeräumte Kopfzeile.
+3. **Ton: verspielt-frech.** Kartensammler-Jargon, gelegentlich Selbstironie
+   über den eigenen Nur-Lese-Zugriff.
+
+**Wo die Persönlichkeit wohnt, und warum an zwei Orten.** Die Stimme der
+*Antwort* gehört auf den Server (`lib/assistant/persona.ts`), weil dort die
+Antwort entsteht und Phase 4 dem Client das Formatieren von Daten ausdrücklich
+entzogen hat. Die Stimme der *Oberfläche* — Begrüßung beim Öffnen, Statuszeile,
+Fehlerrahmen — kennt der Server nicht und kann sie nicht kennen; sie liegt in
+`KarlPersona.cs`. Die Trennung ist scharf: Der Server textet nie über
+Bedienelemente, der Client textet nie über Daten.
+
+**Varianten ohne Zufall.** Wechselnde Formulierungen werden über eine
+Streuwertfunktion aus Frage und Tag gewählt, nicht über `Math.random()`. Sonst
+wäre keine Antwort mehr testbar und zwei gleiche Fragen am selben Tag klängen
+grundlos verschieden.
+
+**Riegel gegen den teuersten Fehler:** Smalltalk wird *vor* dem Planer erkannt
+und nur bei kurzen Nachrichten ohne jedes Fachwort. Eine Fachfrage darf niemals
+in der Smalltalk-Schublade landen — lieber wird ein „hallo" an den Planer
+durchgereicht als eine Umsatzfrage mit einem Spruch beantwortet.
+
+**Abnahme:** `npm test`, `npx tsc --noEmit`, `npm run lint`, dazu ein
+`dotnet build` der Desktop-App. Neue Tests für die Persona-Schicht und für die
+Smalltalk-Abgrenzung.
+
+## Historie
+
+### 2026-08-17 - Statistikansicht neu aufbauen: Text nativ, Vollbildfenster
+
+- Stand: **ABGESCHLOSSEN.** Nachgetragen am 2026-08-18 aus dem Code-Stand:
+  `StatistikAnsicht.cs` und `StatistikFenster.cs` liegen gebaut vor, `tests/assistant-visuals-desktop.test.mjs`
+  und `tests/assistant-statistics-visual.test.mjs` decken sie ab. Die Ergebniszeile
+  hatte die damalige Sitzung nicht mehr gesetzt.
 
 **Der Befund, und er widerlegt meine eigene Entscheidung.** Der Betreiber
 schickte Screenshots aus dem laufenden Assistenten: Balken, Gitterlinien und die
@@ -82,7 +130,9 @@ steht weiterhin über dem Bild und trägt die Zahlen.
 
 ### 2026-08-17 - Aufruf-Historie sammeln (Vorstufe der Aufruf-Statistik)
 
-- Stand: **LÄUFT.**
+- Stand: **ABGESCHLOSSEN**, siehe Ergebniszeile weiter unten im Eintrag.
+  Am 2026-08-18 nachgetragen: Migration `0015_ebay_traffic_history.sql` und
+  `tests/ebay-traffic-history.test.mjs` liegen vor, die Zeile „Stand" war nur nie umgestellt worden.
 - Auftrag: Der Betreiber möchte eine Statistik „welche Karten hatten in Zeitraum
   X die meisten Aufrufe, welche kaum oder keine". Er hat nach dem Befund unten
   ausdrücklich zugestimmt, **tägliche Momentaufnahmen** zu sammeln.
@@ -158,7 +208,10 @@ Linie wie überall hier: „nichts gemessen" ist nicht „null".
 
 ### 2026-08-17 - Interaktive Grafik für Statistikfragen
 
-- Stand: **LÄUFT.**
+- Stand: **ABGESCHLOSSEN.** Nachgetragen am 2026-08-18 aus dem Code-Stand:
+  `lib/assistant/statistics-visual.ts` zeichnet die SVG-Bilder, der Orchestrator reicht sie
+  als `visuals` durch, der Desktop zeigt sie an. `docs/ai-todo.md` führt den Assistenten
+  seit dem 2026-08-17 als fertig und abgenommen.
 - Auftrag: Der Betreiber möchte bei Statistikfragen „eine richtig schöne,
   interaktive Grafik". Aus drei Vorschlägen gewählt: **Verlauf plus
   Kennzahlen**.
@@ -273,8 +326,6 @@ einzelner Säulen, und die ausklappbare Tabelle. Ein Bild hat keine
 Trefferflächen. Die Werte bleiben über Achse, direktes Label am Spitzenwert und
 **die Textantwort** erreichbar — Letztere trägt sie ohnehin und bleibt neben der
 Grafik stehen, auch für Screenreader.
-
-## Historie
 
 ### 2026-08-17 - Messen, welche Fragen der Assistent nicht versteht
 
