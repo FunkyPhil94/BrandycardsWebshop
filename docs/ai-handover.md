@@ -9995,7 +9995,7 @@ kam eine Lücke ans Licht — und eine Bestätigung.
 - 728 Tests grün, `tsc` und Lint sauber.
 
 ## Auftrag 2026-08-18: Suchleiste im Vorverkauf
-- Status: LÄUFT.
+- Status: ABGESCHLOSSEN. Deploy `d7dc9a2d`.
 - **Beim Hinsehen ein Fund, der dringender war als der Auftrag:** Die Seite holte
   `pro=100` ohne Blätterleiste. 100 ist die größte Seitengröße aus
   `lib/pagination.ts`. Seit dem Import von 144 Karten waren **44 davon auf
@@ -10009,3 +10009,19 @@ kam eine Lücke ans Licht — und eine Bestätigung.
   übersetzt waren.
 - Der Test prüfte bisher die wörtliche Abfragezeichenkette `origin=MANUAL&pro=100`
   und brach am Umbau. Umgeschrieben auf die Absicht.
+
+### Ergebnis, am echten Bestand im Browser geprüft
+
+`/vorverkauf` ist öffentlich — anders als der Adminbereich ließ sich das hier
+wirklich durchklicken, nicht nur behaupten:
+
+- Zähler „144 Karten im Vorverkauf", Seite 1 zeigt 100, **Seite 2 zeigt 44** —
+  zusammen 144. Vor dem Umbau waren diese 44 auf keiner Seite zu erreichen.
+- Suche „Haaland": 2 Treffer (Beast Mode und Base), Adresse wird zu `?q=Haaland`,
+  die Blätterleiste verschwindet.
+- Suche ohne Treffer: „Keine Karte passt zu dieser Suche." mit
+  „Suche zurücksetzen" — nicht der Text für den leeren Shop.
+- Zurücksetzen leert Feld und Adresse, der Zähler steht wieder bei 144.
+- Alle Kacheln tragen das Kennzeichen „Vorverkauf", keine eBay-Karte
+  dazwischen (die Positivliste im Browser greift weiterhin).
+- 729 Tests grün, `tsc` und Lint sauber.
