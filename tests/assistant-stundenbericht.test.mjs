@@ -54,8 +54,8 @@ test("null Aufrufe werden als Null benannt, fehlende Zahlen nicht erfunden", () 
   assert.match(text, /wenigsten Aufrufen zuerst/u);
   // **Genau diese Karten sucht die Frage.** Eine Null als „nicht gemeldet" zu
   // verkleiden wäre hier das Gegenteil einer Antwort.
-  assert.match(text, /Karte ohne Publikum: kein einziger Aufruf, 12 Einblendungen/u);
-  assert.match(text, /Karte mit wenig Publikum: 2 Aufrufe$/mu);
+  assert.match(text, /\[Karte ohne Publikum\]\(https:\/\/www\.ebay\.de\/itm\/1\): kein einziger Aufruf, 12 Einblendungen/u);
+  assert.match(text, /Karte mit wenig Publikum\]\(https:\/\/www\.ebay\.de\/itm\/2\): 2 Aufrufe$/mu);
   assert.match(text, /vom 18\.07\.2026 bis 16\.08\.2026/u);
 });
 

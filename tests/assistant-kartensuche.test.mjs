@@ -129,7 +129,8 @@ test("die Antwort nennt das Angebot und zählt die Historie, ohne sie aufzuzähl
   // zu einer Zahlenfolge zusammen.
   assert.match(text, /^1 weitere\(r\) Titeltreffer/mu);
   assert.doesNotMatch(text, /€ \d+ weitere/u);
-  assert.match(text, /Quelle: Shop-Datenbank, eBay-Abgleich · Stand:/u);
+  assert.doesNotMatch(text, /Quelle: /u, "die Herkunft steht im Feld, nicht mehr im Text");
+  assert.deepEqual(ergebnis.sources, ["SHOP_DB", "EBAY_CACHE"]);
   // Eine Einzelkarte bekommt kein „1× vorhanden" angehängt.
   assert.doesNotMatch(text, /1× vorhanden/u);
 });

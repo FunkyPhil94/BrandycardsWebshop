@@ -187,7 +187,9 @@ test("der Orchestrator erzeugt Antworten nur aus Tool-Daten und nennt Quelle sow
   assert.deepEqual(calls, [{ tool: "latest_sale", limit: 10 }]);
   assert.match(response.answer, /Testkarte/u);
   assert.match(response.answer, /Verkaufsdetails sind unvollständig/u);
-  assert.match(response.answer, /Quelle: eBay-Ereignisse · Stand:/u);
+  // Die Herkunft steht seit dem 2026-08-18 im Feld statt im Text -- siehe
+  // `withSource`. Geprueft wird sie deshalb unten an `response.sources`.
+  assert.doesNotMatch(response.answer, /Quelle: /u);
   assert.doesNotMatch(response.answer, /1× Testkarte/u, "fehlende Mengen dürfen nicht als 1 erfunden werden");
   assert.deepEqual(response.sources, ["EBAY_WEBHOOK"]);
 });
@@ -202,7 +204,8 @@ test("leere Tool-Ergebnisse werden als leer und nicht als erfundene Werte formul
   });
   const response = await orchestrator.ask({ message: "Bestellungen?" });
   assert.match(response.answer, /keine neuen bezahlten/u);
-  assert.match(response.answer, /Stand: nicht gemeldet/u);
+  assert.deepEqual(response.sources, ["SHOP_DB"]);
+  assert.equal(response.freshness, null);
 });
 
 test("nicht verfügbare eBay-Quellen werden einzeln und ausdrücklich gemeldet", async () => {

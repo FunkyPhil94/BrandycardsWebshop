@@ -233,6 +233,15 @@ export type AssistantActivityEntry = {
   betragCents: number | null;
   currency: string;
   zeitpunkt: string | null;
+  /** Wohin der Vorgang führt, oder `null`.
+   *
+   * **Nur echte Ziele.** Shop-Karten führen auf ihre Detailseite, eBay-Vorgänge
+   * auf das Angebot. Ein Tiefenlink auf eine einzelne eBay-*Nachricht* steht
+   * hier nicht: Aus `ebay_message_id` lässt sich keine belastbare Adresse
+   * bilden, und eine erfundene wäre schlimmer als keine — sie führt ins Leere
+   * und sieht dabei aus wie eine Auskunft. Nachrichten verweisen deshalb auf den
+   * Artikel, um den es geht. */
+  url: string | null;
 };
 
 export type AssistantToolDataMap = {

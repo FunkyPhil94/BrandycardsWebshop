@@ -8,6 +8,7 @@ import {
   type AssistantToolInput,
   type AssistantToolResult,
 } from "../contracts";
+import { ebayUrl, karteUrl, ohneArtikelnummer } from "../response-formatter";
 import { assistantTimestamp } from "../time";
 
 /** Welcher Endzustand eines Shop-Preisvorschlags welche Vorgangsart ist.
@@ -60,6 +61,7 @@ export async function getActivityDigest(input: AssistantToolInput): Promise<Assi
     }).from(orders).where(imFenster(orders.createdAt)).orderBy(desc(sql`datetime(${orders.createdAt})`)),
 
     db.select({
+      ebayItemId: ebaySales.ebayItemId,
       title: ebaySales.title,
       amountCents: ebaySales.amountCents,
       currency: ebaySales.currency,
@@ -67,6 +69,7 @@ export async function getActivityDigest(input: AssistantToolInput): Promise<Assi
     }).from(ebaySales).where(imFenster(ebaySales.soldAt)).orderBy(desc(sql`datetime(${ebaySales.soldAt})`)),
 
     db.select({
+      productId: products.id,
       title: products.title,
       proposedAmountCents: priceOffers.proposedAmountCents,
       currency: priceOffers.currency,
@@ -77,6 +80,7 @@ export async function getActivityDigest(input: AssistantToolInput): Promise<Assi
       .orderBy(desc(sql`datetime(${priceOffers.createdAt})`)),
 
     db.select({
+      productId: products.id,
       title: products.title,
       createdAt: inquiries.createdAt,
     }).from(inquiries)
@@ -85,6 +89,8 @@ export async function getActivityDigest(input: AssistantToolInput): Promise<Assi
       .orderBy(desc(sql`datetime(${inquiries.createdAt})`)),
 
     db.select({
+      productId: products.id,
+      listingUrl: ebayListings.listingUrl,
       title: products.title,
       priceAmountCents: sql<number | null>`coalesce(${ebayListings.priceAmountCents}, ${products.priceAmountCents})`,
       currency: products.priceCurrency,
@@ -101,6 +107,7 @@ export async function getActivityDigest(input: AssistantToolInput): Promise<Assi
     // eine Kennung, hier stehen Kartentitel und Betrag. `IN_REVIEW` fehlt
     // absichtlich — „in Prüfung" ist keine abgeschickte Antwort.
     db.select({
+      productId: products.id,
       title: products.title,
       proposedAmountCents: priceOffers.proposedAmountCents,
       currency: priceOffers.currency,
@@ -121,6 +128,7 @@ export async function getActivityDigest(input: AssistantToolInput): Promise<Assi
     db.select({
       subject: ebayInboxMessages.subject,
       sender: ebayInboxMessages.sender,
+      ebayItemId: ebayInboxMessages.ebayItemId,
       receivedAt: ebayInboxMessages.receivedAt,
     }).from(ebayInboxMessages)
       .where(imFenster(ebayInboxMessages.receivedAt))
@@ -138,6 +146,10 @@ export async function getActivityDigest(input: AssistantToolInput): Promise<Assi
       betragCents: zeile.totalAmountCents,
       currency: zeile.currency,
       zeitpunkt: assistantTimestamp(zeile.createdAt),
+      // Eine Bestellung hat keine öffentliche Seite -- der Adminbereich ist
+      // hinter dem Login, und ein Link dorthin wäre aus der App heraus nur ein
+      // Umweg über die Anmeldung.
+      url: null,
     })),
     ...ebayVerkaeufe.map((zeile): AssistantActivityEntry => ({
       art: "EBAY_VERKAUF",
@@ -147,6 +159,7 @@ export async function getActivityDigest(input: AssistantToolInput): Promise<Assi
       betragCents: zeile.amountCents,
       currency: zeile.currency,
       zeitpunkt: assistantTimestamp(zeile.soldAt),
+      url: ebayUrl(null, zeile.ebayItemId),
     })),
     ...vorschlaege.map((zeile): AssistantActivityEntry => ({
       art: "SHOP_PREISVORSCHLAG",
@@ -154,6 +167,7 @@ export async function getActivityDigest(input: AssistantToolInput): Promise<Assi
       betragCents: zeile.proposedAmountCents,
       currency: zeile.currency,
       zeitpunkt: assistantTimestamp(zeile.createdAt),
+      url: karteUrl(zeile.productId),
     })),
     ...anfragen.map((zeile): AssistantActivityEntry => ({
       art: "SHOP_ANFRAGE",
@@ -161,6 +175,7 @@ export async function getActivityDigest(input: AssistantToolInput): Promise<Assi
       betragCents: null,
       currency: "EUR",
       zeitpunkt: assistantTimestamp(zeile.createdAt),
+      url: karteUrl(zeile.productId),
     })),
     ...eingestellt.map((zeile): AssistantActivityEntry => ({
       art: "KARTE_EINGESTELLT",
@@ -168,6 +183,7 @@ export async function getActivityDigest(input: AssistantToolInput): Promise<Assi
       betragCents: zeile.priceAmountCents,
       currency: zeile.currency,
       zeitpunkt: assistantTimestamp(zeile.createdAt),
+      url: ebayUrl(zeile.listingUrl, null) ?? karteUrl(zeile.productId),
     })),
     ...beantwortet.map((zeile): AssistantActivityEntry => ({
       art: ANTWORT_ARTEN[zeile.status] ?? "VORSCHLAG_ABGELEHNT",
@@ -175,13 +191,21 @@ export async function getActivityDigest(input: AssistantToolInput): Promise<Assi
       betragCents: zeile.proposedAmountCents,
       currency: zeile.currency,
       zeitpunkt: assistantTimestamp(zeile.updatedAt),
+      url: karteUrl(zeile.productId),
     })),
     ...nachrichten.map((zeile): AssistantActivityEntry => ({
       art: "EBAY_NACHRICHT",
-      bezeichnung: zeile.sender ? `${zeile.subject} (von ${zeile.sender})` : zeile.subject,
+      // **Ohne die angehängte Artikelnummer.** eBay schreibt sie in den
+      // Betreff; der Betreiber wollte sie nicht mehr lesen, und sie wird
+      // stattdessen zum Ziel des Links.
+      bezeichnung: ohneArtikelnummer(zeile.subject),
       betragCents: null,
       currency: "EUR",
       zeitpunkt: assistantTimestamp(zeile.receivedAt),
+      // **Kein Tiefenlink auf die Nachricht selbst.** Aus `ebay_message_id`
+      // lässt sich keine belastbare Adresse bilden; verwiesen wird auf den
+      // Artikel, um den es geht.
+      url: ebayUrl(null, zeile.ebayItemId),
     })),
   ];
 

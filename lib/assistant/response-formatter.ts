@@ -5,6 +5,7 @@ import type {
   AssistantOrchestratorToolSummary,
   AssistantToolName,
 } from "./contracts.ts";
+import { SHOP_BASE_URL } from "../seo.ts";
 
 export const ASSISTANT_TOOL_LABELS: Record<AssistantToolName, string> = {
   card_search: "Kartensuche",
@@ -105,13 +106,85 @@ function formatDate(value: string | null): string {
   }).format(parsed);
 }
 
-function sourceLine(sources: AssistantDataSource[], freshness: string | null): string {
+/** Wie eine Quelle heißen würde, wenn man sie anzeigt.
+ *
+ * **Steht noch da, obwohl der Antworttext sie nicht mehr trägt.** Siehe
+ * {@link withSource}: Die Angabe ist aus dem Fließtext verschwunden, nicht aus
+ * der Antwort. Diese Zuordnung ist der Anzeigename dazu und wird gebraucht,
+ * sobald die Oberfläche sie wieder aufgreift.
+ */
+export function sourceLine(sources: AssistantDataSource[], freshness: string | null): string {
   const source = sources.length ? sources.map((item) => SOURCE_LABELS[item]).join(", ") : "Systemstatus";
   return `Quelle: ${source} · Stand: ${formatDate(freshness)}`;
 }
 
+/** Gibt den Text zurück — **ohne** Quelle-und-Stand-Zeile.
+ *
+ * **Am 2026-08-18 auf ausdrücklichen Wunsch entfernt:** „Die Quelle kann aus der
+ * Antwort immer raus. Das brauche ich nicht." Sie stand unter jeder Auskunft und
+ * war eine der tragenden Zusicherungen dieses Assistenten.
+ *
+ * **Deshalb entkoppelt statt gelöscht.** `sources` und `freshness` reisen
+ * unverändert als eigene Felder in `AssistantToolResult` und in der
+ * Orchestrator-Antwort; nur der Fließtext trägt sie nicht mehr. Wer sie wieder
+ * zeigen will — als Fußnote, als Tooltip, als Ausklapper — findet sie vor und
+ * hat mit {@link sourceLine} auch die Schreibweise. Die Datenlage ist damit
+ * unverändert; verändert hat sich, wie viel davon ungefragt im Text steht.
+ *
+ * Die Funktion bleibt an ihrer Stelle, statt an rund zwanzig Aufrufstellen
+ * entfernt zu werden: So ist die Entscheidung an *einem* Ort umkehrbar.
+ */
+// Der zweite Parameter bleibt absichtlich stehen: Er hält die rund zwanzig
+// Aufrufstellen unverändert und macht die Entscheidung damit an *einer* Stelle
+// umkehrbar.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function withSource(text: string, result: AnyAssistantToolResult): string {
-  return `${text}\n${sourceLine(result.sources, result.status === "AVAILABLE" ? result.freshness : null)}`;
+  return text;
+}
+
+/** Ein anklickbarer Verweis im Antworttext.
+ *
+ * **Die Form ist Absicht und minimal:** `[Text](URL)`. Der Desktop erkennt genau
+ * dieses Muster und baut daraus einen Hyperlink — mehr Auszeichnungssprache
+ * gibt es nicht und soll es nicht geben. Ein Client, der Markdown *interpretiert*,
+ * fängt an, Daten zu formatieren; einer, der eine Klammerform in ein
+ * Bedienelement übersetzt, stellt dar.
+ *
+ * Ohne Ziel bleibt der Text nackt stehen. **Eine erfundene Adresse wäre
+ * schlimmer als kein Link** — sie führt ins Leere und sieht dabei aus wie eine
+ * Auskunft.
+ */
+export function alsVerweis(text: string, url: string | null): string {
+  if (!url) return text;
+  // Eckige Klammern im Text würden die Form zerreißen; sie fallen weg, statt
+  // den Link zu zerstören.
+  return `[${text.replaceAll("[", "(").replaceAll("]", ")")}](${url})`;
+}
+
+/** Die Adresse einer Shop-Karte. */
+export function karteUrl(productId: string | null): string | null {
+  return productId ? `${SHOP_BASE_URL}/karten/${productId}` : null;
+}
+
+/** Die Adresse eines eBay-Angebots.
+ *
+ * Bevorzugt die von eBay gelieferte `listingUrl`; ersatzweise die bekannte
+ * Artikelform. Ohne Artikelnummer gibt es kein Ziel — und dann auch keinen Link.
+ */
+export function ebayUrl(listingUrl: string | null | undefined, ebayItemId: string | null | undefined): string | null {
+  if (listingUrl) return listingUrl;
+  return ebayItemId ? `https://www.ebay.de/itm/${ebayItemId}` : null;
+}
+
+/** Schneidet die angehängte Artikelnummer aus einem eBay-Betreff.
+ *
+ * eBay hängt sie in Klammern an („… für Topps UCC Chrome 24/… (398249837836)").
+ * Der Betreiber wollte sie am 2026-08-18 nicht mehr lesen — sie wird stattdessen
+ * zum Ziel des Links. Entfernt wird nur eine *abschließende* Klammer mit einer
+ * langen Ziffernfolge; alles andere bleibt, wie eBay es geschrieben hat.
+ */
+export function ohneArtikelnummer(betreff: string): string {
+  return betreff.replace(/\s*\(\d{9,15}\)\s*$/u, "").trim();
 }
 
 export function formatAssistantToolResult(result: AnyAssistantToolResult): string {
@@ -144,7 +217,7 @@ export function formatAssistantToolResult(result: AnyAssistantToolResult): strin
 
       const lines = data.eintraege.map((eintrag) => {
         const betrag = formatMoney(eintrag.betragCents, eintrag.currency);
-        return `• ${formatDate(eintrag.zeitpunkt)} · ${AKTIVITAETS_LABELS[eintrag.art]}: ${eintrag.bezeichnung}${betrag ? ` (${betrag})` : ""}`;
+        return `• ${formatDate(eintrag.zeitpunkt)} · ${AKTIVITAETS_LABELS[eintrag.art]}: ${alsVerweis(eintrag.bezeichnung, eintrag.url)}${betrag ? ` (${betrag})` : ""}`;
       });
       // **Die Zusammenfassung steht über der Liste, nicht darunter.** Im
       // Screenshot vom 2026-08-18 bestand eine 48-Stunden-Antwort aus 168
@@ -172,7 +245,7 @@ export function formatAssistantToolResult(result: AnyAssistantToolResult): strin
         return withSource("eBay hat für den ausgewerteten Zeitraum zu keinem Angebot Aufrufzahlen gemeldet.", result);
       }
       const lines = listings.map((listing) => {
-        const title = listing.title ?? `eBay-Angebot ${listing.ebayItemId}`;
+        const title = alsVerweis(listing.title ?? `eBay-Angebot ${listing.ebayItemId}`, ebayUrl(listing.listingUrl, listing.ebayItemId));
         // **Null Aufrufe wird als Null benannt**, nicht als „nicht gemeldet"
         // verkleidet: Genau diese Karten sucht die Frage. Fehlende Zahlen kommen
         // hier ohnehin nicht an, sie fallen im Werkzeug heraus.
@@ -213,7 +286,7 @@ export function formatAssistantToolResult(result: AnyAssistantToolResult): strin
         // Die Menge nur, wenn sie etwas hinzufügt: Bei Einzelstücken — und das
         // sind fast alle — wäre „(1×)" hinter jeder Zeile bloß Rauschen.
         const menge = karte.menge !== null && karte.menge > 1 ? `, ${karte.menge}× vorhanden` : "";
-        return `• ${karte.title} — ${bereich}${preis ? `, ${preis}` : ", Preis nicht hinterlegt"}${menge}`;
+        return `• ${alsVerweis(karte.title, karteUrl(karte.productId))} — ${bereich}${preis ? `, ${preis}` : ", Preis nicht hinterlegt"}${menge}`;
       });
       const gekuerzt = data.gekuerzt ? ["(Es gibt mehr Treffer; gezeigt werden die ersten.)"] : [];
       return withSource([
@@ -242,7 +315,7 @@ export function formatAssistantToolResult(result: AnyAssistantToolResult): strin
       const source = listing.source === "EBAY" ? "eBay" : "Shop";
       const price = formatMoney(listing.priceAmountCents, listing.priceCurrency);
       return withSource(
-        `Zuletzt eingestellt wurde „${listing.title}“ im ${source}${price ? ` für ${price}` : ""}. Einstellzeit: ${formatDate(listing.listedAt)}.`,
+        `Zuletzt eingestellt wurde ${alsVerweis(`„${listing.title}“`, listing.listingUrl ?? karteUrl(listing.productId))} im ${source}${price ? ` für ${price}` : ""}. Einstellzeit: ${formatDate(listing.listedAt)}.`,
         result,
       );
     }
@@ -385,7 +458,7 @@ export function formatAssistantToolResult(result: AnyAssistantToolResult): strin
         return withSource("eBay hat für den ausgewerteten Zeitraum zu keinem Angebot Aufrufzahlen gemeldet.", result);
       }
       const lines = listings.map((listing) => {
-        const title = listing.title ?? `eBay-Angebot ${listing.ebayItemId}`;
+        const title = alsVerweis(listing.title ?? `eBay-Angebot ${listing.ebayItemId}`, ebayUrl(listing.listingUrl, listing.ebayItemId));
         const views = listing.viewsTotal === null ? "nicht gemeldet" : `${listing.viewsTotal} Aufrufe`;
         const impressions = listing.impressionsTotal === null ? "" : `, ${listing.impressionsTotal} Einblendungen`;
         return `• ${title}: ${views}${impressions}`;

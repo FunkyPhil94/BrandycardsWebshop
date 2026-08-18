@@ -112,18 +112,24 @@ test("eBay-Fehlertexte gelangen nicht in die Antwort", () => {
 // Antwortformatierung: Quelle, Stand, Leerzustand
 // ---------------------------------------------------------------------------
 
-const quelleUndStand = /Quelle: .+ · Stand: .+/u;
-
-test("jede der drei Antworten nennt Quelle und Datenstand", () => {
+/** **Die Quelle-und-Stand-Zeile steht seit dem 2026-08-18 nicht mehr im Text.**
+ * Der Betreiber wollte sie nicht mehr lesen. Die Zusicherung ist damit nicht
+ * gefallen, sie ist nur umgezogen: `sources` und `freshness` reisen unveraendert
+ * als eigene Felder mit, und genau darauf prueft dieser Test jetzt. Ein
+ * Ergebnis ohne Herkunft bleibt unmoeglich; es steht nur nicht mehr ungefragt
+ * unter jeder Auskunft.
+ */
+test("jede der drei Antworten fuehrt Quelle und Datenstand als Felder", () => {
   const ergebnisse = [
     availableAssistantResult("ebay_most_viewed", { rangeStart: "20260717", rangeEnd: "20260815", listings: [] }, ["EBAY_READ_API"], "2026-08-16T09:00:00.000Z"),
     availableAssistantResult("ebay_messages", { unreadCount: 0, messages: [] }, ["EBAY_READ_API"], "2026-08-16T09:00:00.000Z"),
     availableAssistantResult("ebay_buyer_offers", { offers: [] }, ["EBAY_READ_API"], "2026-08-16T09:00:00.000Z"),
   ];
   for (const ergebnis of ergebnisse) {
-    const text = formatAssistantToolResult(ergebnis);
-    assert.match(text, quelleUndStand, ergebnis.tool);
-    assert.match(text, /eBay-Leseschnittstelle/u);
+    assert.deepEqual(ergebnis.sources, ["EBAY_READ_API"], ergebnis.tool);
+    assert.equal(ergebnis.freshness, "2026-08-16T09:00:00.000Z", ergebnis.tool);
+    // Und der Text traegt sie ausdruecklich **nicht** mehr.
+    assert.doesNotMatch(formatAssistantToolResult(ergebnis), /Quelle: /u, ergebnis.tool);
   }
 });
 
@@ -153,10 +159,13 @@ test("die Aufrufzahlen nennen den Zeitraum, weil eine Summe ohne Fenster keine A
   }, ["EBAY_READ_API"], "2026-08-16T09:00:00.000Z"));
 
   assert.match(text, /vom 17\.07\.2026 bis 15\.08\.2026/u);
-  assert.match(text, /Lamine Yamal Finest: 412 Aufrufe, 9000 Einblendungen/u);
+  // **Der Titel ist seit dem 2026-08-18 ein Verweis.** Die Klammerform
+  // `[Text](URL)` wird vom Desktop in einen Hyperlink uebersetzt; ohne
+  // gespeicherte `listingUrl` entsteht das Ziel aus der Artikelnummer.
+  assert.match(text, /\[Lamine Yamal Finest\]\(https:\/\/www\.ebay\.de\/itm\/1\): 412 Aufrufe, 9000 Einblendungen/u);
   // Ohne Titel bleibt die Angebotsnummer -- besser als eine erfundene
   // Bezeichnung, und wiederauffindbar.
-  assert.match(text, /eBay-Angebot 2: 7 Aufrufe$/mu);
+  assert.match(text, /\[eBay-Angebot 2\]\(https:\/\/www\.ebay\.de\/itm\/2\): 7 Aufrufe$/mu);
 });
 
 test("eine nicht gemeldete Aufrufzahl steht als solche da", () => {
@@ -205,8 +214,9 @@ test("ein unverfuegbares Werkzeug nennt den Grund statt einer leeren Liste", () 
     "Aufrufzahlen: eBay verweigert den lesenden Zugriff.", ["EBAY_READ_API"],
   ));
   assert.match(text, /eBay-Aufrufzahlen: Aufrufzahlen: eBay verweigert/u);
-  assert.match(text, quelleUndStand);
-  assert.match(text, /Stand: nicht gemeldet/u, "ohne Abruf gibt es keinen Datenstand");
+  // Die Herkunft steht seit dem 2026-08-18 im Feld statt im Text; der **Grund**
+  // bleibt im Text, denn er ist die Auskunft.
+  assert.doesNotMatch(text, /Quelle: /u);
 });
 
 // ---------------------------------------------------------------------------

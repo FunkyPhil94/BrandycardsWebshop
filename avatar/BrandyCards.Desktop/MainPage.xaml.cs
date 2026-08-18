@@ -8,6 +8,7 @@ using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Documents;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
@@ -747,6 +748,69 @@ public sealed partial class MainPage : Page
     /// <para>Der Name bleibt trotz Kopf stehen. Ein Bild ist für einen
     /// Screenreader nichts, und die Ansage unten hängt am Namen.</para>
     /// </summary>
+    /// <summary>
+    /// Erkennt Verweise der Form <c>[Text](URL)</c> im Antworttext.
+    ///
+    /// <para><b>Bewusst diese eine Form und keine Auszeichnungssprache.</b> Der
+    /// Server schreibt Verweise so (siehe <c>alsVerweis</c> in
+    /// <c>response-formatter.ts</c>); hier werden sie in Bedienelemente
+    /// übersetzt. Ein Client, der Markdown *interpretiert*, fängt an, Daten zu
+    /// formatieren — und genau das hat Phase 4 entfernt. Eine Klammerform in
+    /// einen Hyperlink zu verwandeln ist Darstellung.</para>
+    /// </summary>
+    private static readonly System.Text.RegularExpressions.Regex Verweismuster =
+        new(@"\[([^\]]+)\]\((https?://[^\s)]+)\)", System.Text.RegularExpressions.RegexOptions.Compiled);
+
+    /// <summary>
+    /// Baut aus einem Antworttext die Textbausteine — mit Hyperlinks, wo welche
+    /// stehen.
+    ///
+    /// <para><b>Nur <c>http</c> und <c>https</c>.</b> Das Muster lässt schon
+    /// nichts anderes zu, und das ist Absicht: Ein Verweis aus einer Antwort
+    /// öffnet den Browser des Betreibers. <c>file:</c> oder ein eigenes Schema
+    /// wären eine Startrampe für alles Mögliche — hier endet sie, bevor sie
+    /// anfängt.</para>
+    ///
+    /// <para>Findet sich kein Verweis, entsteht genau ein Textbaustein. Der
+    /// Normalfall bleibt damit exakt das, was er vorher war.</para>
+    /// </summary>
+    private static void FuelleMitVerweisen(TextBlock ziel, string message)
+    {
+        var position = 0;
+        foreach (System.Text.RegularExpressions.Match treffer in Verweismuster.Matches(message))
+        {
+            if (treffer.Index > position)
+            {
+                ziel.Inlines.Add(new Run { Text = message[position..treffer.Index] });
+            }
+
+            var link = new Hyperlink
+            {
+                NavigateUri = new Uri(treffer.Groups[2].Value),
+                // Die Standardfarbe von WinUI ist das Systemblau und steht neben
+                // der warmen Farbwelt dieses Panels wie ein Fremdkörper.
+                Foreground = (Brush)Application.Current.Resources["AvatarLinkBrush"],
+            };
+            link.Inlines.Add(new Run { Text = treffer.Groups[1].Value });
+            ziel.Inlines.Add(link);
+            position = treffer.Index + treffer.Length;
+        }
+
+        ziel.Inlines.Add(new Run { Text = message[position..] });
+    }
+
+    /// <summary>
+    /// Der Text einer Nachricht **ohne** die Klammerform — für Screenreader und
+    /// für die Ansage.
+    ///
+    /// Ein Vorleser, der „eckige Klammer auf, Titel, eckige Klammer zu, runde
+    /// Klammer auf, h t t p s Doppelpunkt …" sagt, macht die Antwort unbenutzbar.
+    /// </summary>
+    internal static string OhneVerweisklammern(string message)
+    {
+        return Verweismuster.Replace(message, "$1");
+    }
+
     private void AddConversationMessage(string author, string message, bool isUser)
     {
         // Jede neue Nachricht löst die Tippanzeige ab — sonst stünde die Antwort
@@ -755,9 +819,9 @@ public sealed partial class MainPage : Page
 
         var text = new TextBlock
         {
-            Text = message,
             Style = (Style)Application.Current.Resources["ConversationBodyTextStyle"],
         };
+        FuelleMitVerweisen(text, message);
         var authorText = new TextBlock
         {
             Text = author,
@@ -793,7 +857,7 @@ public sealed partial class MainPage : Page
             MaxWidth = (double)Application.Current.Resources["AvatarBubbleMaxWidth"],
             Child = content,
         };
-        AutomationProperties.SetName(messageBorder, $"{author}: {message}");
+        AutomationProperties.SetName(messageBorder, $"{author}: {OhneVerweisklammern(message)}");
         ConversationPanel.Children.Add(BaueNachrichtenzeile(messageBorder, isUser));
         ConversationScrollViewer.UpdateLayout();
         ConversationScrollViewer.ChangeView(null, ConversationScrollViewer.ScrollableHeight, null);

@@ -26,6 +26,12 @@
                     <SolidColorBrush x:Key="AvatarSurfaceBrush" Color="#F2EEE7" />
                     <SolidColorBrush x:Key="AvatarPanelBrush" Color="#E9E5DD" />
                     <SolidColorBrush x:Key="AvatarCardBrush" Color="#FBF9F6" />
+                    <!-- Die Flaeche des Minifensters. Etwas waermer als die
+                         Karte darunter, damit der Streifen neben dem Pet als
+                         eigenes Ding lesbar ist und nicht als Rest der Seite. -->
+                    <SolidColorBrush x:Key="AvatarLauncherBrush" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="AvatarHeaderBrush" Color="#F7E9E6" />
+                    <SolidColorBrush x:Key="AvatarLinkBrush" Color="#B03028" />
                     <SolidColorBrush x:Key="AvatarInputBrush" Color="#FFFFFF" />
                     <SolidColorBrush x:Key="AvatarTextBrush" Color="#1A1A1A" />
                     <SolidColorBrush x:Key="AvatarMutedBrush" Color="#6B625A" />
@@ -44,6 +50,9 @@
                     <SolidColorBrush x:Key="AvatarSurfaceBrush" Color="#1B1A19" />
                     <SolidColorBrush x:Key="AvatarPanelBrush" Color="#2A2827" />
                     <SolidColorBrush x:Key="AvatarCardBrush" Color="#242322" />
+                    <SolidColorBrush x:Key="AvatarLauncherBrush" Color="#2B2A29" />
+                    <SolidColorBrush x:Key="AvatarHeaderBrush" Color="#33211F" />
+                    <SolidColorBrush x:Key="AvatarLinkBrush" Color="#FF9086" />
                     <SolidColorBrush x:Key="AvatarInputBrush" Color="#2E2C2B" />
                     <SolidColorBrush x:Key="AvatarTextBrush" Color="#F5F2EE" />
                     <SolidColorBrush x:Key="AvatarMutedBrush" Color="#B8B1A9" />
@@ -62,6 +71,9 @@
                     <SolidColorBrush x:Key="AvatarSurfaceBrush" Color="{ThemeResource SystemColorWindowColor}" />
                     <SolidColorBrush x:Key="AvatarPanelBrush" Color="{ThemeResource SystemColorWindowColor}" />
                     <SolidColorBrush x:Key="AvatarCardBrush" Color="{ThemeResource SystemColorWindowColor}" />
+                    <SolidColorBrush x:Key="AvatarLauncherBrush" Color="{ThemeResource SystemColorWindowColor}" />
+                    <SolidColorBrush x:Key="AvatarHeaderBrush" Color="{ThemeResource SystemColorWindowColor}" />
+                    <SolidColorBrush x:Key="AvatarLinkBrush" Color="{ThemeResource SystemColorHotlightColor}" />
                     <SolidColorBrush x:Key="AvatarInputBrush" Color="{ThemeResource SystemColorWindowColor}" />
                     <SolidColorBrush x:Key="AvatarTextBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
                     <SolidColorBrush x:Key="AvatarMutedBrush" Color="{ThemeResource SystemColorWindowTextColor}" />

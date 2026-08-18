@@ -200,7 +200,16 @@ test("jedes Bedienelement des Panels ist benannt und hat eine eindeutige Tab-Pos
 
 test("Antworten und Fehlermeldungen erreichen den Screenreader als benannte Elemente", async () => {
   const page = await read("avatar/BrandyCards.Desktop/MainPage.xaml.cs");
-  assert.match(page, /AutomationProperties\.SetName\(messageBorder, \$"\{author\}: \{message\}"\)/u);
+  // **Seit dem 2026-08-18 ohne die Klammerform der Verweise.** Der Antworttext
+  // trägt Links als `[Text](URL)`; ein Vorleser, der „eckige Klammer auf, Titel,
+  // eckige Klammer zu, runde Klammer auf, h t t p s Doppelpunkt …" sagt, macht
+  // die Antwort unbenutzbar. Der Screenreader bekommt deshalb denselben Satz
+  // ohne die Auszeichnung — die Zusicherung bleibt, ihr Inhalt wird lesbarer.
+  assert.match(page, /AutomationProperties\.SetName\(messageBorder, \$"\{author\}: \{OhneVerweisklammern\(message\)\}"\)/u);
+  assert.match(page, /internal static string OhneVerweisklammern/u);
+  // Nur http und https werden zu Bedienelementen: Ein Verweis aus einer Antwort
+  // öffnet den Browser des Betreibers, und `file:` wäre eine Startrampe.
+  assert.match(page, /\\\[\(\[\^\\\]\]\+\)\\\]\\\(\(https\?:\/\/\[\^\\s\)\]\+\)\\\)/u);
   // Beim Öffnen in die Eingabe, beim Schließen zurück auf den Launcher.
   assert.match(page, /EnsureConversationInitialized\(\);\s*AssistantInputTextBox\.Focus\(FocusState\.Programmatic\)/u);
   assert.match(page, /else\s*\{\s*LauncherButton\.Focus\(FocusState\.Programmatic\)/u);
