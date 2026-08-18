@@ -1,5 +1,71 @@
 # BrandyCards Agentenprotokoll
 
+## 2026-08-18 - Zwei stille Fehlschläge, die nur die echte Exe zeigen konnte
+
+Vier Wünsche des Betreibers, und die wichtigste Erkenntnis stand nicht in
+seiner Nachricht, sondern in seinen Bildern.
+
+**Er lief mit einer alten Exe.** Die Screenshots zeigten „Nachricht an den
+Assistant", die Beispielfragen als grauen Text, den Launcher über dem offenen
+Panel — die Oberfläche von *vor* dem Umbau desselben Vormittags. Sein „sieht
+langweilig aus" bezog sich also auf eine Fassung, die es im Quellstand längst
+nicht mehr gab. Die Ursache war banal und teuer: `scripts/build-karl-exe.ps1`
+lag seit dem 2026-08-17 auf einem eigenen Zweig und wurde nie nach `main`
+gebracht. Wochenlang wanderte Arbeit in den Quelltext, die auf dem Desktop des
+Betreibers nie ankam.
+
+**Die Lehre ist nicht „Skript mergen".** Sie ist: **Bei einer Anwendung, die als
+Datei verteilt wird, ist der Quellstand nicht der Auslieferungsstand.** Wer
+Oberfläche ändert und nur `dotnet build` prüft, hat nichts ausgeliefert. Der
+Auftrag endet erst mit der neu gebauten Datei — und deshalb steht sie jetzt in
+der Abnahme.
+
+**Der zweite stille Fehlschlag saß tiefer.** Auch mit dem neuen Zeichen trug das
+Fenster weiter das Standardsymbol. Grund: `AppWindow.SetIcon("Assets/...")`
+bekommt einen **relativen** Pfad, und der wird gegen das *Arbeitsverzeichnis*
+aufgelöst, nicht gegen die Anwendung. Bei einer Einzeldatei auf dem Desktop gibt
+es dort keinen `Assets`-Ordner. Der Aufruf tat nichts, warf nichts, meldete
+nichts — seit jeher, nicht erst seit heute. **Ein Aufruf, der still nichts tut,
+ist im Quelltext unsichtbar; er fällt nur im laufenden Fenster auf.** Genau
+dieselbe Falle steht im Repository schon zweimal dokumentiert (das Spritesheet
+und der Avatarkopf gehen längst über `AppContext.BaseDirectory`) — und ich habe
+sie beim Schreiben der Zeile daneben trotzdem nicht angewandt. Das ist heute das
+dritte Mal.
+
+**Zur Quelle-Zeile, weil sie eine Zusicherung war.** Der Betreiber wollte sie
+weg. Sie stand unter jeder Auskunft und war eines der Versprechen, unter denen
+dieser Assistent gebaut wurde. Gelöscht habe ich sie trotzdem nicht: `sources`
+und `freshness` reisen unverändert als Felder, nur `withSource` gibt den Text
+jetzt durch. Das hält die Entscheidung an *einer* Stelle umkehrbar, statt sie
+über zwanzig Aufrufstellen zu verstreuen. **Und die acht Tests, die daran
+hingen, wurden nicht gestrichen, sondern umgehängt** — sie prüfen dieselbe
+Zusicherung jetzt an den Feldern. Ein Wächter, dessen Beobachtungsposten
+wegfällt, bekommt einen neuen; er wird nicht abgezogen.
+
+**Bei den Links war die interessante Frage, was man *nicht* verlinkt.** Karten
+führen auf ihre Detailseite, eBay-Angebote auf ihre gespeicherte `listingUrl`
+oder die Artikelform. Für eine einzelne eBay-**Nachricht** gibt es aus
+`ebay_message_id` keine belastbare Adresse — und eine geratene wäre schlimmer
+als keine: Sie führt ins Leere und sieht dabei aus wie eine Auskunft.
+Nachrichten verweisen deshalb auf den Artikel, um den es geht. Dieselbe Linie
+wie bei den eBay-Preisvorschlägen ohne Eingangszeitpunkt, nur eine Ebene weiter.
+
+**Die Klammerform ist bewusst keine Auszeichnungssprache.** Der Server schreibt
+`[Text](URL)`, der Client erkennt genau dieses eine Muster und baut daraus ein
+Bedienelement. Ein Client, der Markdown *interpretiert*, fängt an, Daten zu
+formatieren — und genau das hat Phase 4 entfernt. Erlaubt sind nur `http` und
+`https`: Ein Verweis aus einer Antwort öffnet den Browser des Betreibers.
+
+**Das Zeichen entsteht aus einem Skript, nicht aus einer abgelegten Datei.** Es
+wird aus dem Avatarkopf gebaut, der seinerseits aus dem Spritesheet geschnitten
+ist. Ändert sich die Figur, wird das Zeichen neu gebaut statt von Hand
+nachgezogen. Große Kacheln tragen den Namenszug, kleine nur den Kopf — ein
+Schriftzug bei 16 Pixeln ist ein grauer Strich, und dafür kennt das ICO-Format
+mehrere Bilder in einer Datei. Das bisherige `AppIcon.ico` war übrigens der
+unveränderte Platzhalter der WinUI-Vorlage: ein graues durchgestrichenes
+Kästchen.
+
+
 ## 2026-08-18 - Ein Sortierfehler, ein fehlendes Zeitmaß, und eine Zahl, die keine Uhrzeit hat
 
 Drei Punkte des Betreibers, und jeder hat etwas über den Code gesagt, das vorher

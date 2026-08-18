@@ -619,7 +619,10 @@ public sealed partial class MainPage : Page
         // Launcher hat außerdem keine Aufgabe mehr, die das Kreuz oben rechts
         // nicht schon erfüllt — und sein Platz kommt der Unterhaltung zugute.
         LauncherButton.Visibility = expanded ? Visibility.Collapsed : Visibility.Visible;
-        LauncherSubtitleTextBlock.Text = expanded ? "Textpanel geöffnet" : "Textpanel öffnen";
+        // Zugeklappt steht dort, *was* KARL ist -- das Minifenster ist die meiste
+        // Zeit alles, was man von ihm sieht. "Textpanel öffnen" beschrieb nur den
+        // Knopf, nicht den Nutzen.
+        LauncherSubtitleTextBlock.Text = expanded ? "Textpanel geöffnet" : "Kartenshop-Auskunft · fragen per Klick";
         LauncherChevronIcon.Glyph = expanded ? "\uE70E" : "\uE70D";
         AutomationProperties.SetName(LauncherButton, expanded ? "BrandyCards Assistant schließen" : "BrandyCards Assistant öffnen");
         // Die tatsächliche Lage des Pets mitgeben: Es ist verschiebbar, und ohne

@@ -1,3 +1,4 @@
+using System.IO;
 using System.Runtime.InteropServices;
 using Microsoft.UI;
 using Microsoft.UI.Windowing;
@@ -28,7 +29,17 @@ public sealed partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
-        AppWindow.SetIcon("Assets/KarlIcon.ico");
+        // **Absolut, nicht relativ.** `SetIcon` löst einen relativen Pfad gegen
+        // das *Arbeitsverzeichnis* auf, nicht gegen die Anwendung. Bei der
+        // Einzeldatei auf dem Desktop ist das der Desktop — dort liegt kein
+        // `Assets`-Ordner, und das Fenster behielt still das Standardsymbol.
+        // Genau so sah es in den Screenshots vom 2026-08-18 aus, und zwar schon
+        // vor dem neuen Zeichen: Der Aufruf lief seit jeher ins Leere.
+        //
+        // `AppContext.BaseDirectory` zeigt bei der Einzeldatei auf das
+        // Auspackverzeichnis, in dem die mitgebündelten Inhalte liegen — denselben
+        // Weg nimmt `MainPage` für Spritesheet und Avatarkopf.
+        AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "Assets", "KarlIcon.ico"));
         ConfigureSetupWindow();
         RootFrame.Navigate(typeof(MainPage));
     }

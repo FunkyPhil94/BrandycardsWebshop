@@ -39,7 +39,7 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ### 2026-08-18 - Quelle raus, Links rein, neues Gesicht für KARL.exe
 
-- Stand: **LÄUFT.**
+- Stand: **ABGESCHLOSSEN und AUSGEROLLT**, an einer frisch gebauten KARL.exe nachgemessen.
 - Auftrag: Vier Punkte vom Betreiber, dazu ein Befund aus seinen Screenshots.
 
 **Der Befund zuerst, weil er den Rest erklärt.** Die Screenshots zeigen die
@@ -91,6 +91,61 @@ Taskleiste und Datei dasselbe Gesicht tragen.
 Danach **eine frisch gebaute KARL.exe**, gestartet und abgelichtet: Links müssen
 klickbar sein, die Quelle-Zeile fehlen, die Artikelnummer aus dem Betreff
 verschwunden sein.
+
+**Ergebnis: alle vier Punkte gebaut, ausgerollt und an einer frisch gebauten
+KARL.exe nachgemessen. 763 Tests grün, TypeScript fehlerfrei, ESLint 0 Fehler,
+`dotnet build` 0 Warnungen. Worker-Version `c37a3d75-33d4-400f-adf6-7ef7a68a16fb`;
+`C:\Users\pbran\Desktop\KARL.exe`, 104,5 MB, neu gebaut.**
+
+**Punkt 1 — Quelle und Stand.** Aus dem Fließtext verschwunden, aus der Antwort
+nicht: `sources` und `freshness` reisen unverändert als Felder. `withSource`
+gibt den Text jetzt unverändert zurück — die Entscheidung ist damit an *einer*
+Stelle umkehrbar, statt an zwanzig Aufrufstellen ausgebaut zu sein. Acht Tests
+prüften diese Zusicherung am Text; sie prüfen sie jetzt an den Feldern.
+
+**Punkt 2 — Artikelnummer.** `ohneArtikelnummer` schneidet nur eine
+*abschließende* Klammer mit langer Ziffernfolge ab; alles andere bleibt, wie
+eBay es geschrieben hat. Die Nummer ist nicht verloren, sie ist jetzt das Ziel
+des Links.
+
+**Punkt 3 — anklickbare Verweise.** Der Formatierer schreibt `[Text](URL)`, der
+Desktop übersetzt genau diese eine Klammerform in Hyperlinks. **Nur `http` und
+`https`** — ein Verweis aus einer Antwort öffnet den Browser des Betreibers, und
+`file:` wäre eine Startrampe. Gemessen am laufenden Fenster: sechs echte
+Hyperlink-Bedienelemente in einer Kartenantwort, über UI-Automation gezählt.
+
+Ein Tiefenlink auf eine einzelne eBay-**Nachricht** wurde **nicht** erfunden: Aus
+`ebay_message_id` lässt sich keine belastbare Adresse bilden. Nachrichten
+verweisen auf den Artikel, um den es geht.
+
+**Punkt 4 — Gesicht und Minifenster.** `Assets/KarlIcon.ico` entsteht aus dem
+Avatarkopf (`scripts/karl-icon-bauen.py`): große Kacheln mit Namenszug, kleine
+ohne, weil ein Schriftzug bei 16 Pixeln ein grauer Strich ist. Das Minifenster
+trägt KARLs Kopf auf der Akzentfläche, seinen Namen in Fettschrift und sagt
+zugeklappt, *was* er ist statt was der Knopf tut. Fenstertitel: „KARL".
+
+> **Zwei Befunde, die ohne die echte Einzeldatei nicht sichtbar gewesen wären.**
+>
+> **Erstens: Der Betreiber lief die ganze Zeit mit einer alten Exe.** Seine
+> Screenshots zeigten „Nachricht an den Assistant" und die Beispiele als grauen
+> Text — die Oberfläche von *vor* dem Umbau desselben Tages. Ursache:
+> `scripts/build-karl-exe.ps1` lag seit dem 2026-08-17 auf einem eigenen Zweig
+> und kam nie nach `main`. Es liegt jetzt dort.
+>
+> **Zweitens: `AppWindow.SetIcon` lief seit jeher ins Leere.** Der Aufruf bekam
+> einen *relativen* Pfad; der wird gegen das Arbeitsverzeichnis aufgelöst, nicht
+> gegen die Anwendung. Bei einer Einzeldatei auf dem Desktop heißt das: kein
+> `Assets`-Ordner, kein Symbol, keine Fehlermeldung. Das Fenster trug deshalb
+> auch mit dem neuen Zeichen weiter das Standardsymbol — bis der Pfad über
+> `AppContext.BaseDirectory` absolut wurde. **Ein Aufruf, der still nichts tut,
+> ist im Quelltext nicht zu sehen; er fällt nur im laufenden Fenster auf.**
+
+**Nachgemessen an der neuen Exe gegen den ausgerollten Shop:** „Gibt es Karten
+von Yamal?" liefert sechs verlinkte Karten mit Preis und Bereich, ohne
+Quelle-Zeile. „Was ist in den letzten 6 Stunden passiert?" liefert neun Vorgänge
+mit Zusammenfassung, verlinkten Nachrichten und Verkäufen — und ohne eine
+einzige Artikelnummer im Betreff.
+
 
 ## Historie
 
