@@ -38,7 +38,20 @@ export async function GET(request: Request) {
 
   try {
     const db = getDb();
-    const suche = new URL(request.url).searchParams.get("q")?.trim() ?? "";
+    const parameter = new URL(request.url).searchParams;
+
+    // Nur die Titel der von Hand eingestellten Karten — die Massenanlage
+    // erkennt daran, was ein früherer, abgebrochener Durchlauf schon angelegt
+    // hat. Ohne diese Liste bliebe ihr nur, 144-mal die Suche zu fragen, und
+    // ein zweiter Anlauf legte alles ein zweites Mal an.
+    if (parameter.get("titel") === "manuell") {
+      const alle = await db.select({ title: products.title })
+        .from(products).where(eq(products.origin, "MANUAL"));
+      return NextResponse.json({ titel: alle.map((zeile) => zeile.title) },
+        { headers: { "cache-control": "no-store" } });
+    }
+
+    const suche = parameter.get("q")?.trim() ?? "";
     // `like` mit führendem Platzhalter kann keinen Index nutzen. Bei ~550
     // Karten ist ein voller Durchlauf billiger als jede Zusatzstruktur — wer
     // das ändert, sollte vorher messen statt zu vermuten.

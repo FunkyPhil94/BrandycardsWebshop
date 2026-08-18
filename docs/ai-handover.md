@@ -9860,3 +9860,69 @@ selbst; die Schrittfolge samt Nachprüfung steht in
 - **Nicht geprüft:** die angemeldeten Ansichten. Die Browsersitzung hier ist
   erneut abgelaufen; `/account/profil` zeigt korrekt „Bitte melde dich an".
 - Status: ABGESCHLOSSEN.
+
+## Auftrag 2026-08-18: Massenanlage von Vorverkaufskarten aus Tabelle und Bildordner
+- Status: GEBAUT UND GEPRÜFT, NICHT AUSGEROLLT — siehe Ergebnis am Ende.
+- **Anlass:** 144 Karten aus „Topps Premier League Flagship 26/27" liegen als
+  Bilddateien in `G:\Meine Ablage\BrandyCards\Fotos\ToDo_PL_Flagship_26_27`,
+  benannt nach `nachname[_zweitname]_variante[_nummerierung]`. Dazu die
+  Topps-Checkliste als PDF (301 nummerierte Karten, Vorname, Nachname, Verein,
+  Rookie-Kennzeichen, dazu die Insert-Sets). Bisher entstünde daraus 144-mal
+  Handarbeit in der Adminkonsole.
+- **Zwei Teile.** (a) Eine Excel-Liste, erzeugt aus Dateinamen plus Checkliste,
+  mit allen Kontrollspalten und dem fertigen Titel nach Hausformat
+  `Topps Premier League Flagship 26/27 <Verein> <Spieler> <Variante> [Rookie]
+  [xx/yy]`. (b) Eine Massenanlage in der Adminkonsole, die diese Liste samt
+  Bildordner entgegennimmt und daraus Vorverkaufskarten anlegt.
+- **Warum keine Tabellenbibliothek:** Das Projekt trägt vier Laufzeit-
+  Abhängigkeiten. Eine `.xlsx` ist ein ZIP mit XML darin; `DecompressionStream`
+  steht im Browser wie in Node bereit. Der Leser wird von Hand geschrieben und
+  getestet, statt SheetJS aufzunehmen.
+- **Grenzen, die den Entwurf bestimmen:** `POST /api/admin/products` nimmt
+  22 MB je Anfrage und höchstens zwei Bilder je Karte. Die 144 Bilder wiegen
+  zusammen 164 MB (Schnitt 1,2 MB). Der Import muss deshalb kartenweise
+  hochladen, Fortschritt zeigen, nach Abbruch fortsetzbar sein und bereits
+  angelegte Titel überspringen — sonst entstehen bei jedem zweiten Versuch
+  Doppelkarten.
+- **Vorverkaufskarten haben bewusst keinen Preis** (`/vorverkauf` zeigt „Preis
+  auf Anfrage"). Eine Preisspalte gibt es deshalb nicht.
+- Betroffen: `app/admin/`, `app/api/admin/products/`, `lib/`, `tests/`.
+
+### Ergebnis
+
+- **Die Tabelle steht** als `import_pl_flagship_26_27.xlsx` im Bilderordner
+  selbst (nicht im Repository — sie gehört zur Ware, nicht zum Code). 144
+  Zeilen, jedes Bild zugeordnet, keine zwei gleichen Titel, längster Titel 97
+  von 200 erlaubten Zeichen.
+- **Sechs Dateinamen weichen von der Checkliste ab** und stehen mit Grund in
+  der Spalte „Hinweis": `estevao` → Estêvão Willian, `fredericson` →
+  Fredricson, `gabriel` → JJ Gabriel (#198), `larson` → Strand Larsen, `rowe`
+  → Smith Rowe. `johnson_blue_pink` war zwischen Brennan Johnson (#114) und
+  Ben Johnson (#278) nicht zu entscheiden — **am Kartenbild nachgesehen**,
+  es ist Brennan Johnson, Crystal Palace.
+- **Der Tabellenleser ist neu und eigen** (`lib/xlsx-lesen.ts`): ZIP von Hand,
+  `DecompressionStream("deflate-raw")`, XML über Muster. Keine neue
+  Abhängigkeit. Zwei Fallen sind ausdrücklich getestet: `deflate` statt
+  `deflate-raw` bricht sofort ab, und **ausgelassene Zellen** — Excel schreibt
+  leere Zellen gar nicht erst, wer der Reihe nach zählt statt den Zellbezug zu
+  lesen, hängt ab der ersten Lücke jeden Titel an das falsche Bild.
+- **Der Plan entsteht vollständig, bevor etwas hochgeladen wird**
+  (`lib/karten-import.ts`). Eine Zeile ohne auffindbares Bild ist ein Fehler,
+  keine Karte ohne Bild — die Route nähme sie sonst klaglos an, und im
+  Vorverkauf stünden stumme Karten.
+- **Fortsetzbar statt verdoppelnd:** Vor jedem Lauf holt die Oberfläche die
+  Titel aller manuellen Karten (`GET /api/admin/products?titel=manuell`, neu)
+  und überspringt, was schon dasteht. Nach fünf Fehlern in Folge hält der Lauf
+  an — das ist keine Zeilenfrage mehr, sondern eine abgelaufene Anmeldung.
+- **Kartenweise hochgeladen, über die bestehende Route.** Kein neuer
+  Schreibweg, keine Bündelgrenze, keine D1-Parametergrenze; ein Fehler betrifft
+  eine Zeile statt den ganzen Lauf.
+- Prüfkette: **725 Tests grün** (15 neue), `npx tsc --noEmit` sauber, Lint ohne
+  Warnung. Der Build listet `/admin/karten/import`, das Client-Bündel trägt die
+  Supabase-Konfiguration (`.env.local` ins Worktree kopiert — der bekannte
+  Stolperstein).
+- **Nicht geprüft: die Oberfläche selbst.** `/admin/karten/import` antwortet im
+  Entwicklungsserver mit „Nicht authentifiziert."; hinter die Anmeldung kommt
+  nur der Betreiber. Der erste echte Lauf gehört beobachtet.
+- **Nicht ausgerollt.** Der Stand liegt auf
+  `claude/excel-list-images-checklist-1d0264`, nicht auf `main`.

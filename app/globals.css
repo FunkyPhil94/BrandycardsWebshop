@@ -759,6 +759,26 @@ footer { background:var(--ink); color:#fff; padding:52px max(48px,calc((100vw - 
 .admin-product-body select { background:#fff; border:1px solid var(--line); font-size:13px; padding:13px 14px; width:100%; }
 @media (max-width:640px) { .admin-product-head { grid-template-columns:1fr; } }
 
+/* --- Massenanlage aus Tabelle --- */
+.admin-import-quellen { display:grid; gap:14px; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); margin:14px 0; }
+.admin-import-quellen input[type=file] { background:#fff; border:1px solid var(--line); font-size:12px; padding:11px 12px; width:100%; }
+.admin-import-quellen small { color:var(--muted); font-size:11px; margin-top:6px; }
+.admin-import-zahlen { display:grid; gap:8px; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); list-style:none; margin:14px 0; padding:0; }
+.admin-import-zahlen li { background:#ebe8e1; font-size:11px; padding:12px 14px; }
+.admin-import-zahlen strong { display:block; font-size:22px; line-height:1.2; }
+/* Gold, nicht Rot: Fehlerhafte Zeilen halten den Lauf nicht auf, sie werden
+   übersprungen. Rot hieße „hier ist etwas kaputt" und stimmt nicht. */
+.admin-import-zahlen li.warnung { background:var(--gold); color:var(--ink); }
+.admin-import-tabelle { border-collapse:collapse; font-size:12px; margin-top:14px; width:100%; }
+.admin-import-tabelle th,.admin-import-tabelle td { border-bottom:1px solid var(--line); padding:9px 10px; text-align:left; vertical-align:top; }
+.admin-import-tabelle th { color:var(--muted); font-size:10px; letter-spacing:.06em; text-transform:uppercase; }
+.admin-import-tabelle td:first-child { font-family:'DM Mono',monospace; white-space:nowrap; }
+.admin-import-tabelle td.warnung { color:var(--red); }
+.admin-import-tabelle td.gut { color:#2f7d3b; }
+.admin-import-uebrig { font-size:12px; margin-top:14px; }
+.admin-import-uebrig summary { cursor:pointer; }
+.admin-import-uebrig p { margin-top:8px; overflow-wrap:anywhere; }
+
 /* --- Bestellungen im Adminbereich --- */
 .admin-orders-heading { align-items:baseline; display:flex; gap:18px; justify-content:space-between; }
 .admin-orders-heading h2 { margin:0; }

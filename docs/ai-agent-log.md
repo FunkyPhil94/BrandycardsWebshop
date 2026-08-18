@@ -3664,3 +3664,63 @@ Dieselbe Falle steckt in jedem `catch`, der einen Fehler in einen fachlichen
 Zustand umdeutet. Am Bild im Adminbereich war es heute schon dasselbe Muster:
 Das Ersatzsymbol des Browsers hieß gleichzeitig „blockiert" und „keine
 Bilddaten" — auch dort war die Behebung, die Fälle auseinanderzuziehen.
+
+---
+
+## 2026-08-18 — 144 Karten aus einer Tabelle, und warum der Leser selbstgebaut ist
+
+Für ein Set liegen die Kartenbilder als Dateien vor, benannt nach
+`nachname_variante`, dazu die Checkliste des Herstellers als PDF. Daraus sollte
+eine Tabelle entstehen, und aus der Tabelle sollten Vorverkaufskarten werden.
+Der Shop konnte das zweite bis heute nicht: Karten von Hand einstellen ging
+genau einzeln, 144-mal.
+
+**Die naheliegende Abkürzung wäre SheetJS gewesen.** Dagegen sprach das Projekt
+selbst — vier Laufzeit-Abhängigkeiten insgesamt, und die Bibliothek wöge mehr
+als sie. Eine `.xlsx` ist ein ZIP mit XML darin; `DecompressionStream` steht im
+Browser wie in Node bereit. `lib/xlsx-lesen.ts` liest deshalb selbst, bewusst
+eng: erstes Blatt, alles als Text, keine Formeln, keine Datumsformate.
+
+Zwei Dinge daran sind keine Geschmacksfrage:
+
+**`deflate-raw`, nicht `deflate`.** ZIP legt den nackten Datenstrom ohne
+zlib-Kopf ab. Mit `deflate` bricht das Auspacken sofort ab — ein lauter Fehler,
+immerhin.
+
+**Ausgelassene Zellen.** Excel schreibt eine leere Zelle gar nicht erst in die
+Datei. Wer die `<c>`-Elemente der Reihe nach zählt, statt ihren `r`-Bezug zu
+lesen, verschiebt ab der ersten Lücke jede folgende Spalte um eins. Der Fehler
+ist **still**: Der Import liefe durch, meldete 144 Erfolge, und jede Karte trüge
+das Bild einer anderen. Genau dafür steht ein Test da, und genau deshalb steht
+er da.
+
+**Der Plan entsteht vor dem ersten Upload.** `lib/karten-import.ts` prüft jede
+Zeile gegen die ausgewählten Dateien und gegen den Bestand, bevor irgendetwas
+geschrieben wird. Die schärfste Regel darin: **Eine Zeile ohne auffindbares Bild
+ist ein Fehler, keine Karte ohne Bild.** Die Route nimmt Bilder freiwillig
+entgegen — sie hätte die Karte klaglos angelegt, und im Vorverkauf stünden
+stumme Karten, ohne dass jemand erführe, dass ein Bild nie ankam.
+
+**Hochgeladen wird kartenweise, über die bestehende Route.** 144 Bilder wiegen
+zusammen 164 MB, eine Anfrage darf 22 MB tragen. Statt ein Bündelformat und
+einen zweiten Schreibweg zu erfinden, geht jede Karte einzeln durch dieselben
+Prüfungen und dieselbe Protokollierung wie eine von Hand eingestellte. Der Preis
+sind 144 Anfragen, der Gewinn ist, dass ein Fehler eine Zeile betrifft und nicht
+den Lauf.
+
+Womit der eigentliche Entwurfspunkt kommt: **Abbruch ist bei 144 Anfragen der
+Normalfall, nicht die Ausnahme.** Ein zugeklapptes Notebook reicht. Deshalb holt
+die Oberfläche vor jedem Lauf die Titel aller manuellen Karten und überspringt,
+was schon dasteht — ein zweiter Anlauf setzt fort, statt zu verdoppeln. Und nach
+fünf Fehlern in Folge hält sie an: Das ist keine Zeilenfrage mehr, sondern eine
+abgelaufene Anmeldung, und hundertmal dieselbe Meldung zu sammeln hilft
+niemandem.
+
+**Zur Tabelle selbst.** Die Zuordnung Dateiname → Karte lief über den Nachnamen
+innerhalb des jeweiligen Sets; 137 von 144 gingen auf Anhieb auf. Sechs
+Dateinamen weichen von der Checkliste ab (`larson` statt Strand Larsen,
+`fredericson` statt Fredricson und so fort). Ein Fall war nicht aus dem Namen zu
+entscheiden: `johnson_blue_pink` konnte Brennan Johnson (#114) oder Ben Johnson
+(#278) sein. **Da half nur das Kartenbild** — Brennan Johnson, Crystal Palace.
+Alle sieben stehen mit Begründung in der Spalte „Hinweis", damit die Entscheidung
+nachprüfbar bleibt und nicht in einem Skript verschwindet.
