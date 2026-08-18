@@ -17,20 +17,38 @@ test("N7 applies catalogue filters and pagination before the response", async ()
   assert.match(route, /inArray\(products\.id, ids\)/, "checkout must be able to request its exact cart cards");
 });
 
-test("N7 keeps manual cards in the highlights and out of fixed-price actions", async () => {
-  const [highlights, gallery, cards, checkout, presale] = await Promise.all([
-    read("app/api/products/highlights/route.ts"),
+test("N7 hält Vorverkaufskarten aus Festpreis-Aktionen heraus", async () => {
+  const [gallery, cards, checkout, presale] = await Promise.all([
     read("app/gallery.tsx"),
     read("app/karten/page.tsx"),
     read("app/checkout/page.tsx"),
     read("app/vorverkauf/page.tsx"),
   ]);
-  assert.match(highlights, /leftJoin\(ebayListings/, "manual cards have no listing row");
-  assert.match(highlights, /"Direkt bei uns"/, "manual cards need their own highlight category");
-  assert.match(gallery, /Preis vorschlagen/, "the gallery must link manual cards to negotiation");
-  assert.match(cards, /category === "Direkt bei uns"/, "the catalogue must not put a pre-sale card straight in the cart");
-  assert.match(checkout, /\/api\/products\?ids=/, "checkout must load the cart cards, not only page one");
-  assert.match(presale, /origin=MANUAL&pro=100/, "pre-sale must be queried as its own server-side slice");
+  // Galerie und Katalog zeigen seit dem 2026-08-18 keine Vorverkaufskarten mehr.
+  // Ihre Weichen bleiben trotzdem stehen: Sie kosten nichts und verhindern, dass
+  // eine durchgerutschte Karte einen Warenkorbknopf bekommt statt „Preis
+  // vorschlagen“ — ein Kauf zum Preis `null` wäre der teure Fehler.
+  assert.match(gallery, /Preis vorschlagen/, "die Galerie muss eine Vorverkaufskarte zum Vorschlag führen");
+  assert.match(cards, /category === "Direkt bei uns"/, "der Katalog darf eine Vorverkaufskarte nicht in den Warenkorb legen");
+  assert.match(checkout, /\/api\/products\?ids=/, "die Kasse muss ihre Warenkorbkarten laden, nicht nur Seite eins");
+  assert.match(presale, /origin=MANUAL&pro=100/, "der Vorverkauf ist eine eigene serverseitige Scheibe");
+});
+
+test("Startseite und Sitemap zeigen nur eBay-Karten", async () => {
+  // Der Betreiber hat es am 2026-08-18 so entschieden — nachdem der Import von
+  // 144 Karten die Galerie vollständig übernommen hatte: Sie bestand aus fünf
+  // Vorverkaufskarten und sonst nichts. Die 144 sind die jüngsten im Bestand,
+  // und „neueste zuerst" hat dagegen keine Chance.
+  const [highlights, sitemap] = await Promise.all([
+    read("app/api/products/highlights/route.ts"),
+    read("app/sitemap.ts"),
+  ]);
+  assert.match(highlights, /const live = and\(\s*eq\(products\.status, "ACTIVE"\),\s*eq\(products\.origin, "EBAY"\)/u,
+    "die Galerie muss manuelle Karten schon in der Abfrage ausschließen");
+  assert.doesNotMatch(highlights, /or\(\s*eq\(products\.origin, "MANUAL"\)/u,
+    "keine Oder-Verzweigung, die sie wieder hereinlässt");
+  assert.match(sitemap, /ne\(products\.origin, "MANUAL"\)/,
+    "der Sitemap darf keine Adresse anbieten, die der Katalog nicht zeigt");
 });
 
 test("Vorverkaufskarten stehen im Vorverkauf, nicht im Katalog", async () => {

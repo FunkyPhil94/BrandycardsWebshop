@@ -1,4 +1,4 @@
-import { and, desc, eq, isNotNull, ne, or, sql } from "drizzle-orm";
+import { and, desc, eq, isNotNull, ne, sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { getDb } from "../../../../db";
 import { ebayListings, inventory, productAssets, products } from "../../../../db/schema";
@@ -44,8 +44,12 @@ function select() {
     startAt: ebayListings.startAt,
     imageUrl: firstImage,
   }).from(products)
-    // Manual pre-sale cards have no eBay listing. An inner join here silently
-    // removed exactly the cards N7 is meant to put in the shop's highlights.
+    // Der Verbund bleibt links, obwohl die Galerie seit dem 2026-08-18 nur noch
+    // eBay-Karten zeigt und `live` ohnehin eine aktive Anzeige verlangt. Ein
+    // innerer Verbund wäre heute gleichwertig — und stünde als Falle bereit,
+    // sobald hier je wieder eine Karte ohne Anzeige auftauchen soll.
+    // (Bis zum 2026-08-18 stand hier, ein innerer Verbund entferne genau die
+    // manuellen Karten. Das stimmte, ist aber nicht mehr der Grund.)
     .leftJoin(ebayListings, eq(ebayListings.productId, products.id))
     .leftJoin(inventory, eq(inventory.productId, products.id));
 }
@@ -79,26 +83,30 @@ function toHighlight(row: Row): Highlight {
   };
 }
 
-// eBay auctions stay out of the catalogue. Manual cards are part of the same
-// public highlight source even though they have no listing row.
+/** Auktionen bleiben draußen — und **Vorverkaufskarten ebenfalls.**
+ *
+ * Sie waren hier ursprünglich mit drin. Am 2026-08-18 kippte das: Ein Import
+ * von 144 Karten auf einmal machte sie zu den jüngsten im Bestand, und die
+ * Galerie bestand daraufhin aus fünf Vorverkaufskarten und sonst nichts. Was
+ * als Beimischung gedacht war, verdrängte die Ware, die man sofort kaufen kann.
+ * Die Startseite zeigt deshalb nur noch eBay-Karten; der Vorverkauf hat seine
+ * eigene Seite. */
 const live = and(
   eq(products.status, "ACTIVE"),
-  or(
-    eq(products.origin, "MANUAL"),
-    and(eq(products.origin, "EBAY"), eq(ebayListings.status, "ACTIVE"), ne(ebayListings.listingType, "AUCTION")),
-  ),
+  eq(products.origin, "EBAY"),
+  eq(ebayListings.status, "ACTIVE"),
+  ne(ebayListings.listingType, "AUCTION"),
 );
 
 export async function GET() {
   try {
-    // `desc(ebayListings.startAt)` remains the source date for eBay cards; the
-    // coalesce also gives a manual card's createdAt a fair place in "newest".
+    // Maßgeblich ist der Beginn der eBay-Anzeige. Fehlt er, tritt das Anlegedatum
+    // ein — sonst rutschte eine Karte ohne Startdatum ans Ende statt an ihren Platz.
     const newestOrder = sql`coalesce(${ebayListings.startAt}, ${products.createdAt})`;
     const [newest, priciest] = await Promise.all([
       select().where(live).orderBy(desc(newestOrder), desc(ebayListings.startAt)),
-      // Manual pre-sale cards have no fixed price and therefore do not belong
-      // in the price ranking. They still appear in "newest".
-      select().where(and(live, eq(products.origin, "EBAY"), isNotNull(ebayListings.priceAmountCents)))
+      // Ein Preis muss dastehen, sonst gibt es nichts zu ordnen.
+      select().where(and(live, isNotNull(ebayListings.priceAmountCents)))
         .orderBy(desc(ebayListings.priceAmountCents)),
     ]);
     const newestRows = visibleHighlights(newest);

@@ -9949,7 +9949,11 @@ kam eine Lücke ans Licht — und eine Bestätigung.
 - 726 Tests grün, `tsc` und Lint sauber.
 
 ## Auftrag 2026-08-18: Vorverkaufskarten aus dem Katalog nehmen
-- Status: LÄUFT.
+- Status: ABGESCHLOSSEN. Deploy `302211ec`. Katalog 420 → 276 Karten, davon 0
+  manuelle; `/vorverkauf` zeigt 144; die Suche nach „Flagship 26/27" im Katalog
+  findet nichts mehr. **Detailseite einer Vorverkaufskarte antwortet weiter mit
+  200**, die Abfrage über die Kennung liefert sie — das war die Gegenprobe, an
+  der die Karten sonst unverkäuflich geworden wären.
 - **Der Import ist durch und nachgezählt:** 144 Karten, je eine Bestandszeile
   (1 Stück, `AVAILABLE`), je ein Bild, 144 verschiedene Titel, keine Abweichung
   bei Status, Art oder Preis.
@@ -9963,3 +9967,29 @@ kam eine Lücke ans Licht — und eine Bestätigung.
   Vorverkauf und wäre beim Anklicken verschwunden.
 - Die Kategorie „manual" ist entfallen, samt Auswahlpunkt im Katalog — ein
   Filter auf eine Menge, die es dort nicht mehr gibt.
+
+## Auftrag 2026-08-18: Startseite und Sitemap ebenfalls ohne Vorverkaufskarten
+- Status: ABGESCHLOSSEN, siehe Ergebnis unten.
+- **Anlass:** Nach dem Import bestand die Galerie der Startseite aus fünf
+  Vorverkaufskarten und sonst nichts — die 144 neuen Karten sind die jüngsten
+  und verdrängten alles. Im Sitemap für Suchmaschinen standen sie ebenfalls.
+- Betroffen: `app/api/products/highlights/route.ts` (Bedingung `live`),
+  `app/sitemap.ts`, `tests/n7-catalog.test.mjs`.
+- **Der Test `N7 keeps manual cards in the highlights` behauptet ab jetzt das
+  Gegenteil dessen, was gilt** — er wird mit umgestellt, nicht gelöscht.
+
+### Ergebnis
+
+- `live` in der Galerie-Abfrage verlangt jetzt `origin = 'EBAY'`; die
+  Oder-Verzweigung, die manuelle Karten hereinließ, ist fort. Der Sitemap
+  schließt sie in der `WHERE`-Bedingung aus.
+- **Zwei Kommentare in `highlights/route.ts` behaupteten danach das Gegenteil
+  des Codes** — der zum `leftJoin` („ein innerer Verbund entfernte genau die
+  manuellen Karten") und der zur Sortierung („gibt einer manuellen Karte einen
+  fairen Platz"). Beide nachgezogen, mit Datum, statt sie stehen zu lassen.
+- Der Test `N7 keeps manual cards in the highlights` ist umgestellt, nicht
+  gelöscht: Die Weichen in Galerie und Katalog, die einer Vorverkaufskarte
+  „Preis vorschlagen" statt eines Warenkorbknopfs geben, **bleiben geprüft**.
+  Sie sind heute unerreichbar; ein Kauf zum Preis `null` wäre der teure Fehler,
+  falls je eine durchrutscht.
+- 728 Tests grün, `tsc` und Lint sauber.
