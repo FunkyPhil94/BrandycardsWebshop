@@ -65,3 +65,53 @@ test("der Titel eines Kartenangebots wird an einer Stelle ausgelesen", async () 
   assert.match(dashboard, /readFormMetadata/u);
   assert.doesNotMatch(dashboard, /JSON\.parse\(submission\.message\)/u);
 });
+
+test("ein Vorschlag laesst sich nur zurueckziehen, solange niemand entschieden hat", async () => {
+  const route = await read("app/api/account/price-offers/route.ts");
+  // Die drei Bedingungen stehen in *einer* Abfrage: Wer sie als `if` davorlegt,
+  // laesst zwischen Pruefen und Schreiben einen zweiten Aufruf zu.
+  assert.match(route, /export async function PATCH/u);
+  assert.match(route, /inArray\(priceOffers\.status, \["NEW", "IN_REVIEW"\]\)/u,
+    "entschiedene Angebote bleiben, wie sie sind");
+  assert.match(route, /gehoertZu\(priceOffers\.userId, priceOffers\.guestEmail\)/u, "nur eigene");
+  assert.match(route, /status: "WITHDRAWN"/u);
+  // Fremd, unbekannt und laengst entschieden geben dieselbe Antwort.
+  assert.match(route, /changes !== 1[\s\S]{0,220}409/u);
+
+  // Und der freigewordene Versuch ist kein Zufall: `offerAttempts` zaehlt
+  // `WITHDRAWN` ausdruecklich nicht mit.
+  const zaehlung = await read("lib/price-offers.ts");
+  assert.match(zaehlung, /status\} <> 'WITHDRAWN'/u);
+});
+
+test("der Stand Rueckfrage traegt immer eine Frage und erreicht den Kunden", async () => {
+  const admin = await read("app/api/admin/card-submissions/route.ts");
+  // Ohne Frage waere es wieder die Sackgasse: Der Kunde saehe nur das Wort.
+  assert.match(admin, /status === "NEEDS_INFO" && !frage/u, "Rueckfrage ohne Frage wird abgewiesen");
+  assert.match(admin, /notifyCardSubmissionQuestion/u, "der Kunde bekommt eine E-Mail");
+  // Die Mail darf den gespeicherten Stand nicht gefaehrden.
+  assert.match(admin, /recordAdminAudit[\s\S]{0,400}notifyCardSubmissionQuestion/u,
+    "erst speichern und protokollieren, dann senden");
+
+  // Der Kunde sieht die Frage auch dort, wo er ohnehin nachsieht.
+  const konto = await read("app/account/kartenangebote/page.tsx");
+  assert.match(konto, /adminQuestion/u);
+  const endpunkt = await read("app/api/account/card-submissions/route.ts");
+  assert.match(endpunkt, /adminQuestion: cardSubmissions\.adminQuestion/u);
+
+  // Spalte und Migration gehoeren zusammen.
+  assert.match(await read("db/schema.ts"), /adminQuestion: text\("admin_question"\)/u);
+  assert.match(await read("drizzle/0017_card_submission_question.sql"), /ADD COLUMN admin_question TEXT/u);
+});
+
+test("die Rueckfrage-Mail nennt Karte, Frage und den Weg zur Antwort", async () => {
+  const { cardSubmissionQuestion } = await import("../lib/email/templates.ts");
+  const de = cardSubmissionQuestion({ title: "Panini 2024", question: "Ist die Ecke geknickt?", shopUrl: "https://shop.example" });
+  assert.match(de.subject, /Panini 2024/u);
+  assert.match(de.text, /Ist die Ecke geknickt\?/u);
+  assert.match(de.text, /Antworte einfach auf diese E-Mail/u);
+  assert.match(de.html, /Ist die Ecke geknickt\?/u);
+  const en = cardSubmissionQuestion({ title: "Panini 2024", question: "Is the corner bent?", shopUrl: "https://shop.example", locale: "en" });
+  assert.match(en.subject, /question about your card/u);
+  assert.match(en.text, /Just reply to this email/u);
+});

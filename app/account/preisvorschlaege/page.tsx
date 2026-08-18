@@ -28,6 +28,27 @@ function Preisvorschlaege() {
   const { t, locale } = useI18n();
   const [offers, setOffers] = useState<Vorschlag[] | null>(null);
   const [note, setNote] = useState("");
+  const [busy, setBusy] = useState<string | null>(null);
+
+  async function zurueckziehen(offerId: string) {
+    if (!window.confirm(t("Diesen Vorschlag zurückziehen? Der Versuch steht dir danach wieder zur Verfügung."))) return;
+    setBusy(offerId);
+    setNote("");
+    try {
+      const response = await fetch("/api/account/price-offers", {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${await token()}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ offerId }),
+      });
+      const body = await response.json().catch(() => ({})) as { error?: string };
+      if (!response.ok) throw new Error(body.error ?? t("Der Vorschlag konnte nicht zurückgezogen werden."));
+      setOffers((current) => current?.map((eintrag) => eintrag.id === offerId ? { ...eintrag, status: "WITHDRAWN" } : eintrag) ?? current);
+    } catch (error) {
+      setNote(error instanceof Error ? t(error.message) : t("Der Vorschlag konnte nicht zurückgezogen werden."));
+    } finally {
+      setBusy(null);
+    }
+  }
 
   useEffect(() => {
     if (!user) return;
@@ -59,6 +80,7 @@ function Preisvorschlaege() {
     <div className="account-orders">
       {offers?.map((vorschlag) => {
         const angenommen = vorschlag.status === "ACCEPTED";
+        const offen = vorschlag.status === "NEW" || vorschlag.status === "IN_REVIEW";
         return <article className="account-order" key={vorschlag.id}>
           <header className="account-order-head">
             <div>
@@ -77,6 +99,13 @@ function Preisvorschlaege() {
                 kommt — er gilt 48 Stunden und wird in der Kasse angewendet. */}
             {angenommen && <p className="account-tracking">
               <Link href={`/karten/${vorschlag.productId}`}>{t("Zur Karte")}</Link>
+            </p>}
+            {/* Zurückziehen geht nur, solange niemand entschieden hat — und es
+                gibt den Versuch zurück, den der Vorschlag verbraucht hat. */}
+            {offen && <p className="account-tracking">
+              <button type="button" className="offer-withdraw" disabled={busy === vorschlag.id} onClick={() => void zurueckziehen(vorschlag.id)}>
+                {busy === vorschlag.id ? t("Wird zurückgezogen …") : t("Vorschlag zurückziehen")}
+              </button>
             </p>}
           </div>
         </article>;

@@ -31,6 +31,7 @@ export async function GET(request: Request) {
       requestedAmountCents: cardSubmissions.requestedAmountCents,
       currency: cardSubmissions.currency,
       status: cardSubmissions.status,
+      adminQuestion: cardSubmissions.adminQuestion,
       createdAt: cardSubmissions.createdAt,
       updatedAt: cardSubmissions.updatedAt,
     }).from(cardSubmissions)
@@ -55,6 +56,7 @@ export async function GET(request: Request) {
         requestedAmountCents: row.requestedAmountCents,
         currency: row.currency,
         status: row.status,
+        adminQuestion: row.adminQuestion,
         createdAt: row.createdAt,
         updatedAt: row.updatedAt,
         assets: assets.filter((asset) => asset.submissionId === row.id).map((asset) => ({ id: asset.id, originalName: asset.originalName })),

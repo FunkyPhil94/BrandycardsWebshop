@@ -288,6 +288,17 @@ footer { background:var(--ink); color:#fff; padding:52px max(48px,calc((100vw - 
 .account-order-items li { display:flex; font-size:12px; gap:14px; justify-content:space-between; }
 .account-tracking { font-size:12px; margin:0; }
 .account-tracking a { border-bottom:1px solid currentColor; color:var(--red); font-weight:800; }
+/* Zurueckziehen sieht aus wie ein Link, nicht wie ein Hauptweg: Es ist die
+   Ausnahme, nicht das, was der Kunde hier normalerweise tut. */
+.offer-withdraw { background:none; border:0; border-bottom:1px solid currentColor; color:var(--muted); font-size:12px; font-weight:800; padding:0 0 2px; }
+.offer-withdraw:hover:not(:disabled) { color:var(--red); }
+.offer-withdraw:disabled { color:var(--line); cursor:not-allowed; }
+/* Die Rueckfrage muss auffallen: Sie ist das Einzige auf dieser Seite, das
+   eine Handlung des Kunden verlangt. */
+.account-question { background:#f7f4ee; border-left:3px solid var(--red); margin:14px 0 0; padding:14px 16px; }
+.account-question strong { display:block; font-size:10px; letter-spacing:.09em; margin-bottom:8px; text-transform:uppercase; }
+.account-question p { font-size:14px; line-height:1.6; margin:0; }
+.account-question .offer-meta { margin-top:10px; }
 .account-order-address { color:var(--muted); font-size:11px; font-style:normal; line-height:1.6; }
 .account-order-address strong { color:var(--ink); font-size:10px; letter-spacing:.08em; text-transform:uppercase; }
 /* Auskunft und Kontolöschung. Der Löschknopf ist bewusst kein `button-primary`:

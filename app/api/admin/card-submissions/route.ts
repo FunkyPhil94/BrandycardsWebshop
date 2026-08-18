@@ -4,6 +4,8 @@ import { getAssetBucket, getDb } from "../../../../db";
 import { cardSubmissionAssets, cardSubmissions, submissionStatusValues } from "../../../../db/schema";
 import { recordAdminAudit } from "../../../../lib/admin-audit";
 import { requireAdmin } from "../../../../lib/admin-access";
+import { notifyCardSubmissionQuestion } from "../../../../lib/email/notify.ts";
+import { readFormMetadata } from "../../../../lib/form-metadata";
 
 export async function DELETE(request: Request) {
   const access = await requireAdmin(request, { recentAuthSeconds: 600 });
@@ -40,17 +42,37 @@ export async function PATCH(request: Request) {
   if (access.response) return access.response;
 
   try {
-    const body = await request.json() as { submissionId?: unknown; status?: unknown };
+    const body = await request.json() as { submissionId?: unknown; status?: unknown; question?: unknown };
     const submissionId = typeof body.submissionId === "string" && /^[a-f0-9]{32}$/iu.test(body.submissionId) ? body.submissionId : null;
     const status = (submissionStatusValues as readonly string[]).includes(String(body.status))
       ? String(body.status) as (typeof submissionStatusValues)[number] : null;
     if (!submissionId || !status) return NextResponse.json({ error: "Ungültige Anfrage." }, { status: 400 });
 
-    const result = await getDb().update(cardSubmissions)
-      .set({ status, updatedAt: new Date().toISOString() })
+    // Die Frage gehört nur zu „Rückfrage". Ein Stand ohne Frage wäre genau die
+    // Sackgasse, die es bis zum 2026-08-17 gab — deshalb ist sie dort Pflicht.
+    const frage = typeof body.question === "string" ? body.question.trim().slice(0, 1000) : "";
+    if (status === "NEEDS_INFO" && !frage) {
+      return NextResponse.json({ error: "Zu einer Rückfrage gehört die Frage selbst." }, { status: 400 });
+    }
+
+    const db = getDb();
+    const vorher = await db.query.cardSubmissions.findFirst({ where: eq(cardSubmissions.id, submissionId) });
+    if (!vorher) return NextResponse.json({ error: "Unbekanntes Kartenangebot." }, { status: 404 });
+
+    const result = await db.update(cardSubmissions)
+      .set({ status, ...(status === "NEEDS_INFO" ? { adminQuestion: frage } : {}), updatedAt: new Date().toISOString() })
       .where(eq(cardSubmissions.id, submissionId));
     if (result.meta.changes !== 1) return NextResponse.json({ error: "Unbekanntes Kartenangebot." }, { status: 404 });
     await recordAdminAudit({ request, actorUserId: access.user.id, action: "card_submission.status_change", entityType: "card_submission", entityId: submissionId, metadata: { status } });
+
+    // Erst nach dem Speichern, und der Versand reißt den Aufruf nicht: Ein
+    // gespeicherter Stand darf nicht daran scheitern, dass die Nachricht nicht
+    // rausgeht — sonst stünde der Betreiber vor einem Fehler, obwohl alles
+    // eingetragen ist.
+    if (status === "NEEDS_INFO") {
+      const { title } = readFormMetadata(vorher.message);
+      await notifyCardSubmissionQuestion(vorher.guestEmail, title, frage);
+    }
     return NextResponse.json({ ok: true, status });
   } catch (error) {
     console.error("Admin submission update failed", error);

@@ -1,0 +1,11 @@
+-- Rückfrage des Betreibers zu einem eingesendeten Kartenangebot.
+--
+-- Den Stand NEEDS_INFO gibt es seit dem 2026-08-09, aber nirgends ein Feld für
+-- die Frage selbst: Der Betreiber konnte „Rückfrage" setzen, der Kunde sah nur
+-- das Wort und konnte nicht antworten. Ein Status, der nichts auslöst, täuscht
+-- Bearbeitung vor.
+--
+-- Von Hand geschrieben, weil `drizzle/meta/_journal.json` bei 0002 endet und
+-- `npm run db:generate` gegen einen veralteten Snapshot diffen würde
+-- (siehe CLAUDE.md).
+ALTER TABLE card_submissions ADD COLUMN admin_question TEXT;

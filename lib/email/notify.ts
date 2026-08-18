@@ -3,7 +3,7 @@ import type { getDb } from "../../db";
 import { orderItems, orders, priceOffers, products, users } from "../../db/schema";
 import { getEmailConfig } from "./config.ts";
 import { protokolliereVersand, sendEmail, versucheVersand } from "./send.ts";
-import { accountDeleted, cardSubmissionReceived, inquiryReceived, offerAccepted, offerRejected, orderConfirmation, orderRefunded, orderShipped, sellerEventNotification, sellerOrderNotification, type VerkaeuferEreignisDaten } from "./templates.ts";
+import { accountDeleted, cardSubmissionQuestion, cardSubmissionReceived, inquiryReceived, offerAccepted, offerRejected, orderConfirmation, orderRefunded, orderShipped, sellerEventNotification, sellerOrderNotification, type VerkaeuferEreignisDaten } from "./templates.ts";
 import { notifyOperationalAlert } from "../ops-alerts.ts";
 import { shippingCarrierLabel, trackingUrl } from "../shipping";
 import type { Locale } from "../i18n";
@@ -280,6 +280,17 @@ export async function notifyInquiryReceived(empfaenger: string, gesucht: string,
 export async function notifyCardSubmissionReceived(empfaenger: string, karte: string, locale: Locale = "de"): Promise<void> {
   await versucheVersand("Ankaufbestätigung", async () => {
     await sendeMitBetriebsalarm("Ankaufbestätigung", empfaenger, cardSubmissionReceived({ title: karte, shopUrl: shopUrl(), locale }), "card-submission");
+  });
+}
+
+/** Die Rückfrage zu einem Kartenangebot.
+ *
+ * Erst dadurch ist der Stand `NEEDS_INFO` mehr als ein Wort im Adminbereich:
+ * Der Kunde erfährt, was gefragt ist, ohne von sich aus nachsehen zu müssen.
+ */
+export async function notifyCardSubmissionQuestion(empfaenger: string, karte: string, frage: string, locale: Locale = "de"): Promise<void> {
+  await versucheVersand("Rückfrage zum Kartenangebot", async () => {
+    await sendeMitBetriebsalarm("Rückfrage zum Kartenangebot", empfaenger, cardSubmissionQuestion({ title: karte, question: frage, shopUrl: shopUrl(), locale }), "card-submission");
   });
 }
 

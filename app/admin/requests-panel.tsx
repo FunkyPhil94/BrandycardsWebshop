@@ -114,16 +114,26 @@ export function RequestsPanel({ submissions, assetUrls, onSubmissionDeleted }: {
   }
 
   async function angebotSetzen(submissionId: string, status: string) {
+    // „Rückfrage" ohne Frage wäre wieder die Sackgasse von vorher: Der Kunde
+    // sähe nur das Wort. Wer hier abbricht, ändert nichts.
+    let frage: string | undefined;
+    if (status === "NEEDS_INFO") {
+      const eingabe = window.prompt("Was möchtest du wissen? Der Text geht als E-Mail an den Kunden und steht in seinem Konto.")?.trim();
+      if (!eingabe) return;
+      frage = eingabe.slice(0, 1000);
+    }
     setBusy(submissionId);
     setNote("");
     try {
-      const response = await adminFetch("/api/admin/card-submissions", { method: "PATCH", json: true, body: JSON.stringify({ submissionId, status }) });
+      const response = await adminFetch("/api/admin/card-submissions", { method: "PATCH", json: true, body: JSON.stringify({ submissionId, status, question: frage }) });
       const data = await response.json() as { error?: string };
       if (!response.ok) throw new Error(data.error ?? "Fehlgeschlagen.");
       setStati((current) => ({ ...current, [submissionId]: status }));
       setNote(LOESCHFRIST_STARTET.has(status)
         ? `Angebot auf „${ANGEBOT_LABEL[status] ?? status}“ gesetzt. Es wird samt Bildern in 90 Tagen automatisch gelöscht.`
-        : `Angebot auf „${ANGEBOT_LABEL[status] ?? status}“ gesetzt.`);
+        : status === "NEEDS_INFO"
+          ? "Rückfrage gesendet. Der Kunde hat sie per E-Mail bekommen und sieht sie in seinem Konto."
+          : `Angebot auf „${ANGEBOT_LABEL[status] ?? status}“ gesetzt.`);
     } catch (error) {
       setNote(error instanceof Error ? error.message : "Fehlgeschlagen.");
     } finally {

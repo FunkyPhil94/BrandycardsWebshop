@@ -279,6 +279,9 @@ export const cardSubmissions = sqliteTable("card_submissions", {
   requestedAmountCents: integer("requested_amount_cents"),
   currency: text("currency").notNull().default("EUR"),
   status: text("status", { enum: submissionStatusValues }).notNull().default("NEW"),
+  /** Die Rückfrage des Betreibers, wenn der Stand `NEEDS_INFO` ist.
+   *  Ohne sie war dieser Stand eine Sackgasse (Migration 0017). */
+  adminQuestion: text("admin_question"),
   createdAt: timestamp("created_at"),
   updatedAt: timestamp("updated_at"),
 }, (table) => [index("card_submissions_status_created_idx").on(table.status, table.createdAt)]);

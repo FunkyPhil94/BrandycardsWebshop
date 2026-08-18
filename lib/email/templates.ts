@@ -390,6 +390,49 @@ export function cardSubmissionReceived(daten: { title: string; shopUrl: string; 
   return { subject: sanitizeSubject(`Dein Kartenangebot: ${daten.title}`), text, html };
 }
 
+/** Die Rückfrage zu einem Kartenangebot.
+ *
+ * **Ohne diese Nachricht bliebe der Stand `NEEDS_INFO` wirkungslos.** Der Kunde
+ * müsste von sich aus in sein Konto sehen, um zu erfahren, dass jemand auf seine
+ * Antwort wartet — und täte es nicht. Die Antwort läuft über „einfach auf diese
+ * E-Mail antworten"; das ist derselbe Weg, den die übrigen Nachrichten anbieten,
+ * und kostet keinen Posteingang im Shop.
+ */
+export function cardSubmissionQuestion(daten: { title: string; question: string; shopUrl: string; locale?: Locale }): Nachricht {
+  if (daten.locale === "en") return cardSubmissionQuestionEnglish(daten);
+  const text = [
+    `Wir haben eine Rückfrage zu deiner Karte.`,
+    ``,
+    `Karte: ${daten.title}`,
+    ``,
+    daten.question,
+    ``,
+    `Antworte einfach auf diese E-Mail, dann machen wir weiter.`,
+    ``,
+    `Viele Grüße`,
+    `die Brüder von BrandyCards`,
+    fussText(daten.shopUrl),
+  ].join("\n");
+
+  const html = rahmen([
+    `<h1 style="font-size:22px;margin:0 0 16px">Wir haben eine Rückfrage.</h1>`,
+    `<p style="margin:0 0 6px;color:#7c7770;font-size:13px">Karte</p>`,
+    `<p style="margin:0 0 18px;font-weight:bold">${escapeHtml(daten.title)}</p>`,
+    `<p style="margin:0 0 18px;padding:12px;background:#f2f0eb;border-left:3px solid #c0472c;font-size:15px;line-height:1.6">${escapeHtml(daten.question)}</p>`,
+    `<p style="margin:0">Antworte einfach auf diese E-Mail, dann machen wir weiter.</p>`,
+    `<p style="margin:18px 0 0">Viele Grüße<br>die Brüder von BrandyCards</p>`,
+  ].join(""), daten.shopUrl);
+
+  return { subject: sanitizeSubject(`Rückfrage zu deiner Karte: ${daten.title}`), text, html };
+}
+
+function cardSubmissionQuestionEnglish(daten: { title: string; question: string; shopUrl: string; locale?: Locale }): Nachricht {
+  return englishEmail(`A question about your card: ${daten.title}`, [
+    `We have a question about your card.`, ``, `Card: ${daten.title}`, ``, daten.question, ``,
+    `Just reply to this email and we will carry on.`, ``, `Best wishes`, `the BrandyCards brothers`,
+  ], `<h1 style="font-size:22px;margin:0 0 16px">We have a question.</h1><p style="margin:0 0 6px;color:#7c7770;font-size:13px">Card</p><p style="margin:0 0 18px;font-weight:bold">${escapeHtml(daten.title)}</p><p style="margin:0 0 18px;padding:12px;background:#f2f0eb;border-left:3px solid #c0472c;font-size:15px;line-height:1.6">${escapeHtml(daten.question)}</p><p style="margin:0">Just reply to this email and we will carry on.</p><p style="margin:18px 0 0">Best wishes<br>the BrandyCards brothers</p>`, daten.shopUrl);
+}
+
 // --- 6. Verkäufernachricht: die Versanddaten --------------------------------
 
 /** Die Lieferadresse, wie sie in `orders.shipping_address` steht. */

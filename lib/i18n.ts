@@ -795,6 +795,14 @@ const ENGLISH_EXTRA_2: Record<string, string> = {
   "Angekauft": "Purchased",
   "Nicht angekauft": "Not purchased",
   "Erledigt": "Closed",
+  // U4: Vorschlag zurueckziehen und Rueckfrage beantworten
+  "Vorschlag zurückziehen": "Withdraw offer",
+  "Wird zurückgezogen …": "Withdrawing …",
+  "Diesen Vorschlag zurückziehen? Der Versuch steht dir danach wieder zur Verfügung.": "Withdraw this offer? You will get the attempt back.",
+  "Der Vorschlag konnte nicht zurückgezogen werden.": "The offer could not be withdrawn.",
+  "Dieser Vorschlag lässt sich nicht mehr zurückziehen.": "This offer can no longer be withdrawn.",
+  "Unsere Rückfrage": "Our question",
+  "Antworte einfach auf unsere E-Mail, dann machen wir weiter.": "Just reply to our email and we will carry on.",
 };
 
 export function translate(locale: Locale, key: string, values: Values = {}) {

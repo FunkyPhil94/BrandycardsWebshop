@@ -13,6 +13,7 @@ type Angebot = {
   requestedAmountCents: number | null;
   currency: string;
   status: string;
+  adminQuestion: string | null;
   createdAt: string;
   assets: Array<{ id: string; originalName: string }>;
 };
@@ -92,6 +93,14 @@ function Kartenangebote() {
             <div><dt>{t("Bilder")}</dt><dd>{angebot.assets.length}</dd></div>
           </dl>
           {angebot.text && <p className="account-order-address">{angebot.text}</p>}
+          {/* Die Rückfrage steht hervorgehoben und mit dem Weg zur Antwort
+              dabei. Sie geht zusätzlich als E-Mail raus — wer nur ins Konto
+              sähe, erführe nie, dass jemand auf ihn wartet. */}
+          {angebot.adminQuestion && <div className="account-question">
+            <strong>{t("Unsere Rückfrage")}</strong>
+            <p>{angebot.adminQuestion}</p>
+            <p className="offer-meta">{t("Antworte einfach auf unsere E-Mail, dann machen wir weiter.")}</p>
+          </div>}
           <div className="admin-submission-images">
             {angebot.assets.map((asset) => bilder[asset.id]
               // eslint-disable-next-line @next/next/no-img-element
