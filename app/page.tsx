@@ -17,6 +17,17 @@ const DESTINATIONS = [
     cta: "Zum Kartenbestand",
   },
   {
+    // Direkt hinter „Alle Karten": Beide führen in den Bestand, und wer stöbern
+    // will, soll die zweite Tür sehen, ohne die Kachelreihe abzusuchen. Seit
+    // dem 2026-08-18 ist der Vorverkauf im Katalog nicht mehr enthalten —
+    // dies hier und die Navigation sind die einzigen Wege dorthin.
+    href: "/vorverkauf",
+    eyebrow: "BEVOR SIE ZU EBAY GEHEN",
+    title: "Vorverkauf",
+    text: "Karten, die es zuerst bei uns gibt. Ohne Festpreis — sag uns, was sie dir wert ist.",
+    cta: "Vorverkauf ansehen",
+  },
+  {
     href: "/anfragen",
     eyebrow: "DU SUCHST ETWAS BESTIMMTES?",
     title: "Karte anfragen",

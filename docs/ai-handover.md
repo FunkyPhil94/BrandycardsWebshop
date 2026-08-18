@@ -10025,3 +10025,22 @@ wirklich durchklicken, nicht nur behaupten:
 - Alle Kacheln tragen das Kennzeichen „Vorverkauf", keine eBay-Karte
   dazwischen (die Positivliste im Browser greift weiterhin).
 - 729 Tests grün, `tsc` und Lint sauber.
+
+## Auftrag 2026-08-18: Vorverkauf in Kacheln und Fußzeile
+- **Protokollverstoß, offen notiert:** Dieser Eintrag entstand *nach* der Arbeit,
+  nicht davor. Die Regel in CLAUDE.md verlangt es umgekehrt. Kein Schaden
+  entstanden, aber der nächste Durchlauf trägt zuerst ein.
+- Status: ABGESCHLOSSEN.
+- **Das Burgermenü brauchte nichts.** Es teilt sich `NAV` mit der Kopfzeile, und
+  dort steht der Vorverkauf seit dem 2026-08-08. Geändert wurden nur die
+  Kachelreihe der Startseite (vier → fünf) und die Fußzeile.
+- **Fünf Kacheln brauchen ein anderes Raster.** Die Zwischenräume sind keine
+  Lücken, sondern 1px auf farbigem Grund: Eine unbesetzte Zelle in der letzten
+  Reihe steht als linienfarbener Block da und sieht aus wie ein Fehler. Deshalb
+  fünf Spalten ab 1180px, darunter drei — und die letzte Kachel überspannt die
+  Restbreite, wenn sie sonst allein neben einer leeren Zelle stünde.
+- Gemessen im Browser, nicht geschätzt: 1600px → 5 × 316px, kein Überlauf;
+  1100px → 3 Spalten, letzte Kachel 723px breit, keine leere Zelle; 375px →
+  eine Spalte, Burgermenü führt „Vorverkauf". Auf Englisch stehen alle fünf
+  Kacheln und die Fußzeile übersetzt da.
+- 729 Tests grün, `tsc` und Lint sauber.
