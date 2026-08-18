@@ -37,9 +37,9 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
-### 2026-08-18 - K.A.R.L. bekommt eine Persoenlichkeit, die Oberflaeche wird modernisiert
+### 2026-08-18 - K.A.R.L. bekommt eine Persönlichkeit, die Oberfläche wird modernisiert
 
-- Stand: **LÄUFT.**
+- Stand: **ABGESCHLOSSEN** im Code, **noch nicht ausgerollt.**
 - Auftrag: Der Betreiber möchte zweierlei — K.A.R.L. soll „persönlicher" sein
   und eine eigene Persönlichkeit haben, und die Desktop-Oberfläche soll moderner
   und ansehnlicher werden.
@@ -79,6 +79,51 @@ durchgereicht als eine Umsatzfrage mit einem Spruch beantwortet.
 **Abnahme:** `npm test`, `npx tsc --noEmit`, `npm run lint`, dazu ein
 `dotnet build` der Desktop-App. Neue Tests für die Persona-Schicht und für die
 Smalltalk-Abgrenzung.
+
+**Ergebnis: gebaut und geprüft. 710 Tests grün, TypeScript fehlerfrei, ESLint
+0 Fehler, `dotnet build` 0 Warnungen. Die Desktop-Hälfte ist an der laufenden
+App gegen den echten Shop verifiziert. Serverseitig noch nicht ausgerollt.**
+
+Was entstanden ist:
+
+- `lib/assistant/persona.ts` — Begrüßung, Überleitung, Schlusskommentar, Absage
+  und Smalltalk. Bekommt die Werkzeugergebnisse nur, um qualitativ abzulesen, ob
+  etwas vorliegt, wartet oder ausfiel; **keine Zahl verlässt dieses Modul.**
+- `avatar/BrandyCards.Desktop/KarlPersona.cs` — dieselbe Stimme für die
+  Oberfläche: Begrüßung beim Öffnen, Statuszeilen, Beispielfragen. Der Server
+  textet nie über Bedienelemente, dieser Client nie über Daten.
+- Oberfläche: dreistufige Farbwelt, Chat-Blasen mit asymmetrischen Ecken und
+  K.A.R.L.s Kopf (`Assets/karl-head.png`, aus dem vorhandenen Spritesheet
+  geschnitten), Uhrzeit an jeder Nachricht, Tippanzeige im Verlauf, anklickbare
+  Beispielfragen, Eingabefeld und Knöpfe in einer gerundeten Fläche.
+- `tests/karl-persona.test.mjs` — neun Tests, darunter die Smalltalk-Abgrenzung
+  gegen sieben Fachfragen, die wie Smalltalk anfangen.
+
+**Zwei Befunde aus der Messung am laufenden Fenster**, beide am Reißbrett nicht
+sichtbar und beide behoben: Der Launcher doppelte die neue Kopfzeile des Panels
+(„K.A.R.L." stand zweimal übereinander), und die vier Beispielfragen liefen
+nebeneinander aus dem 520 Punkte breiten Fenster. Der Launcher ist bei offenem
+Panel jetzt ausgeblendet, die Chips stehen in Zweierreihen.
+
+**Der Weg zum Screenshot ist wiederverwendbar und stand vorher nirgends:** Ein
+Bildschirmabzug zeigt das Fenster nicht (es liegt neben dem Pet, und aus einem
+DPI-unbewussten Prozess stimmen weder Koordinaten noch Größe). Es geht über
+`PrintWindow` mit `PW_RENDERFULLCONTENT` auf das Fensterhandle, nachdem der
+messende Prozess `SetProcessDpiAwarenessContext(-4)` gerufen hat; bedient wird
+die App über UI-Automation.
+
+**Zwei Tests wurden angepasst, keiner abgeschwächt.** `assistant-phase6` prüft
+die Verzweigung Erfolg/Fehlschlag in der Statuszeile weiterhin, nur gegen den
+neuen Erfolgstext. `assistant-phase5` prüft die Tab-Reihe jetzt auf
+*Eindeutigkeit und aufsteigende Ordnung* statt gegen eine feste Liste — Position
+2 gehört den Chips, die aus `KarlPersona.Beispielfragen` im Code entstehen, und
+die Lücke im XAML wird ausdrücklich belegt.
+
+**Offen und ausdrücklich nicht getan: der Rollout.** Die Serverhälfte wirkt erst
+nach einem Deploy; im Screenshot fehlt der Rahmen um die Antwort genau deshalb.
+Der Deploy gehört aus dem Hauptverzeichnis gebaut (`.env.local`!), nicht aus
+diesem Worktree.
+
 
 ## Historie
 

@@ -1,5 +1,87 @@
 # BrandyCards Agentenprotokoll
 
+## 2026-08-18 - K.A.R.L. bekommt eine Stimme, ohne dass eine Zahl wackelt
+
+Der Betreiber wollte zweierlei: einen persönlicheren Assistenten mit eigener
+Persönlichkeit, und eine modernere Oberfläche. Beides ist gebaut. Was hier
+steht, ist die Begründung für die Zuschnitte, nicht die Liste der Dateien.
+
+**Die eine Entscheidung, an der alles hängt: Wer formuliert?** Es gab zwei
+ernsthafte Wege. Der eine reicht die fertigen Zahlen an ein Modell und lässt es
+frei nacherzählen — das klingt am lebendigsten. Der andere lässt die Datenzeilen
+unangetastet und setzt nur einen Rahmen darum. Vorgelegt als Wahl, entschieden
+hat der Betreiber den zweiten.
+
+Die Begründung, die ihm dabei vorlag und die hier stehen bleiben soll: Ein
+Sprachmodell, das aus 147,50 € einen schönen Satz macht, kann daraus „rund
+150 €" machen. Dieser Assistent ist von der ersten Zeile an entlang der Linie
+gebaut, dass eine fehlende Auskunft besser ist als eine erfundene — er
+unterscheidet „nichts da" von „nicht nachgesehen", er nennt zu jeder Zahl Quelle
+und Stand, und er weigert sich, eine Menge zu erfinden, die nicht gemeldet
+wurde. Ein zweiter Modellaufruf über die fertigen Zahlen hätte genau diese Linie
+an ihrer letzten Stelle aufgegeben. **Ein Rahmen dagegen kann nichts
+verfälschen, weil er die Zahlen nie zu sehen bekommt.**
+
+Das ist keine Theorie, sondern eine Bauvorschrift: `lib/assistant/persona.ts`
+bekommt die Werkzeugergebnisse nur, um *qualitativ* abzulesen, ob etwas
+vorliegt, wartet oder ausgefallen ist. Eine Zahl verlässt dieses Modul nicht,
+und ein Test in `tests/karl-persona.test.mjs` hält fest, dass Einleitung und
+Kommentar keine Ziffer enthalten. Stünde dort eine, stünde dieselbe Zahl zweimal
+in der Antwort — und zwei Fassungen derselben Zahl können sich widersprechen.
+
+**Wechselnde Formulierungen ohne Zufallsgenerator.** Abwechslung ist der halbe
+Witz an einer Persönlichkeit, aber `Math.random()` macht jede Antwort unprüfbar
+und lässt dieselbe Frage zweimal hintereinander grundlos anders klingen. Gewählt
+wird deshalb über einen Streuwert aus Frage und Tag: über Fragen hinweg
+abwechslungsreich, für dieselbe Frage am selben Tag stabil, und im Test exakt
+vorhersagbar.
+
+**Smalltalk endet vor dem Planer, und das war die riskanteste Stelle.** Ein
+„danke" soll eine Antwort bekommen statt einer Absage, keinen Modellaufruf
+kosten und nicht als unbeantwortete Fachfrage in der Messtabelle landen. Der
+teuerste denkbare Fehler dabei wäre die Gegenrichtung: eine echte Fachfrage, die
+mit einem Spruch abgespeist wird. Die Erkennung ist deshalb doppelt gesichert —
+höchstens sechs Wörter, und kein einziges Fachwort aus einer weit gefassten
+Liste. „Na, wie läuft der Verkauf?" fängt an wie Smalltalk und läuft ungebremst
+zum Planer durch; sieben solcher Fälle stehen als Test fest. Die Schieflage ist
+Absicht: Lieber rutscht ein „hallo" in den Planer, als dass eine Umsatzfrage in
+der Witzeschublade endet.
+
+**Zwei Persona-Dateien, und warum das keine Doppelung ist.** Die Stimme der
+*Antwort* gehört auf den Server, weil dort die Antwort entsteht — Phase 4 hat
+dem Client das Formatieren von Daten ausdrücklich entzogen. Begrüßung beim
+Öffnen, Statuszeile und Tippanzeige entstehen dagegen an Stellen, die der Server
+nie zu sehen bekommt: Er weiß nicht, dass ein Fenster aufgeklappt wurde. Die
+Grenze ist scharf gezogen und in beiden Dateien notiert: **Der Server textet nie
+über Bedienelemente, der Client nie über Daten.**
+
+**Die Oberfläche wurde gemessen, nicht behauptet.** Die Änderungen entstanden in
+zwei Runden, und die zweite kam aus einem Screenshot der laufenden App. Sie
+korrigierte zwei Dinge, die am Reißbrett nicht auffielen: Der Launcher stand mit
+Kopf und Namen weiterhin über dem Panel, das seit dieser Fassung dieselbe
+Kopfzeile trägt — „K.A.R.L." stand zweimal übereinander. Und die vier
+Beispielfragen liefen nebeneinander aus dem 520 Punkte breiten Fenster hinaus;
+ein waagerechter Rollbalken für vier Knöpfe ist kein Angebot, sondern ein
+Versteck. Jetzt verschwindet der Launcher, solange das Panel offen ist, und die
+Chips stehen in Zweierreihen.
+
+**Wie der Screenshot überhaupt zustande kam, denn das ist wiederverwendbar.**
+Ein Bildschirmabzug half nicht: Das Fenster liegt neben dem Pet, und aus einem
+DPI-unbewussten Prozess stimmen weder Koordinaten noch Größe — der Abzug zeigte
+zweimal den Browser des Betreibers statt der App. Was trägt, ist `PrintWindow`
+mit `PW_RENDERFULLCONTENT` auf das Fensterhandle, nachdem der messende Prozess
+per `SetProcessDpiAwarenessContext(-4)` DPI-bewusst gemacht wurde: Damit rendert
+das Fenster sein eigenes Bild in voller Auflösung, auch wenn es verdeckt ist.
+Bedient wurde die laufende App über UI-Automation — erst der Launcher über
+`AutomationId="AssistantLauncher"`, dann der Chip über seinen Namen. Die Frage
+lief dabei gegen den echten Shop und kam mit einer echten Antwort zurück.
+
+**Was dieser Lauf nicht belegt:** Der Rahmen um die Antworten war im Screenshot
+nicht zu sehen, weil der Desktop gegen die *ausgerollte* Serverfassung sprach.
+Die Serverhälfte ist durch Tests belegt, nicht durch diese Messung — die
+Trennung gehört benannt, sonst liest sich der Screenshot als Beleg für mehr, als
+er zeigt.
+
 ## 2026-08-17 - Rest 1: Zwei falsche Pläne, bevor der richtige übrig blieb
 
 Der Betreiber beauftragte das Wegwerf-Angebot — auf meinen eigenen Vorschlag hin.

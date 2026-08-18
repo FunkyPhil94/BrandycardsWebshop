@@ -173,10 +173,27 @@ test("jedes Bedienelement des Panels ist benannt und hat eine eindeutige Tab-Pos
     assert.match(element, /TabIndex="\d"/u, `${control} braucht eine Tab-Position`);
   }
   // Zwei getrennte Ansichten teilen sich die Zählung; innerhalb der
-  // Assistant-Ansicht muss jede Position genau einmal vorkommen.
+  // Assistant-Ansicht muss jede Position genau einmal vorkommen und aufsteigend
+  // stehen.
+  //
+  // **Seit dem 2026-08-18 ist die Reihe nicht mehr lückenlos, und das ist
+  // Absicht.** Position 2 gehört den Beispielfragen, die aus
+  // `KarlPersona.Beispielfragen` im Code entstehen — sie hier auszuschreiben
+  // hieße, dieselbe Liste zweimal zu pflegen. Geprüft wird deshalb die
+  // Eigenschaft, auf die es ankommt (eindeutig und aufsteigend), statt einer
+  // festen Liste, und die Lücke wird unten belegt.
   const panel = xaml.slice(xaml.indexOf('x:Name="ConnectedSurface"'));
-  const positions = [...panel.matchAll(/TabIndex="(\d)"/gu)].map((match) => match[1]);
-  assert.deepEqual(positions, ["0", "1", "2", "3", "4", "5"]);
+  const positions = [...panel.matchAll(/TabIndex="(\d)"/gu)].map((match) => Number(match[1]));
+  assert.equal(positions[0], 0, "die Tab-Reihe der Assistant-Ansicht beginnt bei 0");
+  assert.deepEqual(positions, [...positions].sort((a, b) => a - b), "die Tab-Positionen müssen aufsteigend stehen");
+  assert.equal(new Set(positions).size, positions.length, "keine Tab-Position darf doppelt vergeben sein");
+
+  // Die Lücke füllen die Chips, und auch sie brauchen einen Namen.
+  const page = await read("avatar/BrandyCards.Desktop/MainPage.xaml.cs");
+  const fehlend = [...Array(Math.max(...positions)).keys()].filter((wert) => !positions.includes(wert));
+  assert.deepEqual(fehlend, [2], "nur die Chip-Position darf im XAML fehlen");
+  assert.match(page, /TabIndex = 2,/u, "die Beispielfragen brauchen ihre Tab-Position");
+  assert.match(page, /AutomationProperties\.SetName\(chip, \$"Beispielfrage: \{frage\}"\)/u);
   // Status- und Fehlermeldungen müssen angesagt werden.
   assert.equal((xaml.match(/AutomationProperties\.LiveSetting="Polite"/gu) ?? []).length, 2);
 });

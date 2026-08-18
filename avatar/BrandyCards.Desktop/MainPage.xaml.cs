@@ -69,6 +69,12 @@ public sealed partial class MainPage : Page
     private DateTimeOffset _speechTokenValidUntil;
     private bool _conversationInitialized;
     private StatistikFenster? _statistikFenster;
+    /// <summary>Zählt die gestellten Fragen — nur, damit die Sprüche in der
+    ///  Statuszeile wechseln, ohne dafür einen Zufallsgenerator zu brauchen.</summary>
+    private int _anfrageNummer;
+    /// <summary>Die Blase, die während des Nachschlagens im Verlauf steht.
+    ///  <c>null</c>, solange nichts läuft.</summary>
+    private Border? _tippanzeige;
 
     private static readonly IReadOnlyDictionary<string, AnimationSpec> Animations = new Dictionary<string, AnimationSpec>(StringComparer.OrdinalIgnoreCase)
     {
@@ -95,6 +101,17 @@ public sealed partial class MainPage : Page
         _httpClient.Timeout = AssistantConversationService.RequestTimeout;
         _assistantService = new AssistantConversationService(_httpClient);
         SpriteImage.Source = new BitmapImage(new Uri(Path.Combine(AppContext.BaseDirectory, "Assets", "spritesheet.png")));
+        // **Derselbe Weg wie beim Spritesheet: über den Dateipfad, nicht über
+        // `ms-appx:`.** Diese App läuft unverpackt (`WindowsPackageType=None`);
+        // der Pfad neben der Exe ist der Weg, der hier nachweislich trägt.
+        //
+        // Ein Kopf, drei Anzeigestellen — dieselbe `BitmapImage` mehrfach zu
+        // hängen ist gewollt: Sie wird einmal dekodiert statt dreimal.
+        var karlKopf = new BitmapImage(new Uri(Path.Combine(AppContext.BaseDirectory, "Assets", "karl-head.png")));
+        KarlKopfSetupImage.Source = karlKopf;
+        KarlKopfLauncherImage.Source = karlKopf;
+        KarlKopfPanelImage.Source = karlKopf;
+        AssistantStatusTextBlock.Text = KarlPersona.Bereit;
         ApplyFrame();
     }
 
@@ -506,6 +523,7 @@ public sealed partial class MainPage : Page
     private async Task SendAssistantMessageAsync(string message)
     {
         AddConversationMessage("Du", message, isUser: true);
+        _anfrageNummer += 1;
         SetAssistantBusy(true);
         try
         {
@@ -524,7 +542,7 @@ public sealed partial class MainPage : Page
             AddConversationVisuals(reply.Visuals, message);
             // Eine Absage des Shops ist keine empfangene Antwort. Vorher stand
             // auch bei HTTP 503 „Antwort empfangen" in der Statuszeile.
-            AssistantStatusTextBlock.Text = reply.Succeeded ? "Antwort empfangen" : "Shop meldet einen Fehler";
+            AssistantStatusTextBlock.Text = reply.Succeeded ? KarlPersona.Fertig(_anfrageNummer) : "Shop meldet einen Fehler";
         }
         catch (OperationCanceledException)
         {
@@ -557,6 +575,12 @@ public sealed partial class MainPage : Page
     {
         _assistantPanelExpanded = expanded;
         AssistantPanel.Visibility = expanded ? Visibility.Visible : Visibility.Collapsed;
+        // **Der Launcher verschwindet, solange das Panel offen ist.** Seit die
+        // Kopfzeile des Panels denselben Kopf und denselben Namen trägt, stand
+        // „K.A.R.L." im Screenshot vom 2026-08-18 zweimal übereinander. Der
+        // Launcher hat außerdem keine Aufgabe mehr, die das Kreuz oben rechts
+        // nicht schon erfüllt — und sein Platz kommt der Unterhaltung zugute.
+        LauncherButton.Visibility = expanded ? Visibility.Collapsed : Visibility.Visible;
         LauncherSubtitleTextBlock.Text = expanded ? "Textpanel geöffnet" : "Textpanel öffnen";
         LauncherChevronIcon.Glyph = expanded ? "\uE70E" : "\uE70D";
         AutomationProperties.SetName(LauncherButton, expanded ? "BrandyCards Assistant schließen" : "BrandyCards Assistant öffnen");
@@ -591,11 +615,64 @@ public sealed partial class MainPage : Page
     {
         if (_conversationInitialized) return;
         _conversationInitialized = true;
-        AddConversationMessage(
-            AssistantName,
-            "Hallo! Stelle mir freie Fragen zu Verkäufen, Listings, Bestellungen, Preisvorschlägen, Bestand, Anfragen, eBay-Daten und Statistiken. Ich verwende dafür ausschließlich registrierte Lesewerkzeuge.",
-            isUser: false);
+        BaueBeispielChips();
+        AddConversationMessage(AssistantName, KarlPersona.Begruessung(DateTimeOffset.Now), isUser: false);
         WarnIfPairingExpiresSoon();
+    }
+
+    /// <summary>
+    /// Legt die anklickbaren Beispielfragen an.
+    ///
+    /// <para><b>Im Code, nicht im XAML</b>, weil <see cref="KarlPersona.Beispielfragen"/>
+    /// die einzige Liste bleiben soll. Zweimal gepflegt liefe sie auseinander,
+    /// und die zweite Fassung veraltet immer zuerst.</para>
+    ///
+    /// <para>Alle Chips teilen sich <c>TabIndex 2</c> — sie sind ein Angebot,
+    /// keine Station auf dem Weg zur Eingabe. Innerhalb derselben Tab-Position
+    /// entscheidet die Anordnung, und die ist hier von links nach rechts genau
+    /// die Reihenfolge der Liste.</para>
+    /// </summary>
+    /// <summary>
+    /// Wie viele Beispielfragen nebeneinander stehen.
+    ///
+    /// <b>Zwei, weil das Panel rund 520 Punkte breit ist.</b> Nebeneinander in
+    /// einer Zeile lief die vierte Frage im Screenshot vom 2026-08-18 aus dem
+    /// Bild; ein waagerechter Rollbalken für vier Knöpfe ist keine Lösung,
+    /// sondern ein verstecktes Angebot. WinUI kennt kein umbrechendes Panel,
+    /// also werden die Zeilen hier gebildet.
+    /// </summary>
+    private const int ChipsProZeile = 2;
+
+    private void BaueBeispielChips()
+    {
+        if (BeispielChipPanel.Children.Count > 0) return;
+
+        StackPanel? zeile = null;
+        foreach (var (frage, nummer) in KarlPersona.Beispielfragen.Select((frage, nummer) => (frage, nummer)))
+        {
+            if (nummer % ChipsProZeile == 0)
+            {
+                zeile = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+                BeispielChipPanel.Children.Add(zeile);
+            }
+
+            var chip = new Button
+            {
+                Content = frage,
+                Style = (Style)Application.Current.Resources["ChipButtonStyle"],
+                TabIndex = 2,
+            };
+            AutomationProperties.SetName(chip, $"Beispielfrage: {frage}");
+            // Der Chip *stellt* die Frage nicht selbst, er schreibt sie ins Feld
+            // und schickt sie ab -- damit sie im Verlauf steht wie eine getippte.
+            chip.Click += async (_, _) =>
+            {
+                if (_assistantRequestRunning || _speechRecognitionRunning) return;
+                AssistantInputTextBox.Text = string.Empty;
+                await SendAssistantMessageAsync(frage);
+            };
+            zeile!.Children.Add(chip);
+        }
     }
 
     /// <summary>
@@ -620,8 +697,25 @@ public sealed partial class MainPage : Page
             isUser: false);
     }
 
+    /// <summary>
+    /// Hängt eine Nachricht in den Verlauf.
+    ///
+    /// <para><b>Was am 2026-08-18 dazukam und warum.</b> Vorher stand über jeder
+    /// Blase nur „K.A.R.L." oder „Du" — links wie rechts derselbe graue Text auf
+    /// fast derselben Fläche. Jetzt trägt jede Antwort K.A.R.L.s Kopf neben sich,
+    /// die Ecken zeigen zum Sprecher, und die Uhrzeit steht dabei: In einem
+    /// Panel, das tagelang offen bleibt, ist „ist das von eben oder von heute
+    /// früh?" sonst nicht zu beantworten.</para>
+    ///
+    /// <para>Der Name bleibt trotz Kopf stehen. Ein Bild ist für einen
+    /// Screenreader nichts, und die Ansage unten hängt am Namen.</para>
+    /// </summary>
     private void AddConversationMessage(string author, string message, bool isUser)
     {
+        // Jede neue Nachricht löst die Tippanzeige ab — sonst stünde die Antwort
+        // unter dem Hinweis, dass noch nachgeschlagen wird.
+        VerbergeTippanzeige();
+
         var text = new TextBlock
         {
             Text = message,
@@ -632,21 +726,124 @@ public sealed partial class MainPage : Page
             Text = author,
             Style = (Style)Application.Current.Resources["ConversationAuthorTextStyle"],
         };
+        var timeText = new TextBlock
+        {
+            Text = DateTime.Now.ToString("HH:mm"),
+            Style = (Style)Application.Current.Resources["ConversationTimeTextStyle"],
+        };
+        if (isUser)
+        {
+            // Auf der roten Blase wäre das gedämpfte Grau der beiden Stile nicht
+            // mehr lesbar; die Schrift muss der Fläche folgen.
+            var aufAkzent = (Brush)Application.Current.Resources["AvatarUserMessageTextBrush"];
+            text.Foreground = aufAkzent;
+            authorText.Foreground = aufAkzent;
+            timeText.Foreground = aufAkzent;
+            timeText.Opacity = 0.75;
+        }
+
+        var kopfzeile = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };
+        kopfzeile.Children.Add(authorText);
+        kopfzeile.Children.Add(timeText);
+
         var content = new StackPanel { Spacing = 3 };
-        content.Children.Add(authorText);
+        content.Children.Add(kopfzeile);
         content.Children.Add(text);
 
         var messageBorder = new Border
         {
             Style = (Style)Application.Current.Resources[isUser ? "UserMessageBorderStyle" : "AssistantMessageBorderStyle"],
-            MaxWidth = 420,
-            HorizontalAlignment = isUser ? HorizontalAlignment.Right : HorizontalAlignment.Left,
+            MaxWidth = (double)Application.Current.Resources["AvatarBubbleMaxWidth"],
             Child = content,
         };
         AutomationProperties.SetName(messageBorder, $"{author}: {message}");
-        ConversationPanel.Children.Add(messageBorder);
+        ConversationPanel.Children.Add(BaueNachrichtenzeile(messageBorder, isUser));
         ConversationScrollViewer.UpdateLayout();
         ConversationScrollViewer.ChangeView(null, ConversationScrollViewer.ScrollableHeight, null);
+    }
+
+    /// <summary>
+    /// Setzt eine Blase in ihre Zeile: K.A.R.L. links mit Kopf, der Nutzer rechts
+    /// ohne. Der Kopf ist für den Screenreader ausgeblendet — er wiederholt nur,
+    /// was der Name der Blase ohnehin sagt.
+    /// </summary>
+    private FrameworkElement BaueNachrichtenzeile(Border blase, bool isUser)
+    {
+        if (isUser)
+        {
+            blase.HorizontalAlignment = HorizontalAlignment.Right;
+            return blase;
+        }
+
+        var zeile = new Grid { ColumnSpacing = 8, HorizontalAlignment = HorizontalAlignment.Left };
+        zeile.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        zeile.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+        var kopf = new Border
+        {
+            Style = (Style)Application.Current.Resources["KarlAvatarBorderStyle"],
+            Child = new Image
+            {
+                Source = KarlKopfPanelImage.Source,
+                Width = 32,
+                Height = 32,
+            },
+        };
+        AutomationProperties.SetAccessibilityView(kopf, Microsoft.UI.Xaml.Automation.Peers.AccessibilityView.Raw);
+
+        zeile.Children.Add(kopf);
+        Grid.SetColumn(blase, 1);
+        zeile.Children.Add(blase);
+        return zeile;
+    }
+
+    /// <summary>
+    /// Zeigt an, dass K.A.R.L. gerade nachschlägt — im Verlauf, an der Stelle,
+    /// an der gleich die Antwort steht.
+    ///
+    /// <para>Die Statuszeile unten sagt dasselbe, aber sie steht außerhalb des
+    /// Blickfelds, sobald man die letzte Antwort liest. Diese Blase wird beim
+    /// Eintreffen der Antwort wieder entfernt und ist deshalb <b>nie</b> Teil des
+    /// Verlaufs — sie darf keinen Inhalt tragen, der jemandem fehlen würde.</para>
+    /// </summary>
+    private void ZeigeTippanzeige()
+    {
+        if (_tippanzeige is not null) return;
+
+        var inhalt = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+        inhalt.Children.Add(new ProgressRing { Width = 14, Height = 14, IsActive = true, VerticalAlignment = VerticalAlignment.Center });
+        inhalt.Children.Add(new TextBlock
+        {
+            Text = KarlPersona.TipptGerade,
+            Style = (Style)Application.Current.Resources["ConversationAuthorTextStyle"],
+            VerticalAlignment = VerticalAlignment.Center,
+        });
+
+        var blase = new Border
+        {
+            Style = (Style)Application.Current.Resources["AssistantMessageBorderStyle"],
+            Child = inhalt,
+        };
+        AutomationProperties.SetName(blase, KarlPersona.TipptGerade);
+
+        _tippanzeige = blase;
+        ConversationPanel.Children.Add(BaueNachrichtenzeile(blase, isUser: false));
+        ConversationScrollViewer.UpdateLayout();
+        ConversationScrollViewer.ChangeView(null, ConversationScrollViewer.ScrollableHeight, null);
+    }
+
+    private void VerbergeTippanzeige()
+    {
+        if (_tippanzeige is null) return;
+
+        // Entfernt wird die *Zeile*, nicht die Blase: Bei K.A.R.L. steckt die
+        // Blase in einem Grid neben dem Kopf, und der bliebe sonst allein stehen.
+        var zeile = ConversationPanel.Children
+            .OfType<FrameworkElement>()
+            .FirstOrDefault(kind => ReferenceEquals(kind, _tippanzeige)
+                || (kind is Grid gitter && gitter.Children.Contains(_tippanzeige)));
+        if (zeile is not null) ConversationPanel.Children.Remove(zeile);
+        _tippanzeige = null;
     }
 
     /// <summary>
@@ -704,7 +901,15 @@ public sealed partial class MainPage : Page
         AssistantProgressRing.IsActive = isBusy;
         AssistantProgressRing.Visibility = isBusy ? Visibility.Visible : Visibility.Collapsed;
         UpdateAssistantControlState();
-        if (isBusy) AssistantStatusTextBlock.Text = "Assistant liest Daten …";
+        if (isBusy)
+        {
+            AssistantStatusTextBlock.Text = KarlPersona.Liest(_anfrageNummer);
+            ZeigeTippanzeige();
+        }
+        else
+        {
+            VerbergeTippanzeige();
+        }
     }
 
     private void SetSpeechRecognitionBusy(bool isBusy)

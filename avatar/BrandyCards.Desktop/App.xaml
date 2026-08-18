@@ -9,69 +9,182 @@
             <ResourceDictionary.MergedDictionaries>
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
             </ResourceDictionary.MergedDictionaries>
+            <!--
+                Die Farbwelt wurde am 2026-08-18 überarbeitet. Zwei Regeln, an denen
+                sich die Werte bemessen und an die sich eine Änderung halten muss:
+
+                1. **Drei Ebenen statt zwei.** Vorher lagen Fläche, Panel und Blase
+                   dicht beieinander, wodurch die Unterhaltung optisch im Hintergrund
+                   verschwamm. Jetzt trägt die Fläche (`Surface`) die Karte (`Card`),
+                   und darauf liegen die Blasen — jede Stufe hebt sich messbar ab.
+                2. **Der Akzent gehört dem Betreiber, nicht K.A.R.L.** Rot markiert,
+                   was *du* gesagt hast (Senden, deine Blase). K.A.R.L. spricht auf
+                   neutralem Grund. Andersherum brüllte die Antwort den Nutzer an.
+            -->
             <ResourceDictionary.ThemeDictionaries>
                 <ResourceDictionary x:Key="Light">
-                    <SolidColorBrush x:Key="AvatarSurfaceBrush" Color="#F7F3EC" />
+                    <SolidColorBrush x:Key="AvatarSurfaceBrush" Color="#F2EEE7" />
                     <SolidColorBrush x:Key="AvatarPanelBrush" Color="#E9E5DD" />
+                    <SolidColorBrush x:Key="AvatarCardBrush" Color="#FBF9F6" />
                     <SolidColorBrush x:Key="AvatarInputBrush" Color="#FFFFFF" />
                     <SolidColorBrush x:Key="AvatarTextBrush" Color="#1A1A1A" />
-                    <SolidColorBrush x:Key="AvatarMutedBrush" Color="#625A53" />
-                    <SolidColorBrush x:Key="AvatarStrokeBrush" Color="#A9A098" />
+                    <SolidColorBrush x:Key="AvatarMutedBrush" Color="#6B625A" />
+                    <SolidColorBrush x:Key="AvatarStrokeBrush" Color="#DCD5CB" />
+                    <SolidColorBrush x:Key="AvatarStrongStrokeBrush" Color="#A9A098" />
                     <SolidColorBrush x:Key="AvatarAccentBrush" Color="#C73E35" />
+                    <SolidColorBrush x:Key="AvatarAccentSoftBrush" Color="#F7E3E0" />
                     <SolidColorBrush x:Key="AvatarAccentTextBrush" Color="#FFFFFF" />
-                    <SolidColorBrush x:Key="AvatarAssistantBrush" Color="#FFFFFF" />
-                    <SolidColorBrush x:Key="AvatarUserMessageBrush" Color="#F4DDD9" />
-                    <SolidColorBrush x:Key="AvatarAssistantMessageBrush" Color="#F1EEE8" />
+                    <SolidColorBrush x:Key="AvatarAssistantBrush" Color="#FBF9F6" />
+                    <SolidColorBrush x:Key="AvatarUserMessageBrush" Color="#C73E35" />
+                    <SolidColorBrush x:Key="AvatarUserMessageTextBrush" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="AvatarAssistantMessageBrush" Color="#EFEAE2" />
                     <SolidColorBrush x:Key="AvatarErrorBrush" Color="#B3261E" />
                 </ResourceDictionary>
                 <ResourceDictionary x:Key="Dark">
-                    <SolidColorBrush x:Key="AvatarSurfaceBrush" Color="#202020" />
-                    <SolidColorBrush x:Key="AvatarPanelBrush" Color="#303030" />
-                    <SolidColorBrush x:Key="AvatarInputBrush" Color="#2B2B2B" />
-                    <SolidColorBrush x:Key="AvatarTextBrush" Color="#F5F5F5" />
-                    <SolidColorBrush x:Key="AvatarMutedBrush" Color="#D0CBC4" />
-                    <SolidColorBrush x:Key="AvatarStrokeBrush" Color="#77716A" />
+                    <SolidColorBrush x:Key="AvatarSurfaceBrush" Color="#1B1A19" />
+                    <SolidColorBrush x:Key="AvatarPanelBrush" Color="#2A2827" />
+                    <SolidColorBrush x:Key="AvatarCardBrush" Color="#242322" />
+                    <SolidColorBrush x:Key="AvatarInputBrush" Color="#2E2C2B" />
+                    <SolidColorBrush x:Key="AvatarTextBrush" Color="#F5F2EE" />
+                    <SolidColorBrush x:Key="AvatarMutedBrush" Color="#B8B1A9" />
+                    <SolidColorBrush x:Key="AvatarStrokeBrush" Color="#3B3836" />
+                    <SolidColorBrush x:Key="AvatarStrongStrokeBrush" Color="#6E6862" />
                     <SolidColorBrush x:Key="AvatarAccentBrush" Color="#E35A50" />
+                    <SolidColorBrush x:Key="AvatarAccentSoftBrush" Color="#4A2723" />
                     <SolidColorBrush x:Key="AvatarAccentTextBrush" Color="#1A1A1A" />
-                    <SolidColorBrush x:Key="AvatarAssistantBrush" Color="#282828" />
-                    <SolidColorBrush x:Key="AvatarUserMessageBrush" Color="#63322D" />
-                    <SolidColorBrush x:Key="AvatarAssistantMessageBrush" Color="#383838" />
+                    <SolidColorBrush x:Key="AvatarAssistantBrush" Color="#242322" />
+                    <SolidColorBrush x:Key="AvatarUserMessageBrush" Color="#8E332C" />
+                    <SolidColorBrush x:Key="AvatarUserMessageTextBrush" Color="#FDF1EF" />
+                    <SolidColorBrush x:Key="AvatarAssistantMessageBrush" Color="#332F2D" />
                     <SolidColorBrush x:Key="AvatarErrorBrush" Color="#FFB4AB" />
                 </ResourceDictionary>
                 <ResourceDictionary x:Key="HighContrast">
                     <SolidColorBrush x:Key="AvatarSurfaceBrush" Color="{ThemeResource SystemColorWindowColor}" />
                     <SolidColorBrush x:Key="AvatarPanelBrush" Color="{ThemeResource SystemColorWindowColor}" />
+                    <SolidColorBrush x:Key="AvatarCardBrush" Color="{ThemeResource SystemColorWindowColor}" />
                     <SolidColorBrush x:Key="AvatarInputBrush" Color="{ThemeResource SystemColorWindowColor}" />
                     <SolidColorBrush x:Key="AvatarTextBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
                     <SolidColorBrush x:Key="AvatarMutedBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
                     <SolidColorBrush x:Key="AvatarStrokeBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
+                    <SolidColorBrush x:Key="AvatarStrongStrokeBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
                     <SolidColorBrush x:Key="AvatarAccentBrush" Color="{ThemeResource SystemColorHighlightColor}" />
+                    <SolidColorBrush x:Key="AvatarAccentSoftBrush" Color="{ThemeResource SystemColorWindowColor}" />
                     <SolidColorBrush x:Key="AvatarAccentTextBrush" Color="{ThemeResource SystemColorHighlightTextColor}" />
                     <SolidColorBrush x:Key="AvatarAssistantBrush" Color="{ThemeResource SystemColorWindowColor}" />
                     <SolidColorBrush x:Key="AvatarUserMessageBrush" Color="{ThemeResource SystemColorWindowColor}" />
+                    <SolidColorBrush x:Key="AvatarUserMessageTextBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
                     <SolidColorBrush x:Key="AvatarAssistantMessageBrush" Color="{ThemeResource SystemColorWindowColor}" />
                     <SolidColorBrush x:Key="AvatarErrorBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
+
+            <x:Double x:Key="AvatarBubbleMaxWidth">380</x:Double>
+
             <Style x:Key="ConversationBodyTextStyle" TargetType="TextBlock">
                 <Setter Property="Foreground" Value="{ThemeResource AvatarTextBrush}" />
                 <Setter Property="TextWrapping" Value="Wrap" />
+                <Setter Property="LineHeight" Value="20" />
                 <Setter Property="IsTextSelectionEnabled" Value="True" />
             </Style>
             <Style x:Key="ConversationAuthorTextStyle" TargetType="TextBlock">
                 <Setter Property="Foreground" Value="{ThemeResource AvatarMutedBrush}" />
-                <Setter Property="FontSize" Value="12" />
+                <Setter Property="FontSize" Value="11" />
                 <Setter Property="FontWeight" Value="SemiBold" />
             </Style>
+            <!-- Die Uhrzeit steht klein neben dem Namen. Sie beantwortet die Frage
+                 „ist das noch von eben oder von heute früh?", die bei einem Panel,
+                 das tagelang offen bleibt, sonst niemand beantworten kann. -->
+            <Style x:Key="ConversationTimeTextStyle" TargetType="TextBlock">
+                <Setter Property="Foreground" Value="{ThemeResource AvatarMutedBrush}" />
+                <Setter Property="FontSize" Value="11" />
+                <Setter Property="Opacity" Value="0.8" />
+            </Style>
+
+            <!-- **Asymmetrische Ecken.** Die Blase ist an der Seite eckig, an der
+                 ihr Sprecher steht — links bei K.A.R.L., rechts beim Nutzer. Das
+                 ersetzt den Sprechblasenzipfel und trennt die beiden Stimmen auch
+                 dann, wenn die Farben dicht beieinander liegen. -->
             <Style x:Key="AssistantMessageBorderStyle" TargetType="Border">
                 <Setter Property="Background" Value="{ThemeResource AvatarAssistantMessageBrush}" />
-                <Setter Property="CornerRadius" Value="8" />
-                <Setter Property="Padding" Value="10,8" />
+                <Setter Property="CornerRadius" Value="4,14,14,14" />
+                <Setter Property="Padding" Value="12,10" />
             </Style>
             <Style x:Key="UserMessageBorderStyle" TargetType="Border">
                 <Setter Property="Background" Value="{ThemeResource AvatarUserMessageBrush}" />
-                <Setter Property="CornerRadius" Value="8" />
-                <Setter Property="Padding" Value="10,8" />
+                <Setter Property="CornerRadius" Value="14,4,14,14" />
+                <Setter Property="Padding" Value="12,10" />
+            </Style>
+
+            <!-- Der runde Kopf neben jeder Antwort. Der Rand hält ihn auch dann
+                 sichtbar, wenn die Kappe des Avatars mit einer dunklen Fläche
+                 verschmilzt. -->
+            <Style x:Key="KarlAvatarBorderStyle" TargetType="Border">
+                <Setter Property="Width" Value="32" />
+                <Setter Property="Height" Value="32" />
+                <Setter Property="CornerRadius" Value="16" />
+                <Setter Property="Background" Value="{ThemeResource AvatarAccentSoftBrush}" />
+                <Setter Property="BorderBrush" Value="{ThemeResource AvatarStrokeBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="VerticalAlignment" Value="Top" />
+            </Style>
+
+            <!-- Anklickbare Beispielfrage. Flach, gerundet, unaufdringlich: Sie
+                 soll einladen, nicht mit dem Sendeknopf konkurrieren. -->
+            <Style x:Key="ChipButtonStyle" TargetType="Button">
+                <Setter Property="Background" Value="{ThemeResource AvatarCardBrush}" />
+                <Setter Property="Foreground" Value="{ThemeResource AvatarTextBrush}" />
+                <Setter Property="BorderBrush" Value="{ThemeResource AvatarStrokeBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="CornerRadius" Value="14" />
+                <Setter Property="Padding" Value="12,5" />
+                <Setter Property="FontSize" Value="12" />
+                <Setter Property="MinHeight" Value="0" />
+            </Style>
+
+            <!-- Eingabefeld und Knöpfe sitzen in **einer** gerundeten Fläche statt
+                 als drei einzelne Kästen nebeneinander. -->
+            <Style x:Key="ComposerBorderStyle" TargetType="Border">
+                <Setter Property="Background" Value="{ThemeResource AvatarInputBrush}" />
+                <Setter Property="BorderBrush" Value="{ThemeResource AvatarStrokeBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="CornerRadius" Value="16" />
+                <Setter Property="Padding" Value="6" />
+            </Style>
+
+            <!-- Ein Feld ohne eigenen Rahmen: Der Rahmen ist der Composer drumherum. -->
+            <Style x:Key="ComposerTextBoxStyle" TargetType="TextBox">
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="BorderThickness" Value="0" />
+                <Setter Property="Foreground" Value="{ThemeResource AvatarTextBrush}" />
+                <Setter Property="PlaceholderForeground" Value="{ThemeResource AvatarMutedBrush}" />
+                <Setter Property="FontSize" Value="14" />
+            </Style>
+
+            <Style x:Key="AccentButtonSurfaceStyle" TargetType="Button">
+                <Setter Property="Background" Value="{ThemeResource AvatarAccentBrush}" />
+                <Setter Property="Foreground" Value="{ThemeResource AvatarAccentTextBrush}" />
+                <Setter Property="BorderBrush" Value="{ThemeResource AvatarAccentBrush}" />
+                <Setter Property="CornerRadius" Value="12" />
+                <Setter Property="Padding" Value="16,8" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+            </Style>
+
+            <Style x:Key="QuietButtonStyle" TargetType="Button">
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="BorderThickness" Value="0" />
+                <Setter Property="Foreground" Value="{ThemeResource AvatarMutedBrush}" />
+                <Setter Property="CornerRadius" Value="12" />
+                <Setter Property="FontSize" Value="12" />
+                <Setter Property="Padding" Value="10,6" />
+            </Style>
+
+            <Style x:Key="SurfaceTextBoxStyle" TargetType="TextBox">
+                <Setter Property="Background" Value="{ThemeResource AvatarInputBrush}" />
+                <Setter Property="BorderBrush" Value="{ThemeResource AvatarStrokeBrush}" />
+                <Setter Property="Foreground" Value="{ThemeResource AvatarTextBrush}" />
+                <Setter Property="PlaceholderForeground" Value="{ThemeResource AvatarMutedBrush}" />
+                <Setter Property="CornerRadius" Value="10" />
+                <Setter Property="Padding" Value="12,9" />
             </Style>
         </ResourceDictionary>
     </Application.Resources>

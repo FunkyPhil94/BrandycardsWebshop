@@ -8,19 +8,26 @@
     KeyDown="Page_KeyDown">
     <Grid Background="Transparent">
         <Border x:Name="SetupSurface" Background="{ThemeResource AvatarSurfaceBrush}">
-            <ScrollViewer x:Name="SetupScrollViewer" Padding="18" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <ScrollViewer x:Name="SetupScrollViewer" Padding="22" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                 <StackPanel x:Name="SetupPanel" Spacing="12">
-                    <TextBlock Text="BrandyCards Avatar" FontSize="27" FontWeight="SemiBold" Foreground="{ThemeResource AvatarTextBrush}" />
-                    <TextBlock Text="Der Avatar läuft als eigene Desktop-App und reagiert auf Ereignisse im Shop." TextWrapping="Wrap" Foreground="{ThemeResource AvatarMutedBrush}" />
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <Border Style="{StaticResource KarlAvatarBorderStyle}" Width="44" Height="44" CornerRadius="22">
+                            <Image x:Name="KarlKopfSetupImage" Width="44" Height="44" AutomationProperties.AccessibilityView="Raw" />
+                        </Border>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="BrandyCards Avatar" FontSize="24" FontWeight="SemiBold" Foreground="{ThemeResource AvatarTextBrush}" />
+                            <TextBlock Text="Läuft als eigene Desktop-App und reagiert auf Ereignisse im Shop." TextWrapping="Wrap" FontSize="12" Foreground="{ThemeResource AvatarMutedBrush}" />
+                        </StackPanel>
+                    </StackPanel>
 
-                    <TextBlock Text="Shop-Adresse" FontSize="12" FontWeight="SemiBold" Margin="0,8,0,0" Foreground="{ThemeResource AvatarTextBrush}" />
-                    <TextBox x:Name="ShopUrlTextBox" TabIndex="0" AutomationProperties.Name="Shop-Adresse" PlaceholderText="http://localhost:3000" Foreground="{ThemeResource AvatarTextBrush}" PlaceholderForeground="{ThemeResource AvatarMutedBrush}" Background="{ThemeResource AvatarInputBrush}" BorderBrush="{ThemeResource AvatarStrokeBrush}" />
+                    <TextBlock Text="Shop-Adresse" FontSize="12" FontWeight="SemiBold" Margin="0,12,0,0" Foreground="{ThemeResource AvatarTextBrush}" />
+                    <TextBox x:Name="ShopUrlTextBox" TabIndex="0" AutomationProperties.Name="Shop-Adresse" PlaceholderText="http://localhost:3000" Style="{StaticResource SurfaceTextBoxStyle}" />
 
                     <TextBlock Text="Einmaliger Pairing-Code" FontSize="12" FontWeight="SemiBold" Margin="0,4,0,0" Foreground="{ThemeResource AvatarTextBrush}" />
-                    <TextBox x:Name="PairingCodeTextBox" TabIndex="1" AutomationProperties.Name="Einmaliger Pairing-Code" PlaceholderText="ABCDEF-GHIJKL" Foreground="{ThemeResource AvatarTextBrush}" PlaceholderForeground="{ThemeResource AvatarMutedBrush}" Background="{ThemeResource AvatarInputBrush}" BorderBrush="{ThemeResource AvatarStrokeBrush}" />
+                    <TextBox x:Name="PairingCodeTextBox" TabIndex="1" AutomationProperties.Name="Einmaliger Pairing-Code" PlaceholderText="ABCDEF-GHIJKL" Style="{StaticResource SurfaceTextBoxStyle}" />
                     <TextBlock Text="Den Code erzeugst du im Shop unter Admin → Desktop-Verbindung. Er ist 10 Minuten gültig und wird nur einmal verwendet." TextWrapping="Wrap" FontSize="12" Foreground="{ThemeResource AvatarMutedBrush}" />
 
-                    <Button x:Name="ConnectButton" TabIndex="2" AutomationProperties.Name="Desktop-Avatar verbinden" Content="Desktop-Avatar verbinden" Click="ConnectButton_Click" HorizontalAlignment="Stretch" Background="{ThemeResource AvatarAccentBrush}" Foreground="{ThemeResource AvatarAccentTextBrush}" BorderBrush="{ThemeResource AvatarAccentBrush}" />
+                    <Button x:Name="ConnectButton" TabIndex="2" AutomationProperties.Name="Desktop-Avatar verbinden" Content="Desktop-Avatar verbinden" Click="ConnectButton_Click" HorizontalAlignment="Stretch" Margin="0,6,0,0" Style="{StaticResource AccentButtonSurfaceStyle}" />
                     <TextBlock x:Name="StatusTextBlock" AutomationProperties.LiveSetting="Polite" TextWrapping="Wrap" Foreground="{ThemeResource AvatarErrorBrush}" />
                 </StackPanel>
             </ScrollViewer>
@@ -35,9 +42,14 @@
             <Button x:Name="LauncherButton"
                     Grid.Row="0"
                     TabIndex="0"
-                    Margin="8"
-                    MinHeight="54"
+                    Margin="10"
+                    MinHeight="56"
+                    Padding="14,8"
+                    CornerRadius="16"
+                    Background="{ThemeResource AvatarCardBrush}"
+                    BorderBrush="{ThemeResource AvatarStrokeBrush}"
                     HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Stretch"
                     Click="LauncherButton_Click"
                     AutomationProperties.AutomationId="AssistantLauncher"
                     AutomationProperties.Name="K.A.R.L. öffnen"
@@ -48,117 +60,148 @@
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
-                    <FontIcon Glyph="&#xE8BD;" FontSize="22" VerticalAlignment="Center" />
+                    <Border Style="{StaticResource KarlAvatarBorderStyle}" VerticalAlignment="Center">
+                        <Image x:Name="KarlKopfLauncherImage" Width="32" Height="32" AutomationProperties.AccessibilityView="Raw" />
+                    </Border>
                     <StackPanel Grid.Column="1" Spacing="1" VerticalAlignment="Center">
-                        <TextBlock Text="BrandyCards Assistant" FontSize="17" FontWeight="SemiBold" />
+                        <TextBlock Text="K.A.R.L." FontSize="16" FontWeight="SemiBold" Foreground="{ThemeResource AvatarTextBrush}" />
                         <TextBlock x:Name="LauncherSubtitleTextBlock" Text="Textpanel öffnen" FontSize="12" Foreground="{ThemeResource AvatarMutedBrush}" />
                     </StackPanel>
-                    <FontIcon x:Name="LauncherChevronIcon" Grid.Column="2" Glyph="&#xE70D;" VerticalAlignment="Center" />
+                    <FontIcon x:Name="LauncherChevronIcon" Grid.Column="2" Glyph="&#xE70D;" FontSize="14" Foreground="{ThemeResource AvatarMutedBrush}" VerticalAlignment="Center" />
                 </Grid>
             </Button>
 
-            <Grid x:Name="AssistantPanel" Grid.Row="1" Visibility="Collapsed" Padding="16,4,16,16" RowSpacing="12">
+            <Grid x:Name="AssistantPanel" Grid.Row="1" Visibility="Collapsed" Padding="14,0,14,14" RowSpacing="10">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
-                <Grid>
+                <!-- Kopfzeile: Kopf, Name, Zusage, Schließer. Der Zusatz zum
+                     Lesezugriff bleibt stehen — er ist die Zusage, unter der dieses
+                     Panel überhaupt gebaut wurde, und keine Zierde. -->
+                <Grid ColumnSpacing="10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Border Style="{StaticResource KarlAvatarBorderStyle}" Width="38" Height="38" CornerRadius="19" VerticalAlignment="Center">
+                        <Image x:Name="KarlKopfPanelImage" Width="38" Height="38" AutomationProperties.AccessibilityView="Raw" />
+                    </Border>
+                    <StackPanel Grid.Column="1" Spacing="1" VerticalAlignment="Center">
+                        <TextBlock Text="K.A.R.L." FontSize="19" FontWeight="SemiBold" Foreground="{ThemeResource AvatarTextBrush}" />
+                        <TextBlock Text="Kartenshop-Auskunft für Recherche und Lagebericht · nur lesend"
+                                   TextWrapping="Wrap" FontSize="11" Foreground="{ThemeResource AvatarMutedBrush}" />
+                    </StackPanel>
+                    <Button x:Name="CloseAssistantButton"
+                            Grid.Column="2"
+                            TabIndex="1"
+                            Width="36"
+                            Height="36"
+                            CornerRadius="18"
+                            Style="{StaticResource QuietButtonStyle}"
+                            Padding="0"
+                            VerticalAlignment="Center"
+                            Click="CloseAssistantButton_Click"
+                            AutomationProperties.Name="Textpanel schließen"
+                            ToolTipService.ToolTip="Textpanel schließen">
+                        <FontIcon Glyph="&#xE711;" FontSize="14" />
+                    </Button>
+                </Grid>
+
+                <Border Grid.Row="1" Background="{ThemeResource AvatarAssistantBrush}" BorderBrush="{ThemeResource AvatarStrokeBrush}" BorderThickness="1" CornerRadius="14">
+                    <ScrollViewer x:Name="ConversationScrollViewer" Padding="12" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" AutomationProperties.Name="Unterhaltung mit K.A.R.L.">
+                        <StackPanel x:Name="ConversationPanel" Spacing="12" />
+                    </ScrollViewer>
+                </Border>
+
+                <!-- Die Beispielfragen werden im Code aus `KarlPersona.Beispielfragen`
+                     gefüllt. Sie hier auszuschreiben hieße, dieselbe Liste zweimal zu
+                     pflegen — und die zweite Fassung veraltet zuerst. -->
+                <StackPanel x:Name="BeispielChipPanel" Grid.Row="2" Spacing="8" />
+
+                <Border Grid.Row="3" Style="{StaticResource ComposerBorderStyle}">
+                    <Grid RowSpacing="4">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <TextBox x:Name="AssistantInputTextBox"
+                                 TabIndex="3"
+                                 MinHeight="60"
+                                 MaxLength="500"
+                                 AcceptsReturn="True"
+                                 TextWrapping="Wrap"
+                                 Style="{StaticResource ComposerTextBoxStyle}"
+                                 PlaceholderText="Frag mich was …"
+                                 PreviewKeyDown="AssistantInputTextBox_PreviewKeyDown"
+                                 AutomationProperties.Name="Nachricht an K.A.R.L."
+                                 AutomationProperties.HelpText="Formuliere eine Frage zu Verkäufen, Bestellungen, Angeboten, Bestand, Anfragen, eBay-Sync oder Statistik. Eingabetaste sendet, Alt und Eingabetaste fügen eine neue Zeile ein." />
+                        <Grid Grid.Row="1" ColumnSpacing="8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0"
+                                       Text="Enter sendet · Alt+Enter neue Zeile"
+                                       FontSize="11"
+                                       VerticalAlignment="Center"
+                                       Margin="6,0,0,0"
+                                       Foreground="{ThemeResource AvatarMutedBrush}" />
+                            <Button x:Name="DictateAssistantButton"
+                                    Grid.Column="1"
+                                    TabIndex="4"
+                                    Width="38"
+                                    Height="38"
+                                    CornerRadius="19"
+                                    Padding="0"
+                                    Background="{ThemeResource AvatarAccentSoftBrush}"
+                                    BorderThickness="0"
+                                    Click="DictateAssistantButton_Click"
+                                    AutomationProperties.Name="Text diktieren"
+                                    AutomationProperties.HelpText="Startet eine einmalige lokale Windows-Spracheingabe. Der erkannte Text wird wie eine geschriebene Frage an K.A.R.L. übergeben."
+                                    ToolTipService.ToolTip="Frage diktieren">
+                                <FontIcon Glyph="&#xE720;" FontSize="15" Foreground="{ThemeResource AvatarAccentBrush}" />
+                            </Button>
+                            <Button x:Name="SendAssistantButton"
+                                    Grid.Column="2"
+                                    TabIndex="5"
+                                    Height="38"
+                                    Click="SendAssistantButton_Click"
+                                    Style="{StaticResource AccentButtonSurfaceStyle}"
+                                    CornerRadius="19"
+                                    AutomationProperties.Name="Nachricht senden">
+                                <StackPanel Orientation="Horizontal" Spacing="7">
+                                    <TextBlock Text="Senden" VerticalAlignment="Center" />
+                                    <FontIcon Glyph="&#xE724;" FontSize="14" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+                    </Grid>
+                </Border>
+
+                <Grid Grid.Row="4" ColumnSpacing="8">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
-                    <StackPanel Spacing="3">
-                        <TextBlock Text="K.A.R.L." FontSize="22" FontWeight="SemiBold" Foreground="{ThemeResource AvatarTextBrush}" />
-                        <!-- Der Name wird ausgeschrieben, sonst ist er nur eine Buchstabenfolge.
-                             Der Zusatz zum Lesezugriff bleibt: Er ist die Zusage, unter der
-                             dieses Panel überhaupt gebaut wurde. -->
-                        <TextBlock Text="Kartenshop-Auskunft für Recherche und Lagebericht" TextWrapping="Wrap" FontSize="12" Foreground="{ThemeResource AvatarMutedBrush}" />
-                        <TextBlock Text="Nur lesender Zugriff über fest definierte Funktionen" TextWrapping="Wrap" FontSize="11" Foreground="{ThemeResource AvatarMutedBrush}" />
+                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <ProgressRing x:Name="AssistantProgressRing" Width="16" Height="16" IsActive="False" Visibility="Collapsed" Foreground="{ThemeResource AvatarAccentBrush}" />
+                        <TextBlock x:Name="AssistantStatusTextBlock" AutomationProperties.LiveSetting="Polite" TextWrapping="Wrap" FontSize="12" Foreground="{ThemeResource AvatarMutedBrush}" VerticalAlignment="Center" />
                     </StackPanel>
-                    <Button x:Name="CloseAssistantButton"
+                    <Button x:Name="ChangeConnectionButton"
                             Grid.Column="1"
-                            TabIndex="1"
-                            Width="40"
-                            Height="40"
-                            Click="CloseAssistantButton_Click"
-                            AutomationProperties.Name="Textpanel schließen"
-                            ToolTipService.ToolTip="Textpanel schließen">
-                        <FontIcon Glyph="&#xE711;" />
-                    </Button>
+                            TabIndex="6"
+                            Content="Verbindung ändern"
+                            Style="{StaticResource QuietButtonStyle}"
+                            Click="ChangeConnectionButton_Click"
+                            AutomationProperties.Name="Verbindung zum Shop ändern" />
                 </Grid>
-
-                <Border Grid.Row="1" Background="{ThemeResource AvatarAssistantBrush}" BorderBrush="{ThemeResource AvatarStrokeBrush}" BorderThickness="1" CornerRadius="8">
-                    <ScrollViewer x:Name="ConversationScrollViewer" Padding="12" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" AutomationProperties.Name="Unterhaltung mit dem Assistant">
-                        <StackPanel x:Name="ConversationPanel" Spacing="10" />
-                    </ScrollViewer>
-                </Border>
-
-                <TextBlock Grid.Row="2"
-                           Text="Beispiele: „Was wurde zuletzt verkauft?“, „Zeig offene Angebote“ oder „Wie ist der eBay-Sync?“"
-                           TextWrapping="Wrap"
-                           FontSize="12"
-                           Foreground="{ThemeResource AvatarMutedBrush}" />
-
-                <TextBox x:Name="AssistantInputTextBox"
-                         Grid.Row="3"
-                         TabIndex="2"
-                         MinHeight="72"
-                         MaxLength="500"
-                         AcceptsReturn="True"
-                         TextWrapping="Wrap"
-                         PlaceholderText="Nachricht an den Assistant"
-                         PreviewKeyDown="AssistantInputTextBox_PreviewKeyDown"
-                         AutomationProperties.Name="Nachricht an den BrandyCards Assistant"
-                         AutomationProperties.HelpText="Formuliere eine Frage zu Verkäufen, Bestellungen, Angeboten, Bestand, Anfragen, eBay-Sync oder Statistik. Eingabetaste sendet, Alt und Eingabetaste fügen eine neue Zeile ein."
-                         Foreground="{ThemeResource AvatarTextBrush}"
-                         PlaceholderForeground="{ThemeResource AvatarMutedBrush}"
-                         Background="{ThemeResource AvatarInputBrush}"
-                         BorderBrush="{ThemeResource AvatarStrokeBrush}" />
-
-                    <Grid Grid.Row="4" ColumnSpacing="10">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                            <ProgressRing x:Name="AssistantProgressRing" Width="18" Height="18" IsActive="False" Visibility="Collapsed" />
-                            <TextBlock x:Name="AssistantStatusTextBlock" AutomationProperties.LiveSetting="Polite" Text="Bereit" TextWrapping="Wrap" Foreground="{ThemeResource AvatarMutedBrush}" VerticalAlignment="Center" />
-                        </StackPanel>
-                        <Button x:Name="DictateAssistantButton"
-                                Grid.Column="1"
-                                TabIndex="3"
-                                Width="44"
-                                MinHeight="40"
-                                Click="DictateAssistantButton_Click"
-                                AutomationProperties.Name="Text diktieren"
-                                AutomationProperties.HelpText="Startet eine einmalige lokale Windows-Spracheingabe. Der erkannte Text wird wie eine geschriebene Frage an den Assistant übergeben."
-                                ToolTipService.ToolTip="Text lokal diktieren">
-                            <FontIcon Glyph="&#xE720;" />
-                        </Button>
-                        <Button x:Name="SendAssistantButton"
-                            Grid.Column="2"
-                            TabIndex="4"
-                            Content="Senden"
-                            Click="SendAssistantButton_Click"
-                            AutomationProperties.Name="Nachricht senden"
-                            Background="{ThemeResource AvatarAccentBrush}"
-                            Foreground="{ThemeResource AvatarAccentTextBrush}"
-                            BorderBrush="{ThemeResource AvatarAccentBrush}" />
-                </Grid>
-
-                <Button x:Name="ChangeConnectionButton"
-                        Grid.Row="5"
-                        TabIndex="5"
-                        Content="Verbindung ändern"
-                        HorizontalAlignment="Left"
-                        Click="ChangeConnectionButton_Click"
-                        AutomationProperties.Name="Verbindung zum Shop ändern" />
             </Grid>
         </Grid>
 

@@ -97,7 +97,10 @@ test("eine Absage des Shops ist keine empfangene Antwort", async () => {
   assert.match(client, /record struct AssistantAnswer\(bool Succeeded, string Text, IReadOnlyList<AssistantVisual> Visuals\)/u);
   assert.match(client, /Task<AssistantAnswer> AskAsync/u);
   // Vorher meldete die Statuszeile auch bei HTTP 503 „Antwort empfangen".
-  assert.match(page, /reply\.Succeeded \? "Antwort empfangen" : "Shop meldet einen Fehler"/u);
+  // Seit dem 2026-08-18 spricht K.A.R.L. den Erfolgsfall in wechselnden Worten
+  // aus — **die Verzweigung bleibt aber genau dieselbe**, und nur darauf kommt
+  // es hier an: Ein Fehlschlag darf nie wie eine Antwort aussehen.
+  assert.match(page, /reply\.Succeeded \? KarlPersona\.Fertig\(_anfrageNummer\) : "Shop meldet einen Fehler"/u);
   // Erfolg gibt es nur mit echtem Text.
   assert.match(client, /new AssistantAnswer\(true,/u);
   assert.equal((client.match(/new AssistantAnswer\(true,/gu) ?? []).length, 1,
