@@ -9926,3 +9926,24 @@ selbst; die Schrittfolge samt Nachprüfung steht in
   nur der Betreiber. Der erste echte Lauf gehört beobachtet.
 - **Nicht ausgerollt.** Der Stand liegt auf
   `claude/excel-list-images-checklist-1d0264`, nicht auf `main`.
+
+### Nachtrag am selben Tag: mehrdeutige Bilddateien
+
+Auf die Frage des Betreibers, ob die Bilder wirklich richtig zugeordnet werden,
+kam eine Lücke ans Licht — und eine Bestätigung.
+
+- **Bestätigung:** Stichprobe von fünf Karten am Bild selbst geprüft
+  (Barry Nitro Boost 01/99, Ndiaye Cracked Ice 044/399, Mukasa Future Stars
+  Blue & Pink, Čech 8 Bit Ballers, Johnson Blue & Pink). Spieler, Verein,
+  Reihe, Parallele und Nummerierung stimmen mit dem erzeugten Titel überein.
+- **Lücke:** Zwei ausgewählte Dateien, die sich nur in der Schreibweise
+  unterscheiden, fielen im Abgleich auf denselben Schlüssel. Die Zeile hätte
+  **stumm** eines von beiden bekommen. Ein fehlendes Bild meldet sich, ein
+  vertauschtes nicht.
+- Behoben: `planBauen` erkennt mehrdeutige Namen und macht die betroffene Zeile
+  zum Fehler. **Der Plan bekommt jetzt die volle Dateiliste**, nicht die Werte
+  der Nachschlage-Map — in der wären die Doppel längst zu einem verschmolzen
+  gewesen, und die Prüfung liefe ins Leere. Oberfläche und Prüfung teilen sich
+  dafür `dateischluessel`; griffen sie unterschiedlich zu, könnte der Plan
+  „bereit" sagen und der Upload danach ein anderes Bild finden als das geprüfte.
+- 726 Tests grün, `tsc` und Lint sauber.

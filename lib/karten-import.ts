@@ -55,10 +55,15 @@ export type Plan = {
 };
 
 /** Groß-/Kleinschreibung und Leerzeichen sind bei Dateinamen aus Windows keine
- *  verlässliche Unterscheidung — für den Abgleich wird beides eingeebnet. */
-function schluessel(name: string): string {
+ *  verlässliche Unterscheidung — für den Abgleich wird beides eingeebnet.
+ *
+ *  Dieselbe Funktion muss die Oberfläche beim Hochladen benutzen. Griffe sie
+ *  anders zu, könnte der Plan „bereit" sagen und der Upload danach ein anderes
+ *  Bild finden als das geprüfte. */
+export function dateischluessel(name: string): string {
   return name.trim().toLowerCase();
 }
+const schluessel = dateischluessel;
 
 function zahl(wert: string | undefined): number | null {
   const sauber = (wert ?? "").trim();
@@ -69,8 +74,18 @@ function zahl(wert: string | undefined): number | null {
 }
 
 export function planBauen({ zeilen, bilder, vorhandeneTitel }: PlanEingabe): Plan {
+  // **Mehrdeutige Dateinamen sind gefährlicher als fehlende.** Zwei Dateien,
+  // die sich nur in der Schreibweise unterscheiden — etwa aus zwei Ordnern
+  // gleichzeitig ausgewählt — fielen sonst auf denselben Schlüssel, und die
+  // Zeile bekäme stumm eines von beiden. Ein fehlendes Bild meldet sich, ein
+  // vertauschtes nicht.
   const nachName = new Map<string, Bildangabe>();
-  for (const bild of bilder) nachName.set(schluessel(bild.name), bild);
+  const mehrdeutig = new Set<string>();
+  for (const bild of bilder) {
+    const key = schluessel(bild.name);
+    if (nachName.has(key)) mehrdeutig.add(key);
+    nachName.set(key, bild);
+  }
 
   const vorhanden = new Set<string>();
   for (const titel of vorhandeneTitel) vorhanden.add(schluessel(titel));
@@ -98,6 +113,9 @@ export function planBauen({ zeilen, bilder, vorhandeneTitel }: PlanEingabe): Pla
     else if (menge === null) fehler(`Die Menge muss eine ganze Zahl zwischen 1 und ${MAX_MENGE} sein.`);
     else if (!bilddatei) fehler("Keine Bilddatei in der Zeile.");
     else if (!bild) fehler(`Das Bild „${bilddatei}“ ist nicht unter den ausgewählten Dateien.`);
+    else if (mehrdeutig.has(schluessel(bilddatei))) {
+      fehler(`Mehrere ausgewählte Dateien heißen „${bilddatei}“ — welche gemeint ist, lässt sich nicht entscheiden.`);
+    }
     else if (bild.size > MAX_BILD_BYTES) fehler(`„${bilddatei}“ ist ${(bild.size / 1_000_000).toFixed(1)} MB groß, erlaubt sind 10 MB.`);
     else if (bild.type && !(ERLAUBTE_BILDTYPEN as readonly string[]).includes(bild.type)) {
       fehler(`„${bilddatei}“ ist kein JPG, PNG oder WebP.`);

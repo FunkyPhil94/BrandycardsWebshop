@@ -4,7 +4,7 @@ import { useCallback, useRef, useState } from "react";
 import Link from "next/link";
 import { adminFetch, authHeaders } from "./admin-auth";
 import { tabelleLesen, TabellenFehler } from "../../lib/xlsx-lesen";
-import { planBauen, planZusammenfassen, type Plan, type Posten } from "../../lib/karten-import";
+import { dateischluessel, planBauen, planZusammenfassen, type Plan, type Posten } from "../../lib/karten-import";
 
 /** Massenanlage von Vorverkaufskarten aus einer Tabelle und einem Bildordner.
  *
@@ -31,12 +31,17 @@ export function ImportPanel() {
   const [lauf, setLauf] = useState<Lauf>({ laeuft: false, erledigt: 0, abgebrochen: "" });
   const [ergebnisse, setErgebnisse] = useState<Map<number, string>>(new Map());
 
+  // Zwei Sammlungen mit Absicht: Die Map dient dem Nachschlagen beim Hochladen,
+  // die Liste behält **alle** ausgewählten Dateien. Würde der Plan nur die
+  // Map-Werte sehen, wären zwei gleich benannte Dateien darin längst zu einer
+  // verschmolzen — die Mehrdeutigkeit, vor der er warnen soll, wäre unsichtbar.
   const bilder = useRef(new Map<string, File>());
+  const bilderliste = useRef<File[]>([]);
   const zeilen = useRef<Record<string, string>[]>([]);
   const stoppen = useRef(false);
 
   const planNeuBauen = useCallback(async () => {
-    if (zeilen.current.length === 0 || bilder.current.size === 0) { setPlan(null); return; }
+    if (zeilen.current.length === 0 || bilderliste.current.length === 0) { setPlan(null); return; }
     setNote("");
     try {
       const antwort = await fetch("/api/admin/products?titel=manuell", { headers: await authHeaders() });
@@ -44,7 +49,7 @@ export function ImportPanel() {
       if (!antwort.ok || !daten.titel) throw new Error(daten.error ?? "Der Bestand konnte nicht geladen werden.");
       setPlan(planBauen({
         zeilen: zeilen.current,
-        bilder: [...bilder.current.values()].map((datei) => ({ name: datei.name, size: datei.size, type: datei.type })),
+        bilder: bilderliste.current.map((datei) => ({ name: datei.name, size: datei.size, type: datei.type })),
         vorhandeneTitel: daten.titel,
       }));
       setErgebnisse(new Map());
@@ -74,8 +79,9 @@ export function ImportPanel() {
 
   async function bilderWaehlen(dateien: FileList | null) {
     bilder.current = new Map();
-    for (const datei of dateien ?? []) bilder.current.set(datei.name.toLowerCase(), datei);
-    setBilderzahl(bilder.current.size);
+    bilderliste.current = [...(dateien ?? [])];
+    for (const datei of bilderliste.current) bilder.current.set(dateischluessel(datei.name), datei);
+    setBilderzahl(bilderliste.current.length);
     await planNeuBauen();
   }
 
@@ -91,7 +97,7 @@ export function ImportPanel() {
 
     for (const posten of offen) {
       if (stoppen.current) { abgebrochen = "Abgebrochen. Die bereits angelegten Karten bleiben stehen."; break; }
-      const datei = bilder.current.get(posten.bilddatei.toLowerCase());
+      const datei = bilder.current.get(dateischluessel(posten.bilddatei));
       if (!datei) {
         setErgebnisse((alt) => new Map(alt).set(posten.zeile, "Bild nicht mehr auffindbar."));
         continue;

@@ -54,6 +54,21 @@ test("ein fehlendes Bild macht die Zeile zum Fehler, nicht zur Karte ohne Bild",
   assert.deepEqual(plan.unbenutzteBilder, ["saka_base.jpg"]);
 });
 
+test("zwei gleich benannte Bilder machen die Zeile zum Fehler, nicht zur Zufallswahl", () => {
+  // **Der stille Vertauscher.** Werden Dateien aus zwei Ordnern zugleich
+  // ausgewählt, können zwei denselben Namen tragen (oder sich nur in der
+  // Schreibweise unterscheiden). Wer sie in eine Map nach Namen legt, behält
+  // eine davon — und die Zeile bekäme das falsche Bild, ohne Fehlermeldung.
+  const plan = planBauen({
+    zeilen: [zeile("Eine Karte", "saka_base.jpg"), zeile("Andere Karte", "eze_base.jpg")],
+    bilder: [bild("saka_base.jpg"), bild("SAKA_BASE.JPG"), bild("eze_base.jpg")],
+    vorhandeneTitel: [],
+  });
+  assert.equal(plan.posten[0].stand, "fehler");
+  assert.match(plan.posten[0].grund, /Mehrere ausgewählte Dateien/u);
+  assert.equal(plan.posten[1].stand, "bereit", "die eindeutige Zeile bleibt davon unberührt");
+});
+
 test("was schon im Shop steht, wird übersprungen statt doppelt angelegt", () => {
   // Der Fall nach einem Abbruch: 90 von 144 sind angelegt, der zweite Anlauf
   // darf die 90 nicht ein zweites Mal einstellen.
