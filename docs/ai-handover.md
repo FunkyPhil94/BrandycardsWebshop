@@ -9993,3 +9993,19 @@ kam eine Lücke ans Licht — und eine Bestätigung.
   Sie sind heute unerreichbar; ein Kauf zum Preis `null` wäre der teure Fehler,
   falls je eine durchrutscht.
 - 728 Tests grün, `tsc` und Lint sauber.
+
+## Auftrag 2026-08-18: Suchleiste im Vorverkauf
+- Status: LÄUFT.
+- **Beim Hinsehen ein Fund, der dringender war als der Auftrag:** Die Seite holte
+  `pro=100` ohne Blätterleiste. 100 ist die größte Seitengröße aus
+  `lib/pagination.ts`. Seit dem Import von 144 Karten waren **44 davon auf
+  keiner Seite zu sehen** — im Shop vorhanden, bezahlbar, verlinkt, unsichtbar.
+- Umgesetzt: Suchfeld (serverseitig über dasselbe `q` wie der Katalog,
+  entprellt), Blätterleiste, Trefferzahl, `q` und `seite` in der Adresse.
+- **Zwei Leerzustände statt einem** — „nichts gefunden" ist eine Auskunft über
+  die Suche, „gerade nichts im Vorverkauf" eine über den Shop.
+- Fünf neue Texte in `lib/i18n.ts`; dazu „Weiter", „Zurück" und
+  „Seite {{number}}", die der Katalog seit jeher benutzt, ohne dass sie je
+  übersetzt waren.
+- Der Test prüfte bisher die wörtliche Abfragezeichenkette `origin=MANUAL&pro=100`
+  und brach am Umbau. Umgeschrieben auf die Absicht.

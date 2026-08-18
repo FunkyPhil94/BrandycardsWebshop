@@ -31,7 +31,28 @@ test("N7 hält Vorverkaufskarten aus Festpreis-Aktionen heraus", async () => {
   assert.match(gallery, /Preis vorschlagen/, "die Galerie muss eine Vorverkaufskarte zum Vorschlag führen");
   assert.match(cards, /category === "Direkt bei uns"/, "der Katalog darf eine Vorverkaufskarte nicht in den Warenkorb legen");
   assert.match(checkout, /\/api\/products\?ids=/, "die Kasse muss ihre Warenkorbkarten laden, nicht nur Seite eins");
-  assert.match(presale, /origin=MANUAL&pro=100/, "der Vorverkauf ist eine eigene serverseitige Scheibe");
+  assert.match(presale, /origin: "MANUAL"/, "der Vorverkauf ist eine eigene serverseitige Scheibe");
+});
+
+test("der Vorverkauf sucht serverseitig und blättert über seinen ganzen Bestand", async () => {
+  const presale = await read("app/vorverkauf/page.tsx");
+
+  // Die Suche gehört auf den Server, sonst durchsucht sie nur die geladene
+  // Seite — und das sähe aus wie „gibt es nicht", während die Karte auf Seite
+  // zwei steht.
+  assert.match(presale, /params\.set\("q", suche\.trim\(\)\)/, "die Suche muss als q an die API gehen");
+
+  // **Der eigentliche Regressionstest.** Bis zum 2026-08-18 holte die Seite
+  // `pro=100` ohne Blätterleiste. Dann kamen 144 Karten herein, und 44 davon
+  // waren im Shop vorhanden, bezahlbar und verlinkt — aber auf keiner Seite zu
+  // sehen. Wer die Blätterleiste wieder entfernt, stellt genau das her.
+  assert.match(presale, /seite: String\(seite\)/, "die Seite muss ihre Seitenzahl mitschicken");
+  assert.match(presale, /pageNumbers\(seite, seitenInfo\.totalPages\)/, "es braucht eine Blätterleiste");
+
+  // Zwei Leerzustände: „nichts gefunden" ist eine Auskunft über die Suche,
+  // „gerade nichts im Vorverkauf" eine über den Shop.
+  assert.match(presale, /Keine Karte passt zu dieser Suche\./, "die leere Suche braucht ihre eigene Auskunft");
+  assert.match(presale, /Gerade ist nichts im Vorverkauf\./, "der leere Vorverkauf behält seine");
 });
 
 test("Startseite und Sitemap zeigen nur eBay-Karten", async () => {

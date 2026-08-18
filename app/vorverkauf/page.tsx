@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useI18n } from "../i18n";
 import { SiteFooter, SiteHeader } from "../site-chrome";
+import { pageNumbers } from "../../lib/pagination.ts";
 
 type Product = {
   id: string;
@@ -16,54 +17,147 @@ type Product = {
   imageUrls: string[];
 };
 
+type Antwort = {
+  products?: Product[];
+  total?: number;
+  totalPages?: number;
+  page?: number;
+};
+
+/** Wie viele Karten auf eine Seite gehen.
+ *
+ *  100 ist die größte Größe, die `lib/pagination.ts` zulässt, und sie ist hier
+ *  Absicht: Der Vorverkauf ist ein überschaubarer, kuratierter Ausschnitt — man
+ *  soll ihn überblicken, nicht durchblättern. **Eine Blätterleiste braucht es
+ *  trotzdem:** Am 2026-08-18 kamen 144 Karten auf einmal herein, und die Seite
+ *  holte weiterhin nur die ersten 100. Die übrigen 44 waren im Shop
+ *  vorhanden, bezahlbar, verlinkt — und auf keiner Seite zu sehen. */
+const PRO_SEITE = 100;
+
 /** Der Vorverkauf: Karten, die es hier gibt, aber (noch) nicht bei eBay.
  *
  * **Warum eine eigene Seite und kein Filter auf `/karten`:** Entscheidung des
  * Betreibers vom 2026-08-08. Diese Karten sind sein Argument gegen den Umweg
  * über eBay — im normalen Bestand gingen sie zwischen 294 anderen unter.
+ * Seit dem 2026-08-18 erscheinen sie im Katalog gar nicht mehr.
  *
  * Die Liste kommt aus demselben `/api/products` wie der Katalog und wird hier
  * über `origin` gefiltert. Eine eigene Route wäre eine zweite Stelle, an der
  * dieselben Sichtbarkeitsregeln stehen — und die zweite Stelle ist die, die
- * beim nächsten Umbau vergessen wird.
+ * beim nächsten Umbau vergessen wird. **Das gilt auch für die Suche:** Sie
+ * läuft über dasselbe `q` wie im Katalog, serverseitig, statt hier im Browser
+ * eine zweite Suchlogik über die geladene Seite zu legen.
  */
 export default function VorverkaufPage() {
   const [cards, setCards] = useState<Product[]>([]);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [suche, setSuche] = useState("");
+  const [seite, setSeite] = useState(1);
+  const [seitenInfo, setSeitenInfo] = useState({ total: 0, totalPages: 1 });
+  const [bereit, setBereit] = useState(false);
   const { t } = useI18n();
 
+  // Suchbegriff und Seite aus der Adresse übernehmen, damit ein geteilter Link
+  // dieselbe Ansicht öffnet.
   useEffect(() => {
-    let cancelled = false;
-    // Vorverkauf is its own catalogue slice. It must not fetch the first page
-    // of all eBay cards and then discover manual cards in the browser.
-    fetch("/api/products?origin=MANUAL&pro=100")
-      .then((response) => (response.ok ? response.json() : Promise.reject(new Error("failed"))))
-      .then((data: { products?: Product[] }) => {
-        if (cancelled) return;
-        // Keep this as a defensive allowlist even though the API already
-        // scopes the response to MANUAL. It must never render an eBay card if
-        // a future API change weakens that filter.
-        setCards((data.products ?? []).filter((product) => product.origin === "MANUAL"));
-        setStatus("ready");
-      })
-      .catch(() => { if (!cancelled) setStatus("error"); });
-    return () => { cancelled = true; };
+    const timer = window.setTimeout(() => {
+      const params = new URLSearchParams(window.location.search);
+      setSuche(params.get("q") ?? "");
+      const gewuenscht = Number(params.get("seite"));
+      setSeite(Number.isInteger(gewuenscht) && gewuenscht > 0 ? gewuenscht : 1);
+      setBereit(true);
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    if (!bereit) return;
+    const controller = new AbortController();
+    // Entprellt wie im Katalog: eine Anfrage je Tastendruck wäre bei 144 Karten
+    // nicht falsch, aber unnötig.
+    const timer = window.setTimeout(() => {
+      const params = new URLSearchParams({ origin: "MANUAL", pro: String(PRO_SEITE), seite: String(seite) });
+      if (suche.trim()) params.set("q", suche.trim());
+      setStatus("loading");
+      fetch(`/api/products?${params}`, { signal: controller.signal })
+        .then((response) => (response.ok ? response.json() : Promise.reject(new Error("failed"))))
+        .then((daten: Antwort) => {
+          // Weiterhin eine Positivliste, obwohl die API bereits auf MANUAL
+          // einschränkt. Hier darf nie eine eBay-Karte erscheinen, falls diese
+          // Einschränkung je aufweicht.
+          setCards((daten.products ?? []).filter((product) => product.origin === "MANUAL"));
+          setSeitenInfo({ total: daten.total ?? 0, totalPages: daten.totalPages ?? 1 });
+          if (daten.page && daten.page !== seite) setSeite(daten.page);
+          setStatus("ready");
+        })
+        .catch((fehler: unknown) => {
+          if (fehler instanceof DOMException && fehler.name === "AbortError") return;
+          setStatus("error");
+        });
+    }, 180);
+    return () => { window.clearTimeout(timer); controller.abort(); };
+  }, [bereit, seite, suche]);
+
+  // Ohne neuen Verlaufseintrag je Tastendruck — sonst führt der Zurück-Knopf
+  // durch jeden einzelnen Buchstaben.
+  useEffect(() => {
+    if (!bereit) return;
+    const params = new URLSearchParams(window.location.search);
+    if (suche.trim()) params.set("q", suche.trim()); else params.delete("q");
+    if (seite <= 1) params.delete("seite"); else params.set("seite", String(seite));
+    const rest = params.toString();
+    window.history.replaceState(null, "", `${window.location.pathname}${rest ? `?${rest}` : ""}${window.location.hash}`);
+  }, [bereit, seite, suche]);
+
+  function zuSeite(ziel: number) {
+    setSeite(Math.max(1, ziel));
+    document.getElementById("vorverkauf")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  const gesucht = suche.trim().length > 0;
 
   return (
     <main>
       <SiteHeader active="/vorverkauf" />
-      <section className="shop-section">
+      <section className="shop-section" id="vorverkauf">
         <div className="section-heading">
           <h2>{t("Vorverkauf.")}</h2>
           <p>{t("Karten, die du hier bekommst, bevor sie bei eBay stehen.")}</p>
         </div>
 
+        <div className="shop-toolbar">
+          <label className="search-field" htmlFor="vorverkauf-suche">
+            <span aria-hidden="true">⌕</span>
+            <input
+              id="vorverkauf-suche"
+              value={suche}
+              onChange={(ereignis) => { setSuche(ereignis.target.value); setSeite(1); }}
+              placeholder={t("Spieler, Set oder Kartennummer")}
+              aria-label={t("Vorverkauf durchsuchen")}
+            />
+          </label>
+          {status === "ready" && seitenInfo.total > 0 && <p className="shop-toolbar-count">
+            {gesucht
+              ? t("{{count}} Treffer", { count: seitenInfo.total })
+              : t("{{count}} Karten im Vorverkauf", { count: seitenInfo.total })}
+          </p>}
+        </div>
+
         {status === "loading" && <p className="empty-state">{t("Lade …")}</p>}
         {status === "error" && <p className="empty-state">{t("Die Karten konnten gerade nicht geladen werden. Bitte lade die Seite neu.")}</p>}
-        {/* Ein leerer Bereich braucht mehr als „keine Treffer": Wer hierher
-            klickt, soll nicht denken, der Shop sei kaputt. */}
-        {status === "ready" && cards.length === 0 && <div className="empty-state">
+
+        {/* Zwei verschiedene Leerzustände, und der Unterschied ist der Punkt:
+            „nichts gefunden" ist eine Auskunft über die Suche, „gerade nichts
+            im Vorverkauf" eine über den Shop. Wer beides zusammenwirft, lässt
+            den Besucher glauben, es gebe hier nie etwas. */}
+        {status === "ready" && cards.length === 0 && gesucht && <div className="empty-state">
+          <p><strong>{t("Keine Karte passt zu dieser Suche.")}</strong></p>
+          <p><button type="button" className="text-link text-link-inline" onClick={() => { setSuche(""); setSeite(1); }}>
+            {t("Suche zurücksetzen")}
+          </button></p>
+        </div>}
+
+        {status === "ready" && cards.length === 0 && !gesucht && <div className="empty-state">
           <p><strong>{t("Gerade ist nichts im Vorverkauf.")}</strong></p>
           <p>{t("Hier bieten wir Karten direkt an, bevor sie in unseren eBay-Shop wechseln. Schau später wieder vorbei oder stöbere im gesamten Bestand.")}</p>
           <p><Link className="text-link text-link-inline" href="/karten">{t("Gesamten Bestand ansehen")} <span>→</span></Link></p>
@@ -96,6 +190,23 @@ export default function VorverkaufPage() {
             </article>;
           })}
         </div>}
+
+        {status === "ready" && seitenInfo.totalPages > 1 && <nav className="pager" aria-label={t("Seiten")}>
+          <button type="button" className="pager-step" onClick={() => zuSeite(seite - 1)} disabled={seite <= 1}>← {t("Zurück")}</button>
+          <div className="pager-pages">
+            {pageNumbers(seite, seitenInfo.totalPages).map((nummer, index) => nummer === null
+              ? <span key={`luecke-${index}`} className="pager-gap" aria-hidden="true">…</span>
+              : <button
+                  key={nummer}
+                  type="button"
+                  className={nummer === seite ? "pager-page aktiv" : "pager-page"}
+                  onClick={() => zuSeite(nummer)}
+                  aria-label={t("Seite {{number}}", { number: nummer })}
+                  aria-current={nummer === seite ? "page" : undefined}
+                >{nummer}</button>)}
+          </div>
+          <button type="button" className="pager-step" onClick={() => zuSeite(seite + 1)} disabled={seite >= seitenInfo.totalPages}>{t("Weiter")} →</button>
+        </nav>}
       </section>
       <SiteFooter />
     </main>

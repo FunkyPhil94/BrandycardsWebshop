@@ -833,6 +833,14 @@ footer { background:var(--ink); color:#fff; padding:52px max(48px,calc((100vw - 
   .catalog-select select,.catalog-price input { flex:1; }
 }
 
+/* --- Suche im Vorverkauf --- */
+.shop-toolbar-count { color:var(--muted); font-family:'DM Mono',monospace; font-size:10px; letter-spacing:.06em; margin:0; white-space:nowrap; }
+/* Zurücksetzen ist eine Schaltfläche, kein Verweis — sie führt nirgendwohin,
+   sie räumt das Feld. Sie soll nur aussehen wie ein Verweis, und dafür müssen
+   die Vorgaben des Browsers für <button> weg. */
+button.text-link-inline { background:none; border:0; color:inherit; cursor:pointer; font:inherit; padding:0 0 2px; }
+@media (max-width:640px) { .shop-toolbar-count { align-self:flex-start; } }
+
 /* Keep the split copy's growing desktop padding from consuming its content
    box at wide viewports. The text paragraphs retain their own readable max
    width; the grid item itself must remain wide enough for that padding. */
