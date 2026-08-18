@@ -39,7 +39,7 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ### 2026-08-18 - Fachwort-Riegel schärfen, dann Ereignis-Kommentare
 
-- Stand: **LÄUFT.**
+- Stand: **ABGESCHLOSSEN und AUSGEROLLT**, in Betrieb gemessen.
 - Auftrag: Zwei Punkte, in dieser Reihenfolge vom Betreiber beauftragt.
 
 **Punkt 1: Der Fachwort-Riegel der Smalltalk-Erkennung sitzt zu breit.** Die
@@ -86,6 +86,56 @@ Assistent sonst vermeidet.
 **Abnahme:** `npm test`, `npx tsc --noEmit`, `npm run lint`, `dotnet build`. Für
 Punkt 1 stehen die drei produktiv gemessenen Zeilen als Test; für Punkt 2 wird
 die Ereignisbehandlung an der laufenden App ausgelöst und abgelichtet.
+
+**Ergebnis: beides gebaut, ausgerollt und in Betrieb gemessen. 733 Tests grün,
+TypeScript fehlerfrei, ESLint 0 Fehler, `dotnet build` 0 Warnungen.
+Worker-Version `946cbe09-d25c-4da6-93f9-49dceafd746d`.**
+
+**Punkt 1 — der Riegel.** `enthaeltFachwort` prüft am Wortanfang statt als
+Teilzeichenkette; die Zeitwörter sind aus der Liste. Alle drei produktiv
+gemessenen Zeilen stehen als Test, samt der Gegenprobe: „Wie ist der
+Kartenpreis?" bleibt gesperrt (Wortanfang), „Erzähl mir einen Witz" nicht mehr.
+Live geprüft an der laufenden App gegen den ausgerollten Server: Die Witzfrage
+wird beantwortet.
+
+**Ein bestehender Test musste sein Beispiel wechseln, nicht seine Absicht.**
+`assistant-question-log` benutzte ausgerechnet „Erzähl mir einen Witz über
+Sammelkarten." als Beispiel für „nicht zuordenbar" — dieselbe Zeile, die
+produktiv in der Messtabelle lag. Seit K.A.R.L. sie beantwortet, taugt sie dafür
+nicht mehr; jetzt steht dort eine Wetterfrage.
+
+**Punkt 2 — Ereignis-Kommentare.** `KarlPersona.Ereigniskommentar` deckt alle
+vier Arten der Animationstabelle ab; ein Test hält fest, dass jede animierte Art
+auch eine Stimme hat, und dass kein Kommentartext eine Ziffer oder einen Betrag
+enthält. Bei zugeklapptem Panel steht der Hinweis auf dem Launcher.
+
+**Wie das gemessen wurde, ohne Produktionsdaten anzufassen:** Der lokale
+Ereigniszeiger in `%LOCALAPPDATA%\BrandyCards\DesktopAvatar\settings.json` wurde
+— nach Sicherung der Datei — auf den 17.08. 20:00 zurückgestellt. Damit liefen
+die **sechs echten** Ereignisse jenes Abends (drei `OFFER_RECEIVED`, drei
+`OFFER_REJECTED`) noch einmal ein. Im Panel standen daraufhin **genau zwei**
+Kommentare, einer je Art — die Zusammenfassung greift also. Die Datei wurde
+anschließend aus der Sicherung wiederhergestellt, Gerätetoken unberührt. Der
+Weg ist rein lesend gegenüber dem Shop und für die nächste Messung
+wiederverwendbar.
+
+> **Ein Fehler, der offen dasteht.** Der Rollout ging beim ersten Versuch
+> daneben. `git merge --ff-only` scheiterte, weil `main` inzwischen sieben
+> fremde Commits zum Vorverkauf trug — aber der Befehl stand in einer Kette
+> `git merge … | tail -2 && npm run build && … && npx wrangler deploy`, und der
+> Rückgabewert einer Pipe ist der von `tail`, nicht der von `git merge`. Der
+> Fehlschlag war damit unsichtbar, und ausgerollt wurde `main` **ohne** die
+> beiden Commits dieses Auftrags — dafür **mit** der Vorverkaufsarbeit der
+> anderen Sitzung, deren Eintrag „ABGESCHLOSSEN" sagt und keinen Rollout nennt.
+> Version `75280ec4` ist dieser Fehlgriff.
+>
+> Behoben durch einen echten Merge (`36ababa`), die vollständige Prüfkette auf
+> dem zusammengeführten Stand und einen zweiten Rollout. **Die Lehre für den
+> nächsten Durchlauf: Kein `git`-Befehl in einer Pipe, wenn sein Erfolg über
+> das Weitermachen entscheidet.** Und: Bei parallelen Sitzungen vor dem Deploy
+> `git log HEAD..main` lesen, statt `--ff-only` als Wächter zu benutzen — es ist
+> einer, aber nur wenn man seinen Ausgang auch prüft.
+
 
 ## Historie
 
