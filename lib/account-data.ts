@@ -23,26 +23,20 @@ type Bucket = ReturnType<typeof getAssetBucket>;
  * Fällen würde eine Löschung mitten in einen Geldvorgang schneiden. */
 export const BLOCKING_ORDER_STATUSES = ["PENDING", "PROCESSING"] as const;
 
-/** Was zu einem Konto gehört — und warum die Kontokennung allein nicht reicht.
- *
- * Am 2026-08-08 an echten Daten aufgefallen: `/anfragen` und `/verkaufen` sind
- * **öffentliche** Formulare. Sie schreiben `guest_email` und lassen `user_id`
- * leer, auch wenn der Absender angemeldet ist. Eine Auskunft nur über `user_id`
- * verschwieg die Anfrage, und eine Löschung nur über `user_id` ließ die
- * E-Mail-Adresse stehen — beides sah dabei erfolgreich aus.
- *
- * Die Adresse ist hier ein zulässiger Schlüssel: Ein Konto entsteht erst nach
- * bestätigter E-Mail (`findOrCreateAppUser`), wer also unter einer Adresse
- * angemeldet ist, hat den Zugriff auf dieses Postfach nachgewiesen. Verglichen
- * wird über `lower()` auf beiden Seiten, weil die Kontoadresse normalisiert
- * gespeichert wird, die Formularadresse aber so, wie sie getippt wurde.
- */
 /** Was zu einem Konto gehört: alles mit seiner Id **oder** seiner E-Mail-Adresse.
  *
  * Der zweite Teil ist keine Bequemlichkeit. Anfragen und Kartenangebote lassen
  * sich als Gast absenden; wer sich später mit derselben Adresse registriert,
  * würde seine eigenen Vorgänge sonst nicht wiederfinden — weder im Datenexport
  * noch in den Ansichten seines Kontos.
+ *
+ * Am 2026-08-08 an echten Daten aufgefallen: `/anfragen` und `/verkaufen` sind
+ * **öffentliche** Formulare. Sie schreiben `guest_email` und lassen `user_id`
+ * leer, auch wenn der Absender angemeldet ist. Eine Auskunft nur über `user_id`
+ * verschwieg die Anfrage, und eine Löschung nur über `user_id` ließ die
+ * E-Mail-Adresse stehen — beides sah dabei erfolgreich aus. Verglichen wird über
+ * `lower()` auf beiden Seiten, weil die Kontoadresse normalisiert gespeichert
+ * wird, die Formularadresse aber so, wie sie getippt wurde.
  *
  * **Exportiert, damit sie nicht abgeschrieben wird.** Seit dem 2026-08-17 nutzt
  * auch das Kundenkonto diese Regel. Zwei Fassungen davon wären ein
@@ -111,8 +105,6 @@ export async function collectAccountData(db: Db, userId: string) {
     konto: {
       id: user.id,
       email: user.email,
-      benutzername: user.username,
-      anzeigename: user.displayName,
       bevorzugteSprache: user.preferredLocale,
       rolle: user.role,
       emailBestaetigtAm: user.emailVerifiedAt,

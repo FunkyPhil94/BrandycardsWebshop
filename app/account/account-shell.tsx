@@ -72,7 +72,7 @@ export function AccountShell({ children }: { children: React.ReactNode }) {
       const response = await fetch("/api/account/profile", {
         method: "POST",
         headers: { Authorization: `Bearer ${zugriff}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ username: sitzungsUser.user_metadata?.username, displayName: sitzungsUser.user_metadata?.displayName }),
+        body: JSON.stringify({}),
       });
       if (!response.ok) return;
       const body = await response.json() as { preferredLocale?: unknown };

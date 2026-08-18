@@ -29,17 +29,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Nicht authentifiziert." }, { status: 401 });
     }
 
-    let requestedUsername: unknown;
-    let requestedDisplayName: unknown;
     let requestedPreferredLocale: unknown;
     if ((request.headers.get("content-type") ?? "").includes("application/json")) {
-      const body = await request.json() as { username?: unknown; displayName?: unknown; preferredLocale?: unknown };
-      requestedUsername = body.username;
-      requestedDisplayName = body.displayName;
+      const body = await request.json() as { preferredLocale?: unknown };
       requestedPreferredLocale = body.preferredLocale;
     }
-    const appUser = await findOrCreateAppUser(authUser, requestedUsername, requestedDisplayName, requestedPreferredLocale);
-    return NextResponse.json({ ok: true, userId: appUser.id, role: appUser.role, username: appUser.username, displayName: appUser.displayName, preferredLocale: appUser.preferredLocale });
+    const appUser = await findOrCreateAppUser(authUser, requestedPreferredLocale);
+    return NextResponse.json({ ok: true, userId: appUser.id, role: appUser.role, preferredLocale: appUser.preferredLocale });
   } catch (error) {
     if (error instanceof RateLimitError) {
       return NextResponse.json({ error: error.message }, { status: error.status, headers: { "retry-after": String(error.retryAfterSeconds) } });

@@ -3,24 +3,19 @@ import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { getDb } from "../db";
 import { users } from "../db/schema";
 import { getSupabaseUser } from "./supabase-server";
-import { changed, isUniqueViolation } from "./user-profile";
+import { changed } from "./user-profile";
 import { normalizeLocale } from "./i18n";
 
 export type AppUser = typeof users.$inferSelect;
 
-const USERNAME_PATTERN = /^[A-Za-z0-9_]{3,30}$/;
-
-export function normalizeUsername(value: unknown): string | null {
-  if (typeof value !== "string") return null;
-  const username = value.trim();
-  return USERNAME_PATTERN.test(username) ? username : null;
-}
-
-export function normalizeDisplayName(value: unknown): string | null {
-  if (typeof value !== "string") return null;
-  const displayName = value.trim();
-  return displayName.length >= 1 && displayName.length <= 120 ? displayName : null;
-}
+/** Am 2026-08-17 entfernt: `normalizeUsername` und `normalizeDisplayName`.
+ *
+ * Benutzer- und Anzeigename wurden nirgends angezeigt — nicht in E-Mails,
+ * nicht in Bestellungen, nicht im Adminbereich. Sie kosteten dafuer zweierlei:
+ * personenbezogene Daten ohne Zweck, und ein Sperr-Risiko am laufenden Betrieb,
+ * weil der Benutzername aus `user_metadata` kam, das der Kunde selbst
+ * beschreiben kann, und gegen einen eindeutigen Index lief. Siehe U5 in
+ * docs/ai-todo.md. */
 
 function isConfiguredAdmin(authUser: SupabaseUser, email: string) {
   if (!authUser.email_confirmed_at) return false;
@@ -31,15 +26,13 @@ function isConfiguredAdmin(authUser: SupabaseUser, email: string) {
   return configuredEmails.includes(email);
 }
 
-export async function findOrCreateAppUser(authUser: SupabaseUser, requestedUsername?: unknown, requestedDisplayName?: unknown, requestedPreferredLocale?: unknown): Promise<AppUser> {
+export async function findOrCreateAppUser(authUser: SupabaseUser, requestedPreferredLocale?: unknown): Promise<AppUser> {
   if (!authUser.email) throw new Error("Authenticated Supabase user has no email.");
   const db = getDb();
   const email = authUser.email.trim().toLowerCase();
   const emailVerified = Boolean(authUser.email_confirmed_at);
   const verifiedAt = emailVerified ? authUser.email_confirmed_at ?? null : null;
   const configuredAdmin = isConfiguredAdmin(authUser, email);
-  const username = normalizeUsername(requestedUsername ?? authUser.user_metadata?.username);
-  const displayName = normalizeDisplayName(requestedDisplayName ?? authUser.user_metadata?.displayName);
   const preferredLocale = normalizeLocale(requestedPreferredLocale);
   const linked = await db.query.users.findFirst({ where: and(eq(users.authProvider, "supabase"), eq(users.authSubject, authUser.id)) });
   if (linked && emailVerified && linked.email !== email) {
@@ -55,8 +48,6 @@ export async function findOrCreateAppUser(authUser: SupabaseUser, requestedUsern
   if (existing) {
     const next = {
       email: emailVerified ? email : existing.email,
-      ...(username ? { username } : {}),
-      ...(displayName ? { displayName } : {}),
       ...(preferredLocale ? { preferredLocale } : {}),
       authProvider: "supabase" as const,
       authSubject: authUser.id,
@@ -69,26 +60,13 @@ export async function findOrCreateAppUser(authUser: SupabaseUser, requestedUsern
     // D1 write; now the row is only touched when something actually differs.
     // See docs/security-findings.md, SEC-09.
     if (changed(existing, next)) {
-      try {
-        await db.update(users).set({ ...next, updatedAt: new Date().toISOString() }).where(eq(users.id, existing.id));
-      } catch (error) {
-        // `username` comes from Supabase user_metadata, which the customer can
-        // write themselves. Picking a name someone else already has violates
-        // users_username_unique — and because this runs on *every* request,
-        // letting it through would lock the account out of the whole shop over
-        // a display detail. The name simply does not change.
-        if (!username || !isUniqueViolation(error)) throw error;
-        console.warn("Benutzername bereits vergeben, Profil bleibt unverändert.", { userId: existing.id });
-        return { ...merged, username: existing.username };
-      }
+      await db.update(users).set({ ...next, updatedAt: new Date().toISOString() }).where(eq(users.id, existing.id));
     }
     return merged;
   }
 
   const [created] = await db.insert(users).values({
     email,
-    username,
-    displayName,
     preferredLocale: preferredLocale ?? normalizeLocale(authUser.user_metadata?.preferredLocale) ?? "de",
     role: configuredAdmin ? "ADMIN" : "CUSTOMER",
     authProvider: "supabase",

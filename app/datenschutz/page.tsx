@@ -13,7 +13,7 @@ export default function DatenschutzPage() {
       <h2>1. {t("Verantwortlicher")}</h2>
       <p>BrandyCards GbR<br />Legienstraße 6<br />51373 Leverkusen<br />{t("E-Mail")}: <a href="mailto:brandycards@gmx.de">brandycards@gmx.de</a></p>
       <h2>2. {t("Welche Daten wir verarbeiten")}</h2>
-      <p>{t("Je nach Nutzung des Shops verarbeiten wir E-Mail-Adresse, Benutzername, Anzeigename, Login- und Sitzungsdaten, Bestell-, Liefer- und Zahlungsdaten, Nachrichten, Preisvorschläge, Kartenangebote und hochgeladene Bilder. Außerdem können technische Zugriffsdaten wie IP-Adresse, Zeitpunkt und Browserinformationen in Sicherheits- und Serverprotokollen anfallen.")}</p>
+      <p>{t("Je nach Nutzung des Shops verarbeiten wir E-Mail-Adresse, Login- und Sitzungsdaten, Bestell-, Liefer- und Zahlungsdaten, Nachrichten, Preisvorschläge, Kartenangebote und hochgeladene Bilder. Außerdem können technische Zugriffsdaten wie IP-Adresse, Zeitpunkt und Browserinformationen in Sicherheits- und Serverprotokollen anfallen.")}</p>
       <h2>3. {t("Kundenkonto")}</h2>
       <p>{t("Die Einrichtung und Verwaltung eines Kundenkontos erfolgt zur Durchführung vorvertraglicher Maßnahmen und des Vertrags (Art. 6 Abs. 1 lit. b DSGVO). Für die Authentifizierung nutzen wir Supabase Auth. Die Daten werden nur für Anmeldung, Kontoverwaltung und damit verbundene Shopfunktionen verwendet.")}</p>
       <h2>4. {t("Bestellungen und PayPal")}</h2>

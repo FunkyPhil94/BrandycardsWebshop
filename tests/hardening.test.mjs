@@ -315,16 +315,19 @@ test("authenticated routes rate-limit expensive reads, writes and payments", asy
 
 // --- SEC-07, no password on our own server ---------------------------------
 
-test("the registration check neither expects nor accepts a password", async () => {
-  const [route, page] = await Promise.all([read("app/api/account/validate-registration/route.ts"), read("app/account/page.tsx")]);
-  assert.ok(!/body\.password/.test(route.replace(/"password" in body/, "")), "the route must not read a password");
-  assert.match(route, /"password" in body/, "and must refuse one if it arrives anyway");
-  const signup = page.slice(page.indexOf('mode === "signup"'), page.indexOf("supabase.auth.signUp"));
-  assert.ok(!/body: JSON.stringify\(\{ username, password/.test(signup), "the browser must not send it");
-  assert.match(signup, /password\.length < 8/, "length is checked in the browser instead");
+test("das Passwort verlaesst den Browser nur Richtung Supabase", async () => {
+  // Die Route `/api/account/validate-registration` ist am 2026-08-17 entfallen:
+  // Sie pruefte allein den Benutzernamen, und den gibt es nicht mehr (U5).
+  // Damit geht bei der Registrierung ueberhaupt nichts mehr an den eigenen
+  // Server -- die Eigenschaft aus SEC-07 gilt jetzt staerker als vorher.
+  await assert.rejects(access(new URL("../app/api/account/validate-registration/route.ts", import.meta.url)),
+    "die Route hatte nur einen Zweck und ist mit ihm verschwunden");
+  const page = await read("app/account/page.tsx");
+  const signup = page.slice(page.indexOf("mode === \"signup\""), page.indexOf("supabase.auth.signUp"));
+  assert.ok(!/fetch\(/u.test(signup), "die Registrierung ruft keinen eigenen Endpunkt mehr auf");
+  assert.match(signup, /password.length < 8/, "Laenge wird im Browser geprueft");
   assert.match(signup, /password !== passwordConfirmation/);
 });
-
 // --- SEC-08, upload size ----------------------------------------------------
 
 test("a multipart upload without Content-Length is refused before the body is buffered", async () => {
@@ -337,28 +340,54 @@ test("a multipart upload without Content-Length is refused before the body is bu
     "`?? 0` is exactly the bypass: no header means no limit");
 });
 
-// --- SEC-09, write amplification and username collisions -------------------
+// --- SEC-09, write amplification ------------------------------------------
 
 test("an unchanged profile is not written back on every request", () => {
-  const existing = { email: "a@b.de", username: "alice", role: "CUSTOMER" };
-  assert.equal(changed(existing, { email: "a@b.de", username: "alice" }), false);
-  assert.equal(changed(existing, { email: "a@b.de", username: "alicia" }), true);
+  // Jede authentifizierte Anfrage laeuft durch `findOrCreateAppUser`, auch ein
+  // reines Lesen. Ohne diesen Vergleich waere jede davon ein D1-Schreibvorgang.
+  const existing = { email: "a@b.de", role: "CUSTOMER", preferredLocale: "de" };
+  assert.equal(changed(existing, { email: "a@b.de", preferredLocale: "de" }), false);
+  assert.equal(changed(existing, { email: "a@b.de", preferredLocale: "en" }), true);
   assert.equal(changed(existing, { role: "ADMIN" }), true);
+  const appUser = read("lib/app-user.ts");
+  return appUser.then((quelle) => assert.match(quelle, /changed\(existing, next\)/u));
 });
 
-test("a taken username is recognised as a unique violation, not a crash", () => {
-  assert.equal(isUniqueViolation(new Error("D1_ERROR: UNIQUE constraint failed: users.username")), true);
+test("eine verletzte Eindeutigkeit bleibt erkennbar, auch ohne Benutzernamen", () => {
+  // `isUniqueViolation` gehoerte zum Benutzernamen, der am 2026-08-17 entfallen
+  // ist (U5). Die Funktion bleibt: Die E-Mail-Adresse traegt weiterhin einen
+  // eindeutigen Index, und wer den naechsten Kollisionsfall behandelt, soll
+  // nicht neu anfangen muessen.
+  assert.equal(isUniqueViolation(new Error("D1_ERROR: UNIQUE constraint failed: users.email")), true);
   assert.equal(isUniqueViolation(new Error("no such table: users")), false);
   assert.equal(isUniqueViolation("not an error"), false);
 });
 
-test("a taken username leaves the account usable instead of breaking every request", async () => {
-  const appUser = await read("lib/app-user.ts");
-  assert.match(appUser, /isUniqueViolation\(error\)/,
-    "this runs on every authenticated request — an unhandled violation locks the account out of the shop");
-  assert.match(appUser, /changed\(existing, next\)/);
+test("Benutzer- und Anzeigename sind restlos verschwunden", async () => {
+  // Sie wurden nirgends angezeigt und kosteten dafuer personenbezogene Daten
+  // ohne Zweck sowie einen eindeutigen Index, an dem sich bei einer Kollision
+  // das ganze Konto haette aufhaengen koennen. Rueckstaende waeren schlimmer
+  // als der Ausgangszustand: eine Spalte, die keiner mehr pflegt.
+  for (const pfad of [
+    "lib/app-user.ts",
+    "lib/account-data.ts",
+    "db/schema.ts",
+    "app/api/account/profile/route.ts",
+    "app/account/page.tsx",
+    "app/account/profil/page.tsx",
+    "app/account/account-shell.tsx",
+    "app/datenschutz/page.tsx",
+  ]) {
+    const quelle = await read(pfad);
+    assert.doesNotMatch(quelle, /username|displayName|display_name/u, `${pfad} traegt noch einen Rest`);
+  }
+  // Und die Migration nimmt zuerst den Index: SQLite verweigert DROP COLUMN
+  // auf einer indizierten Spalte.
+  const migration = await read("drizzle/0018_drop_usernames.sql");
+  assert.ok(migration.indexOf("DROP INDEX") < migration.indexOf("DROP COLUMN username"),
+    "der Index muss vor der Spalte fallen");
+  assert.match(migration, /DROP COLUMN display_name/u);
 });
-
 // --- SEC-11, dead header-trusting auth --------------------------------------
 
 test("the starter's header-trusting auth helper is gone", async () => {

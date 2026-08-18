@@ -89,7 +89,6 @@ function Anmeldung({ recovery, beendeRecovery }: { recovery: boolean; beendeReco
   const { t } = useI18n();
   const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
-  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirmation, setPasswordConfirmation] = useState("");
   const [message, setMessage] = useState("");
@@ -119,17 +118,10 @@ function Anmeldung({ recovery, beendeRecovery }: { recovery: boolean; beendeReco
         // our own server, only to Supabase. See docs/security-findings.md, SEC-07.
         if (password.length < 8) throw new Error(t("Das Passwort muss mindestens 8 Zeichen lang sein."));
         if (password !== passwordConfirmation) throw new Error(t("Die Passwörter stimmen nicht überein."));
-        const validation = await fetch("/api/account/validate-registration", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ username }),
-        });
-        const validationBody = await validation.json() as { error?: string };
-        if (!validation.ok) throw new Error(validationBody.error ?? t("Die Registrierungsdaten sind ungültig."));
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
-          options: { data: { username }, emailRedirectTo: `${window.location.origin}/account?next=${encodeURIComponent(safeReturnPath())}` },
+          options: { emailRedirectTo: `${window.location.origin}/account?next=${encodeURIComponent(safeReturnPath())}` },
         });
         if (error) throw error;
         if (data.session) window.location.assign(safeReturnPath());
@@ -151,7 +143,6 @@ function Anmeldung({ recovery, beendeRecovery }: { recovery: boolean; beendeReco
     <p>{t(recovery ? "Wähle ein neues Passwort und bestätige es." : mode === "signup" ? "Speichere Bestellungen und verwalte deine Anfragen." : mode === "reset" ? "Wir senden dir einen sicheren Link per E-Mail." : "Melde dich an, um deine Bestellungen und Anfragen zu sehen.")}</p>
     <form onSubmit={submit}>
       {!recovery && <label className="form-field"><span>{t("E-Mail-Adresse *")}</span><input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required autoComplete="email" /></label>}
-      {!recovery && mode === "signup" && <label className="form-field"><span>{t("Benutzername *")}</span><input type="text" value={username} onChange={(event) => setUsername(event.target.value)} required minLength={3} maxLength={30} pattern="[A-Za-z0-9_]{3,30}" autoComplete="username" /><small>{t("3 bis 30 Zeichen: nur Buchstaben, Zahlen und Unterstrich (_).")}</small></label>}
       {(!recovery && mode === "reset") ? null : <label className="form-field"><span>{t(recovery ? "Neues Passwort *" : "Passwort *")}</span><input type="password" value={password} onChange={(event) => setPassword(event.target.value)} required minLength={8} autoComplete={mode === "signup" || recovery ? "new-password" : "current-password"} /></label>}
       {(recovery || mode === "signup") && <label className="form-field"><span>{t("Passwort bestätigen *")}</span><input type="password" value={passwordConfirmation} onChange={(event) => setPasswordConfirmation(event.target.value)} required minLength={8} autoComplete="new-password" /></label>}
       <button className="button button-primary" type="submit" disabled={busy}>{busy ? t("Bitte warten …") : t(recovery ? "Neues Passwort speichern" : mode === "login" ? "Anmelden" : mode === "signup" ? "Konto erstellen" : "Reset-Link senden")}</button>
