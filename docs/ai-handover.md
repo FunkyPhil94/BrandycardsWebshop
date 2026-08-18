@@ -37,6 +37,63 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
+### 2026-08-18 - Quelle raus, Links rein, neues Gesicht für KARL.exe
+
+- Stand: **LÄUFT.**
+- Auftrag: Vier Punkte vom Betreiber, dazu ein Befund aus seinen Screenshots.
+
+**Der Befund zuerst, weil er den Rest erklärt.** Die Screenshots zeigen die
+**alte** Oberfläche — „Nachricht an den Assistant", die Beispiele als grauer
+Text, der Launcher über dem offenen Panel. Das ist die Fassung von *vor* dem
+Umbau desselben Tages. Der Betreiber läuft also mit einer älteren `KARL.exe`
+gegen den neuen Server. Sein „sieht langweilig aus" bezieht sich auf eine
+Oberfläche, die es im Quellstand nicht mehr gibt.
+
+**Daraus folgt der wichtigste Punkt dieses Auftrags:** Es reicht nicht, den Code
+zu ändern. Am Ende muss eine **frische Einzeldatei** auf dem Desktop liegen. Das
+Bauskript dafür (`scripts/build-karl-exe.ps1`) liegt seit dem 2026-08-17 auf dem
+Zweig `claude/karl-desktop-exe-launcher-21538e` und wurde **nie nach `main`
+gebracht** — genau deshalb ist die laufende Exe alt.
+
+**Punkt 1: Die Quelle-und-Stand-Zeile verschwindet aus dem Antworttext.**
+Ausdrücklich gewünscht („kann aus der Antwort immer raus"). Sie war eine der
+tragenden Zusicherungen dieses Assistenten, deshalb wird sie **nicht gelöscht,
+sondern entkoppelt**: `sources` und `freshness` reisen unverändert als eigene
+Felder in der Antwort. Wer sie später wieder anzeigen will — als Fußnote, als
+Tooltip —, findet sie vor. Nur der Fließtext trägt sie nicht mehr.
+
+**Punkt 2: Die Artikelnummer verschwindet aus den Nachrichtenbetreffs** und wird
+stattdessen zum Ziel eines Links. Sie steckt in eBays eigenem Betrefftext
+(„… (398249837836)"); sie wird abgeschnitten und als Kennung weiterverwendet.
+
+**Punkt 3: Karten und Nachrichten werden anklickbar.** Der Formatierer schreibt
+Verweise als `[Text](URL)` in den Antworttext, der Desktop macht daraus echte
+Hyperlinks. Zwei Festlegungen:
+
+- **Nur echte Ziele.** Shop-Karten führen auf `SHOP_BASE_URL/karten/{id}`,
+  eBay-Angebote auf ihre gespeicherte `listingUrl`, ersatzweise auf
+  `https://www.ebay.de/itm/{itemId}`. Ein Tiefenlink auf eine einzelne
+  eBay-**Nachricht** wird **nicht** erfunden — aus `ebay_message_id` lässt sich
+  keine belastbare Adresse bilden. Nachrichten verweisen deshalb auf den
+  Artikel, um den es geht; ohne Artikelbezug bleiben sie ohne Link.
+- **Der Client formatiert weiterhin keine Daten.** Er erkennt eine Klammerform
+  und baut daraus ein Bedienelement — das ist Darstellung. Erlaubt sind
+  ausschließlich `http`/`https`, geprüft im Client.
+
+**Punkt 4: Oberfläche, Minifenster, Logo.** Der Launcher heißt künftig „KARL"
+statt „BrandyCards Assistant", ebenso der Fenstertitel. Das aktuelle
+`Assets/AppIcon.ico` ist **der Platzhalter aus der WinUI-Vorlage** — ein graues
+durchgestrichenes Kästchen; es gibt also nichts zu bewahren. Das neue Zeichen
+entsteht aus dem vorhandenen Avatarkopf und dem Namenszug, damit Fenster,
+Taskleiste und Datei dasselbe Gesicht tragen.
+
+**Abnahme:** `npm test`, `npx tsc --noEmit`, `npm run lint`, `dotnet build`.
+Danach **eine frisch gebaute KARL.exe**, gestartet und abgelichtet: Links müssen
+klickbar sein, die Quelle-Zeile fehlen, die Artikelnummer aus dem Betreff
+verschwunden sein.
+
+## Historie
+
 ### 2026-08-18 - Beschreibungssuche, Aufrufe in beide Richtungen, Stundenbericht
 
 - Stand: **ABGESCHLOSSEN und AUSGEROLLT**, alle drei Punkte in Produktion nachgemessen.
@@ -159,9 +216,6 @@ Pet-Overlay (Titel „B"). Verlässlich ist: über UI-Automation **alle** Fenste
 dieses Titels holen und das mit endlichem `BoundingRectangle` nehmen. Der Text
 der Antworten lässt sich dabei direkt über die Automation-Namen auslesen — das
 ist belastbarer als ein Screenshot, weil nichts abgeschnitten ist.
-
-
-## Historie
 
 ### 2026-08-18 - K.A.R.L. soll die angebotenen Karten kennen
 
