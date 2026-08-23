@@ -10194,3 +10194,33 @@ wirklich durchklicken, nicht nur behaupten:
 - **Offen und bewusst so gelassen:** Die Absätze der Datenschutzseite sind
   durchgehend deutsch, auch in der englischen Fassung. Der neue Abschnitt 11
   ist ebenfalls nur deutsch — einen Rechtstext übersetzt nicht die KI.
+
+## Auftrag 2026-08-18: Zweiter Bulk-Import, mit Mehrfachstücken
+- Status: LÄUFT.
+- **Der Ordner enthält jetzt 258 Bilder statt 144** — die alten und neue. Mehrere
+  Stücke derselben Karte tragen `_1`, `_2`, `_3`. Sie sollen **eine** Karte im
+  Shop ergeben, mit entsprechender Menge.
+- Zusammengefasst ergibt das **208 Karten**: 167 einzeln, 32 doppelt, 9 dreifach.
+- **Abgleich mit dem Shop: 64 neu, 115 unverändert, 29 mit geänderter Menge,
+  0 verwaist.** Die Null ist der Beweis, dass die Titel zeichengleich wie beim
+  ersten Lauf entstehen — sonst stünden dort Doubletten.
+- **Die Massenanlage kann das noch nicht.** Sie überspringt vorhandene Titel;
+  die 29 blieben auf Menge 1 stehen. Sie lernt deshalb einen dritten Zustand:
+  „Menge ändern" über `PATCH /api/admin/products` (nimmt `{id, quantity}`
+  allein). Dafür muss `?titel=manuell` Kennung und Menge mitliefern, nicht nur
+  den Titel.
+- **Fallen beim Erzeugen der Tabelle, alle geprüft:**
+  * Die Zählendung darf **erst nach** der Nummerierung abgeschnitten werden,
+    sonst verliert `barry_nitro_boost_01_99` die halbe Seriennummer als
+    vermeintliche Stückzahl.
+  * `blue_and_pink` und `blue_pink` sind **dieselbe** Parallele in zwei
+    Schreibweisen. Getrennt behandelt entstünden Doubletten neben den bereits
+    eingestellten Karten.
+  * `_pink` ist eine **andere** Parallele als `_blue_and_pink` — am Kartenbild
+    nachgesehen: einfarbig gegen Blau-Pink-Verlauf.
+  * `reijnders__on_fire` hat einen doppelten Unterstrich; ohne Normalisierung
+    wären es zwei Karten statt einer mit Menge 2.
+  * Drei neue Reihen: `on_fire`, `remember_the_name`, `billboard`.
+  * `yarmoliuk` heißt in der Checkliste `Yarmolyuk`.
+- Betroffen: `app/api/admin/products/route.ts`, `lib/karten-import.ts`,
+  `app/admin/import-panel.tsx`, `tests/karten-import.test.mjs`.

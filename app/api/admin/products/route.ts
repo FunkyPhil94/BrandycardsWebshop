@@ -40,15 +40,24 @@ export async function GET(request: Request) {
     const db = getDb();
     const parameter = new URL(request.url).searchParams;
 
-    // Nur die Titel der von Hand eingestellten Karten — die Massenanlage
-    // erkennt daran, was ein früherer, abgebrochener Durchlauf schon angelegt
-    // hat. Ohne diese Liste bliebe ihr nur, 144-mal die Suche zu fragen, und
-    // ein zweiter Anlauf legte alles ein zweites Mal an.
+    // Der Bestand der von Hand eingestellten Karten für die Massenanlage:
+    // Kennung, Titel und Menge. Daran erkennt sie, was ein früherer Durchlauf
+    // schon angelegt hat — und **was nur eine andere Menge braucht**, statt
+    // ein zweites Mal angelegt zu werden. Ohne die Kennung könnte sie die
+    // Menge nicht ändern, ohne die Menge nicht erkennen, dass sie es müsste.
     if (parameter.get("titel") === "manuell") {
-      const alle = await db.select({ title: products.title })
-        .from(products).where(eq(products.origin, "MANUAL"));
-      return NextResponse.json({ titel: alle.map((zeile) => zeile.title) },
-        { headers: { "cache-control": "no-store" } });
+      const alle = await db.select({
+        id: products.id,
+        titel: products.title,
+        menge: inventory.availableQuantity,
+      }).from(products)
+        .leftJoin(inventory, eq(inventory.productId, products.id))
+        .where(eq(products.origin, "MANUAL"));
+      return NextResponse.json({
+        // Ohne Bestandszeile ist die Karte unverkäuflich; `0` ist dafür die
+        // ehrliche Zahl und bringt die Massenanlage dazu, sie zu berichtigen.
+        bestand: alle.map((zeile) => ({ ...zeile, menge: zeile.menge ?? 0 })),
+      }, { headers: { "cache-control": "no-store" } });
     }
 
     const suche = parameter.get("q")?.trim() ?? "";

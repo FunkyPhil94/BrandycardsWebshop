@@ -4,7 +4,7 @@ import { useCallback, useRef, useState } from "react";
 import Link from "next/link";
 import { adminFetch, authHeaders } from "./admin-auth";
 import { tabelleLesen, TabellenFehler } from "../../lib/xlsx-lesen";
-import { dateischluessel, planBauen, planZusammenfassen, type Plan, type Posten } from "../../lib/karten-import";
+import { dateischluessel, planBauen, planZusammenfassen, type Bestandskarte, type Plan, type Posten } from "../../lib/karten-import";
 
 /** Massenanlage von Vorverkaufskarten aus einer Tabelle und einem Bildordner.
  *
@@ -20,6 +20,15 @@ import { dateischluessel, planBauen, planZusammenfassen, type Plan, type Posten 
  */
 
 type Lauf = { laeuft: boolean; erledigt: number; abgebrochen: string };
+
+/** Beschriftung des Startknopfs — er tut je nach Tabelle zweierlei. */
+function beschriftung({ bereit, aktualisieren }: { bereit: number; aktualisieren: number }) {
+  if (bereit + aktualisieren === 0) return "Nichts zu tun";
+  const teile = [];
+  if (bereit) teile.push(`${bereit} anlegen`);
+  if (aktualisieren) teile.push(`${aktualisieren} Menge ändern`);
+  return teile.join(", ");
+}
 
 const ABBRUCH_NACH_FEHLERN = 5;
 
@@ -45,12 +54,12 @@ export function ImportPanel() {
     setNote("");
     try {
       const antwort = await fetch("/api/admin/products?titel=manuell", { headers: await authHeaders() });
-      const daten = await antwort.json() as { titel?: string[]; error?: string };
-      if (!antwort.ok || !daten.titel) throw new Error(daten.error ?? "Der Bestand konnte nicht geladen werden.");
+      const daten = await antwort.json() as { bestand?: Bestandskarte[]; error?: string };
+      if (!antwort.ok || !daten.bestand) throw new Error(daten.error ?? "Der Bestand konnte nicht geladen werden.");
       setPlan(planBauen({
         zeilen: zeilen.current,
         bilder: bilderliste.current.map((datei) => ({ name: datei.name, size: datei.size, type: datei.type })),
-        vorhandeneTitel: daten.titel,
+        bestand: daten.bestand,
       }));
       setErgebnisse(new Map());
       setLauf({ laeuft: false, erledigt: 0, abgebrochen: "" });
@@ -90,35 +99,47 @@ export function ImportPanel() {
     stoppen.current = false;
     setNote("");
     setLauf({ laeuft: true, erledigt: 0, abgebrochen: "" });
-    const offen = plan.posten.filter((posten) => posten.stand === "bereit");
+    // Anlegen **und** Mengen ändern in einem Durchgang, in der Reihenfolge der
+    // Tabelle. Zwei getrennte Knöpfe wären zwei Gelegenheiten, den zweiten zu
+    // vergessen — und dann stünden nachgekaufte Stücke weiter auf Menge 1.
+    const offen = plan.posten.filter((posten) => posten.stand === "bereit" || posten.stand === "aktualisieren");
     let erledigt = 0;
     let fehlerfolge = 0;
     let abgebrochen = "";
 
     for (const posten of offen) {
       if (stoppen.current) { abgebrochen = "Abgebrochen. Die bereits angelegten Karten bleiben stehen."; break; }
+      const aendern = posten.stand === "aktualisieren";
       const datei = bilder.current.get(dateischluessel(posten.bilddatei));
-      if (!datei) {
+      // Beim Ändern wird kein Bild gebraucht — die Karte hat schon eines.
+      if (!datei && !aendern) {
         setErgebnisse((alt) => new Map(alt).set(posten.zeile, "Bild nicht mehr auffindbar."));
         continue;
       }
       try {
-        const rumpf = new FormData();
-        rumpf.set("title", posten.titel);
-        rumpf.set("quantity", String(posten.menge));
-        if (posten.beschreibung) rumpf.set("description", posten.beschreibung);
-        rumpf.append("images", datei);
-        const antwort = await adminFetch("/api/admin/products", { method: "POST", body: rumpf });
+        const antwort = aendern
+          ? await adminFetch("/api/admin/products", {
+              method: "PATCH", json: true,
+              body: JSON.stringify({ id: posten.produktId, quantity: posten.menge }),
+            })
+          : await (async () => {
+              const rumpf = new FormData();
+              rumpf.set("title", posten.titel);
+              rumpf.set("quantity", String(posten.menge));
+              if (posten.beschreibung) rumpf.set("description", posten.beschreibung);
+              rumpf.append("images", datei!);
+              return adminFetch("/api/admin/products", { method: "POST", body: rumpf });
+            })();
         const daten = await antwort.json().catch(() => null) as { error?: string } | null;
         if (!antwort.ok) throw new Error(daten?.error ?? `Der Server antwortete mit ${antwort.status}.`);
         erledigt += 1;
         fehlerfolge = 0;
-        setErgebnisse((alt) => new Map(alt).set(posten.zeile, "angelegt"));
+        setErgebnisse((alt) => new Map(alt).set(posten.zeile, aendern ? `Menge auf ${posten.menge} gesetzt` : "angelegt"));
         setLauf((alt) => ({ ...alt, erledigt }));
       } catch (fehler) {
         fehlerfolge += 1;
         setErgebnisse((alt) => new Map(alt).set(posten.zeile,
-          fehler instanceof Error ? fehler.message : "Anlegen fehlgeschlagen."));
+          fehler instanceof Error ? fehler.message : "Fehlgeschlagen."));
         // Fünf Fehler hintereinander sind kein Zeilenproblem mehr, sondern eine
         // abgelaufene Sitzung oder ein Ausfall. Weiterlaufen hieße, hundertmal
         // dieselbe Fehlermeldung zu sammeln.
@@ -173,21 +194,22 @@ export function ImportPanel() {
     {zahlen && <>
       <ul className="admin-import-zahlen">
         <li><strong>{zahlen.bereit}</strong> anzulegen</li>
-        <li><strong>{zahlen.vorhanden}</strong> schon im Shop</li>
+        <li><strong>{zahlen.aktualisieren}</strong> Menge ändern</li>
+        <li><strong>{zahlen.vorhanden}</strong> unverändert</li>
         <li className={zahlen.fehler > 0 ? "warnung" : undefined}><strong>{zahlen.fehler}</strong> fehlerhaft</li>
         <li className={zahlen.unbenutzt > 0 ? "warnung" : undefined}><strong>{zahlen.unbenutzt}</strong> Bilder ohne Zeile</li>
       </ul>
 
       {lauf.laeuft && <p className="form-feedback" role="status">
-        Lege an … {lauf.erledigt} von {zahlen.bereit}. Das Fenster bitte offen lassen.
+        Arbeite … {lauf.erledigt} von {zahlen.bereit + zahlen.aktualisieren}. Das Fenster bitte offen lassen.
       </p>}
       {lauf.abgebrochen && <p className="form-feedback" role="alert">{lauf.abgebrochen}</p>}
 
       <div className="admin-products-toolbar">
         {lauf.laeuft
           ? <button type="button" className="button button-outline" onClick={() => { stoppen.current = true; }}>Anhalten</button>
-          : <button type="button" className="button button-primary" disabled={zahlen.bereit === 0} onClick={() => void starten()}>
-              {zahlen.bereit === 0 ? "Nichts anzulegen" : `${zahlen.bereit} Karten anlegen`}
+          : <button type="button" className="button button-primary" disabled={zahlen.bereit + zahlen.aktualisieren === 0} onClick={() => void starten()}>
+              {beschriftung(zahlen)}
             </button>}
         {!lauf.laeuft && <button type="button" className="button button-outline" onClick={() => void planNeuBauen()}>Neu prüfen</button>}
       </div>
@@ -201,7 +223,12 @@ export function ImportPanel() {
         <tbody>
           {auffaellig.map((posten: Posten) => {
             const ergebnis = ergebnisse.get(posten.zeile);
-            const klasse = ergebnis === "angelegt" ? "gut" : posten.stand === "vorhanden" && !ergebnis ? "" : "warnung";
+            // Nur echte Fehler werden rot. „Steht schon da" und „Menge ändern"
+            // sind Auskünfte, keine Beanstandungen — sie rot zu färben ließe
+            // einen sauberen Lauf wie einen halb misslungenen aussehen.
+            const klasse = ergebnis
+              ? (/^(angelegt|Menge auf )/u.test(ergebnis) ? "gut" : "warnung")
+              : posten.stand === "fehler" ? "warnung" : "";
             return <tr key={posten.zeile}>
               <td>{posten.zeile}</td>
               <td>{posten.titel || <em>ohne Titel</em>}</td>

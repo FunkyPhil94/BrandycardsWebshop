@@ -26,7 +26,11 @@ export const MAX_MENGE = 99;
 export const MAX_BILD_BYTES = 10_000_000;
 export const ERLAUBTE_BILDTYPEN = ["image/jpeg", "image/png", "image/webp"] as const;
 
-export type PostenStand = "bereit" | "vorhanden" | "fehler";
+/** `aktualisieren` heißt: Die Karte steht schon da, **nur die Menge stimmt
+ *  nicht.** Ohne diesen Zustand wäre ein zweiter Durchgang mit nachgekauften
+ *  Stücken wirkungslos — die Zeile liefe als „vorhanden" durch, und die Menge
+ *  bliebe auf dem alten Wert stehen, ohne dass irgendwo ein Fehler auftaucht. */
+export type PostenStand = "bereit" | "aktualisieren" | "vorhanden" | "fehler";
 
 export type Posten = {
   /** Zeilennummer im Tabellenblatt, also mit Kopfzeile — so wie Excel zählt. */
@@ -37,14 +41,19 @@ export type Posten = {
   beschreibung: string;
   stand: PostenStand;
   grund: string;
+  /** Nur bei `aktualisieren` gesetzt: die Karte, deren Menge zu ändern ist. */
+  produktId?: string;
 };
 
 export type Bildangabe = { name: string; size: number; type: string };
 
+/** Eine Karte, die schon im Shop steht. */
+export type Bestandskarte = { id: string; titel: string; menge: number };
+
 export type PlanEingabe = {
   zeilen: TabellenZeile[];
   bilder: Bildangabe[];
-  vorhandeneTitel: Iterable<string>;
+  bestand: Iterable<Bestandskarte>;
 };
 
 export type Plan = {
@@ -73,7 +82,7 @@ function zahl(wert: string | undefined): number | null {
   return menge >= 1 && menge <= MAX_MENGE ? menge : null;
 }
 
-export function planBauen({ zeilen, bilder, vorhandeneTitel }: PlanEingabe): Plan {
+export function planBauen({ zeilen, bilder, bestand }: PlanEingabe): Plan {
   // **Mehrdeutige Dateinamen sind gefährlicher als fehlende.** Zwei Dateien,
   // die sich nur in der Schreibweise unterscheiden — etwa aus zwei Ordnern
   // gleichzeitig ausgewählt — fielen sonst auf denselben Schlüssel, und die
@@ -87,8 +96,8 @@ export function planBauen({ zeilen, bilder, vorhandeneTitel }: PlanEingabe): Pla
     nachName.set(key, bild);
   }
 
-  const vorhanden = new Set<string>();
-  for (const titel of vorhandeneTitel) vorhanden.add(schluessel(titel));
+  const vorhanden = new Map<string, Bestandskarte>();
+  for (const karte of bestand) vorhanden.set(schluessel(karte.titel), karte);
 
   const inTabelle = new Set<string>();
   const benutzt = new Set<string>();
@@ -122,9 +131,16 @@ export function planBauen({ zeilen, bilder, vorhandeneTitel }: PlanEingabe): Pla
     } else if (beschreibung.length > MAX_BESCHREIBUNG) fehler("Die Beschreibung ist zu lang.");
     // Der Bestandsabgleich kommt **zuletzt**: Eine fehlerhafte Zeile bleibt ein
     // Fehler, auch wenn zufällig eine Karte gleichen Titels schon dasteht.
-    else if (vorhanden.has(schluessel(titel))) {
-      posten_.stand = "vorhanden";
-      posten_.grund = "Steht schon im Shop — wird übersprungen.";
+    else {
+      const schon = vorhanden.get(schluessel(titel));
+      if (schon && schon.menge === posten_.menge) {
+        posten_.stand = "vorhanden";
+        posten_.grund = "Steht schon im Shop — wird übersprungen.";
+      } else if (schon) {
+        posten_.stand = "aktualisieren";
+        posten_.produktId = schon.id;
+        posten_.grund = `Steht schon im Shop, Menge ${schon.menge} → ${posten_.menge}.`;
+      }
     }
 
     if (titel) inTabelle.add(schluessel(titel));
@@ -141,10 +157,12 @@ export function planBauen({ zeilen, bilder, vorhandeneTitel }: PlanEingabe): Pla
 }
 
 export function planZusammenfassen(plan: Plan) {
+  const zaehle = (stand: PostenStand) => plan.posten.filter((posten) => posten.stand === stand).length;
   return {
-    bereit: plan.posten.filter((posten) => posten.stand === "bereit").length,
-    vorhanden: plan.posten.filter((posten) => posten.stand === "vorhanden").length,
-    fehler: plan.posten.filter((posten) => posten.stand === "fehler").length,
+    bereit: zaehle("bereit"),
+    aktualisieren: zaehle("aktualisieren"),
+    vorhanden: zaehle("vorhanden"),
+    fehler: zaehle("fehler"),
     unbenutzt: plan.unbenutzteBilder.length,
   };
 }

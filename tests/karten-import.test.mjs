@@ -18,7 +18,7 @@ test("eine vollständige Zeile mit vorhandenem Bild ist bereit", () => {
   const plan = planBauen({
     zeilen: [zeile("Topps Flagship 26/27 Arsenal London Bukayo Saka Base", "saka_base.jpg")],
     bilder: [bild("saka_base.jpg")],
-    vorhandeneTitel: [],
+    bestand: [],
   });
   assert.equal(plan.posten[0].stand, "bereit");
   assert.equal(plan.posten[0].menge, 1);
@@ -33,7 +33,7 @@ test("Groß- und Kleinschreibung trennt keine Bilddatei von ihrer Zeile", () => 
   const plan = planBauen({
     zeilen: [zeile("Eine Karte", "Saka_Base.JPG")],
     bilder: [bild("saka_base.jpg")],
-    vorhandeneTitel: [],
+    bestand: [],
   });
   assert.equal(plan.posten[0].stand, "bereit");
   assert.deepEqual(plan.unbenutzteBilder, []);
@@ -47,7 +47,7 @@ test("ein fehlendes Bild macht die Zeile zum Fehler, nicht zur Karte ohne Bild",
   const plan = planBauen({
     zeilen: [zeile("Eine Karte", "fehlt.jpg")],
     bilder: [bild("saka_base.jpg")],
-    vorhandeneTitel: [],
+    bestand: [],
   });
   assert.equal(plan.posten[0].stand, "fehler");
   assert.match(plan.posten[0].grund, /fehlt\.jpg/u);
@@ -62,7 +62,7 @@ test("zwei gleich benannte Bilder machen die Zeile zum Fehler, nicht zur Zufalls
   const plan = planBauen({
     zeilen: [zeile("Eine Karte", "saka_base.jpg"), zeile("Andere Karte", "eze_base.jpg")],
     bilder: [bild("saka_base.jpg"), bild("SAKA_BASE.JPG"), bild("eze_base.jpg")],
-    vorhandeneTitel: [],
+    bestand: [],
   });
   assert.equal(plan.posten[0].stand, "fehler");
   assert.match(plan.posten[0].grund, /Mehrere ausgewählte Dateien/u);
@@ -75,7 +75,7 @@ test("was schon im Shop steht, wird übersprungen statt doppelt angelegt", () =>
   const plan = planBauen({
     zeilen: [zeile("Schon da", "a.jpg"), zeile("Noch nicht", "b.jpg")],
     bilder: [bild("a.jpg"), bild("b.jpg")],
-    vorhandeneTitel: ["schon da"],
+    bestand: [{ id: "a".repeat(32), titel: "Schon da", menge: 1 }],
   });
   assert.equal(plan.posten[0].stand, "vorhanden");
   assert.equal(plan.posten[1].stand, "bereit");
@@ -85,7 +85,7 @@ test("ein Titel, der zweimal in der Tabelle steht, wird nur einmal angelegt", ()
   const plan = planBauen({
     zeilen: [zeile("Gleicher Titel", "a.jpg"), zeile("Gleicher Titel", "b.jpg")],
     bilder: [bild("a.jpg"), bild("b.jpg")],
-    vorhandeneTitel: [],
+    bestand: [],
   });
   assert.equal(plan.posten[0].stand, "bereit");
   assert.equal(plan.posten[1].stand, "fehler");
@@ -104,7 +104,7 @@ test("die Grenzen der Route werden vor dem Hochladen geprüft", () => {
     ],
     bilder: [bild("a.jpg"), bild("gross.jpg", 11_000_000), bild("datei.gif", 900_000, "image/gif"),
              bild("c.jpg"), bild("d.jpg"), bild("e.jpg")],
-    vorhandeneTitel: [],
+    bestand: [],
   });
   assert.deepEqual(plan.posten.map((posten) => posten.stand), Array(6).fill("fehler"));
   assert.match(plan.posten[0].grund, /Zeichen lang/u);
@@ -119,7 +119,7 @@ test("eine leere Mengenspalte bedeutet ein Stück", () => {
   const plan = planBauen({
     zeilen: [zeile("Ohne Menge", "a.jpg", { Menge: "" })],
     bilder: [bild("a.jpg")],
-    vorhandeneTitel: [],
+    bestand: [],
   });
   assert.equal(plan.posten[0].stand, "bereit");
   assert.equal(plan.posten[0].menge, 1);
@@ -129,7 +129,58 @@ test("die Zusammenfassung zählt jeden Posten genau einmal", () => {
   const plan = planBauen({
     zeilen: [zeile("A", "a.jpg"), zeile("B", "fehlt.jpg"), zeile("C", "c.jpg")],
     bilder: [bild("a.jpg"), bild("c.jpg"), bild("uebrig.jpg")],
-    vorhandeneTitel: ["C"],
+    bestand: [{ id: "c".repeat(32), titel: "C", menge: 1 }],
   });
-  assert.deepEqual(planZusammenfassen(plan), { bereit: 1, vorhanden: 1, fehler: 1, unbenutzt: 1 });
+  assert.deepEqual(planZusammenfassen(plan), { bereit: 1, aktualisieren: 0, vorhanden: 1, fehler: 1, unbenutzt: 1 });
+});
+
+// --- Nachgekaufte Stücke ----------------------------------------------------
+
+test("dieselbe Karte mit anderer Menge wird geändert, nicht doppelt angelegt", () => {
+  // **Der Grund, warum es diesen dritten Zustand gibt.** Beim zweiten Durchgang
+  // eines Sets liegen von manchen Karten inzwischen zwei oder drei Stück im
+  // Ordner. Ohne „aktualisieren" liefe die Zeile als „vorhanden" durch: kein
+  // Fehler, keine Meldung — und die Menge bliebe für immer auf 1.
+  const plan = planBauen({
+    zeilen: [zeile("Mitoma Flying the Flag", "mitoma_flag.jpg", { Menge: "3" })],
+    bilder: [bild("mitoma_flag.jpg")],
+    bestand: [{ id: "f".repeat(32), titel: "Mitoma Flying the Flag", menge: 1 }],
+  });
+  assert.equal(plan.posten[0].stand, "aktualisieren");
+  assert.equal(plan.posten[0].produktId, "f".repeat(32));
+  assert.equal(plan.posten[0].menge, 3);
+  assert.match(plan.posten[0].grund, /Menge 1 → 3/u);
+});
+
+test("gleiche Menge bleibt unangetastet", () => {
+  // Sonst schickte ein zweiter Durchgang 144 Änderungen los, die nichts ändern.
+  const plan = planBauen({
+    zeilen: [zeile("Eine Karte", "a.jpg", { Menge: "2" })],
+    bilder: [bild("a.jpg")],
+    bestand: [{ id: "b".repeat(32), titel: "Eine Karte", menge: 2 }],
+  });
+  assert.equal(plan.posten[0].stand, "vorhanden");
+  assert.equal(plan.posten[0].produktId, undefined);
+});
+
+test("eine Karte ohne Bestandszeile gilt als Menge 0 und wird berichtigt", () => {
+  // Ohne Bestandszeile ist die Karte unsichtbar und unverkäuflich. Sie als
+  // „vorhanden" durchzuwinken hieße, den Fehler festzuschreiben.
+  const plan = planBauen({
+    zeilen: [zeile("Eine Karte", "a.jpg")],
+    bilder: [bild("a.jpg")],
+    bestand: [{ id: "d".repeat(32), titel: "Eine Karte", menge: 0 }],
+  });
+  assert.equal(plan.posten[0].stand, "aktualisieren");
+  assert.match(plan.posten[0].grund, /Menge 0 → 1/u);
+});
+
+test("eine fehlerhafte Zeile bleibt Fehler, auch wenn die Karte im Shop steht", () => {
+  const plan = planBauen({
+    zeilen: [zeile("Eine Karte", "fehlt.jpg", { Menge: "2" })],
+    bilder: [bild("a.jpg")],
+    bestand: [{ id: "e".repeat(32), titel: "Eine Karte", menge: 1 }],
+  });
+  assert.equal(plan.posten[0].stand, "fehler");
+  assert.equal(plan.posten[0].produktId, undefined);
 });
