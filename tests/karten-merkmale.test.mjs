@@ -75,6 +75,12 @@ test("Bewertung erkennt die Häuser und das Wort selbst", () => {
   assert.ok(istBewertet("Irgendeine Karte BGS 9.5"));
   assert.ok(istBewertet("Irgendeine Karte Graded"));
   assert.ok(!istBewertet("Topps UCC Gold 25/26 FC Barcelona Messi Golden Boot Winners"));
+
+  // **Beckett ist beides: Bewertungshaus und Panini-Set.** Beim ersten Lauf in
+  // Produktion traf die Liste sechs Karten, von denen „Beckett Jersey Fusion"
+  // keine Bewertung ist. Deshalb dort eine Note verlangt.
+  assert.ok(istBewertet("1997 Pinnacle Football Miami Dolphins Dan Marino The Next Level Beckett 9 Jersey"));
+  assert.ok(!istBewertet("2022 Panini Mosaic Football Dallas Cowboys Dak Prescott Beckett Jersey Fusion"));
 });
 
 test("die Wortgrenzen halten Teiltreffer heraus", () => {

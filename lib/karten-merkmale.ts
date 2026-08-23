@@ -24,8 +24,14 @@ const AUTOGRAMM = /\b(?:autographs?|auto|signed|signiert|signature)\b/iu;
 /** Vom Betreiber benannt: Relikt zählt `relic`, `jersey` und `patch`. */
 const RELIKT = /\b(?:relics?|jersey|patch|memorabilia)\b/iu;
 /** Bewertungshäuser plus das Wort selbst. `PGS` steht mit drin, weil der
- *  Betreiber es ausdrücklich genannt hat. */
-const BEWERTUNG = /\b(?:psa|pgs|bgs|sgc|cgc|csg|hga|beckett|graded|grading)\b/iu;
+ *  Betreiber es ausdrücklich genannt hat.
+ *
+ *  **`Beckett` nur mit Note dahinter.** Beckett ist ein Bewertungshaus *und*
+ *  ein Panini-Set: „Beckett 9 Jersey" ist bewertet, „Beckett Jersey Fusion"
+ *  nicht. Beim ersten Lauf in Produktion traf die Liste sechs Karten, von
+ *  denen genau diese eine falsch war. Die Kürzel der anderen Häuser sind
+ *  eindeutig genug, um ohne Note zu stehen. */
+const BEWERTUNG = /\b(?:psa|pgs|bgs|sgc|cgc|csg|hga|graded|grading)\b|\bbeckett\s*\d/iu;
 
 /** Die Auflage aus dem Titel — oder `null`.
  *
