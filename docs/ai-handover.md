@@ -10632,7 +10632,10 @@ wirklich durchklicken, nicht nur behaupten:
   wenn die Einordnung gefüllt ist, und dieser Lauf gehört dem Betreiber.
 
 ## Auftrag 2026-08-20: Merlin-Set aufbereiten (kein Code)
-- Status: TABELLE FERTIG, wartet auf drei Veredelungsnamen vom Betreiber.
+- Status: ABGESCHLOSSEN. Die vier offenen Veredelungen hat der Betreiber am
+  Bild benannt: `maatsen 27/95` und `yarmolyuk 10/95` sind **Guitar Refractor**,
+  `talbi 171/250` und `abbott 113/199` sind schlicht nummeriert **ohne**
+  Veredelung. Tabelle neu gebaut, kein offener Hinweis mehr.
 - 60 Bilder in `ToDo_Merlin_Premier_League` → **55 Karten** (50 einzeln,
   5 doppelt). Tabelle `import_merlin_premier_league_2026.xlsx` im Ordner.
 - **Die Merlin-Checkliste hat zwei Layouts in einem PDF:** Basiskarten mit der
@@ -10661,3 +10664,10 @@ stehen weiterhin 0 von 208 Karten mit Serie. Der Lauf benutzte die ältere
 Tabelle ohne Spalte „Set"; die Massenanlage verglich leer gegen leer und meldete
 folgerichtig „nichts zu tun". Die Filterleiste bleibt deshalb unsichtbar. Nicht
 der Code, die Tabelle war alt.
+
+### Nachtrag: die „61 Bilder"
+
+Der Betreiber zählte 61 Dateien, das Skript 60. Beides stimmt: Der Ordner trägt
+60 Bilder **plus die erzeugte Tabelle**, die dort hineingeschrieben wird. Wer
+künftig Zahlen vergleicht, muss sie mitzählen — oder die Tabelle woanders
+ablegen.
