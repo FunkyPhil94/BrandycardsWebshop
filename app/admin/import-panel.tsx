@@ -123,6 +123,7 @@ export function ImportPanel() {
               body: JSON.stringify({
                 id: posten.produktId, quantity: posten.menge,
                 set: posten.set, variante: posten.variante, parallele: posten.parallele,
+                nummerierung: posten.nummerierung, autogramm: posten.autogramm,
               }),
             })
           : await (async () => {
@@ -133,6 +134,8 @@ export function ImportPanel() {
               if (posten.set) rumpf.set("set", posten.set);
               if (posten.variante) rumpf.set("variante", posten.variante);
               if (posten.parallele) rumpf.set("parallele", posten.parallele);
+              if (posten.nummerierung) rumpf.set("nummerierung", posten.nummerierung);
+              if (posten.autogramm) rumpf.set("autogramm", "ja");
               rumpf.append("images", datei!);
               return adminFetch("/api/admin/products", { method: "POST", body: rumpf });
             })();

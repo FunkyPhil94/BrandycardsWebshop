@@ -239,3 +239,73 @@ test("eine Tabelle ohne die neuen Spalten legt weiterhin an", () => {
   assert.equal(plan.posten[0].set, "");
   assert.equal(plan.posten[0].variante, "");
 });
+
+// --- Nummerierung und Autogramm ---------------------------------------------
+
+test("Nummerierung und Autogramm werden aus der Tabelle übernommen", () => {
+  const plan = planBauen({
+    zeilen: [{
+      Titel: "Eine Karte", Bilddatei: "a.jpg", Menge: "1",
+      Nummerierung: "27/95", Autogramm: "ja",
+    }],
+    bilder: [bild("a.jpg")],
+    bestand: [],
+  });
+  assert.equal(plan.posten[0].nummerierung, "27/95");
+  assert.equal(plan.posten[0].autogramm, true);
+});
+
+test("die führende Null der Auflage bleibt erhalten", () => {
+  // `01/99` als Zahl gelesen wäre `1/99` — die Null gehört zur Karte.
+  const plan = planBauen({
+    zeilen: [{ Titel: "Eine Karte", Bilddatei: "a.jpg", Nummerierung: "01/99" }],
+    bilder: [bild("a.jpg")],
+    bestand: [],
+  });
+  assert.equal(plan.posten[0].nummerierung, "01/99");
+});
+
+test("nur ausdrückliche Ja-Werte machen ein Autogramm", () => {
+  // Eine Karte fälschlich als Autogramm auszuweisen wäre schlimmer, als eine
+  // zu übersehen — deshalb ist die Liste eng und alles andere heißt Nein.
+  for (const [wert, erwartet] of [["ja", true], ["JA", true], ["x", true], ["1", true],
+                                  ["", false], ["nein", false], ["vielleicht", false], ["0", false]]) {
+    const plan = planBauen({
+      zeilen: [{ Titel: "Eine Karte", Bilddatei: "a.jpg", Autogramm: wert }],
+      bilder: [bild("a.jpg")],
+      bestand: [],
+    });
+    assert.equal(plan.posten[0].autogramm, erwartet, `„${wert}" ergab das Falsche`);
+  }
+});
+
+test("eine abweichende Nummerierung führt zur Berichtigung", () => {
+  const plan = planBauen({
+    zeilen: [{ Titel: "Eine Karte", Bilddatei: "a.jpg", Nummerierung: "27/95" }],
+    bilder: [bild("a.jpg")],
+    bestand: [{ id: "a".repeat(32), titel: "Eine Karte", menge: 1, nummerierung: null }],
+  });
+  assert.equal(plan.posten[0].stand, "aktualisieren");
+  assert.match(plan.posten[0].grund, /Nummerierung/u);
+});
+
+test("ein abweichendes Autogramm führt zur Berichtigung", () => {
+  const plan = planBauen({
+    zeilen: [{ Titel: "Eine Karte", Bilddatei: "a.jpg", Autogramm: "ja" }],
+    bilder: [bild("a.jpg")],
+    bestand: [{ id: "a".repeat(32), titel: "Eine Karte", menge: 1, autogramm: false }],
+  });
+  assert.equal(plan.posten[0].stand, "aktualisieren");
+  assert.match(plan.posten[0].grund, /Autogramm/u);
+});
+
+test("eine Tabelle ohne die neuen Spalten löst keine Berichtigung aus", () => {
+  // **Sonst meldete jeder Lauf mit einer älteren Tabelle 263 Änderungen**, die
+  // nichts ändern — und der Betreiber suchte den Fehler bei sich.
+  const plan = planBauen({
+    zeilen: [{ Titel: "Eine Karte", Bilddatei: "a.jpg", Menge: "1" }],
+    bilder: [bild("a.jpg")],
+    bestand: [{ id: "a".repeat(32), titel: "Eine Karte", menge: 1, nummerierung: null, autogramm: false }],
+  });
+  assert.equal(plan.posten[0].stand, "vorhanden");
+});

@@ -54,6 +54,8 @@ export async function GET(request: Request) {
         set: products.series,
         variante: products.variant,
         parallele: products.parallel,
+        nummerierung: products.numbering,
+        autogramm: products.autograph,
       }).from(products)
         .leftJoin(inventory, eq(inventory.productId, products.id))
         .where(eq(products.origin, "MANUAL"));
@@ -191,6 +193,8 @@ async function createManualProductWithImages(request: Request, createdByUserId: 
     series: text(form.get("set"), MAX_EINORDNUNG),
     variant: text(form.get("variante"), MAX_EINORDNUNG),
     parallel: text(form.get("parallele"), MAX_EINORDNUNG),
+    numbering: text(form.get("nummerierung"), MAX_EINORDNUNG),
+    autograph: form.get("autogramm") === "ja",
   };
 
   const files = form.getAll("images").filter((value): value is File => value instanceof File && value.size > 0);
@@ -292,6 +296,7 @@ export async function PATCH(request: Request) {
       id?: unknown; title?: unknown; description?: unknown; status?: unknown;
       priceAmountCents?: unknown; quantity?: unknown;
       set?: unknown; variante?: unknown; parallele?: unknown;
+      nummerierung?: unknown; autogramm?: unknown;
     };
     const id = typeof body.id === "string" && /^[a-f0-9]{32}$/iu.test(body.id) ? body.id : null;
     if (!id) return NextResponse.json({ error: "Unbekannte Karte." }, { status: 400 });
@@ -322,10 +327,18 @@ export async function PATCH(request: Request) {
       if (!status) return NextResponse.json({ error: "Ungültiger Status." }, { status: 400 });
       if (status !== vorher.status) { werte.status = status; neueMarkierungen.add("status"); }
     }
-    // Set, Variante und Parallele: leerer Text löscht das Feld ausdrücklich,
+    if (body.autogramm !== undefined) {
+      if (typeof body.autogramm !== "boolean") {
+        return NextResponse.json({ error: "„autogramm“ muss wahr oder falsch sein." }, { status: 400 });
+      }
+      if (body.autogramm !== vorher.autograph) werte.autograph = body.autogramm;
+    }
+
+    // Einordnung als Text: leerer Text löscht das Feld ausdrücklich,
     // `undefined` lässt es unberührt. Ohne diese Unterscheidung ließe sich eine
     // falsch gesetzte Einordnung nie wieder loswerden.
-    for (const [feld, spalte] of [["set", "series"], ["variante", "variant"], ["parallele", "parallel"]] as const) {
+    for (const [feld, spalte] of [["set", "series"], ["variante", "variant"],
+                                  ["parallele", "parallel"], ["nummerierung", "numbering"]] as const) {
       const roh = (body as Record<string, unknown>)[feld];
       if (roh === undefined) continue;
       if (roh !== null && typeof roh !== "string") {

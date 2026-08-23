@@ -18,13 +18,16 @@ type Product = {
 };
 
 type Facette = { name: string; anzahl: number };
+/** Merkmal quer zu den Sets. `wert` ist der reservierte Filterwert, `name` die
+ *  Beschriftung — beides getrennt, weil der Wert nie übersetzt werden darf. */
+type Merkmal = { wert: string; name: string; anzahl: number };
 
 type Antwort = {
   products?: Product[];
   total?: number;
   totalPages?: number;
   page?: number;
-  facetten?: { serien: Facette[]; varianten: Facette[] };
+  facetten?: { serien: Facette[]; varianten: Facette[]; merkmale: Merkmal[] };
 };
 
 /** Wie viele Karten auf eine Seite gehen.
@@ -57,7 +60,8 @@ export default function VorverkaufPage() {
   const [suche, setSuche] = useState("");
   const [serie, setSerie] = useState("");
   const [variante, setVariante] = useState("");
-  const [facetten, setFacetten] = useState<{ serien: Facette[]; varianten: Facette[] }>({ serien: [], varianten: [] });
+  const [facetten, setFacetten] = useState<{ serien: Facette[]; varianten: Facette[]; merkmale: Merkmal[] }>(
+    { serien: [], varianten: [], merkmale: [] });
   const [seite, setSeite] = useState(1);
   const [seitenInfo, setSeitenInfo] = useState({ total: 0, totalPages: 1 });
   const [bereit, setBereit] = useState(false);
@@ -160,7 +164,8 @@ export default function VorverkaufPage() {
               setzt die Variante zurück** — „Nitro Boost" aus dem einen Set gibt
               es im anderen womöglich gar nicht, und die Auswahl stünde dann auf
               einem Wert, zu dem es keine Karte gibt. */}
-          {facetten.serien.length > 1 && <label className="catalog-select" htmlFor="vorverkauf-set">
+          {(facetten.serien.length > 1 || facetten.merkmale.length > 0)
+            && <label className="catalog-select" htmlFor="vorverkauf-set">
             <span>{t("Set")}</span>
             <select id="vorverkauf-set" value={serie}
               onChange={(ereignis) => { setSerie(ereignis.target.value); setVariante(""); setSeite(1); }}>
@@ -168,6 +173,14 @@ export default function VorverkaufPage() {
               {facetten.serien.map((eintrag) => <option key={eintrag.name} value={eintrag.name}>
                 {eintrag.name} ({eintrag.anzahl})
               </option>)}
+              {/* Eigene Gruppe: „Numbered" und „Autograph" sind keine Sets,
+                  sondern Eigenschaften quer dazu. In einer Liste mit den Sets
+                  ohne Trennung sähen sie aus wie zwei weitere Serien. */}
+              {facetten.merkmale.length > 0 && <optgroup label={t("Merkmal")}>
+                {facetten.merkmale.map((eintrag) => <option key={eintrag.wert} value={eintrag.wert}>
+                  {eintrag.name} ({eintrag.anzahl})
+                </option>)}
+              </optgroup>}
             </select>
           </label>}
 

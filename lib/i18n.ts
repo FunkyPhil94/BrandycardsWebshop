@@ -118,6 +118,7 @@ export const ENGLISH: Record<string, string> = {
   "Vorverkauf durchsuchen": "Search the pre-sale",
   "Set": "Set",
   "Alle Sets": "All sets",
+  "Merkmal": "Feature",
   "Variante": "Variant",
   "Alle Varianten": "All variants",
   "Alle Karten zeigen": "Show all cards",

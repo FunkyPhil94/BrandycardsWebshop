@@ -10705,3 +10705,23 @@ ablegen.
 - Das erzeugende Skript liegt im Sitzungsverzeichnis, nicht im Repository: Es
   ist ein einmaliger Nachtrag, kein Werkzeug. Wiederholbar ist der Vorgang über
   die Massenanlage.
+
+## Auftrag 2026-08-20: Filter „Numbered" und „Autograph"
+- Status: LÄUFT.
+- **Merlin ist drin und das Set-Feld erschienen:** 263 Karten, Merlin 55,
+  Flagship 208; die Variantenliste engt sich auf das gewählte Set ein (10 bzw.
+  17) und die Setliste behält beide Einträge.
+- **Aus dem Titel lässt sich „nummeriert" nicht ablesen.** Die naheliegende
+  Prüfung `title GLOB '*[0-9]/[0-9]*'` liefert **212** von 263 Treffern — weil
+  die Saison `26/27` genauso aussieht wie eine Auflage. Tatsächlich sind es
+  **8**. Deshalb echte Felder, kein Textmuster.
+- Neue Spalten: `numbering` (Text, z. B. `27/95`) und `autograph` (0/1).
+  Beides steht in der Importtabelle bzw. kommt neu hinein.
+- **Autogramme gibt es heute null.** Der Filter wird gebaut, erscheint aber erst,
+  wenn es welche gibt — die Auswahllisten zeigen nur, was Treffer hat.
+- **Die beiden neuen Einträge stehen im Set-Feld, aber in einer eigenen Gruppe.**
+  Sie sind keine Sets, sondern Merkmale quer dazu; ein `<optgroup>` sagt das,
+  ohne ein viertes Auswahlfeld aufzumachen.
+- Reservierte Werte `*nummeriert` und `*autogramm` — sie können mit keinem
+  echten Seriennamen kollidieren, dieselbe Vorgehensweise wie `*besucher` beim
+  Aufrufzähler.

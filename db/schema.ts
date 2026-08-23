@@ -106,6 +106,15 @@ export const products = sqliteTable("products", {
   series: text("series"),
   variant: text("variant"),
   parallel: text("parallel"),
+  /** Die Auflage als Text, `27/95`. **Nicht als Zahlenpaar:** Die führende Null
+   *  in `01/99` gehört zur Karte und ginge als Zahl verloren. Leer heißt: nicht
+   *  nummeriert — das ist der Filter „Numbered". */
+  numbering: text("numbering"),
+  /** Trägt die Karte ein Autogramm. Eigene Spalte statt eines Blicks in den
+   *  Titel: Was im Titel steht, ist Fließtext, und ein Filter, der sich darauf
+   *  stützt, irrt stumm. Siehe den Kopf von
+   *  `drizzle/0021_product_numbering_autograph.sql`. */
+  autograph: integer("autograph", { mode: "boolean" }).notNull().default(false),
   createdByUserId: text("created_by_user_id").references(() => users.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at"),
   updatedAt: timestamp("updated_at"),

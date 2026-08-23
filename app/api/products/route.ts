@@ -86,6 +86,36 @@ function visibleInSql() {
  * `trim` fängt den Fall ohne Parallele ab, sonst hinge dort ein Leerzeichen. */
 const variantenAusdruck = sql<string>`trim(coalesce(${products.variant}, '') || ' ' || coalesce(${products.parallel}, ''))`;
 
+/** Merkmale quer zu den Sets: nummeriert und mit Autogramm.
+ *
+ * Sie stehen im selben Auswahlfeld wie die Sets, aber in eigener Gruppe — es
+ * sind keine Serien, sondern Eigenschaften, die es in **jeder** Serie gibt.
+ *
+ * **Der Stern kann mit keinem echten Seriennamen kollidieren**, dieselbe
+ * Vorgehensweise wie bei der Besucherzeile des Aufrufzählers. Ohne ihn müsste
+ * man hoffen, dass nie ein Set „Numbered" heißt.
+ *
+ * **Warum eigene Spalten und kein Blick in den Titel:** `title GLOB
+ * '*[0-9]/[0-9]*'` traf am 2026-08-20 zweihundertzwölf von zweihundert-
+ * dreiundsechzig Karten, weil die Saison `26/27` aussieht wie eine Auflage.
+ * Nummeriert sind acht. */
+export const MERKMALE = {
+  "*nummeriert": {
+    titel: "Numbered",
+    bedingung: () => sql`${products.numbering} IS NOT NULL AND ${products.numbering} <> ''`,
+  },
+  "*autogramm": {
+    titel: "Autograph",
+    bedingung: () => sql`${products.autograph} = 1`,
+  },
+} as const;
+
+type Merkmal = keyof typeof MERKMALE;
+
+function istMerkmal(wert: string): wert is Merkmal {
+  return Object.hasOwn(MERKMALE, wert);
+}
+
 function categoryCondition(category: Category) {
   if (category === "prelisted") return and(eq(products.origin, "EBAY"), eq(products.kind, "PRELISTED"));
   return and(eq(products.origin, "EBAY"), ne(products.kind, "PRELISTED"));
@@ -153,7 +183,7 @@ export async function GET(request: Request) {
     // festgehalten, was **vor** Set und Variante galt: Die Setliste zählt ohne
     // beide, die Variantenliste nur mit dem Set.
     const ohneEinordnung = [...conditions];
-    if (serie) conditions.push(eq(products.series, serie));
+    if (serie) conditions.push(istMerkmal(serie) ? MERKMALE[serie].bedingung() : eq(products.series, serie));
     if (variante) conditions.push(eq(variantenAusdruck, variante));
 
     const db = getDb();
@@ -248,7 +278,7 @@ async function ladeFacetten(
   // Dieselben Verbünde wie die Hauptabfrage: `visibleInSql()` in `basis` greift
   // auf `ebay_listings` und `inventory` zu. Ohne sie liefe die Bedingung ins
   // Leere und die Zahlen stimmten nicht mit der Liste überein.
-  const [serien, varianten] = await Promise.all([
+  const [serien, varianten, merkmale] = await Promise.all([
     db.select({ name: products.series, anzahl: sql<number>`count(*)` })
       .from(products)
       .leftJoin(ebayListings, eq(ebayListings.productId, products.id))
@@ -267,10 +297,27 @@ async function ladeFacetten(
       ))
       .groupBy(variantenAusdruck)
       .orderBy(asc(variantenAusdruck)),
+    // Eine Zeile mit einer Spalte je Merkmal statt einer Abfrage je Merkmal:
+    // Zwei weitere Rundgänge zur Datenbank für zwei Zahlen wären verschwendet.
+    db.select({
+      nummeriert: sql<number>`sum(case when ${products.numbering} IS NOT NULL AND ${products.numbering} <> '' then 1 else 0 end)`,
+      autogramm: sql<number>`sum(case when ${products.autograph} = 1 then 1 else 0 end)`,
+    }).from(products)
+      .leftJoin(ebayListings, eq(ebayListings.productId, products.id))
+      .leftJoin(inventory, eq(inventory.productId, products.id))
+      .where(and(...basis)),
   ]);
 
+  const zahlen = merkmale[0];
   return {
     serien: serien.map((zeile) => ({ name: zeile.name ?? "", anzahl: Number(zeile.anzahl) })),
     varianten: varianten.map((zeile) => ({ name: zeile.name, anzahl: Number(zeile.anzahl) })),
+    // Nur was Treffer hat: Ein Filter, der auf null führt, gehört nicht in die
+    // Auswahl. Solange keine Autogrammkarte im Shop steht, gibt es den Eintrag
+    // also gar nicht.
+    merkmale: [
+      { wert: "*nummeriert", name: MERKMALE["*nummeriert"].titel, anzahl: Number(zahlen?.nummeriert ?? 0) },
+      { wert: "*autogramm", name: MERKMALE["*autogramm"].titel, anzahl: Number(zahlen?.autogramm ?? 0) },
+    ].filter((eintrag) => eintrag.anzahl > 0),
   };
 }

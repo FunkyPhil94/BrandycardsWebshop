@@ -1,0 +1,23 @@
+-- Auflage und Autogramm als eigene Spalten an `products`.
+--
+-- Anlass: Der Vorverkauf soll sich auf nummerierte Karten und auf
+-- Autogrammkarten einschränken lassen.
+--
+-- **Warum nicht aus dem Titel.** Die naheliegende Prüfung
+-- `title GLOB '*[0-9]/[0-9]*'` liefert am 2026-08-20 zweihundertzwölf von
+-- zweihundertdreiundsechzig Treffern -- weil die Saison `26/27` im Seriennamen
+-- genauso aussieht wie eine Auflage. Tatsächlich sind acht Karten nummeriert.
+-- Der Fehlgriff wäre stumm gewesen: ein Filter, der fast alles zeigt, sieht
+-- nicht kaputt aus, sondern nur nutzlos.
+--
+-- `numbering` hält die Auflage als Text (`27/95`), nicht als zwei Zahlen: Die
+-- führende Null in `01/99` gehört zur Karte und ginge als Zahl verloren.
+--
+-- `autograph` ist eine 0/1-Spalte mit Vorgabe 0. Heute trägt keine Karte ein
+-- Autogramm; die Spalte entsteht, damit der Filter dasteht, wenn die erste
+-- kommt.
+--
+-- Von Hand geschrieben, weil `drizzle/meta/_journal.json` bei 0002 endet
+-- (siehe CLAUDE.md).
+ALTER TABLE products ADD COLUMN numbering TEXT;
+ALTER TABLE products ADD COLUMN autograph INTEGER NOT NULL DEFAULT 0;

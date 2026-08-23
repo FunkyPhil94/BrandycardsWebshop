@@ -19,6 +19,13 @@ export const SPALTE_BESCHREIBUNG = "Beschreibung";
 export const SPALTE_SET = "Set";
 export const SPALTE_VARIANTE = "Variante";
 export const SPALTE_PARALLELE = "Parallele";
+export const SPALTE_NUMMERIERUNG = "Nummerierung";
+export const SPALTE_AUTOGRAMM = "Autogramm";
+
+/** Was in der Spalte „Autogramm" als Ja gilt. Bewusst eng: Alles andere heißt
+ *  Nein, auch ein Tippfehler — eine Karte fälschlich als Autogramm auszuweisen
+ *  wäre schlimmer, als eine zu übersehen. */
+const JA = new Set(["ja", "j", "yes", "y", "x", "1", "wahr", "true"]);
 
 /** Deckel für Set, Variante und Parallele. Kurz gehalten: Es sind Namen aus der
  *  Checkliste des Herstellers, keine Fließtexte. */
@@ -54,6 +61,9 @@ export type Posten = {
   set: string;
   variante: string;
   parallele: string;
+  /** Auflage als Text, `27/95`. Leer heißt: nicht nummeriert. */
+  nummerierung: string;
+  autogramm: boolean;
   stand: PostenStand;
   grund: string;
   /** Nur bei `aktualisieren` gesetzt: die Karte, die zu ändern ist. */
@@ -66,6 +76,7 @@ export type Bildangabe = { name: string; size: number; type: string };
 export type Bestandskarte = {
   id: string; titel: string; menge: number;
   set?: string | null; variante?: string | null; parallele?: string | null;
+  nummerierung?: string | null; autogramm?: boolean | null;
 };
 
 export type PlanEingabe = {
@@ -128,10 +139,12 @@ export function planBauen({ zeilen, bilder, bestand }: PlanEingabe): Plan {
     const set = (zeile[SPALTE_SET] ?? "").trim();
     const variante = (zeile[SPALTE_VARIANTE] ?? "").trim();
     const parallele = (zeile[SPALTE_PARALLELE] ?? "").trim();
+    const nummerierung = (zeile[SPALTE_NUMMERIERUNG] ?? "").trim();
+    const autogramm = JA.has((zeile[SPALTE_AUTOGRAMM] ?? "").trim().toLowerCase());
     const menge = zahl(zeile[SPALTE_MENGE]);
     const posten_: Posten = {
       zeile: index + 2, titel, bilddatei, menge: menge ?? 1, beschreibung,
-      set, variante, parallele, stand: "bereit", grund: "",
+      set, variante, parallele, nummerierung, autogramm, stand: "bereit", grund: "",
     };
 
     const fehler = (grund: string) => { posten_.stand = "fehler"; posten_.grund = grund; };
@@ -150,8 +163,8 @@ export function planBauen({ zeilen, bilder, bestand }: PlanEingabe): Plan {
     else if (bild.type && !(ERLAUBTE_BILDTYPEN as readonly string[]).includes(bild.type)) {
       fehler(`„${bilddatei}“ ist kein JPG, PNG oder WebP.`);
     } else if (beschreibung.length > MAX_BESCHREIBUNG) fehler("Die Beschreibung ist zu lang.");
-    else if ([set, variante, parallele].some((wert) => wert.length > MAX_EINORDNUNG)) {
-      fehler(`Set, Variante und Parallele dürfen höchstens ${MAX_EINORDNUNG} Zeichen haben.`);
+    else if ([set, variante, parallele, nummerierung].some((wert) => wert.length > MAX_EINORDNUNG)) {
+      fehler(`Set, Variante, Parallele und Nummerierung dürfen höchstens ${MAX_EINORDNUNG} Zeichen haben.`);
     }
     // Der Bestandsabgleich kommt **zuletzt**: Eine fehlerhafte Zeile bleibt ein
     // Fehler, auch wenn zufällig eine Karte gleichen Titels schon dasteht.
@@ -167,6 +180,8 @@ export function planBauen({ zeilen, bilder, bestand }: PlanEingabe): Plan {
         if ((schon.set ?? "") !== set) gruende.push("Set");
         if ((schon.variante ?? "") !== variante) gruende.push("Variante");
         if ((schon.parallele ?? "") !== parallele) gruende.push("Parallele");
+        if ((schon.nummerierung ?? "") !== nummerierung) gruende.push("Nummerierung");
+        if ((schon.autogramm ?? false) !== autogramm) gruende.push("Autogramm");
         if (gruende.length === 0) {
           posten_.stand = "vorhanden";
           posten_.grund = "Steht schon im Shop — wird übersprungen.";

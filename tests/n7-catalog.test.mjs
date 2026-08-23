@@ -95,3 +95,29 @@ test("Vorverkaufskarten stehen im Vorverkauf, nicht im Katalog", async () => {
   assert.doesNotMatch(cards, /<option value="manual">/,
     "der Katalog darf keinen Filter auf etwas anbieten, das er nicht zeigt");
 });
+
+test("Numbered und Autograph filtern über Spalten, nicht über den Titel", async () => {
+  // **Der Test, der die teure Abkürzung verbaut.** Am 2026-08-20 traf
+  // `title GLOB '*[0-9]/[0-9]*'` 212 von 263 Karten, weil die Saison `26/27`
+  // im Seriennamen aussieht wie eine Auflage. Nummeriert sind acht. Ein
+  // Filter, der fast alles zeigt, sieht nicht kaputt aus — nur nutzlos.
+  const route = await read("app/api/products/route.ts");
+  assert.match(route, /products\.numbering/u, "der Filter muss die Spalte lesen");
+  assert.match(route, /products\.autograph/u);
+  // **Ohne Kommentare geprüft.** Der Kopf der Datei nennt `GLOB` als
+  // abschreckendes Beispiel; eine Prüfung über den rohen Text schlüge daran an
+  // und wäre nur so lange grün, wie niemand die Begründung aufschreibt.
+  const ohneKommentare = route
+    .replace(/\/\*[\s\S]*?\*\//gu, "")
+    .replace(/^\s*\/\/.*$/gmu, "");
+  assert.doesNotMatch(ohneKommentare, /GLOB/u,
+    "kein Textmuster auf dem Titel — die Saison sieht aus wie eine Auflage");
+
+  // Die reservierten Werte dürfen mit keinem echten Seriennamen kollidieren.
+  assert.match(route, /"\*nummeriert"/u);
+  assert.match(route, /"\*autogramm"/u);
+
+  // Ein Merkmal ohne Treffer gehört nicht in die Auswahl: Solange keine
+  // Autogrammkarte im Shop steht, soll der Eintrag gar nicht erst erscheinen.
+  assert.match(route, /\.filter\(\(eintrag\) => eintrag\.anzahl > 0\)/u);
+});
