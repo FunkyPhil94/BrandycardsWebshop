@@ -10707,7 +10707,9 @@ ablegen.
   die Massenanlage.
 
 ## Auftrag 2026-08-20: Filter „Numbered" und „Autograph"
-- Status: LÄUFT.
+- Status: AUSGEROLLT (`04d32c9f`), Migration 0021 angewandt. **Die acht
+  Auflagen stehen noch nicht in der Datenbank** — Rückfrage beim Betreiber
+  läuft, ob sie direkt eingetragen werden oder über einen Import-Lauf kommen.
 - **Merlin ist drin und das Set-Feld erschienen:** 263 Karten, Merlin 55,
   Flagship 208; die Variantenliste engt sich auf das gewählte Set ein (10 bzw.
   17) und die Setliste behält beide Einträge.
@@ -10725,3 +10727,21 @@ ablegen.
 - Reservierte Werte `*nummeriert` und `*autogramm` — sie können mit keinem
   echten Seriennamen kollidieren, dieselbe Vorgehensweise wie `*besucher` beim
   Aufrufzähler.
+
+### Ergebnis
+
+- Spalten `numbering` (Text) und `autograph` (0/1). Beide Generatoren schreiben
+  sie jetzt in die Tabelle; die Spalten heißen dort **Nummerierung** und
+  **Autogramm**.
+- **Die Autogramm-Erkennung im Generator sitzt vor der Reihenerkennung.** Bei
+  `x_base_auto` bliebe sonst das `_base` im Nachnamen hängen — die
+  Reihenerkennung sucht am Ende, und dort stünde noch `_auto`. Erst beim
+  Durchlaufen aufgefallen, nicht beim Schreiben.
+- **Der Test gegen die Abkürzung prüft ohne Kommentare.** Er verbietet `GLOB`
+  im Code — und schlug zunächst am eigenen Begründungskommentar an, der `GLOB`
+  als abschreckendes Beispiel nennt. Eine Prüfung über den rohen Text wäre nur
+  so lange grün geblieben, wie niemand die Begründung aufschreibt.
+- Merkmale ohne Treffer erscheinen nicht: Heute liefert die API `merkmale: []`,
+  die Gruppe im Auswahlfeld bleibt also aus. Richtig so — es gibt noch keine
+  nummerierte Karte **in der Datenbank** und keine Autogrammkarte überhaupt.
+- 778 Tests grün, `tsc` und Lint sauber.
