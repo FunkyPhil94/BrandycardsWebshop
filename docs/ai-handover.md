@@ -10799,3 +10799,26 @@ zählt, dass die Unterscheidung an *beiden* Stellen steht.
 - **Offen:** Die Tabellen führen die Spalten „Graded" und „Relic" jetzt, aber im
   Bestand steht überall 0. Autogramm-, Graded- und Relic-Karten gibt es noch
   keine; die drei Schalter werden bedienbar, sobald welche kommen.
+
+## Auftrag 2026-08-20: Dieselben vier Merkmale auch im Katalog
+- Status: LÄUFT.
+- **eBay-Karten haben keine gepflegten Felder** — nur den Titel, über Jahre
+  unterschiedlich gebaut. Der Betreiber hat die Regeln vorgegeben: Relic zählt
+  `relic`, `jersey`, `patch`; Graded zählt PSA, PGS und andere Bewertungen.
+  Damit ist es eine Regel, keine Vermutung mehr.
+- **Die Erkennung läuft im Sync in die Spalten, nicht in der Abfrage.** Sonst
+  müsste die Unterscheidung Saison/Auflage in SQL nachgebaut werden, wo sie
+  weder lesbar noch prüfbar wäre. So bleibt der Filter überall eine Spalte, und
+  die Regel steht als geprüfte Funktion in `lib/karten-merkmale.ts`.
+- **Saison gegen Auflage, an 271 echten Titeln gemessen:** `24/25` im Setnamen
+  sieht aus wie eine Auflage. Die Regel, die hält: gleich lange,
+  aufeinanderfolgende Zahlen sind eine Saison — **außer** wenn davor schon ein
+  Paar stand. `Topps Merlin UCC 24/25 … Elite Society 49/50` hat beides, und
+  49/50 ist die Auflage. Ergebnis: 120 nummeriert, 151 nicht, jede Verwerfung
+  nachgesehen. Riskante Fälle (einziges Paar, aufeinanderfolgend, am Titelende):
+  **null**.
+- Nachfüllen braucht kein Sonderskript: Die Felder wandern in `alleProduktwerte`,
+  und der Sync schreibt sie beim nächsten Lauf für alle 271. **Sie müssen dafür
+  auch mitgelesen werden** (`productRows`) — sonst stünde `undefined` gegen
+  einen Wert, und jeder Lauf schriebe jedes Produkt neu. Die Falle steht schon
+  als Kommentar bei den Listing-Feldern.

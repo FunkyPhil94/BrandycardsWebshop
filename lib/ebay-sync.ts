@@ -6,6 +6,7 @@ import { ebayListingPriceHistory, ebayListings, inventory, priceOffers, productA
 import { getActiveEbayListings, type EbayActiveListing } from "./ebay-client";
 import { bilderStehenSchonSo, stehtSchonSo } from "./ebay-sync-diff";
 import { darfUebernommenWerden, handfelder, ohneHandfelder, titelSchluessel } from "./manual-overrides";
+import { merkmaleAusTitel } from "./karten-merkmale";
 import { D1_SAFE_ID_LIST, maxInsertRows } from "./d1-limits";
 import { ExpiringLock, isSyncRunStale, SYNC_RUN_DEADLINE_MS, withDeadline } from "./sync-lock";
 import { notifyOperationalAlert } from "./ops-alerts";
@@ -145,6 +146,12 @@ async function runEbaySyncInternal() {
     const productRows = await db.select({
       id: products.id, title: products.title, description: products.description, status: products.status,
       origin: products.origin, manualOverrides: products.manualOverrides,
+      // **Mitlesen, weil sie geschrieben werden** — dieselbe Falle wie bei den
+      // Listing-Feldern oben: Fehlten sie hier, stünde `undefined` gegen einen
+      // Wert, `stehtSchonSo` meldete ewig einen Unterschied, und jeder Lauf
+      // schriebe jedes Produkt neu. Im Drei-Minuten-Takt.
+      numbering: products.numbering, autograph: products.autograph,
+      graded: products.graded, relic: products.relic,
     }).from(products);
     const productsById = new Map(productRows.map((row) => [row.id, row]));
 
@@ -228,7 +235,20 @@ async function runEbaySyncInternal() {
         // Bleibt die Liste leer, entfällt der Batch vollständig — und damit
         // der ganze Schreibvorgang für dieses Listing.
         const statements: BatchItem<"sqlite">[] = [];
-        const alleProduktwerte = { title: mapped.title, description: mapped.description ?? null, status: (mapped.quantity > 0 ? "ACTIVE" : "INACTIVE") as "ACTIVE" | "INACTIVE", updatedAt: now };
+        // Auflage, Autogramm, Bewertung und Relikt kommen bei eBay-Karten aus
+        // dem Titel — es gibt nichts anderes. Abgeleitet **hier**, damit der
+        // Filter überall eine Spaltenabfrage bleibt und die Regel dort steht,
+        // wo ein Test sie erreicht: `lib/karten-merkmale.ts`.
+        //
+        // Das füllt zugleich den Bestand nach: Beim ersten Lauf nach dem
+        // Ausrollen weichen die Werte ab, `stehtSchonSo` meldet den
+        // Unterschied, und die Karte wird einmalig geschrieben.
+        const alleProduktwerte = {
+          title: mapped.title, description: mapped.description ?? null,
+          status: (mapped.quantity > 0 ? "ACTIVE" : "INACTIVE") as "ACTIVE" | "INACTIVE",
+          ...merkmaleAusTitel(mapped.title),
+          updatedAt: now,
+        };
         // Von Hand gesetzte Felder bleiben stehen — das ist die Zusage von
         // ai-todo Punkt 12.1. Ohne diesen Filter macht der Import jede Korrektur
         // des Betreibers beim nächsten Lauf wieder zunichte, im Drei-Minuten-Takt

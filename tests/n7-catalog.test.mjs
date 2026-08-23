@@ -148,3 +148,39 @@ test("die Zahlen an den Schaltern zählen ohne die Schalter", async () => {
   assert.doesNotMatch(route, /merkmale:[\s\S]{0,400}?filter\(\(eintrag\) => eintrag\.anzahl > 0\)/u,
     "die Schalterreihe darf nicht je nach Bestand springen");
 });
+
+test("die eBay-Merkmale entstehen im Sync, nicht in der Abfrage", async () => {
+  // **Warum nicht in SQL:** Die Unterscheidung Saison/Auflage braucht den
+  // Vergleich zweier Zahlen und die Reihenfolge der Fundstellen. In SQLite
+  // nachgebaut wäre sie weder lesbar noch prüfbar — und ein stiller Fehler
+  // dort zeigt sich als Filter, der fast alles oder fast nichts findet.
+  const [sync, route] = await Promise.all([
+    read("lib/ebay-sync.ts"),
+    read("app/api/products/route.ts"),
+  ]);
+  assert.match(sync, /merkmaleAusTitel\(mapped\.title\)/u,
+    "der Sync muss die Merkmale aus dem Titel ableiten");
+
+  // **Die Falle, die schon einmal zugeschlagen hat.** Wer schreibt, muss auch
+  // lesen: Fehlten die Spalten in `productRows`, stünde `undefined` gegen einen
+  // Wert, `stehtSchonSo` meldete ewig einen Unterschied, und jeder Lauf
+  // schriebe jedes Produkt neu — im Drei-Minuten-Takt.
+  for (const spalte of ["numbering", "autograph", "graded", "relic"]) {
+    assert.match(sync, new RegExp(`numbering: products\.numbering|${spalte}: products\.${spalte}`, "u"),
+      `${spalte} muss in productRows mitgelesen werden`);
+  }
+
+  // Der Filter selbst bleibt eine Spaltenabfrage — für beide Kartensorten.
+  assert.match(route, /products\.numbering/u);
+});
+
+test("die Schalter stehen auch im Katalog, nicht nur im Vorverkauf", async () => {
+  const [karten, route] = await Promise.all([
+    read("app/karten/page.tsx"),
+    read("app/api/products/route.ts"),
+  ]);
+  assert.match(karten, /merkmalUmschalten/u, "der Katalog braucht die Schalter");
+  assert.match(karten, /params\.set\("facetten", "1"\)/u, "und ihre Zahlen");
+  // Die Facetten dürfen nicht mehr auf den Vorverkauf beschränkt sein.
+  assert.doesNotMatch(route, /facetten"\) === "1" && origin === "MANUAL"/u);
+});

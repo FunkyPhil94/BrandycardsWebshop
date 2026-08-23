@@ -30,6 +30,7 @@ type CatalogResponse = {
   totalPages?: number;
   first?: number;
   last?: number;
+  facetten?: { merkmale: { param: string; name: string; anzahl: number }[] };
 };
 
 /** Die Zeile unter dem Ausweis — oder nichts.
@@ -66,6 +67,10 @@ export default function KartenPage() {
   const [page, setPage] = useState(1);
   const [pageInfo, setPageInfo] = useState({ total: 0, totalPages: 1, first: 0, last: 0 });
   const [initialized, setInitialized] = useState(false);
+  /** Die angehakten Merkmale. Dieselbe Reihe wie im Vorverkauf; die Namen und
+   *  ihre Zahl kommen aus der API, nicht aus dieser Datei. */
+  const [merkmale, setMerkmale] = useState<Set<string>>(new Set());
+  const [merkmalListe, setMerkmalListe] = useState<{ param: string; name: string; anzahl: number }[]>([]);
   const { cart, addToCart, removeFromCart } = useCart();
   const interest = useFormSubmit();
   const { t, locale } = useI18n();
@@ -79,6 +84,7 @@ export default function KartenPage() {
       setMinPrice(params.get("min") ?? "");
       setMaxPrice(params.get("max") ?? "");
       setPageSize(toPageSize(params.get("pro")));
+      setMerkmale(new Set([...params.entries()].filter(([, wert]) => wert === "1").map(([name]) => name)));
       const urlPage = Number(params.get("seite"));
       setPage(Number.isInteger(urlPage) && urlPage > 0 ? urlPage : 1);
       setInitialized(true);
@@ -95,12 +101,15 @@ export default function KartenPage() {
       if (category) params.set("category", category);
       if (minPrice.trim()) params.set("min", minPrice.trim());
       if (maxPrice.trim()) params.set("max", maxPrice.trim());
+      for (const merkmal of merkmale) params.set(merkmal, "1");
+      params.set("facetten", "1");
       setStatus("loading");
       fetch(`/api/products?${params}`, { signal: controller.signal })
         .then((response) => (response.ok ? response.json() : Promise.reject(new Error("failed"))))
         .then((data: CatalogResponse) => {
           setCatalog(data.products ?? []);
           setPageInfo({ total: data.total ?? 0, totalPages: data.totalPages ?? 1, first: data.first ?? 0, last: data.last ?? 0 });
+          if (data.facetten) setMerkmalListe(data.facetten.merkmale);
           if (data.page && data.page !== page) setPage(data.page);
           setStatus("ready");
         })
@@ -110,7 +119,7 @@ export default function KartenPage() {
         });
     }, 180);
     return () => { window.clearTimeout(timer); controller.abort(); };
-  }, [category, initialized, maxPrice, minPrice, page, pageSize, query]);
+  }, [category, initialized, maxPrice, merkmale, minPrice, page, pageSize, query]);
 
   // Filter and page state stay shareable without adding a browser-history entry
   // for every keypress or page click.
@@ -123,9 +132,21 @@ export default function KartenPage() {
     if (maxPrice.trim()) params.set("max", maxPrice.trim()); else params.delete("max");
     if (pageSize === DEFAULT_PAGE_SIZE) params.delete("pro"); else params.set("pro", String(pageSize));
     if (page <= 1) params.delete("seite"); else params.set("seite", String(page));
+    for (const eintrag of merkmalListe) {
+      if (merkmale.has(eintrag.param)) params.set(eintrag.param, "1"); else params.delete(eintrag.param);
+    }
     const next = params.toString();
     window.history.replaceState(null, "", `${window.location.pathname}${next ? `?${next}` : ""}${window.location.hash}`);
-  }, [category, initialized, maxPrice, minPrice, page, pageSize, query]);
+  }, [category, initialized, maxPrice, merkmalListe, merkmale, minPrice, page, pageSize, query]);
+
+  function merkmalUmschalten(param: string) {
+    setMerkmale((alt) => {
+      const neu = new Set(alt);
+      if (neu.has(param)) neu.delete(param); else neu.add(param);
+      return neu;
+    });
+    setPage(1);
+  }
 
   /** Blättern soll den Anfang des Rasters zeigen. Ohne das steht man nach dem
    *  Klick auf „Weiter" am Fuß der neuen Seite und sieht die letzten Karten. */
@@ -181,6 +202,25 @@ export default function KartenPage() {
           <input id="catalog-max-price" value={maxPrice} onChange={(event) => { setMaxPrice(event.target.value); setPage(1); }} inputMode="decimal" type="number" min="0" step="0.01" placeholder="∞" />
         </label>
       </div>
+
+      {/* Dieselbe Reihe wie im Vorverkauf, dieselben vier Merkmale. Bei
+          eBay-Karten stammen die Werte aus dem Titel — abgeleitet beim Import
+          in `lib/karten-merkmale.ts`, nicht hier und nicht in der Abfrage. */}
+      {merkmalListe.length > 0 && <div className="vorverkauf-merkmale">
+        {merkmalListe.map((eintrag) => <label
+          key={eintrag.param}
+          className={eintrag.anzahl === 0 ? "merkmal leer" : "merkmal"}
+        >
+          <input
+            type="checkbox"
+            checked={merkmale.has(eintrag.param)}
+            disabled={eintrag.anzahl === 0 && !merkmale.has(eintrag.param)}
+            onChange={() => merkmalUmschalten(eintrag.param)}
+          />
+          <span>{eintrag.name}</span>
+          <b>{eintrag.anzahl}</b>
+        </label>)}
+      </div>}
 
       {status === "loading" && <div className="empty-state">{t("Karten werden geladen …")}</div>}
       {status === "error" && <div className="empty-state">{t("Die Karten konnten gerade nicht geladen werden. Bitte lade die Seite neu.")}</div>}

@@ -242,9 +242,12 @@ export async function GET(request: Request) {
       }];
     });
 
-    // Nur auf Anfrage und nur für den Vorverkauf: Der Katalog braucht sie nicht,
-    // und zwei zusätzliche Abfragen bei jedem Seitenaufruf wären dort umsonst.
-    const facetten = params.get("facetten") === "1" && origin === "MANUAL"
+    // Nur auf Anfrage. **Nicht mehr nur für den Vorverkauf:** Der Katalog
+    // braucht seit dem 2026-08-20 dieselben vier Schalter. Set- und
+    // Variantenliste kommen dort von allein leer zurück — eBay-Karten tragen
+    // keine gepflegte Einordnung —, und die Oberfläche blendet leere Listen
+    // ohnehin aus.
+    const facetten = params.get("facetten") === "1"
       ? await ladeFacetten(db, ohneEinordnung, ohneVariante, ohneMerkmale)
       : null;
 
