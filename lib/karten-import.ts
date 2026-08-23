@@ -16,6 +16,13 @@ export const SPALTE_TITEL = "Titel";
 export const SPALTE_BILD = "Bilddatei";
 export const SPALTE_MENGE = "Menge";
 export const SPALTE_BESCHREIBUNG = "Beschreibung";
+export const SPALTE_SET = "Set";
+export const SPALTE_VARIANTE = "Variante";
+export const SPALTE_PARALLELE = "Parallele";
+
+/** Deckel für Set, Variante und Parallele. Kurz gehalten: Es sind Namen aus der
+ *  Checkliste des Herstellers, keine Fließtexte. */
+export const MAX_EINORDNUNG = 120;
 
 /** Deckel aus `app/api/admin/products/route.ts`. Doppelt gepflegt, aber hier
  *  sichtbar zu machen ist besser, als 144 Anfragen in denselben 400 laufen zu
@@ -26,10 +33,14 @@ export const MAX_MENGE = 99;
 export const MAX_BILD_BYTES = 10_000_000;
 export const ERLAUBTE_BILDTYPEN = ["image/jpeg", "image/png", "image/webp"] as const;
 
-/** `aktualisieren` heißt: Die Karte steht schon da, **nur die Menge stimmt
- *  nicht.** Ohne diesen Zustand wäre ein zweiter Durchgang mit nachgekauften
- *  Stücken wirkungslos — die Zeile liefe als „vorhanden" durch, und die Menge
- *  bliebe auf dem alten Wert stehen, ohne dass irgendwo ein Fehler auftaucht. */
+/** `aktualisieren` heißt: Die Karte steht schon da, **aber nicht so, wie die
+ *  Tabelle sie beschreibt** — abweichende Menge, fehlendes Set, andere Variante.
+ *
+ *  Ohne diesen Zustand wäre ein zweiter Durchgang wirkungslos: Die Zeile liefe
+ *  als „vorhanden" durch, und der alte Wert bliebe stehen, ohne dass irgendwo
+ *  ein Fehler auftaucht. Genau so wären die zuerst eingestellten Karten für
+ *  immer ohne Einordnung geblieben — sichtbar im Vorverkauf, aber unter keinem
+ *  Filter auffindbar. */
 export type PostenStand = "bereit" | "aktualisieren" | "vorhanden" | "fehler";
 
 export type Posten = {
@@ -39,16 +50,23 @@ export type Posten = {
   bilddatei: string;
   menge: number;
   beschreibung: string;
+  /** Serie, Reihe und Veredelung — leer, wenn die Tabelle sie nicht führt. */
+  set: string;
+  variante: string;
+  parallele: string;
   stand: PostenStand;
   grund: string;
-  /** Nur bei `aktualisieren` gesetzt: die Karte, deren Menge zu ändern ist. */
+  /** Nur bei `aktualisieren` gesetzt: die Karte, die zu ändern ist. */
   produktId?: string;
 };
 
 export type Bildangabe = { name: string; size: number; type: string };
 
 /** Eine Karte, die schon im Shop steht. */
-export type Bestandskarte = { id: string; titel: string; menge: number };
+export type Bestandskarte = {
+  id: string; titel: string; menge: number;
+  set?: string | null; variante?: string | null; parallele?: string | null;
+};
 
 export type PlanEingabe = {
   zeilen: TabellenZeile[];
@@ -107,10 +125,13 @@ export function planBauen({ zeilen, bilder, bestand }: PlanEingabe): Plan {
     const titel = (zeile[SPALTE_TITEL] ?? "").trim();
     const bilddatei = (zeile[SPALTE_BILD] ?? "").trim();
     const beschreibung = (zeile[SPALTE_BESCHREIBUNG] ?? "").trim();
+    const set = (zeile[SPALTE_SET] ?? "").trim();
+    const variante = (zeile[SPALTE_VARIANTE] ?? "").trim();
+    const parallele = (zeile[SPALTE_PARALLELE] ?? "").trim();
     const menge = zahl(zeile[SPALTE_MENGE]);
     const posten_: Posten = {
       zeile: index + 2, titel, bilddatei, menge: menge ?? 1, beschreibung,
-      stand: "bereit", grund: "",
+      set, variante, parallele, stand: "bereit", grund: "",
     };
 
     const fehler = (grund: string) => { posten_.stand = "fehler"; posten_.grund = grund; };
@@ -129,17 +150,31 @@ export function planBauen({ zeilen, bilder, bestand }: PlanEingabe): Plan {
     else if (bild.type && !(ERLAUBTE_BILDTYPEN as readonly string[]).includes(bild.type)) {
       fehler(`„${bilddatei}“ ist kein JPG, PNG oder WebP.`);
     } else if (beschreibung.length > MAX_BESCHREIBUNG) fehler("Die Beschreibung ist zu lang.");
+    else if ([set, variante, parallele].some((wert) => wert.length > MAX_EINORDNUNG)) {
+      fehler(`Set, Variante und Parallele dürfen höchstens ${MAX_EINORDNUNG} Zeichen haben.`);
+    }
     // Der Bestandsabgleich kommt **zuletzt**: Eine fehlerhafte Zeile bleibt ein
     // Fehler, auch wenn zufällig eine Karte gleichen Titels schon dasteht.
     else {
       const schon = vorhanden.get(schluessel(titel));
-      if (schon && schon.menge === posten_.menge) {
-        posten_.stand = "vorhanden";
-        posten_.grund = "Steht schon im Shop — wird übersprungen.";
-      } else if (schon) {
-        posten_.stand = "aktualisieren";
-        posten_.produktId = schon.id;
-        posten_.grund = `Steht schon im Shop, Menge ${schon.menge} → ${posten_.menge}.`;
+      if (schon) {
+        // **Nicht nur die Menge vergleichen.** Die Einordnung kam später dazu;
+        // bei den zuerst eingestellten Karten steht sie noch nicht in der
+        // Datenbank. Wer hier nur auf die Menge sähe, ließe genau diese Karten
+        // ungefiltert liegen — sichtbar im Vorverkauf, aber unter keinem Set.
+        const gruende = [];
+        if (schon.menge !== posten_.menge) gruende.push(`Menge ${schon.menge} → ${posten_.menge}`);
+        if ((schon.set ?? "") !== set) gruende.push("Set");
+        if ((schon.variante ?? "") !== variante) gruende.push("Variante");
+        if ((schon.parallele ?? "") !== parallele) gruende.push("Parallele");
+        if (gruende.length === 0) {
+          posten_.stand = "vorhanden";
+          posten_.grund = "Steht schon im Shop — wird übersprungen.";
+        } else {
+          posten_.stand = "aktualisieren";
+          posten_.produktId = schon.id;
+          posten_.grund = `Steht schon im Shop, wird berichtigt: ${gruende.join(", ")}.`;
+        }
       }
     }
 

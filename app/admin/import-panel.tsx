@@ -26,7 +26,7 @@ function beschriftung({ bereit, aktualisieren }: { bereit: number; aktualisieren
   if (bereit + aktualisieren === 0) return "Nichts zu tun";
   const teile = [];
   if (bereit) teile.push(`${bereit} anlegen`);
-  if (aktualisieren) teile.push(`${aktualisieren} Menge ändern`);
+  if (aktualisieren) teile.push(`${aktualisieren} berichtigen`);
   return teile.join(", ");
 }
 
@@ -120,13 +120,19 @@ export function ImportPanel() {
         const antwort = aendern
           ? await adminFetch("/api/admin/products", {
               method: "PATCH", json: true,
-              body: JSON.stringify({ id: posten.produktId, quantity: posten.menge }),
+              body: JSON.stringify({
+                id: posten.produktId, quantity: posten.menge,
+                set: posten.set, variante: posten.variante, parallele: posten.parallele,
+              }),
             })
           : await (async () => {
               const rumpf = new FormData();
               rumpf.set("title", posten.titel);
               rumpf.set("quantity", String(posten.menge));
               if (posten.beschreibung) rumpf.set("description", posten.beschreibung);
+              if (posten.set) rumpf.set("set", posten.set);
+              if (posten.variante) rumpf.set("variante", posten.variante);
+              if (posten.parallele) rumpf.set("parallele", posten.parallele);
               rumpf.append("images", datei!);
               return adminFetch("/api/admin/products", { method: "POST", body: rumpf });
             })();
@@ -134,7 +140,7 @@ export function ImportPanel() {
         if (!antwort.ok) throw new Error(daten?.error ?? `Der Server antwortete mit ${antwort.status}.`);
         erledigt += 1;
         fehlerfolge = 0;
-        setErgebnisse((alt) => new Map(alt).set(posten.zeile, aendern ? `Menge auf ${posten.menge} gesetzt` : "angelegt"));
+        setErgebnisse((alt) => new Map(alt).set(posten.zeile, aendern ? "berichtigt" : "angelegt"));
         setLauf((alt) => ({ ...alt, erledigt }));
       } catch (fehler) {
         fehlerfolge += 1;
@@ -169,7 +175,9 @@ export function ImportPanel() {
 
     <p className="admin-product-hint">
       Die Tabelle braucht die Spalten <strong>Titel</strong> und <strong>Bilddatei</strong>;
-      <strong> Menge</strong> und <strong>Beschreibung</strong> sind freiwillig, ohne Menge wird ein Stück angelegt.
+      <strong> Menge</strong>, <strong>Beschreibung</strong>, <strong>Set</strong>, <strong>Variante</strong> und
+      <strong> Parallele</strong> sind freiwillig — ohne Menge wird ein Stück angelegt, und ohne Set und Variante
+      lässt sich die Karte im Vorverkauf später nicht filtern.
       Alle übrigen Spalten werden gelesen, aber nicht verwendet — sie dürfen als Kontrollspalten stehen bleiben.
       Angelegt wird als Vorverkaufskarte ohne Festpreis, genau wie über das Einzelformular.
     </p>
@@ -194,7 +202,7 @@ export function ImportPanel() {
     {zahlen && <>
       <ul className="admin-import-zahlen">
         <li><strong>{zahlen.bereit}</strong> anzulegen</li>
-        <li><strong>{zahlen.aktualisieren}</strong> Menge ändern</li>
+        <li><strong>{zahlen.aktualisieren}</strong> zu berichtigen</li>
         <li><strong>{zahlen.vorhanden}</strong> unverändert</li>
         <li className={zahlen.fehler > 0 ? "warnung" : undefined}><strong>{zahlen.fehler}</strong> fehlerhaft</li>
         <li className={zahlen.unbenutzt > 0 ? "warnung" : undefined}><strong>{zahlen.unbenutzt}</strong> Bilder ohne Zeile</li>
@@ -227,7 +235,7 @@ export function ImportPanel() {
             // sind Auskünfte, keine Beanstandungen — sie rot zu färben ließe
             // einen sauberen Lauf wie einen halb misslungenen aussehen.
             const klasse = ergebnis
-              ? (/^(angelegt|Menge auf )/u.test(ergebnis) ? "gut" : "warnung")
+              ? (/^(angelegt|berichtigt)$/u.test(ergebnis) ? "gut" : "warnung")
               : posten.stand === "fehler" ? "warnung" : "";
             return <tr key={posten.zeile}>
               <td>{posten.zeile}</td>

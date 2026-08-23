@@ -844,7 +844,22 @@ footer { background:var(--ink); color:#fff; padding:52px max(48px,calc((100vw - 
   .catalog-select select,.catalog-price input { flex:1; }
 }
 
-/* --- Suche im Vorverkauf --- */
+/* --- Suche und Filter im Vorverkauf --- */
+/* Die Leiste trägt jetzt bis zu vier Dinge: Suche, Set, Variante, Trefferzahl.
+   Als reines `space-between` würde die Trefferzahl bei zwei Feldern nach rechts
+   fliegen und bei vieren mit der Variante kollidieren. */
+.vorverkauf-toolbar { flex-wrap:wrap; gap:14px 24px; justify-content:flex-start; }
+.vorverkauf-toolbar .search-field { flex:1 1 220px; }
+.vorverkauf-toolbar .catalog-select select { max-width:260px; }
+.vorverkauf-toolbar .shop-toolbar-count { margin-left:auto; }
+@media (max-width:700px) {
+  .vorverkauf-toolbar { align-items:stretch; }
+  .vorverkauf-toolbar .search-field,.vorverkauf-toolbar .catalog-select { flex-basis:100%; width:100%; }
+  .vorverkauf-toolbar .catalog-select { justify-content:space-between; }
+  .vorverkauf-toolbar .catalog-select select { flex:1; max-width:none; }
+  .vorverkauf-toolbar .shop-toolbar-count { margin-left:0; }
+}
+
 .shop-toolbar-count { color:var(--muted); font-family:'DM Mono',monospace; font-size:10px; letter-spacing:.06em; margin:0; white-space:nowrap; }
 /* Zurücksetzen ist eine Schaltfläche, kein Verweis — sie führt nirgendwohin,
    sie räumt das Feld. Sie soll nur aussehen wie ein Verweis, und dafür müssen

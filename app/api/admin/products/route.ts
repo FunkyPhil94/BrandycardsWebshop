@@ -12,6 +12,7 @@ const MAX_DESCRIPTION = 4000;
 /** 100 000 Cent = 1000 €. Keine technische Grenze, sondern eine Bremse gegen
  *  den verrutschten Dezimalpunkt: 1500 statt 15,00 ist der teure Tippfehler. */
 const MAX_QUANTITY = 99;
+const MAX_EINORDNUNG = 120;
 const MAX_MANUAL_IMAGES = 2;
 const MAX_IMAGE_BYTES = 10_000_000;
 const MAX_MANUAL_UPLOAD_BYTES = 22_000_000;
@@ -41,15 +42,18 @@ export async function GET(request: Request) {
     const parameter = new URL(request.url).searchParams;
 
     // Der Bestand der von Hand eingestellten Karten für die Massenanlage:
-    // Kennung, Titel und Menge. Daran erkennt sie, was ein früherer Durchlauf
-    // schon angelegt hat — und **was nur eine andere Menge braucht**, statt
-    // ein zweites Mal angelegt zu werden. Ohne die Kennung könnte sie die
-    // Menge nicht ändern, ohne die Menge nicht erkennen, dass sie es müsste.
+    // Kennung, Titel, Menge und Einordnung. Daran erkennt sie, was ein früherer
+    // Durchlauf schon angelegt hat — und **was nur berichtigt werden muss**,
+    // statt ein zweites Mal angelegt zu werden. Ohne die Kennung könnte sie
+    // nichts ändern, ohne die übrigen Felder nicht erkennen, dass sie es müsste.
     if (parameter.get("titel") === "manuell") {
       const alle = await db.select({
         id: products.id,
         titel: products.title,
         menge: inventory.availableQuantity,
+        set: products.series,
+        variante: products.variant,
+        parallele: products.parallel,
       }).from(products)
         .leftJoin(inventory, eq(inventory.productId, products.id))
         .where(eq(products.origin, "MANUAL"));
@@ -180,6 +184,15 @@ async function createManualProductWithImages(request: Request, createdByUserId: 
     throw new AdminProductInputError(400, "Die Beschreibung ist zu lang.");
   }
 
+  // Set, Variante und Parallele sind freiwillig: Das Einzelformular schickt sie
+  // nicht, die Massenanlage schon. Fehlen sie, bleibt das Feld leer statt eine
+  // Einordnung zu erfinden.
+  const einordnung = {
+    series: text(form.get("set"), MAX_EINORDNUNG),
+    variant: text(form.get("variante"), MAX_EINORDNUNG),
+    parallel: text(form.get("parallele"), MAX_EINORDNUNG),
+  };
+
   const files = form.getAll("images").filter((value): value is File => value instanceof File && value.size > 0);
   if (files.length > MAX_MANUAL_IMAGES) throw new AdminProductInputError(400, "Maximal zwei Bilder pro Vorverkaufskarte sind erlaubt.");
   const uploads = await Promise.all(files.map(readManualImage));
@@ -217,6 +230,7 @@ async function createManualProductWithImages(request: Request, createdByUserId: 
       db.insert(products).values({
         id, kind: "PRELISTED", origin: "MANUAL", status: "ACTIVE",
         title, description, priceAmountCents: null, priceCurrency: "EUR",
+        ...einordnung,
         createdByUserId, createdAt: now, updatedAt: now,
       }),
       db.insert(inventory).values({ productId: id, availableQuantity: menge, status: "AVAILABLE", updatedAt: now }),
@@ -277,6 +291,7 @@ export async function PATCH(request: Request) {
     const body = await request.json() as {
       id?: unknown; title?: unknown; description?: unknown; status?: unknown;
       priceAmountCents?: unknown; quantity?: unknown;
+      set?: unknown; variante?: unknown; parallele?: unknown;
     };
     const id = typeof body.id === "string" && /^[a-f0-9]{32}$/iu.test(body.id) ? body.id : null;
     if (!id) return NextResponse.json({ error: "Unbekannte Karte." }, { status: 400 });
@@ -307,6 +322,22 @@ export async function PATCH(request: Request) {
       if (!status) return NextResponse.json({ error: "Ungültiger Status." }, { status: 400 });
       if (status !== vorher.status) { werte.status = status; neueMarkierungen.add("status"); }
     }
+    // Set, Variante und Parallele: leerer Text löscht das Feld ausdrücklich,
+    // `undefined` lässt es unberührt. Ohne diese Unterscheidung ließe sich eine
+    // falsch gesetzte Einordnung nie wieder loswerden.
+    for (const [feld, spalte] of [["set", "series"], ["variante", "variant"], ["parallele", "parallel"]] as const) {
+      const roh = (body as Record<string, unknown>)[feld];
+      if (roh === undefined) continue;
+      if (roh !== null && typeof roh !== "string") {
+        return NextResponse.json({ error: "Set, Variante und Parallele müssen Text sein." }, { status: 400 });
+      }
+      const wert = typeof roh === "string" && roh.trim() ? text(roh, MAX_EINORDNUNG) : null;
+      if (typeof roh === "string" && roh.trim() && !wert) {
+        return NextResponse.json({ error: `„${feld}" ist zu lang.` }, { status: 400 });
+      }
+      if (wert !== vorher[spalte]) werte[spalte] = wert;
+    }
+
     if (body.priceAmountCents !== undefined) {
       // Der Preis einer eBay-Karte steht im Listing und wird von dort
       // überschrieben. Ihn hier zu ändern, hielte einen Tag lang und wäre dann

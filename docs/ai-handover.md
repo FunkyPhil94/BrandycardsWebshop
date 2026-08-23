@@ -10582,3 +10582,30 @@ wirklich durchklicken, nicht nur behaupten:
      vor dem Deploy auf `supabase.co` geprüft.
 - `main` zog währenddessen zweimal weiter (insgesamt 17 fremde Commits, KARL).
   Beide Male gemerged und die Kette erneut geprüft: **767 Tests grün**.
+
+## Auftrag 2026-08-20: Vorverkauf nach Set und Variante filtern
+- Status: LÄUFT.
+- **Anlass:** Als Nächstes kommt „Premier League Merlin" als zweites Set dazu.
+  Vorher soll der Vorverkauf sich auf ein Set und darin auf eine Variante
+  einschränken lassen.
+- **Vom Betreiber entschieden:** nur `/vorverkauf`, nicht der Katalog (dessen
+  eBay-Karten haben keine strukturierten Angaben, dort müsste geraten werden).
+  Parallelen werden **in die Variantenliste gemischt** statt als drittes Feld —
+  „Base", „Base Blue & Pink", „Future Stars", „Future Stars Blue & Pink".
+- **Warum echte Spalten und kein Zerlegen des Titels:** Heute stehen Set und
+  Variante nur im Titel, als Fließtext. Daraus zur Laufzeit zu filtern bricht
+  beim ersten Titel, der anders gebaut ist — und die eBay-Titel im selben Feld
+  sind über Jahre unterschiedlich gebaut. Neue Spalten `series`, `variant`,
+  `parallel` an `products`, nullbar.
+- **Parallele wird getrennt gespeichert, obwohl die Anzeige sie mischt.** Die
+  Mischung ist eine Darstellungsentscheidung; sie später zu trennen wäre aus
+  zusammengesetzten Zeichenketten nicht mehr verlustfrei möglich.
+- **Nachfüllen der 208 vorhandenen Karten ohne Sonderskript:** Der Zustand
+  `aktualisieren` der Massenanlage greift künftig auch, wenn Set oder Variante
+  fehlen oder abweichen — nicht nur bei der Menge. Der nächste Lauf des
+  Betreibers füllt sie damit im selben Arbeitsgang.
+- Die Tabelle bekommt dafür eine Spalte **Set**; Variante und Parallele stehen
+  längst darin.
+- Betroffen: `db/schema.ts`, `drizzle/0020_*.sql`, `app/api/admin/products/route.ts`,
+  `app/api/products/route.ts`, `lib/karten-import.ts`, `app/admin/import-panel.tsx`,
+  `app/vorverkauf/page.tsx`, `app/globals.css`, `lib/i18n.ts`, Tests.

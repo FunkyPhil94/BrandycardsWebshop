@@ -76,6 +76,16 @@ function visibleInSql() {
   )`;
 }
 
+/** Variante und Parallele als **ein** Wert — „Base", „Base Blue & Pink".
+ *
+ * Zusammengesetzt in SQL statt in zwei Feldern, weil der Vorverkauf beides als
+ * eine Auswahl zeigt. Getrennt gespeichert bleibt es trotzdem: Die Mischung ist
+ * eine Entscheidung der Anzeige, und aus der zusammengesetzten Zeichenkette
+ * ließen sich die Teile nicht verlustfrei zurückgewinnen.
+ *
+ * `trim` fängt den Fall ohne Parallele ab, sonst hinge dort ein Leerzeichen. */
+const variantenAusdruck = sql<string>`trim(coalesce(${products.variant}, '') || ' ' || coalesce(${products.parallel}, ''))`;
+
 function categoryCondition(category: Category) {
   if (category === "prelisted") return and(eq(products.origin, "EBAY"), eq(products.kind, "PRELISTED"));
   return and(eq(products.origin, "EBAY"), ne(products.kind, "PRELISTED"));
@@ -99,6 +109,11 @@ export async function GET(request: Request) {
     const origin = params.get("origin") === "MANUAL" || params.get("origin") === "EBAY"
       ? params.get("origin") as "MANUAL" | "EBAY"
       : null;
+    // Set und Variante des Vorverkaufs. Die Variante trägt die Parallele
+    // mit — die Auswahl zeigt „Base Blue & Pink" als einen Eintrag, weil der
+    // Betreiber es so wollte; getrennt gespeichert bleibt sie trotzdem.
+    const serie = (params.get("serie") ?? "").trim().slice(0, 120);
+    const variante = (params.get("variante") ?? "").trim().slice(0, 240);
     const minPrice = parsePriceCents(params.get("min"));
     const maxPrice = parsePriceCents(params.get("max"));
 
@@ -131,6 +146,15 @@ export async function GET(request: Request) {
       const price = sql`coalesce(${ebayListings.priceAmountCents}, ${products.priceAmountCents})`;
       conditions.push(sql`${price} IS NOT NULL AND ${price} <= ${maxPrice}`);
     }
+
+    // **Die Auswahllisten dürfen nicht an ihrem eigenen Filter schrumpfen.**
+    // Wer „Nitro Boost" wählt und danach nur noch „Nitro Boost" zur Auswahl
+    // hat, kommt ohne Umweg über „alle" nicht mehr heraus. Deshalb bleibt hier
+    // festgehalten, was **vor** Set und Variante galt: Die Setliste zählt ohne
+    // beide, die Variantenliste nur mit dem Set.
+    const ohneEinordnung = [...conditions];
+    if (serie) conditions.push(eq(products.series, serie));
+    if (variante) conditions.push(eq(variantenAusdruck, variante));
 
     const db = getDb();
     const where = and(...conditions);
@@ -188,9 +212,16 @@ export async function GET(request: Request) {
       }];
     });
 
+    // Nur auf Anfrage und nur für den Vorverkauf: Der Katalog braucht sie nicht,
+    // und zwei zusätzliche Abfragen bei jedem Seitenaufruf wären dort umsonst.
+    const facetten = params.get("facetten") === "1" && origin === "MANUAL"
+      ? await ladeFacetten(db, ohneEinordnung, serie)
+      : null;
+
     const headers = { "cache-control": byId ? "no-store" : CATALOGUE_CACHE_CONTROL };
     return NextResponse.json({
       products: result,
+      ...(facetten ? { facetten } : {}),
       page,
       pageSize,
       total,
@@ -202,4 +233,44 @@ export async function GET(request: Request) {
     console.error("public product query failed", error);
     return NextResponse.json({ error: "Produkte konnten nicht geladen werden." }, { status: 503, headers: { "cache-control": "no-store" } });
   }
+}
+
+/** Die Auswahllisten für den Vorverkauf: Sets und, im gewählten Set, Varianten.
+ *
+ * Beide zählen mit, wie viele Karten dahinterstehen — eine Auswahl, die zu
+ * null Treffern führt, soll gar nicht erst angeboten werden.
+ */
+async function ladeFacetten(
+  db: ReturnType<typeof getDb>,
+  basis: Parameters<typeof and>,
+  serie: string,
+) {
+  // Dieselben Verbünde wie die Hauptabfrage: `visibleInSql()` in `basis` greift
+  // auf `ebay_listings` und `inventory` zu. Ohne sie liefe die Bedingung ins
+  // Leere und die Zahlen stimmten nicht mit der Liste überein.
+  const [serien, varianten] = await Promise.all([
+    db.select({ name: products.series, anzahl: sql<number>`count(*)` })
+      .from(products)
+      .leftJoin(ebayListings, eq(ebayListings.productId, products.id))
+      .leftJoin(inventory, eq(inventory.productId, products.id))
+      .where(and(...basis, sql`${products.series} IS NOT NULL AND ${products.series} <> ''`))
+      .groupBy(products.series)
+      .orderBy(asc(products.series)),
+    db.select({ name: variantenAusdruck, anzahl: sql<number>`count(*)` })
+      .from(products)
+      .leftJoin(ebayListings, eq(ebayListings.productId, products.id))
+      .leftJoin(inventory, eq(inventory.productId, products.id))
+      .where(and(
+        ...basis,
+        ...(serie ? [eq(products.series, serie)] : []),
+        sql`${variantenAusdruck} <> ''`,
+      ))
+      .groupBy(variantenAusdruck)
+      .orderBy(asc(variantenAusdruck)),
+  ]);
+
+  return {
+    serien: serien.map((zeile) => ({ name: zeile.name ?? "", anzahl: Number(zeile.anzahl) })),
+    varianten: varianten.map((zeile) => ({ name: zeile.name, anzahl: Number(zeile.anzahl) })),
+  };
 }

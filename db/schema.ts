@@ -91,6 +91,21 @@ export const products = sqliteTable("products", {
   // Welche Felder von Hand gesetzt wurden, als JSON-Liste von Feldnamen. Der
   // Sync lässt genau diese Felder in Ruhe und überschreibt alle anderen.
   manualOverrides: json("manual_overrides").$type<string[]>(),
+  /** Serie, Reihe und Veredelung — **nur bei von Hand eingestellten Karten.**
+   *
+   * Der Titel trägt dieselbe Auskunft, aber als Fließtext. Daraus zur Laufzeit
+   * zu filtern bricht beim ersten Titel, der anders gebaut ist, und die
+   * eBay-Titel im selben Feld sind über Jahre unterschiedlich gebaut. Deshalb
+   * eigene Spalten, gefüllt aus der Importtabelle — die kennt die Werte
+   * ohnehin, dort stammen sie aus der Checkliste des Herstellers.
+   *
+   * **`parallel` bleibt getrennt, obwohl der Vorverkauf beides zusammen
+   * anzeigt** („Base Blue & Pink"). Das Zusammensetzen ist eine Entscheidung
+   * der Anzeige; aus der zusammengesetzten Zeichenkette ließen sich die Teile
+   * nicht verlustfrei zurückgewinnen. */
+  series: text("series"),
+  variant: text("variant"),
+  parallel: text("parallel"),
   createdByUserId: text("created_by_user_id").references(() => users.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at"),
   updatedAt: timestamp("updated_at"),

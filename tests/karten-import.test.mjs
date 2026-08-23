@@ -184,3 +184,58 @@ test("eine fehlerhafte Zeile bleibt Fehler, auch wenn die Karte im Shop steht", 
   assert.equal(plan.posten[0].stand, "fehler");
   assert.equal(plan.posten[0].produktId, undefined);
 });
+
+// --- Einordnung: Set, Variante, Parallele -----------------------------------
+
+test("Set, Variante und Parallele werden aus der Tabelle übernommen", () => {
+  const plan = planBauen({
+    zeilen: [{
+      Titel: "Eine Karte", Bilddatei: "a.jpg", Menge: "1",
+      Set: "Topps Premier League Flagship 26/27", Variante: "Base", Parallele: "Blue & Pink",
+    }],
+    bilder: [bild("a.jpg")],
+    bestand: [],
+  });
+  assert.equal(plan.posten[0].set, "Topps Premier League Flagship 26/27");
+  assert.equal(plan.posten[0].variante, "Base");
+  assert.equal(plan.posten[0].parallele, "Blue & Pink");
+});
+
+test("eine vorhandene Karte ohne Einordnung wird berichtigt, nicht übersprungen", () => {
+  // **Der Fall der ersten 208 Karten.** Sie wurden eingestellt, bevor es die
+  // Felder gab. Sähe der Plan nur auf die Menge, blieben sie für immer ohne
+  // Set — sichtbar im Vorverkauf, aber unter keinem Filter auffindbar, und
+  // niemand bekäme je einen Hinweis darauf.
+  const plan = planBauen({
+    zeilen: [{ Titel: "Eine Karte", Bilddatei: "a.jpg", Menge: "1", Set: "Flagship 26/27", Variante: "Base" }],
+    bilder: [bild("a.jpg")],
+    bestand: [{ id: "a".repeat(32), titel: "Eine Karte", menge: 1, set: null, variante: null, parallele: null }],
+  });
+  assert.equal(plan.posten[0].stand, "aktualisieren");
+  assert.match(plan.posten[0].grund, /Set/u);
+  assert.match(plan.posten[0].grund, /Variante/u);
+  assert.doesNotMatch(plan.posten[0].grund, /Menge/u, "die Menge stimmt und darf nicht als Grund auftauchen");
+});
+
+test("stimmt alles überein, bleibt die Karte unangetastet", () => {
+  // Sonst schickte jeder weitere Lauf 208 Änderungen los, die nichts ändern.
+  const plan = planBauen({
+    zeilen: [{ Titel: "Eine Karte", Bilddatei: "a.jpg", Menge: "2", Set: "S", Variante: "V", Parallele: "P" }],
+    bilder: [bild("a.jpg")],
+    bestand: [{ id: "a".repeat(32), titel: "Eine Karte", menge: 2, set: "S", variante: "V", parallele: "P" }],
+  });
+  assert.equal(plan.posten[0].stand, "vorhanden");
+});
+
+test("eine Tabelle ohne die neuen Spalten legt weiterhin an", () => {
+  // Ältere Tabellen führen Set und Variante nicht. Sie sollen nicht scheitern,
+  // sondern Karten ohne Einordnung anlegen — filterbar sind die dann nicht.
+  const plan = planBauen({
+    zeilen: [zeile("Eine Karte", "a.jpg")],
+    bilder: [bild("a.jpg")],
+    bestand: [],
+  });
+  assert.equal(plan.posten[0].stand, "bereit");
+  assert.equal(plan.posten[0].set, "");
+  assert.equal(plan.posten[0].variante, "");
+});

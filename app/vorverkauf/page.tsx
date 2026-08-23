@@ -17,11 +17,14 @@ type Product = {
   imageUrls: string[];
 };
 
+type Facette = { name: string; anzahl: number };
+
 type Antwort = {
   products?: Product[];
   total?: number;
   totalPages?: number;
   page?: number;
+  facetten?: { serien: Facette[]; varianten: Facette[] };
 };
 
 /** Wie viele Karten auf eine Seite gehen.
@@ -52,6 +55,9 @@ export default function VorverkaufPage() {
   const [cards, setCards] = useState<Product[]>([]);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const [suche, setSuche] = useState("");
+  const [serie, setSerie] = useState("");
+  const [variante, setVariante] = useState("");
+  const [facetten, setFacetten] = useState<{ serien: Facette[]; varianten: Facette[] }>({ serien: [], varianten: [] });
   const [seite, setSeite] = useState(1);
   const [seitenInfo, setSeitenInfo] = useState({ total: 0, totalPages: 1 });
   const [bereit, setBereit] = useState(false);
@@ -63,6 +69,8 @@ export default function VorverkaufPage() {
     const timer = window.setTimeout(() => {
       const params = new URLSearchParams(window.location.search);
       setSuche(params.get("q") ?? "");
+      setSerie(params.get("set") ?? "");
+      setVariante(params.get("variante") ?? "");
       const gewuenscht = Number(params.get("seite"));
       setSeite(Number.isInteger(gewuenscht) && gewuenscht > 0 ? gewuenscht : 1);
       setBereit(true);
@@ -76,8 +84,10 @@ export default function VorverkaufPage() {
     // Entprellt wie im Katalog: eine Anfrage je Tastendruck wäre bei 144 Karten
     // nicht falsch, aber unnötig.
     const timer = window.setTimeout(() => {
-      const params = new URLSearchParams({ origin: "MANUAL", pro: String(PRO_SEITE), seite: String(seite) });
+      const params = new URLSearchParams({ origin: "MANUAL", pro: String(PRO_SEITE), seite: String(seite), facetten: "1" });
       if (suche.trim()) params.set("q", suche.trim());
+      if (serie) params.set("serie", serie);
+      if (variante) params.set("variante", variante);
       setStatus("loading");
       fetch(`/api/products?${params}`, { signal: controller.signal })
         .then((response) => (response.ok ? response.json() : Promise.reject(new Error("failed"))))
@@ -87,6 +97,7 @@ export default function VorverkaufPage() {
           // Einschränkung je aufweicht.
           setCards((daten.products ?? []).filter((product) => product.origin === "MANUAL"));
           setSeitenInfo({ total: daten.total ?? 0, totalPages: daten.totalPages ?? 1 });
+          if (daten.facetten) setFacetten(daten.facetten);
           if (daten.page && daten.page !== seite) setSeite(daten.page);
           setStatus("ready");
         })
@@ -96,7 +107,7 @@ export default function VorverkaufPage() {
         });
     }, 180);
     return () => { window.clearTimeout(timer); controller.abort(); };
-  }, [bereit, seite, suche]);
+  }, [bereit, seite, serie, suche, variante]);
 
   // Ohne neuen Verlaufseintrag je Tastendruck — sonst führt der Zurück-Knopf
   // durch jeden einzelnen Buchstaben.
@@ -104,17 +115,26 @@ export default function VorverkaufPage() {
     if (!bereit) return;
     const params = new URLSearchParams(window.location.search);
     if (suche.trim()) params.set("q", suche.trim()); else params.delete("q");
+    if (serie) params.set("set", serie); else params.delete("set");
+    if (variante) params.set("variante", variante); else params.delete("variante");
     if (seite <= 1) params.delete("seite"); else params.set("seite", String(seite));
     const rest = params.toString();
     window.history.replaceState(null, "", `${window.location.pathname}${rest ? `?${rest}` : ""}${window.location.hash}`);
-  }, [bereit, seite, suche]);
+  }, [bereit, seite, serie, suche, variante]);
 
   function zuSeite(ziel: number) {
     setSeite(Math.max(1, ziel));
     document.getElementById("vorverkauf")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
-  const gesucht = suche.trim().length > 0;
+  const gesucht = suche.trim().length > 0 || serie !== "" || variante !== "";
+
+  function alleZeigen() {
+    setSuche("");
+    setSerie("");
+    setVariante("");
+    setSeite(1);
+  }
 
   return (
     <main>
@@ -125,7 +145,7 @@ export default function VorverkaufPage() {
           <p>{t("Karten, die du hier bekommst, bevor sie bei eBay stehen.")}</p>
         </div>
 
-        <div className="shop-toolbar">
+        <div className="shop-toolbar vorverkauf-toolbar">
           <label className="search-field" htmlFor="vorverkauf-suche">
             <span aria-hidden="true">⌕</span>
             <input
@@ -136,6 +156,32 @@ export default function VorverkaufPage() {
               aria-label={t("Vorverkauf durchsuchen")}
             />
           </label>
+          {/* Set und Variante als zwei Auswahlfelder. **Ein Wechsel des Sets
+              setzt die Variante zurück** — „Nitro Boost" aus dem einen Set gibt
+              es im anderen womöglich gar nicht, und die Auswahl stünde dann auf
+              einem Wert, zu dem es keine Karte gibt. */}
+          {facetten.serien.length > 1 && <label className="catalog-select" htmlFor="vorverkauf-set">
+            <span>{t("Set")}</span>
+            <select id="vorverkauf-set" value={serie}
+              onChange={(ereignis) => { setSerie(ereignis.target.value); setVariante(""); setSeite(1); }}>
+              <option value="">{t("Alle Sets")}</option>
+              {facetten.serien.map((eintrag) => <option key={eintrag.name} value={eintrag.name}>
+                {eintrag.name} ({eintrag.anzahl})
+              </option>)}
+            </select>
+          </label>}
+
+          {facetten.varianten.length > 1 && <label className="catalog-select" htmlFor="vorverkauf-variante">
+            <span>{t("Variante")}</span>
+            <select id="vorverkauf-variante" value={variante}
+              onChange={(ereignis) => { setVariante(ereignis.target.value); setSeite(1); }}>
+              <option value="">{t("Alle Varianten")}</option>
+              {facetten.varianten.map((eintrag) => <option key={eintrag.name} value={eintrag.name}>
+                {eintrag.name} ({eintrag.anzahl})
+              </option>)}
+            </select>
+          </label>}
+
           {status === "ready" && seitenInfo.total > 0 && <p className="shop-toolbar-count">
             {gesucht
               ? t("{{count}} Treffer", { count: seitenInfo.total })
@@ -151,9 +197,9 @@ export default function VorverkaufPage() {
             im Vorverkauf" eine über den Shop. Wer beides zusammenwirft, lässt
             den Besucher glauben, es gebe hier nie etwas. */}
         {status === "ready" && cards.length === 0 && gesucht && <div className="empty-state">
-          <p><strong>{t("Keine Karte passt zu dieser Suche.")}</strong></p>
-          <p><button type="button" className="text-link text-link-inline" onClick={() => { setSuche(""); setSeite(1); }}>
-            {t("Suche zurücksetzen")}
+          <p><strong>{t("Keine Karte passt zu dieser Auswahl.")}</strong></p>
+          <p><button type="button" className="text-link text-link-inline" onClick={alleZeigen}>
+            {t("Alle Karten zeigen")}
           </button></p>
         </div>}
 

@@ -51,7 +51,7 @@ test("der Vorverkauf sucht serverseitig und blättert über seinen ganzen Bestan
 
   // Zwei Leerzustände: „nichts gefunden" ist eine Auskunft über die Suche,
   // „gerade nichts im Vorverkauf" eine über den Shop.
-  assert.match(presale, /Keine Karte passt zu dieser Suche\./, "die leere Suche braucht ihre eigene Auskunft");
+  assert.match(presale, /Keine Karte passt zu dieser Auswahl\./, "die leere Suche braucht ihre eigene Auskunft");
   assert.match(presale, /Gerade ist nichts im Vorverkauf\./, "der leere Vorverkauf behält seine");
 });
 
