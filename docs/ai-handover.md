@@ -10534,7 +10534,8 @@ wirklich durchklicken, nicht nur behaupten:
   ist ebenfalls nur deutsch — einen Rechtstext übersetzt nicht die KI.
 
 ## Auftrag 2026-08-18: Zweiter Bulk-Import, mit Mehrfachstücken
-- Status: LÄUFT.
+- Status: TABELLE UND FUNKTION FERTIG, Deploy `501daa74`. Der Lauf selbst liegt
+  beim Betreiber — den Dateidialog kann die KI nicht bedienen.
 - **Der Ordner enthält jetzt 258 Bilder statt 144** — die alten und neue. Mehrere
   Stücke derselben Karte tragen `_1`, `_2`, `_3`. Sie sollen **eine** Karte im
   Shop ergeben, mit entsprechender Menge.
@@ -10562,3 +10563,22 @@ wirklich durchklicken, nicht nur behaupten:
   * `yarmoliuk` heißt in der Checkliste `Yarmolyuk`.
 - Betroffen: `app/api/admin/products/route.ts`, `lib/karten-import.ts`,
   `app/admin/import-panel.tsx`, `tests/karten-import.test.mjs`.
+
+### Ergebnis
+
+- Tabelle `import_pl_flagship_26_27_lauf2.xlsx` im Bilderordner: **208 Karten
+  aus 258 Dateien**, keine doppelten Titel, alle Namen aufgelöst.
+- Die Massenanlage kennt jetzt drei Zustände statt zwei. `aktualisieren`
+  schickt `PATCH {id, quantity}` im selben Durchgang wie die Neuanlagen.
+- **Zwei Deploy-Fehlgriffe, beide notiert, damit sie nicht wiederkommen:**
+  1. `git merge … | tail -2` verschluckt den Rückgabewert des Merge — die Kette
+     lief mit `&&` weiter und **rollte `main` ohne die eigene Änderung aus**.
+     Nie eine Prüfung durch eine Pipe schicken, deren Ende `tail` ist.
+  2. Im Hauptverzeichnis lagen uneingecheckte Änderungen eines **parallel
+     laufenden Strangs** (Instagram-Footer, TEMU, vom 2026-08-20). Statt sie zu
+     stashen wurde der Zweig direkt aufs Remote geschoben
+     (`git push origin <zweig>:main`) und **aus dem Worktree** ausgerollt —
+     dort liegt seit heute eine Kopie der `.env.local`, und das Bündel wurde
+     vor dem Deploy auf `supabase.co` geprüft.
+- `main` zog währenddessen zweimal weiter (insgesamt 17 fremde Commits, KARL).
+  Beide Male gemerged und die Kette erneut geprüft: **767 Tests grün**.
