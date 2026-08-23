@@ -10843,3 +10843,36 @@ zählt, dass die Unterscheidung an *beiden* Stellen steht.
   aufeinanderfolgt und der keine Saison trägt (`… Gold 49/50`), gilt als nicht
   nummeriert. Im Bestand gibt es davon null. Tritt er auf, fehlt ein Treffer —
   kein falscher.
+
+## Auftrag 2026-08-20: Titel als Rückfalllinie für die Merkmale der Massenanlage
+- Status: ABGESCHLOSSEN.
+- **Anlass:** eBay-Karten bekommen ihre Merkmale aus dem Titel, Vorverkaufskarten
+  nur aus der Tabelle. Bleibt dort eine Spalte leer, ist die Karte stumm ohne
+  Kennzeichen — dieselbe Karte über eBay wäre erkannt worden.
+- **Leer heißt nicht Nein.** Eine leere Zelle ist Schweigen, ein ausdrückliches
+  „nein" ist eine Aussage. Nur beim Schweigen entscheidet der Titel; wer „nein"
+  schreibt, behält recht, auch wenn der Titel etwas anderes nahelegt. Dafür
+  braucht es neben der Ja-Liste eine Nein-Liste.
+- Falsch-positiv kann die Rückfalllinie nicht werden: Sie behauptet nur, was im
+  Titel steht — und den hat der Betreiber selbst erzeugt.
+- Betroffen: `lib/karten-import.ts`, `tests/karten-import.test.mjs`.
+
+### Ergebnis
+
+- Leere Zelle → der Titel entscheidet. Ausdrückliches „nein" → die Zelle behält
+  recht. Dafür gibt es jetzt neben `JA` eine `NEIN`-Liste; vorher fielen beide
+  Fälle auf `false` zusammen und waren nicht unterscheidbar.
+- Auch die Auflage fällt zurück: leere Spalte → `auflageAusTitel(titel)`. Die
+  Saison-Falle greift dabei genauso, `26/27` wird nicht zur Auflage.
+- **Zwei Namensräume treffen sich hier:** Der Plan spricht deutsch
+  (`autogramm`), die Datenbankspalte englisch (`autograph`). In
+  `JA_NEIN_SPALTEN` sind sie ausdrücklich verknüpft statt gleich benannt — eine
+  stille Verwechslung wäre ein Merkmal, das nie greift.
+- **Beim Ausführen aufgefallen:** Node findet `./karten-merkmale` beim direkten
+  Ausführen der `.ts` ohne Endung nicht. Der Bundler schon — der Fehler wäre
+  also erst im Test aufgetaucht, nicht im Build. Endung jetzt ausgeschrieben,
+  in `karten-import.ts` **und** in `ebay-sync.ts`.
+- 799 Tests grün.
+- **Wirkung auf den Bestand: keine.** Kein Vorverkaufstitel enthält eine der
+  Vokabeln, und die acht Auflagen stehen schon in der Spalte. Das Netz hängt
+  für künftige Karten.

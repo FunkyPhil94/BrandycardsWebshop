@@ -11,6 +11,9 @@
  */
 
 import type { TabellenZeile } from "./xlsx-lesen";
+// Endung ausgeschrieben: Die Tests führen diese Datei direkt mit Node aus,
+// und dessen Auflösung findet `./karten-merkmale` ohne sie nicht.
+import { auflageAusTitel, merkmaleAusTitel } from "./karten-merkmale.ts";
 
 export const SPALTE_TITEL = "Titel";
 export const SPALTE_BILD = "Bilddatei";
@@ -24,18 +27,40 @@ export const SPALTE_AUTOGRAMM = "Autogramm";
 export const SPALTE_GRADED = "Graded";
 export const SPALTE_RELIC = "Relic";
 
-/** Die Ja-Nein-Spalten der Tabelle, in einer Liste statt viermal ausgeschrieben.
- *  Ein fünftes Merkmal kostet damit eine Zeile, nicht fünf Änderungen. */
+/** Die Ja-Nein-Spalten der Tabelle, in einer Liste statt dreimal ausgeschrieben.
+ *  Ein viertes Merkmal kostet damit eine Zeile, nicht vier Änderungen.
+ *
+ *  `feld` ist der Name im Plan (deutsch, wie alles hier), `ausTitel` der Name
+ *  in `merkmaleAusTitel` (englisch, wie die Datenbankspalte). **Ausdrücklich
+ *  verknüpft statt gleich benannt:** Die beiden Namensräume treffen sich nur an
+ *  dieser Stelle, und eine stille Verwechslung wäre ein Merkmal, das nie greift. */
 export const JA_NEIN_SPALTEN = [
-  { spalte: SPALTE_AUTOGRAMM, feld: "autogramm" },
-  { spalte: SPALTE_GRADED, feld: "graded" },
-  { spalte: SPALTE_RELIC, feld: "relic" },
+  { spalte: SPALTE_AUTOGRAMM, feld: "autogramm", ausTitel: "autograph" },
+  { spalte: SPALTE_GRADED, feld: "graded", ausTitel: "graded" },
+  { spalte: SPALTE_RELIC, feld: "relic", ausTitel: "relic" },
 ] as const;
 
-/** Was in der Spalte „Autogramm" als Ja gilt. Bewusst eng: Alles andere heißt
- *  Nein, auch ein Tippfehler — eine Karte fälschlich als Autogramm auszuweisen
- *  wäre schlimmer, als eine zu übersehen. */
+/** Was in einer Ja-Nein-Spalte als Ja gilt. Bewusst eng — eine Karte
+ *  fälschlich als Autogramm auszuweisen wäre schlimmer, als eine zu übersehen. */
 const JA = new Set(["ja", "j", "yes", "y", "x", "1", "wahr", "true"]);
+/** Was ausdrücklich Nein heißt. **Nicht dasselbe wie leer:** Eine leere Zelle
+ *  ist Schweigen, und beim Schweigen darf der Titel entscheiden. Wer „nein"
+ *  schreibt, behält recht — auch wenn der Titel etwas anderes nahelegt. */
+const NEIN = new Set(["nein", "n", "no", "0", "falsch", "false", "-"]);
+
+/** Ja, Nein — oder, bei leerer Zelle, was der Titel sagt.
+ *
+ * **Die Rückfalllinie gibt es, weil eBay-Karten sie von Natur aus haben.** Dort
+ * wird alles aus dem Titel abgeleitet; hier käme sonst nichts, wenn eine Spalte
+ * leer bleibt, und die Karte wäre stumm ohne Kennzeichen. Falsch-positiv kann
+ * das nicht werden: Behauptet wird nur, was ohnehin im Titel steht.
+ */
+function jaNein(zelle: string | undefined, ausDemTitel: boolean): boolean {
+  const wert = (zelle ?? "").trim().toLowerCase();
+  if (JA.has(wert)) return true;
+  if (NEIN.has(wert)) return false;
+  return ausDemTitel;
+}
 
 /** Deckel für Set, Variante und Parallele. Kurz gehalten: Es sind Namen aus der
  *  Checkliste des Herstellers, keine Fließtexte. */
@@ -152,14 +177,17 @@ export function planBauen({ zeilen, bilder, bestand }: PlanEingabe): Plan {
     const set = (zeile[SPALTE_SET] ?? "").trim();
     const variante = (zeile[SPALTE_VARIANTE] ?? "").trim();
     const parallele = (zeile[SPALTE_PARALLELE] ?? "").trim();
-    const nummerierung = (zeile[SPALTE_NUMMERIERUNG] ?? "").trim();
-    const jaNein = Object.fromEntries(JA_NEIN_SPALTEN.map(({ spalte, feld }) =>
-      [feld, JA.has((zeile[spalte] ?? "").trim().toLowerCase())])) as Record<string, boolean>;
+    // Leere Auflagenspalte: Der Titel entscheidet. Er trägt sie ohnehin, weil
+    // die Tabelle ihn aus derselben Angabe gebaut hat.
+    const nummerierung = (zeile[SPALTE_NUMMERIERUNG] ?? "").trim() || (auflageAusTitel(titel) ?? "");
+    const ausTitel = merkmaleAusTitel(titel);
+    const merkmale = Object.fromEntries(JA_NEIN_SPALTEN.map((eintrag) =>
+      [eintrag.feld, jaNein(zeile[eintrag.spalte], ausTitel[eintrag.ausTitel])])) as Record<string, boolean>;
     const menge = zahl(zeile[SPALTE_MENGE]);
     const posten_: Posten = {
       zeile: index + 2, titel, bilddatei, menge: menge ?? 1, beschreibung,
       set, variante, parallele, nummerierung,
-      autogramm: jaNein.autogramm!, graded: jaNein.graded!, relic: jaNein.relic!,
+      autogramm: merkmale.autogramm!, graded: merkmale.graded!, relic: merkmale.relic!,
       stand: "bereit", grund: "",
     };
 
@@ -199,7 +227,7 @@ export function planBauen({ zeilen, bilder, bestand }: PlanEingabe): Plan {
         if ((schon.nummerierung ?? "") !== nummerierung) gruende.push("Nummerierung");
         for (const { spalte, feld } of JA_NEIN_SPALTEN) {
           const bisher = (schon as Record<string, unknown>)[feld] ?? false;
-          if (bisher !== jaNein[feld]) gruende.push(spalte);
+          if (bisher !== merkmale[feld]) gruende.push(spalte);
         }
         if (gruende.length === 0) {
           posten_.stand = "vorhanden";

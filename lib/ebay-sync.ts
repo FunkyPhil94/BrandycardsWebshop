@@ -6,7 +6,7 @@ import { ebayListingPriceHistory, ebayListings, inventory, priceOffers, productA
 import { getActiveEbayListings, type EbayActiveListing } from "./ebay-client";
 import { bilderStehenSchonSo, stehtSchonSo } from "./ebay-sync-diff";
 import { darfUebernommenWerden, handfelder, ohneHandfelder, titelSchluessel } from "./manual-overrides";
-import { merkmaleAusTitel } from "./karten-merkmale";
+import { merkmaleAusTitel } from "./karten-merkmale.ts";
 import { D1_SAFE_ID_LIST, maxInsertRows } from "./d1-limits";
 import { ExpiringLock, isSyncRunStale, SYNC_RUN_DEADLINE_MS, withDeadline } from "./sync-lock";
 import { notifyOperationalAlert } from "./ops-alerts";

@@ -331,3 +331,52 @@ test("ein abweichendes Graded oder Relic führt zur Berichtigung", () => {
   assert.match(plan.posten[0].grund, /Relic/u);
   assert.doesNotMatch(plan.posten[0].grund, /Graded/u, "was stimmt, darf nicht als Grund auftauchen");
 });
+
+// --- Der Titel als Rückfalllinie -------------------------------------------
+
+test("eine leere Spalte lässt den Titel entscheiden", () => {
+  // **Warum es das gibt:** eBay-Karten bekommen ihre Merkmale von Natur aus aus
+  // dem Titel. Bei der Massenanlage käme ohne diese Zeile nichts, wenn eine
+  // Spalte leer bleibt — die Karte wäre stumm ohne Kennzeichen, obwohl ihr
+  // eigener Titel es sagt.
+  const plan = planBauen({
+    zeilen: [{ Titel: "Topps Flagship 26/27 Arsenal Bukayo Saka Base Autograph Relic 27/95", Bilddatei: "a.jpg" }],
+    bilder: [bild("a.jpg")],
+    bestand: [],
+  });
+  assert.equal(plan.posten[0].autogramm, true);
+  assert.equal(plan.posten[0].relic, true);
+  assert.equal(plan.posten[0].nummerierung, "27/95");
+  assert.equal(plan.posten[0].graded, false, "was der Titel nicht sagt, wird nicht behauptet");
+});
+
+test("ein ausdrückliches Nein schlägt den Titel", () => {
+  // **Leer ist Schweigen, „nein" ist eine Aussage.** Wer die Spalte ausfüllt,
+  // behält recht — sonst könnte man einen Fehltreffer des Titels nie
+  // korrigieren.
+  const plan = planBauen({
+    zeilen: [{ Titel: "Eine Karte mit Autograph im Titel", Bilddatei: "a.jpg", Autogramm: "nein" }],
+    bilder: [bild("a.jpg")],
+    bestand: [],
+  });
+  assert.equal(plan.posten[0].autogramm, false);
+});
+
+test("die Spalte schlägt den Titel auch andersherum", () => {
+  const plan = planBauen({
+    zeilen: [{ Titel: "Eine Karte ganz ohne Hinweis", Bilddatei: "a.jpg", Graded: "ja" }],
+    bilder: [bild("a.jpg")],
+    bestand: [],
+  });
+  assert.equal(plan.posten[0].graded, true);
+});
+
+test("die Saison im Titel wird nicht zur Auflage", () => {
+  // Dieselbe Falle wie bei den eBay-Karten: `26/27` sieht aus wie eine Auflage.
+  const plan = planBauen({
+    zeilen: [{ Titel: "Topps Premier League Flagship 26/27 Arsenal London Bukayo Saka Base", Bilddatei: "a.jpg" }],
+    bilder: [bild("a.jpg")],
+    bestand: [],
+  });
+  assert.equal(plan.posten[0].nummerierung, "");
+});
