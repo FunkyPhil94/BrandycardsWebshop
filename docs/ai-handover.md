@@ -10801,7 +10801,7 @@ zählt, dass die Unterscheidung an *beiden* Stellen steht.
   keine; die drei Schalter werden bedienbar, sobald welche kommen.
 
 ## Auftrag 2026-08-20: Dieselben vier Merkmale auch im Katalog
-- Status: LÄUFT.
+- Status: ABGESCHLOSSEN. Deploys `af55ec08` und `1a5eba27`.
 - **eBay-Karten haben keine gepflegten Felder** — nur den Titel, über Jahre
   unterschiedlich gebaut. Der Betreiber hat die Regeln vorgegeben: Relic zählt
   `relic`, `jersey`, `patch`; Graded zählt PSA, PGS und andere Bewertungen.
@@ -10822,3 +10822,24 @@ zählt, dass die Unterscheidung an *beiden* Stellen steht.
   auch mitgelesen werden** (`productRows`) — sonst stünde `undefined` gegen
   einen Wert, und jeder Lauf schriebe jedes Produkt neu. Die Falle steht schon
   als Kommentar bei den Listing-Feldern.
+
+### Ergebnis, in Produktion nachgemessen
+
+- Der Sync hat die Spalten beim nächsten Lauf von allein gefüllt, ohne
+  Sonderskript: **120 nummeriert, 40 Autogramm, 20 Relikt, 5 bewertet.**
+  Die 120 stimmen mit der Vorabmessung an den Titeln überein.
+- **Gegengelesen, nicht bloß gezählt.** Alle 20 Relikte und alle Bewertungen
+  einzeln angesehen. Dabei ein Fehltreffer aufgefallen: „Beckett Jersey Fusion"
+  ist ein **Panini-Set**, keine Bewertung — im Unterschied zu „Beckett 9".
+  `beckett` zählt jetzt nur mit Note dahinter, die anderen Kürzel bleiben ohne.
+  Aus 6 wurden 5.
+- Live geklickt: Autograph **und** Relic zugleich → 4 Karten, alle wirklich
+  beides. Genau das, was im Auswahlfeld nicht ging.
+- **Ein Wächtertest hat mich erwischt:** `tests/*.test.mjs` muss im
+  `npm test`-Skript stehen; die neue Datei fehlte, und der Test dafür schlug an.
+  Ohne ihn wäre `karten-merkmale.test.mjs` nie gelaufen.
+- 795 Tests grün.
+- **Grenze der Regel, bewusst so:** Ein Titel, dessen einziges Zahlenpaar
+  aufeinanderfolgt und der keine Saison trägt (`… Gold 49/50`), gilt als nicht
+  nummeriert. Im Bestand gibt es davon null. Tritt er auf, fehlt ein Treffer —
+  kein falscher.
