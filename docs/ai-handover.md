@@ -10630,3 +10630,34 @@ wirklich durchklicken, nicht nur behaupten:
   sondern der Grund, warum die Filter jetzt schon gebaut wurden.
 - **Nicht geprüft:** die Filterleiste mit echten Daten. Sie erscheint erst,
   wenn die Einordnung gefüllt ist, und dieser Lauf gehört dem Betreiber.
+
+## Auftrag 2026-08-20: Merlin-Set aufbereiten (kein Code)
+- Status: TABELLE FERTIG, wartet auf drei Veredelungsnamen vom Betreiber.
+- 60 Bilder in `ToDo_Merlin_Premier_League` → **55 Karten** (50 einzeln,
+  5 doppelt). Tabelle `import_merlin_premier_league_2026.xlsx` im Ordner.
+- **Die Merlin-Checkliste hat zwei Layouts in einem PDF:** Basiskarten mit der
+  Nummer bei x≈156, Insert-Reihen mit ihrem Kürzel ganz links bei x≈53 — dort,
+  wo auf den Basisseiten die Abschnittsüberschrift steht. Ein Parser, der nur
+  eine Form kennt, verliert entweder alle Inserts oder alle Basiskarten.
+- **`pdftotext -layout` schiebt die Rookie-Spalte in die Namensspalte.** Bukayo
+  Saka und Viktor Gyökeres sahen dort wie Rookies aus. Über Koordinaten gelesen
+  tragen sie den Vermerk nicht. Wer diese Checkliste je wieder anfasst: nicht
+  der Textextraktion glauben.
+- **Prüfung der Varianten, wie vom Betreiber verlangt:** Für jede Reihe, die in
+  der Checkliste steht, wurde maschinell geprüft, ob der Spieler laut Hersteller
+  wirklich darin vorkommt — 55 von 55 bestätigt, ebenso alle Rookie-Vermerke.
+  Veredelungen führt die Checkliste **nicht**; `Refractor`, `Ray Wave` und
+  `Tape` wurden am Kartenbild geprüft und sind unterscheidbar.
+- **Offen: vier Karten tragen nur eine Nummerierung, keinen Veredelungsnamen**
+  (27/95, 10/95, 171/250, 113/199). Am Bild sind es drei verschiedene
+  Veredelungen. Sie bleiben leer und stehen im Hinweis — geraten wird nicht.
+- Werkzeug liegt unter `_werkzeug-tabelle` (`1_merlin_checkliste_lesen.py`,
+  `2_merlin_tabelle_bauen.py`, `3_merlin_abgleich_pruefen.py`).
+
+### Nachtrag zum Filterauftrag
+
+Der Lauf des Betreibers hat die Einordnung **nicht** gefüllt: In der Datenbank
+stehen weiterhin 0 von 208 Karten mit Serie. Der Lauf benutzte die ältere
+Tabelle ohne Spalte „Set"; die Massenanlage verglich leer gegen leer und meldete
+folgerichtig „nichts zu tun". Die Filterleiste bleibt deshalb unsichtbar. Nicht
+der Code, die Tabelle war alt.
