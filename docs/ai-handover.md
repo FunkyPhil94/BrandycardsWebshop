@@ -10671,3 +10671,37 @@ Der Betreiber zählte 61 Dateien, das Skript 60. Beides stimmt: Der Ordner träg
 60 Bilder **plus die erzeugte Tabelle**, die dort hineingeschrieben wird. Wer
 künftig Zahlen vergleicht, muss sie mitzählen — oder die Tabelle woanders
 ablegen.
+
+## Auftrag 2026-08-20: Einordnung der 208 Flagship-Karten direkt in D1
+- Status: ABGESCHLOSSEN, in Produktion nachgemessen.
+- **Schreibender Eingriff in Produktionsdaten, ausdrücklich beauftragt.** Der
+  Betreiber hat den direkten Weg dem dritten Import-Lauf vorgezogen.
+- Gesetzt werden `series`, `variant`, `parallel` bei `origin = 'MANUAL'`,
+  abgeglichen über den **exakten Titel** aus
+  `import_pl_flagship_26_27_lauf2.xlsx`.
+- **Vor dem Schreiben wird geprüft, dass jeder Titel der Tabelle genau einmal
+  in der Datenbank steht.** Ein `UPDATE`, dessen `WHERE` nichts trifft, meldet
+  keinen Fehler — es tut schlicht nichts, und die Karte bliebe ohne Einordnung
+  zurück, ohne dass es auffiele.
+- Eingegrenzt auf `origin = 'MANUAL'`: eBay-Karten dürfen diese Felder nicht
+  bekommen, sie haben keine gepflegte Einordnung.
+
+### Ergebnis
+
+- **208 Anweisungen, 208 Zeilen geschrieben, kein Fehler.** Danach: 208 von 208
+  mit Serie und Variante, 26 mit Parallele (7 + 6 Blue & Pink, 12 Pink,
+  1 Cracked Ice — genau die Zahl aus der Tabelle).
+- **Null eBay-Karten berührt.** Ausdrücklich nachgefragt, nicht angenommen.
+- Vorher geprüft: jeder der 208 Titel steht genau einmal in der Datenbank,
+  keine Waise in beide Richtungen. Ohne diese Prüfung hätte ein `UPDATE` mit
+  danebengreifendem `WHERE` stumm nichts getan.
+- Die Filterleiste ist live durchgeklickt: 17 Varianten mit Trefferzahlen,
+  „Base Pink" liefert 12 Treffer, die Adresse wird zu `?variante=Base+Pink` —
+  und **die Auswahlliste behält alle 18 Einträge**, schrumpft also nicht auf
+  die eigene Wahl zusammen. Genau der Fall, für den die Facetten vor dem
+  eigenen Filter zählen.
+- Das Set-Auswahlfeld bleibt verborgen, solange nur Flagship im Vorverkauf
+  steht. Mit Merlin erscheint es.
+- Das erzeugende Skript liegt im Sitzungsverzeichnis, nicht im Repository: Es
+  ist ein einmaliger Nachtrag, kein Werkzeug. Wiederholbar ist der Vorgang über
+  die Massenanlage.
