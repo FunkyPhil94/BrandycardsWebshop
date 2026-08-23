@@ -1,5 +1,229 @@
 # BrandyCards Agentenprotokoll
 
+## 2026-08-18 - Zwei stille Fehlschläge, die nur die echte Exe zeigen konnte
+
+Vier Wünsche des Betreibers, und die wichtigste Erkenntnis stand nicht in
+seiner Nachricht, sondern in seinen Bildern.
+
+**Er lief mit einer alten Exe.** Die Screenshots zeigten „Nachricht an den
+Assistant", die Beispielfragen als grauen Text, den Launcher über dem offenen
+Panel — die Oberfläche von *vor* dem Umbau desselben Vormittags. Sein „sieht
+langweilig aus" bezog sich also auf eine Fassung, die es im Quellstand längst
+nicht mehr gab. Die Ursache war banal und teuer: `scripts/build-karl-exe.ps1`
+lag seit dem 2026-08-17 auf einem eigenen Zweig und wurde nie nach `main`
+gebracht. Wochenlang wanderte Arbeit in den Quelltext, die auf dem Desktop des
+Betreibers nie ankam.
+
+**Die Lehre ist nicht „Skript mergen".** Sie ist: **Bei einer Anwendung, die als
+Datei verteilt wird, ist der Quellstand nicht der Auslieferungsstand.** Wer
+Oberfläche ändert und nur `dotnet build` prüft, hat nichts ausgeliefert. Der
+Auftrag endet erst mit der neu gebauten Datei — und deshalb steht sie jetzt in
+der Abnahme.
+
+**Der zweite stille Fehlschlag saß tiefer.** Auch mit dem neuen Zeichen trug das
+Fenster weiter das Standardsymbol. Grund: `AppWindow.SetIcon("Assets/...")`
+bekommt einen **relativen** Pfad, und der wird gegen das *Arbeitsverzeichnis*
+aufgelöst, nicht gegen die Anwendung. Bei einer Einzeldatei auf dem Desktop gibt
+es dort keinen `Assets`-Ordner. Der Aufruf tat nichts, warf nichts, meldete
+nichts — seit jeher, nicht erst seit heute. **Ein Aufruf, der still nichts tut,
+ist im Quelltext unsichtbar; er fällt nur im laufenden Fenster auf.** Genau
+dieselbe Falle steht im Repository schon zweimal dokumentiert (das Spritesheet
+und der Avatarkopf gehen längst über `AppContext.BaseDirectory`) — und ich habe
+sie beim Schreiben der Zeile daneben trotzdem nicht angewandt. Das ist heute das
+dritte Mal.
+
+**Zur Quelle-Zeile, weil sie eine Zusicherung war.** Der Betreiber wollte sie
+weg. Sie stand unter jeder Auskunft und war eines der Versprechen, unter denen
+dieser Assistent gebaut wurde. Gelöscht habe ich sie trotzdem nicht: `sources`
+und `freshness` reisen unverändert als Felder, nur `withSource` gibt den Text
+jetzt durch. Das hält die Entscheidung an *einer* Stelle umkehrbar, statt sie
+über zwanzig Aufrufstellen zu verstreuen. **Und die acht Tests, die daran
+hingen, wurden nicht gestrichen, sondern umgehängt** — sie prüfen dieselbe
+Zusicherung jetzt an den Feldern. Ein Wächter, dessen Beobachtungsposten
+wegfällt, bekommt einen neuen; er wird nicht abgezogen.
+
+**Bei den Links war die interessante Frage, was man *nicht* verlinkt.** Karten
+führen auf ihre Detailseite, eBay-Angebote auf ihre gespeicherte `listingUrl`
+oder die Artikelform. Für eine einzelne eBay-**Nachricht** gibt es aus
+`ebay_message_id` keine belastbare Adresse — und eine geratene wäre schlimmer
+als keine: Sie führt ins Leere und sieht dabei aus wie eine Auskunft.
+Nachrichten verweisen deshalb auf den Artikel, um den es geht. Dieselbe Linie
+wie bei den eBay-Preisvorschlägen ohne Eingangszeitpunkt, nur eine Ebene weiter.
+
+**Die Klammerform ist bewusst keine Auszeichnungssprache.** Der Server schreibt
+`[Text](URL)`, der Client erkennt genau dieses eine Muster und baut daraus ein
+Bedienelement. Ein Client, der Markdown *interpretiert*, fängt an, Daten zu
+formatieren — und genau das hat Phase 4 entfernt. Erlaubt sind nur `http` und
+`https`: Ein Verweis aus einer Antwort öffnet den Browser des Betreibers.
+
+**Das Zeichen entsteht aus einem Skript, nicht aus einer abgelegten Datei.** Es
+wird aus dem Avatarkopf gebaut, der seinerseits aus dem Spritesheet geschnitten
+ist. Ändert sich die Figur, wird das Zeichen neu gebaut statt von Hand
+nachgezogen. Große Kacheln tragen den Namenszug, kleine nur den Kopf — ein
+Schriftzug bei 16 Pixeln ist ein grauer Strich, und dafür kennt das ICO-Format
+mehrere Bilder in einer Datei. Das bisherige `AppIcon.ico` war übrigens der
+unveränderte Platzhalter der WinUI-Vorlage: ein graues durchgestrichenes
+Kästchen.
+
+
+## 2026-08-18 - Ein Sortierfehler, ein fehlendes Zeitmaß, und eine Zahl, die keine Uhrzeit hat
+
+Drei Punkte des Betreibers, und jeder hat etwas über den Code gesagt, das vorher
+niemand wusste.
+
+**Der gemeldete Fehler war eine fehlende Frage, keine falsche Antwort.** „Am
+meisten Aufrufe" und „am wenigsten" gaben dasselbe zurück, weil es die
+Gegenrichtung schlicht nicht gab: `orderBy(desc(viewsTotal), …)` stand fest im
+Code, und der Regelplaner routete beide Sätze auf dasselbe Werkzeug. Der
+Assistent hat also nicht falsch sortiert — er konnte die zweite Frage gar nicht
+stellen und hat sie stillschweigend in die erste umgedeutet. **Das ist die
+gefährlichere Sorte Fehler:** Eine falsche Zahl fällt auf, eine beantwortete
+andere Frage nicht.
+
+Behoben als zweites Werkzeug statt als Richtungsfeld. Ein Werkzeugname sagt dem
+Modell deutlicher, was gemeint ist, als ein Wahrheitswert — und die Feldliste im
+Modellschema bleibt so, wie ein Wächtertest sie festnagelt. Die Reihenfolge im
+Planer ist dabei der eigentliche Kniff: „am wenigsten angesehen" enthält
+„angesehen" und wird deshalb **zuerst** auf die Gegenrichtung geprüft.
+
+**`isNotNull` blieb stehen, und das ist die Pointe der Gegenfrage.** „Nicht
+gemeldet" ist keine niedrige Zahl, sondern eine fehlende; eine echte Null
+dagegen ist eine Messung. Produktiv sind das die interessantesten Zeilen
+überhaupt — Karten mit hunderten Einblendungen und **keinem einzigen Aufruf**.
+Sie werden ausgeschrieben, nicht als „0" verkleidet.
+
+**Stunden gehen in `days` nicht auf, und deshalb gab es sie nicht.**
+`requestedDays` rechnet Wochen und Monate in Tage um, weil ein Tag die kleinste
+Einheit ist, die das Feld ausdrücken kann. „Die letzten drei Stunden" wäre ein
+Achtel davon. Ein eigenes Feld war der einzige ehrliche Weg — und der zweite an
+einem Tag, in einem Schema, das bis zum Morgen nur Zahlen und ein festgenageltes
+Datum kannte.
+
+**Der Überblick liest die Fachtabellen, nicht das Ereignisprotokoll.**
+`avatar_events` wäre die naheliegende Quelle gewesen und ist die falsche: Es
+kennt vier Ereignisarten und verschwiege Bestellungen, Anfragen und
+Einstellungen — stillschweigend. Zu einem angenommenen Vorschlag steht dort
+außerdem nur eine Kennung; in `price_offers` stehen Kartentitel und Betrag.
+
+**Dann die Nachfrage, und mit ihr die interessanteste Grenze des Tages.** Der
+Betreiber wollte auch eingegangene und abgeschickte Preisvorschläge sowie
+eBay-Nachrichten im Bericht. Beim Nachsehen zeigte sich ein Unterschied, den man
+den beiden Tabellen nicht ansieht:
+
+- `ebay_inbox_messages.receivedAt` kommt aus eBays Antwort (`excluded.received_at`)
+  — ein echter Eingangszeitpunkt.
+- `ebay_buyer_offers` hat **keinen**. Die einzige Zeitspalte `collectedAt` wird
+  bei jedem Lesesync neu gesetzt, und Zeilen, die nicht mehr kommen, werden
+  gelöscht.
+
+Ein Zeitfenster auf `collectedAt` hätte funktioniert, gut ausgesehen und **alle
+15 Minuten jeden offenen Vorschlag als neu eingegangen gemeldet** — eine
+erfundene Zeitangabe für eine echte Zahl. Die Vorschläge stehen deshalb als
+Zustand neben dem Bericht, ausdrücklich ohne Uhrzeit, mit dem Grund im Satz.
+Dieselbe Linie wie beim Aufrufzähler: Eine Zahl ohne belastbaren Zeitbezug wird
+als solche ausgewiesen, nicht in einen Zeitraum hineingelogen.
+
+Nebenbei: Die eBay-Nachrichten tragen den Vorschlagsverkehr ohnehin mit
+(„Käufer hat einen neuen Preisvorschlag gesendet", „Gegenvorschlag an Käufer").
+Die Anforderung war damit erfüllbar, ohne eine Zeitangabe zu erfinden.
+
+**Und wieder hat erst das laufende Fenster zwei Fehler gezeigt.** Alle Tests
+grün, ausgerollt, Frage gestellt — und die Antwort auf „was ist in den letzten
+48 Stunden passiert" bestand aus zehn eBay-Nachrichten. 168 Vorgänge, davon 144
+eingestellte Karten und 14 Nachrichten; die zeitlich sortierte, gekürzte Liste
+zeigte nur die häufigste Sorte, und die Verkäufe fielen hinten heraus. **Der
+Betreiber hatte „ein Update zu allem" verlangt, und genau das leistete die
+Liste nicht.** Eine Zusammenfassung je Art steht jetzt darüber.
+
+Im selben Screenshot der zweite Fund: `requestedLimit` nimmt die erste Zahl im
+Satz, bei „48 Stunden" also die 48 — die Stundenzahl wurde zur Ergebnisanzahl,
+und ein Bericht über drei Stunden hätte drei Zeilen gezeigt. Genau diese
+Verwechslung steht bei `days` seit Wochen im Code dokumentiert. **Ich habe die
+Notiz gelesen, als ich die Stundenerkennung daneben schrieb, und den Fehler
+trotzdem neu eingebaut** — dasselbe Muster wie heute Mittag beim Fachwort-Riegel.
+Eine dokumentierte Falle schützt nur den, der sie auf den eigenen neuen Code
+anwendet.
+
+**Zur Messtechnik, weil sie zweimal Zeit gekostet hat.** Der Desktop führt zwei
+Fenster mit dem Titel „BrandyCards Assistant", eines davon ohne gültige Ausmaße,
+und `MainWindowHandle` zeigt zeitweise auf das Pet-Overlay (Titel „B"). Ein
+Screenshot des falschen Handles ist ein grauer Streifen. Verlässlich: über
+UI-Automation alle Fenster dieses Titels holen und das mit endlichem
+`BoundingRectangle` nehmen — und die Antworten **als Text** über die
+Automation-Namen auslesen statt sie aus einem Bild abzulesen. Nichts
+abgeschnitten, nichts zu entziffern.
+
+
+## 2026-08-18 - Die Kartensuche, und warum sie am Ende der Kette steht
+
+Der Betreiber fragte „habe ich eine karte von Lewandowski?" und bekam eine
+Absage. Seine Reaktion war keine Beschwerde, sondern eine Erwartung: „ich hätte
+erwartet, dass er alle Karten kennt, die im Shop angeboten werden." Sie war
+berechtigt — dreizehn Werkzeuge, und keines konnte einen Titel suchen.
+
+**Die Daten haben den Zuschnitt bestimmt, nicht die Vorstellung davon.**
+Produktiv gelesen, bevor eine Zeile entstand: „Lewandowski" trifft zwei Karten.
+Eine ist aktiv, Festpreis, 70,00 €. Die andere ist `INACTIVE`, ihr Listing
+`ENDED`, Bestand 0. Hätte ich ohne diesen Blick gebaut, wäre die naheliegende
+Antwort „du hast zwei Lewandowski-Karten" gewesen — und damit ein behauptetes
+Angebot, das es nicht gibt. Mit dem Blick wurde daraus: eine im Angebot, ein
+weiterer Titeltreffer nicht mehr. Gezählt, nicht aufgezählt; Historie soll die
+Antwort nicht fluten, aber verschweigen darf man sie auch nicht — wer zwei im
+Kopf hat und „genau eine" hört, hält den Assistenten für kaputt.
+
+**Die Sichtbarkeitsregel wurde benutzt, nicht nachgebaut.** Was „im Shop
+angeboten" heißt, ist die schwierige Frage dieses Projekts: Vormerkungen ohne
+Bestand bleiben sichtbar, Auktionen nie, manuelle Karten hängen am Bestand, und
+`origin` wird vor `kind` gefragt. Diese Frage ist im Repository nachweislich
+schon viermal falsch beantwortet worden — Bestellroute, Preisvorschlag,
+Detailseite, Warenkorb. Eine fünfte eigene Fassung im Assistenten hätte gut
+ausgesehen und wäre auseinandergelaufen; dann sagt K.A.R.L. etwas anderes als
+die Seite, auf die der Betreiber schaut. Vorgefiltert wird in SQL nur das
+Billige und Unstrittige, **die Entscheidung fällt an `istImKatalogSichtbar`**,
+und ein Test verlangt ausdrücklich, dass die Auktionsregel nicht kopiert wird.
+
+**Das erste Freitextfeld, und der Wächter, der dagegen stand.** Das Schema
+kannte bisher nur Zahlen und ein auf `JJJJ-MM-TT` festgenageltes Datum — mit
+Absicht, und ein Test hielt fest: kein Freitextfeld. Ein Kartentitel lässt sich
+aber nicht als Muster ausdrücken; der Name *ist* die Frage. Also musste der
+Wächter seine Form ändern, und das ist der Punkt, an dem man sich selbst
+belügen könnte: „Test angepasst" klingt harmlos. Die Absicht ist deshalb
+ausdrücklich weitergewandert statt gestrichen — sie prüft jetzt die
+serverseitige Schranke: Länge, Steuerzeichen, entwertete LIKE-Platzhalter samt
+`ESCAPE`, geschlossenes Feldgatter. Die Feldliste bleibt festgenagelt, damit
+kein *weiteres* Feld unbemerkt dazukommt. **Ein Wächter, dessen Grund entfällt,
+wird ersetzt, nicht entfernt.**
+
+**Warum die Suche am Ende des Regelplaners steht.** „Zeig offene
+Preisvorschläge" fängt an wie eine Suchanfrage. Ein Muster auf „zeig …" hätte
+die Frage entführt und mit einer Kartensuche nach „offene Preisvorschläge"
+beantwortet — eine Regression an einer Stelle, die seit Wochen funktioniert. Die
+Lösung ist keine klügere Regex, sondern die Reihenfolge: Die Kartensuche wird
+nur befragt, wenn **kein** anderes Werkzeug gegriffen hat. Damit ist die
+Entführung strukturell ausgeschlossen statt sorgfältig vermieden. Dieselbe
+Bauweise wie beim Modellplaner, der auch erst hinter den Regeln steht.
+
+Für „Hast du Lewandowski?" ohne das Wort „Karte" greift die Regel absichtlich
+nicht: Der Satz ist allein nicht von „Hast du Feierabend?" zu unterscheiden. Das
+beurteilt das Modell, dem `suche` jetzt zur Verfügung steht.
+
+**Und wieder war der Screenshot die Korrektur.** Alle Tests grün, ausgerollt,
+Frage gestellt — und im Fenster stand „70,00 € 1 weitere(r) Titeltreffer", weil
+der Historiensatz an der Preiszeile klebte. Preis und Trefferzahl zu einer
+Zahlenfolge verklebt, in einer Antwort, deren ganzer Zweck die Genauigkeit von
+Zahlen ist. **Kein Unit-Test hätte das gefunden**, denn beide Teile waren
+einzeln korrekt; sichtbar wird es nur im Umbruch eines 520 Punkte breiten
+Fensters. Behoben, mit Test gegen die Verklebung.
+
+**Zum Rollout, nach dem Fehlgriff vom Nachmittag:** Jeder Schritt einzeln, jeder
+Rückgabewert gelesen. `main` war zweimal fremd vorgelaufen (Vorverkauf,
+Besucherzählung); beide Male wurde gemerged und die vollständige Kette auf dem
+zusammengeführten Stand gefahren. Vor dem Deploy wurde zusätzlich geprüft, ob
+die fremde Migration `0019` produktiv liegt — sie lag. Das ist die Lehre von
+heute Mittag, angewandt: Bei parallelen Sitzungen reicht es nicht, den eigenen
+Stand zu prüfen.
+
+
 ## 2026-08-18 - Der Riegel sperrte genau die Fälle, für die er gebaut war
 
 Zwei Aufträge, und der erste ist eine Korrektur an der Arbeit vom Vormittag.

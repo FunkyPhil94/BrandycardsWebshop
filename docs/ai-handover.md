@@ -37,6 +37,347 @@ Prüfung zu welchem Befund führte — gehören weiterhin in
 
 ## Aktueller Auftrag
 
+### 2026-08-18 - Quelle raus, Links rein, neues Gesicht für KARL.exe
+
+- Stand: **ABGESCHLOSSEN und AUSGEROLLT**, an einer frisch gebauten KARL.exe nachgemessen.
+- Auftrag: Vier Punkte vom Betreiber, dazu ein Befund aus seinen Screenshots.
+
+**Der Befund zuerst, weil er den Rest erklärt.** Die Screenshots zeigen die
+**alte** Oberfläche — „Nachricht an den Assistant", die Beispiele als grauer
+Text, der Launcher über dem offenen Panel. Das ist die Fassung von *vor* dem
+Umbau desselben Tages. Der Betreiber läuft also mit einer älteren `KARL.exe`
+gegen den neuen Server. Sein „sieht langweilig aus" bezieht sich auf eine
+Oberfläche, die es im Quellstand nicht mehr gibt.
+
+**Daraus folgt der wichtigste Punkt dieses Auftrags:** Es reicht nicht, den Code
+zu ändern. Am Ende muss eine **frische Einzeldatei** auf dem Desktop liegen. Das
+Bauskript dafür (`scripts/build-karl-exe.ps1`) liegt seit dem 2026-08-17 auf dem
+Zweig `claude/karl-desktop-exe-launcher-21538e` und wurde **nie nach `main`
+gebracht** — genau deshalb ist die laufende Exe alt.
+
+**Punkt 1: Die Quelle-und-Stand-Zeile verschwindet aus dem Antworttext.**
+Ausdrücklich gewünscht („kann aus der Antwort immer raus"). Sie war eine der
+tragenden Zusicherungen dieses Assistenten, deshalb wird sie **nicht gelöscht,
+sondern entkoppelt**: `sources` und `freshness` reisen unverändert als eigene
+Felder in der Antwort. Wer sie später wieder anzeigen will — als Fußnote, als
+Tooltip —, findet sie vor. Nur der Fließtext trägt sie nicht mehr.
+
+**Punkt 2: Die Artikelnummer verschwindet aus den Nachrichtenbetreffs** und wird
+stattdessen zum Ziel eines Links. Sie steckt in eBays eigenem Betrefftext
+(„… (398249837836)"); sie wird abgeschnitten und als Kennung weiterverwendet.
+
+**Punkt 3: Karten und Nachrichten werden anklickbar.** Der Formatierer schreibt
+Verweise als `[Text](URL)` in den Antworttext, der Desktop macht daraus echte
+Hyperlinks. Zwei Festlegungen:
+
+- **Nur echte Ziele.** Shop-Karten führen auf `SHOP_BASE_URL/karten/{id}`,
+  eBay-Angebote auf ihre gespeicherte `listingUrl`, ersatzweise auf
+  `https://www.ebay.de/itm/{itemId}`. Ein Tiefenlink auf eine einzelne
+  eBay-**Nachricht** wird **nicht** erfunden — aus `ebay_message_id` lässt sich
+  keine belastbare Adresse bilden. Nachrichten verweisen deshalb auf den
+  Artikel, um den es geht; ohne Artikelbezug bleiben sie ohne Link.
+- **Der Client formatiert weiterhin keine Daten.** Er erkennt eine Klammerform
+  und baut daraus ein Bedienelement — das ist Darstellung. Erlaubt sind
+  ausschließlich `http`/`https`, geprüft im Client.
+
+**Punkt 4: Oberfläche, Minifenster, Logo.** Der Launcher heißt künftig „KARL"
+statt „BrandyCards Assistant", ebenso der Fenstertitel. Das aktuelle
+`Assets/AppIcon.ico` ist **der Platzhalter aus der WinUI-Vorlage** — ein graues
+durchgestrichenes Kästchen; es gibt also nichts zu bewahren. Das neue Zeichen
+entsteht aus dem vorhandenen Avatarkopf und dem Namenszug, damit Fenster,
+Taskleiste und Datei dasselbe Gesicht tragen.
+
+**Abnahme:** `npm test`, `npx tsc --noEmit`, `npm run lint`, `dotnet build`.
+Danach **eine frisch gebaute KARL.exe**, gestartet und abgelichtet: Links müssen
+klickbar sein, die Quelle-Zeile fehlen, die Artikelnummer aus dem Betreff
+verschwunden sein.
+
+**Ergebnis: alle vier Punkte gebaut, ausgerollt und an einer frisch gebauten
+KARL.exe nachgemessen. 763 Tests grün, TypeScript fehlerfrei, ESLint 0 Fehler,
+`dotnet build` 0 Warnungen. Worker-Version `c37a3d75-33d4-400f-adf6-7ef7a68a16fb`;
+`C:\Users\pbran\Desktop\KARL.exe`, 104,5 MB, neu gebaut.**
+
+**Punkt 1 — Quelle und Stand.** Aus dem Fließtext verschwunden, aus der Antwort
+nicht: `sources` und `freshness` reisen unverändert als Felder. `withSource`
+gibt den Text jetzt unverändert zurück — die Entscheidung ist damit an *einer*
+Stelle umkehrbar, statt an zwanzig Aufrufstellen ausgebaut zu sein. Acht Tests
+prüften diese Zusicherung am Text; sie prüfen sie jetzt an den Feldern.
+
+**Punkt 2 — Artikelnummer.** `ohneArtikelnummer` schneidet nur eine
+*abschließende* Klammer mit langer Ziffernfolge ab; alles andere bleibt, wie
+eBay es geschrieben hat. Die Nummer ist nicht verloren, sie ist jetzt das Ziel
+des Links.
+
+**Punkt 3 — anklickbare Verweise.** Der Formatierer schreibt `[Text](URL)`, der
+Desktop übersetzt genau diese eine Klammerform in Hyperlinks. **Nur `http` und
+`https`** — ein Verweis aus einer Antwort öffnet den Browser des Betreibers, und
+`file:` wäre eine Startrampe. Gemessen am laufenden Fenster: sechs echte
+Hyperlink-Bedienelemente in einer Kartenantwort, über UI-Automation gezählt.
+
+Ein Tiefenlink auf eine einzelne eBay-**Nachricht** wurde **nicht** erfunden: Aus
+`ebay_message_id` lässt sich keine belastbare Adresse bilden. Nachrichten
+verweisen auf den Artikel, um den es geht.
+
+**Punkt 4 — Gesicht und Minifenster.** `Assets/KarlIcon.ico` entsteht aus dem
+Avatarkopf (`scripts/karl-icon-bauen.py`): große Kacheln mit Namenszug, kleine
+ohne, weil ein Schriftzug bei 16 Pixeln ein grauer Strich ist. Das Minifenster
+trägt KARLs Kopf auf der Akzentfläche, seinen Namen in Fettschrift und sagt
+zugeklappt, *was* er ist statt was der Knopf tut. Fenstertitel: „KARL".
+
+> **Zwei Befunde, die ohne die echte Einzeldatei nicht sichtbar gewesen wären.**
+>
+> **Erstens: Der Betreiber lief die ganze Zeit mit einer alten Exe.** Seine
+> Screenshots zeigten „Nachricht an den Assistant" und die Beispiele als grauen
+> Text — die Oberfläche von *vor* dem Umbau desselben Tages. Ursache:
+> `scripts/build-karl-exe.ps1` lag seit dem 2026-08-17 auf einem eigenen Zweig
+> und kam nie nach `main`. Es liegt jetzt dort.
+>
+> **Zweitens: `AppWindow.SetIcon` lief seit jeher ins Leere.** Der Aufruf bekam
+> einen *relativen* Pfad; der wird gegen das Arbeitsverzeichnis aufgelöst, nicht
+> gegen die Anwendung. Bei einer Einzeldatei auf dem Desktop heißt das: kein
+> `Assets`-Ordner, kein Symbol, keine Fehlermeldung. Das Fenster trug deshalb
+> auch mit dem neuen Zeichen weiter das Standardsymbol — bis der Pfad über
+> `AppContext.BaseDirectory` absolut wurde. **Ein Aufruf, der still nichts tut,
+> ist im Quelltext nicht zu sehen; er fällt nur im laufenden Fenster auf.**
+
+**Nachgemessen an der neuen Exe gegen den ausgerollten Shop:** „Gibt es Karten
+von Yamal?" liefert sechs verlinkte Karten mit Preis und Bereich, ohne
+Quelle-Zeile. „Was ist in den letzten 6 Stunden passiert?" liefert neun Vorgänge
+mit Zusammenfassung, verlinkten Nachrichten und Verkäufen — und ohne eine
+einzige Artikelnummer im Betreff.
+
+
+## Historie
+
+### 2026-08-18 - Beschreibungssuche, Aufrufe in beide Richtungen, Stundenbericht
+
+- Stand: **ABGESCHLOSSEN und AUSGEROLLT**, alle drei Punkte in Produktion nachgemessen.
+- Auftrag: Drei Punkte vom Betreiber, einer davon ein gemeldeter Fehler.
+
+**Punkt 1 — die Kartensuche soll auch die Beschreibung lesen.** Bisher nur den
+Titel. Der Betreiber hat der Unschärfe ausdrücklich zugestimmt, nachdem sie
+benannt war.
+
+**Punkt 2 — ein echter Fehler, vom Betreiber gemeldet und im Code bestätigt.**
+„Welche Karten haben am meisten Aufrufe?" und „welche am wenigsten?" liefern
+dieselbe Antwort. Der Grund steht in `lib/assistant/tools/ebay.ts`: Die
+Sortierung ist fest verdrahtet — `orderBy(desc(viewsTotal), …)`. Es gibt keine
+Richtung, also gibt es auch keine Gegenfrage; der Regelplaner routet beide Sätze
+auf dasselbe Werkzeug, und das antwortet zweimal gleich.
+
+**Die Behebung als zweites Werkzeug, nicht als Schemafeld.** `ebay_least_viewed`
+tritt neben `ebay_most_viewed`, beide auf einer gemeinsamen Abfrage mit
+Richtungsparameter. Begründung: Das Modellschema wird gerade dafür gehütet, dass
+kein Feld unbemerkt dazukommt (ein Wächtertest nagelt die Feldliste fest), und
+ein Werkzeugname sagt dem Modell dasselbe deutlicher als ein Wahrheitswert. Für
+den Regelplaner sind es ohnehin verschiedene Stichwörter.
+
+**Der interessante Teil dieser Antwort sind die Nullen.** Früher gemessen: 63 von
+277 Karten hatten in 30 Tagen null Aufrufe. Genau die will die Frage „welche am
+wenigsten" sehen — sie dürfen nicht wegfallen.
+
+**Punkt 3 — „was ist in den letzten X Stunden passiert?"** Zwei Lücken
+gleichzeitig: Es gibt kein Werkzeug für einen Ereignisüberblick, und der
+Regelplaner kennt **Stunden** nicht (nur Tage, Wochen, Monate).
+
+**Bauweise des Überblicks.** Neues Werkzeug `activity_digest` mit einem Fenster
+in Stunden. Es liest die Fachtabellen mit Zeitfenster, **nicht** `avatar_events`
+allein: Diese Tabelle kennt nur vier Ereignisarten (Vorschlag eingegangen,
+angenommen, abgelehnt, Karte verkauft) und würde neue Bestellungen, Anfragen und
+Einstellungen verschweigen. Aufgenommen werden Shop-Bestellungen, eBay-Verkäufe,
+Shop-Preisvorschläge, Shop-Anfragen, neu eingestellte Karten und die
+Vorschlagsereignisse.
+
+**„Nichts passiert" wird ausgesprochen, nicht durch Schweigen angedeutet.** Ein
+leerer Bericht sieht sonst wie ein Fehler aus. Anders als bei den Aufrufzahlen
+ist die Aussage hier auch belastbar: Diese Tabellen sind vollständig, es gibt
+keinen Messbeginn, hinter dem sich etwas verstecken könnte.
+
+**Neues Schemafeld `stunden`**, und damit das zweite an einem Tag. Es ist nicht
+über `days` abbildbar: `days` ist eine ganze Zahl ab 1, „die letzten drei
+Stunden" wären ein Achtel davon. Grenze 1 bis 168 Stunden — eine Woche —, weil
+darüber der Tagesbegriff die richtige Einheit ist.
+
+**Abnahme:** `npm test`, `npx tsc --noEmit`, `npm run lint`. Danach alle drei
+Punkte an der laufenden App gegen den ausgerollten Shop, mit Screenshot: Die
+Gegenfrage nach den wenigsten Aufrufen muss ein **anderes** Ergebnis liefern als
+die nach den meisten.
+
+**Ergebnis: alle drei Punkte gebaut, ausgerollt und in Produktion nachgemessen.
+763 Tests grün, TypeScript fehlerfrei, ESLint 0 Fehler. Worker-Version
+`dfd6b47a-ca17-46b5-9512-98756f1b8dd9`.**
+
+**Punkt 1 — Beschreibungssuche.** `lower(title || ' ' || coalesce(description,
+''))`. Das `coalesce` ist kein Beiwerk: `description` ist nullbar, und ohne es
+wäre die ganze Verkettung `NULL` — die Zeile fiele stillschweigend aus jedem
+Treffer. Gemessen: „Gibt es Karten von Barcelona?" liefert 10 Karten im Angebot.
+
+**Punkt 2 — der gemeldete Fehler.** Bestätigt und behoben. Produktiv gegenüber
+gestellt:
+
+| Frage | Antwort |
+|---|---|
+| am meisten Aufrufe | Yamal Rookie 98, Yamal Purple 95, Messi PSA 10 70 … |
+| am wenigsten Aufrufe | Carragher Snapshot, J.J. Watt Rookie, Aguero Heritage … je **kein einziger Aufruf** |
+
+`ebay_least_viewed` als eigenes Werkzeug neben `ebay_most_viewed`, eine Abfrage
+mit Richtung. `isNotNull` bleibt stehen — „nicht gemeldet" ist keine niedrige
+Zahl, sondern eine fehlende; eine echte Null dagegen ist eine Messung und wird
+als „kein einziger Aufruf" ausgeschrieben. **Genau diese Karten sucht die
+Frage.**
+
+**Punkt 3 — der Stundenbericht.** Neues Werkzeug `activity_digest`, neues
+Schemafeld `stunden` (1–168, Vorgabe 24). Gelesen werden die Fachtabellen mit
+Zeitfenster: Shop-Bestellungen, eBay-Verkäufe, Shop-Preisvorschläge,
+Shop-Anfragen, neu eingestellte Karten, eBay-Nachrichten und die beantworteten
+Vorschläge.
+
+**Auf Nachfrage erweitert**, und dabei eine harte Grenze gefunden:
+
+- **eBay-Nachrichten lassen sich datieren** — `receivedAt` kommt aus eBays
+  Antwort. Sie tragen nebenbei genau den Vorschlagsverkehr, nach dem gefragt
+  war: „Käufer hat einen neuen Preisvorschlag gesendet", „Gegenvorschlag an
+  Käufer".
+- **Die eBay-Preisvorschläge lassen sich *nicht* datieren.** Ihre einzige
+  Zeitspalte `collectedAt` wird bei **jedem** Lesesync neu gesetzt. Als
+  Eingangszeit gelesen gälte alle 15 Minuten jeder offene Vorschlag als neu
+  eingegangen — eine erfundene Zeitangabe für eine echte Zahl. Sie stehen
+  deshalb als **Zustand** neben dem Bericht, ausdrücklich ohne Uhrzeit und mit
+  dem Grund im Satz.
+- **Die abgeschickte Seite** kommt aus `price_offers` über `updatedAt` und
+  Endzustand, nicht aus `avatar_events`: Dort steht nur eine Kennung, hier
+  Kartentitel und Betrag. `IN_REVIEW` gehört nicht dazu — „in Prüfung" ist keine
+  abgeschickte Antwort.
+
+**Zwei Schwächen wurden erst am laufenden Fenster sichtbar**, beide behoben und
+mit Test abgesichert:
+
+1. **Eine Sorte erdrückte alle anderen.** 168 Vorgänge in 48 Stunden, fast alles
+   eBay-Nachrichten — die zeitlich sortierte, gekürzte Liste bestand damit nur
+   aus Nachrichten, die Verkäufe fielen hinten heraus. Der Betreiber wollte „ein
+   Update zu allem"; eine Zeitliste allein leistet das nicht. Jetzt steht eine
+   Zusammenfassung je Art darüber: *144× Karte eingestellt, 14× eBay-Nachricht,
+   3× Preisvorschlag im Shop, 3× Preisvorschlag abgelehnt, 2× eBay-Verkauf, 2×
+   Shop-Anfrage.*
+2. **Die Stundenzahl wurde zur Ergebnisanzahl.** `requestedLimit` nimmt die
+   erste Zahl im Satz — bei „3 Stunden" also die 3. Ein Bericht über drei
+   Stunden zeigte damit drei Zeilen. Dieselbe Verwechslung ist bei `days` seit
+   Wochen dokumentiert; hier war sie neu eingebaut.
+
+**Zur Messung selbst, weil es beim nächsten Mal Zeit spart:** Der Prozess führt
+**zwei** Fenster mit dem Titel „BrandyCards Assistant" — eines davon ohne
+gültige Ausmaße. `Get-Process().MainWindowHandle` zeigt zudem zeitweise auf das
+Pet-Overlay (Titel „B"). Verlässlich ist: über UI-Automation **alle** Fenster
+dieses Titels holen und das mit endlichem `BoundingRectangle` nehmen. Der Text
+der Antworten lässt sich dabei direkt über die Automation-Namen auslesen — das
+ist belastbarer als ein Screenshot, weil nichts abgeschnitten ist.
+
+### 2026-08-18 - K.A.R.L. soll die angebotenen Karten kennen
+
+- Stand: **ABGESCHLOSSEN und AUSGEROLLT**, an der Ausgangsfrage nachgemessen.
+- Auftrag: Der Betreiber fragte „habe ich eine karte von Lewandowski?" und
+  bekam eine Absage. Seine Erwartung, wörtlich: „ich hätte erwartet, dass er
+  alle Karten kennt, die im Shop angeboten werden." Sie ist berechtigt — es gibt
+  bis jetzt **kein** Werkzeug, das den Katalog nach einem Namen durchsucht.
+
+**Der Datenstand, an dem sich der Zuschnitt bemisst** (produktiv gelesen, nicht
+geschätzt): Zwei Karten tragen „Lewandowski" im Titel. Eine ist aktiv im
+Angebot, Festpreis, 70,00 €. Die andere ist `INACTIVE`, ihr Listing `ENDED`,
+Bestand 0 — **gewollte Historie, kein Angebot.** Das Werkzeug muss diese beiden
+auseinanderhalten, sonst behauptet es ein Angebot, das es nicht gibt. Insgesamt:
+275 aktive eBay-Karten, 263 inaktive, 144 Vorverkaufskarten.
+
+**Bauweise — vier Festlegungen.**
+
+1. **Die Sichtbarkeitsregel wird nicht neu geschrieben, sondern benutzt.** Was
+   „im Shop angeboten" heißt, steht in `lib/catalog-availability.ts` und als SQL
+   in `app/api/products/route.ts`. Eine zweite, eigene Fassung im Assistenten
+   würde auseinanderlaufen — und dann sagt K.A.R.L. etwas anderes als die Seite,
+   auf die der Betreiber schaut.
+2. **Vorverkauf zählt mit, wird aber benannt.** 144 Karten liegen dort. Sie sind
+   angeboten, aber nicht auf demselben Weg kaufbar wie eine eBay-Karte; die
+   Antwort nennt deshalb den Bereich je Treffer.
+3. **Nicht mehr angebotene Treffer werden gezählt, nicht aufgezählt.** Wer nach
+   Lewandowski fragt, soll hören: eine im Angebot, ein weiterer Treffer nicht
+   mehr. Das Verschweigen wäre irreführend, das Aufzählen würde die Antwort mit
+   Historie fluten.
+4. **Das erste Freitextfeld im ganzen Werkzeugschema.** Bisher gab es nur
+   Zahlen und ein auf `JJJJ-MM-TT` festgenageltes Datum — ausdrücklich, damit
+   kein Freitext hereinkommt. `suche` bricht das und braucht deshalb eigene
+   Schranken: Länge begrenzt, `%` und `_` entwertet (sonst ist eine Suche nach
+   „50%" ein Platzhalter über alles), Bindung als Parameter.
+
+**Der Riegel gegen Entführung anderer Fragen.** „Zeig offene Preisvorschläge"
+fängt an wie eine Suchanfrage („zeig …"). Das neue Werkzeug greift deshalb im
+Regelplaner **nur, wenn sonst kein Werkzeug gegriffen hat**, und nur, wenn der
+gefundene Suchbegriff kein Fachwort enthält. Dieselbe Linie wie beim
+Smalltalk-Riegel, und mit derselben Lehre von heute Mittag: Wortanfang statt
+Teilzeichenkette.
+
+**Abnahme:** `npm test`, `npx tsc --noEmit`, `npm run lint`, `dotnet build`.
+Danach die echte Frage an der laufenden App gegen den ausgerollten Shop — sie
+muss die aktive Karte mit Preis nennen und den beendeten Treffer als „nicht mehr
+im Angebot" ausweisen.
+
+**Ergebnis: gebaut, ausgerollt, an der Ausgangsfrage nachgemessen. 753 Tests
+grün, TypeScript fehlerfrei, ESLint 0 Fehler. Worker-Version
+`962805ff-7b52-459c-9a68-23663a4cf3ea`.**
+
+Die Frage des Betreibers, wörtlich gestellt und beantwortet:
+
+> Karteikasten durchgeblättert:
+> Zu „Lewandowski" ist eine Karte im Angebot:
+> • Topps UCC Gold 25/26 FC Barcelona Robert Lewandowski Base 3/5 — Shop-Katalog, 70,00 €
+> 1 weitere(r) Titeltreffer ist nicht mehr im Angebot (beendet, verkauft oder inaktiv).
+> Quelle: Shop-Datenbank, eBay-Abgleich · Stand: 10.08.26, 20:00
+
+Genau der Zuschnitt, der geplant war: das Angebot mit Preis und Bereich, die
+Historie gezählt statt aufgezählt.
+
+**Neu entstanden:**
+
+- `lib/assistant/tools/catalog.ts` — die Titelsuche. Sie entscheidet **nicht
+  selbst**, was „angeboten" heißt, sondern fragt `istImKatalogSichtbar`. Ein
+  Test verlangt ausdrücklich, dass die Auktionsregel nicht kopiert wird.
+- `suche` als erstes Freitextfeld im Werkzeugschema, mit
+  `normalisiereSuchbegriff` (Länge, Steuerzeichen) und `alsSuchmuster`
+  (`%`/`_` entwertet, `ESCAPE` im SQL).
+- `kartensuche()` im Regelplaner — der Name kommt ohne Modellaufruf aus dem
+  Satz. **Sie steht am Ende der Kette**, deshalb kann sie keine beantwortbare
+  Frage an sich ziehen: „Zeig offene Preisvorschläge" wird längst von den
+  Vorschlagswerkzeugen bedient und erreicht sie nie. Ein Test hält das fest.
+- `tests/assistant-kartensuche.test.mjs` — acht Tests, darunter die beiden
+  echten Lewandowski-Zeilen als Sichtbarkeitsprobe.
+
+**Ein Wächtertest hat seine Form geändert, und das gehört benannt.**
+`assistant-orchestrator` verlangte bisher, dass das Modellschema **überhaupt
+kein** Freitextfeld hat — mit genau dieser Begründung im Kommentar. Ein
+Kartentitel lässt sich nicht als Muster festlegen, also war das Feld
+unvermeidlich. Die Absicht bleibt und wandert eine Ebene tiefer: Ein neuer Test
+prüft, dass die serverseitige Schranke greift (Länge, Steuerzeichen,
+LIKE-Platzhalter, geschlossenes Feldgatter). Die Feldliste bleibt festgenagelt,
+damit kein *weiteres* Feld unbemerkt dazukommt.
+
+**Was der erste Rollout gezeigt hat.** Der Screenshot war die Korrektur: Der
+Historiensatz hing an der Preiszeile und las sich als „70,00 € 1 weitere(r)
+Titeltreffer" — Preis und Trefferzahl zu einer Zahlenfolge verklebt. Jetzt steht
+er auf eigener Zeile, mit Test dagegen. **Ein Formatfehler dieser Art ist in
+keinem Unit-Test sichtbar, nur im Fenster.**
+
+**Diesmal mit geprüftem Merge.** Nach dem Fehlgriff von heute Nachmittag wurde
+jeder Schritt einzeln ausgeführt und sein Rückgabewert gelesen. `main` war
+zweimal fremd vorgelaufen (Vorverkauf, Besucherzählung); beide Male wurde
+gemerged, die vollständige Kette auf dem zusammengeführten Stand gefahren und
+erst dann ausgerollt. Vor dem Deploy wurde außerdem geprüft, ob die fremde
+Migration `0019` produktiv liegt — sie lag, samt Secret und eigenem Deploy.
+
+**Offen geblieben:** „Hast du Lewandowski?" ohne das Wort „Karte" erkennt der
+Regelplaner nicht; dafür ist der Modellplaner zuständig, dem `suche` jetzt zur
+Verfügung steht. Das ist Absicht — der Satz allein ist nicht von „Hast du
+Feierabend?" zu unterscheiden. Ebenfalls offen: Die Suche findet nur im Titel,
+nicht in der Beschreibung, und der `Stand` stammt aus `lastSyncedAt` der
+getroffenen Listings und kann deshalb älter aussehen als der letzte Sync.
+
 ### 2026-08-18 - Fachwort-Riegel schärfen, dann Ereignis-Kommentare
 
 - Stand: **ABGESCHLOSSEN und AUSGEROLLT**, in Betrieb gemessen.
@@ -135,9 +476,6 @@ wiederverwendbar.
 > das Weitermachen entscheidet.** Und: Bei parallelen Sitzungen vor dem Deploy
 > `git log HEAD..main` lesen, statt `--ff-only` als Wächter zu benutzen — es ist
 > einer, aber nur wenn man seinen Ausgang auch prüft.
-
-
-## Historie
 
 ### 2026-08-18 - K.A.R.L. bekommt eine Persönlichkeit, die Oberfläche wird modernisiert
 

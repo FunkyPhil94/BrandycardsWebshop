@@ -1,11 +1,16 @@
 import type {
   AnyAssistantToolResult,
+  AssistantActivityEntry,
   AssistantDataSource,
   AssistantOrchestratorToolSummary,
   AssistantToolName,
 } from "./contracts.ts";
+import { SHOP_BASE_URL } from "../seo.ts";
 
 export const ASSISTANT_TOOL_LABELS: Record<AssistantToolName, string> = {
+  card_search: "Kartensuche",
+  ebay_least_viewed: "eBay-Angebote mit den wenigsten Aufrufen",
+  activity_digest: "Was war los",
   latest_sale: "Letzter Verkauf",
   latest_listing: "Letzte Einstellung",
   new_orders: "Neue Bestellungen",
@@ -28,6 +33,30 @@ const SOURCE_LABELS: Record<AssistantDataSource, string> = {
   EBAY_WEBHOOK: "eBay-Ereignisse",
   SYSTEM: "Systemstatus",
 };
+
+/** Wie ein Vorgang im Ereignisüberblick heißt.
+ *
+ * Ausgeschrieben statt als Kürzel: Der Bericht wird gelesen, oft nebenbei, und
+ * `SHOP_PREISVORSCHLAG` in einer Zeile zu entschlüsseln ist Arbeit, die niemand
+ * machen will.
+ */
+const AKTIVITAETS_LABELS: Record<AssistantActivityEntry["art"], string> = {
+  SHOP_BESTELLUNG: "Shop-Bestellung",
+  EBAY_VERKAUF: "eBay-Verkauf",
+  SHOP_PREISVORSCHLAG: "Preisvorschlag im Shop",
+  SHOP_ANFRAGE: "Shop-Anfrage",
+  KARTE_EINGESTELLT: "Karte eingestellt",
+  EBAY_NACHRICHT: "eBay-Nachricht",
+  VORSCHLAG_ANGENOMMEN: "Preisvorschlag angenommen",
+  VORSCHLAG_ABGELEHNT: "Preisvorschlag abgelehnt",
+  VORSCHLAG_ZURUECKGEZOGEN: "Preisvorschlag zurückgezogen",
+  VORSCHLAG_ABGELAUFEN: "Preisvorschlag abgelaufen",
+};
+
+/** „in den letzten 3 Stunden" → „In den letzten 3 Stunden". */
+function grossErsterBuchstabe(text: string): string {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
 
 function formatMoney(amountCents: number | null, currency: string): string | null {
   if (amountCents === null) return null;
@@ -77,13 +106,85 @@ function formatDate(value: string | null): string {
   }).format(parsed);
 }
 
-function sourceLine(sources: AssistantDataSource[], freshness: string | null): string {
+/** Wie eine Quelle heißen würde, wenn man sie anzeigt.
+ *
+ * **Steht noch da, obwohl der Antworttext sie nicht mehr trägt.** Siehe
+ * {@link withSource}: Die Angabe ist aus dem Fließtext verschwunden, nicht aus
+ * der Antwort. Diese Zuordnung ist der Anzeigename dazu und wird gebraucht,
+ * sobald die Oberfläche sie wieder aufgreift.
+ */
+export function sourceLine(sources: AssistantDataSource[], freshness: string | null): string {
   const source = sources.length ? sources.map((item) => SOURCE_LABELS[item]).join(", ") : "Systemstatus";
   return `Quelle: ${source} · Stand: ${formatDate(freshness)}`;
 }
 
+/** Gibt den Text zurück — **ohne** Quelle-und-Stand-Zeile.
+ *
+ * **Am 2026-08-18 auf ausdrücklichen Wunsch entfernt:** „Die Quelle kann aus der
+ * Antwort immer raus. Das brauche ich nicht." Sie stand unter jeder Auskunft und
+ * war eine der tragenden Zusicherungen dieses Assistenten.
+ *
+ * **Deshalb entkoppelt statt gelöscht.** `sources` und `freshness` reisen
+ * unverändert als eigene Felder in `AssistantToolResult` und in der
+ * Orchestrator-Antwort; nur der Fließtext trägt sie nicht mehr. Wer sie wieder
+ * zeigen will — als Fußnote, als Tooltip, als Ausklapper — findet sie vor und
+ * hat mit {@link sourceLine} auch die Schreibweise. Die Datenlage ist damit
+ * unverändert; verändert hat sich, wie viel davon ungefragt im Text steht.
+ *
+ * Die Funktion bleibt an ihrer Stelle, statt an rund zwanzig Aufrufstellen
+ * entfernt zu werden: So ist die Entscheidung an *einem* Ort umkehrbar.
+ */
+// Der zweite Parameter bleibt absichtlich stehen: Er hält die rund zwanzig
+// Aufrufstellen unverändert und macht die Entscheidung damit an *einer* Stelle
+// umkehrbar.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function withSource(text: string, result: AnyAssistantToolResult): string {
-  return `${text}\n${sourceLine(result.sources, result.status === "AVAILABLE" ? result.freshness : null)}`;
+  return text;
+}
+
+/** Ein anklickbarer Verweis im Antworttext.
+ *
+ * **Die Form ist Absicht und minimal:** `[Text](URL)`. Der Desktop erkennt genau
+ * dieses Muster und baut daraus einen Hyperlink — mehr Auszeichnungssprache
+ * gibt es nicht und soll es nicht geben. Ein Client, der Markdown *interpretiert*,
+ * fängt an, Daten zu formatieren; einer, der eine Klammerform in ein
+ * Bedienelement übersetzt, stellt dar.
+ *
+ * Ohne Ziel bleibt der Text nackt stehen. **Eine erfundene Adresse wäre
+ * schlimmer als kein Link** — sie führt ins Leere und sieht dabei aus wie eine
+ * Auskunft.
+ */
+export function alsVerweis(text: string, url: string | null): string {
+  if (!url) return text;
+  // Eckige Klammern im Text würden die Form zerreißen; sie fallen weg, statt
+  // den Link zu zerstören.
+  return `[${text.replaceAll("[", "(").replaceAll("]", ")")}](${url})`;
+}
+
+/** Die Adresse einer Shop-Karte. */
+export function karteUrl(productId: string | null): string | null {
+  return productId ? `${SHOP_BASE_URL}/karten/${productId}` : null;
+}
+
+/** Die Adresse eines eBay-Angebots.
+ *
+ * Bevorzugt die von eBay gelieferte `listingUrl`; ersatzweise die bekannte
+ * Artikelform. Ohne Artikelnummer gibt es kein Ziel — und dann auch keinen Link.
+ */
+export function ebayUrl(listingUrl: string | null | undefined, ebayItemId: string | null | undefined): string | null {
+  if (listingUrl) return listingUrl;
+  return ebayItemId ? `https://www.ebay.de/itm/${ebayItemId}` : null;
+}
+
+/** Schneidet die angehängte Artikelnummer aus einem eBay-Betreff.
+ *
+ * eBay hängt sie in Klammern an („… für Topps UCC Chrome 24/… (398249837836)").
+ * Der Betreiber wollte sie am 2026-08-18 nicht mehr lesen — sie wird stattdessen
+ * zum Ziel des Links. Entfernt wird nur eine *abschließende* Klammer mit einer
+ * langen Ziffernfolge; alles andere bleibt, wie eBay es geschrieben hat.
+ */
+export function ohneArtikelnummer(betreff: string): string {
+  return betreff.replace(/\s*\(\d{9,15}\)\s*$/u, "").trim();
 }
 
 export function formatAssistantToolResult(result: AnyAssistantToolResult): string {
@@ -92,6 +193,109 @@ export function formatAssistantToolResult(result: AnyAssistantToolResult): strin
   }
 
   switch (result.tool) {
+    case "activity_digest": {
+      const data = result.data;
+      const fenster = data.stunden === 1 ? "in der letzten Stunde" : `in den letzten ${data.stunden} Stunden`;
+      // **„Nichts passiert" wird ausgesprochen.** Ein leerer Bericht sieht sonst
+      // wie ein Fehler aus — und anders als bei den Aufrufzahlen ist die Aussage
+      // hier belastbar: Diese Tabellen sind vollständig und haben keinen
+      // Messbeginn, hinter dem sich etwas verstecken könnte.
+      // **Der Zustandssatz steht getrennt vom Zeitfenster**, weil die Zahl kein
+      // Ereignis ist: `ebay_buyer_offers` trägt keinen Eingangszeitpunkt (die
+      // Begründung steht am Vertragsfeld). Sie in die Liste zu mischen hieße,
+      // eine Zeitangabe zu erfinden.
+      const ebayZustand = data.offeneEbayVorschlaege === 0 ? [] : [
+        `Unabhängig vom Zeitfenster: ${data.offeneEbayVorschlaege} offene(r) Käufer-Preisvorschlag/-vorschläge bei eBay. Zu ihnen liefert eBay keinen Eingangszeitpunkt, deshalb stehen sie hier ohne Uhrzeit.`,
+      ];
+
+      if (data.leer) {
+        return withSource([
+          `${grossErsterBuchstabe(fenster)} ist nichts passiert: keine Bestellungen, keine Verkäufe, keine Preisvorschläge, keine Anfragen, keine eBay-Nachrichten, keine neuen Karten.`,
+          ...ebayZustand,
+        ].join("\n"), result);
+      }
+
+      const lines = data.eintraege.map((eintrag) => {
+        const betrag = formatMoney(eintrag.betragCents, eintrag.currency);
+        return `• ${formatDate(eintrag.zeitpunkt)} · ${AKTIVITAETS_LABELS[eintrag.art]}: ${alsVerweis(eintrag.bezeichnung, eintrag.url)}${betrag ? ` (${betrag})` : ""}`;
+      });
+      // **Die Zusammenfassung steht über der Liste, nicht darunter.** Im
+      // Screenshot vom 2026-08-18 bestand eine 48-Stunden-Antwort aus 168
+      // Vorgängen, fast alles eBay-Nachrichten — die zeitlich sortierte Liste
+      // zeigte deshalb nur Nachrichten, und die Verkäufe fielen heraus. Der
+      // Betreiber wollte „ein Update zu allem"; diese Zeile leistet das, die
+      // Liste allein kann es nicht.
+      const uebersicht = data.zusammenfassung.length
+        ? [data.zusammenfassung.map((teil) => `${teil.anzahl}× ${AKTIVITAETS_LABELS[teil.art]}`).join(", ")]
+        : [];
+      const gekuerzt = data.gesamtAnzahl > data.eintraege.length
+        ? [`Die ${data.eintraege.length} neuesten davon:`]
+        : ["Einzeln:"];
+      return withSource([
+        `${grossErsterBuchstabe(fenster)} ${data.gesamtAnzahl === 1 ? "ist ein Vorgang" : `sind ${data.gesamtAnzahl} Vorgänge`} zusammengekommen.`,
+        ...uebersicht,
+        ...gekuerzt,
+        ...lines,
+        ...ebayZustand,
+      ].join("\n"), result);
+    }
+    case "ebay_least_viewed": {
+      const listings = result.data.listings;
+      if (!listings.length) {
+        return withSource("eBay hat für den ausgewerteten Zeitraum zu keinem Angebot Aufrufzahlen gemeldet.", result);
+      }
+      const lines = listings.map((listing) => {
+        const title = alsVerweis(listing.title ?? `eBay-Angebot ${listing.ebayItemId}`, ebayUrl(listing.listingUrl, listing.ebayItemId));
+        // **Null Aufrufe wird als Null benannt**, nicht als „nicht gemeldet"
+        // verkleidet: Genau diese Karten sucht die Frage. Fehlende Zahlen kommen
+        // hier ohnehin nicht an, sie fallen im Werkzeug heraus.
+        const views = listing.viewsTotal === null
+          ? "nicht gemeldet"
+          : listing.viewsTotal === 0 ? "kein einziger Aufruf" : `${listing.viewsTotal} Aufrufe`;
+        const impressions = listing.impressionsTotal === null ? "" : `, ${listing.impressionsTotal} Einblendungen`;
+        return `• ${title}: ${views}${impressions}`;
+      });
+      return withSource(
+        `${formatRange(result.data.rangeStart, result.data.rangeEnd)}, die mit den wenigsten Aufrufen zuerst:\n${lines.join("\n")}`,
+        result,
+      );
+    }
+    case "card_search": {
+      const data = result.data;
+      // **„Nicht im Angebot" ist nicht „gibt es nicht".** Produktiv gemessen am
+      // 2026-08-18: „Lewandowski" trifft zwei Karten, davon eine mit beendetem
+      // Listing. Wer nur „keine gefunden" hört, obwohl er zwei im Kopf hat,
+      // hält den Assistenten für kaputt — der Nebensatz ist die eigentliche
+      // Auskunft.
+      //
+      // **Eigene Zeile, nicht angehängt.** In der ersten Fassung stand der Satz
+      // hinter der letzten Kartenzeile, und im Screenshot vom 2026-08-18 las
+      // sich das als „70,00 € 1 weitere(r) Titeltreffer …" — der Preis und die
+      // Trefferzahl klebten zu einer Zahlenfolge zusammen.
+      const historie = data.nichtAngebotenAnzahl === 0
+        ? []
+        : [`${data.nichtAngebotenAnzahl} weitere(r) Titeltreffer ist nicht mehr im Angebot (beendet, verkauft oder inaktiv).`];
+
+      if (!data.angeboten.length) {
+        return withSource([`Zu „${data.suche}" ist aktuell keine Karte im Angebot.`, ...historie].join("\n"), result);
+      }
+
+      const lines = data.angeboten.map((karte) => {
+        const preis = formatMoney(karte.priceAmountCents, karte.priceCurrency);
+        const bereich = karte.bereich === "VORVERKAUF" ? "Vorverkauf" : "Shop-Katalog";
+        // Die Menge nur, wenn sie etwas hinzufügt: Bei Einzelstücken — und das
+        // sind fast alle — wäre „(1×)" hinter jeder Zeile bloß Rauschen.
+        const menge = karte.menge !== null && karte.menge > 1 ? `, ${karte.menge}× vorhanden` : "";
+        return `• ${alsVerweis(karte.title, karteUrl(karte.productId))} — ${bereich}${preis ? `, ${preis}` : ", Preis nicht hinterlegt"}${menge}`;
+      });
+      const gekuerzt = data.gekuerzt ? ["(Es gibt mehr Treffer; gezeigt werden die ersten.)"] : [];
+      return withSource([
+        `Zu „${data.suche}" ${data.angeboten.length === 1 ? "ist eine Karte" : `sind ${data.angeboten.length} Karten`} im Angebot:`,
+        ...lines,
+        ...gekuerzt,
+        ...historie,
+      ].join("\n"), result);
+    }
     case "latest_sale": {
       const sale = result.data.sale;
       if (!sale) return withSource("Es wurde kein Verkauf gefunden.", result);
@@ -111,7 +315,7 @@ export function formatAssistantToolResult(result: AnyAssistantToolResult): strin
       const source = listing.source === "EBAY" ? "eBay" : "Shop";
       const price = formatMoney(listing.priceAmountCents, listing.priceCurrency);
       return withSource(
-        `Zuletzt eingestellt wurde „${listing.title}“ im ${source}${price ? ` für ${price}` : ""}. Einstellzeit: ${formatDate(listing.listedAt)}.`,
+        `Zuletzt eingestellt wurde ${alsVerweis(`„${listing.title}“`, listing.listingUrl ?? karteUrl(listing.productId))} im ${source}${price ? ` für ${price}` : ""}. Einstellzeit: ${formatDate(listing.listedAt)}.`,
         result,
       );
     }
@@ -254,7 +458,7 @@ export function formatAssistantToolResult(result: AnyAssistantToolResult): strin
         return withSource("eBay hat für den ausgewerteten Zeitraum zu keinem Angebot Aufrufzahlen gemeldet.", result);
       }
       const lines = listings.map((listing) => {
-        const title = listing.title ?? `eBay-Angebot ${listing.ebayItemId}`;
+        const title = alsVerweis(listing.title ?? `eBay-Angebot ${listing.ebayItemId}`, ebayUrl(listing.listingUrl, listing.ebayItemId));
         const views = listing.viewsTotal === null ? "nicht gemeldet" : `${listing.viewsTotal} Aufrufe`;
         const impressions = listing.impressionsTotal === null ? "" : `, ${listing.impressionsTotal} Einblendungen`;
         return `• ${title}: ${views}${impressions}`;

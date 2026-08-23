@@ -39,37 +39,47 @@
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
-            <Button x:Name="LauncherButton"
-                    Grid.Row="0"
-                    TabIndex="0"
-                    Margin="10"
-                    MinHeight="56"
-                    Padding="14,8"
-                    CornerRadius="16"
-                    Background="{ThemeResource AvatarCardBrush}"
-                    BorderBrush="{ThemeResource AvatarStrokeBrush}"
-                    HorizontalAlignment="Stretch"
-                    HorizontalContentAlignment="Stretch"
-                    Click="LauncherButton_Click"
-                    AutomationProperties.AutomationId="AssistantLauncher"
-                    AutomationProperties.Name="K.A.R.L. öffnen"
-                    AutomationProperties.HelpText="Öffnet das Textpanel von K.A.R.L., der Kartenshop-Auskunft für Recherche und Lagebericht.">
-                <Grid ColumnSpacing="12">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <Border Style="{StaticResource KarlAvatarBorderStyle}" VerticalAlignment="Center">
-                        <Image x:Name="KarlKopfLauncherImage" Width="32" Height="32" AutomationProperties.AccessibilityView="Raw" />
-                    </Border>
-                    <StackPanel Grid.Column="1" Spacing="1" VerticalAlignment="Center">
-                        <TextBlock Text="K.A.R.L." FontSize="16" FontWeight="SemiBold" Foreground="{ThemeResource AvatarTextBrush}" />
-                        <TextBlock x:Name="LauncherSubtitleTextBlock" Text="Textpanel öffnen" FontSize="12" Foreground="{ThemeResource AvatarMutedBrush}" />
-                    </StackPanel>
-                    <FontIcon x:Name="LauncherChevronIcon" Grid.Column="2" Glyph="&#xE70D;" FontSize="14" Foreground="{ThemeResource AvatarMutedBrush}" VerticalAlignment="Center" />
-                </Grid>
-            </Button>
+            <!-- **Das Minifenster.** Es ist das, was die meiste Zeit zu sehen ist:
+                 ein Streifen von 400×104 Punkten neben dem Pet. Bis zum
+                 2026-08-18 stand darin ein weißer Knopf mit dem Wort
+                 „BrandyCards Assistant" — richtig, aber gesichtslos. Jetzt trägt
+                 es KARLs Kopf auf der Akzentfläche und seinen Namen; der Zusatz
+                 sagt, was ein Klick tut. -->
+            <Border Grid.Row="0" Margin="10" CornerRadius="18" Background="{ThemeResource AvatarLauncherBrush}" BorderBrush="{ThemeResource AvatarStrokeBrush}" BorderThickness="1">
+                <Button x:Name="LauncherButton"
+                        TabIndex="0"
+                        MinHeight="60"
+                        Padding="12,8,16,8"
+                        CornerRadius="18"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Stretch"
+                        Click="LauncherButton_Click"
+                        AutomationProperties.AutomationId="AssistantLauncher"
+                        AutomationProperties.Name="KARL öffnen"
+                        AutomationProperties.HelpText="Öffnet das Textpanel von K.A.R.L., der Kartenshop-Auskunft für Recherche und Lagebericht.">
+                    <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Border Width="42" Height="42" CornerRadius="21" VerticalAlignment="Center"
+                                Background="{ThemeResource AvatarAccentBrush}"
+                                BorderBrush="{ThemeResource AvatarAccentBrush}" BorderThickness="2">
+                            <Image x:Name="KarlKopfLauncherImage" Width="42" Height="42" AutomationProperties.AccessibilityView="Raw" />
+                        </Border>
+                        <StackPanel Grid.Column="1" Spacing="0" VerticalAlignment="Center">
+                            <TextBlock Text="KARL" FontSize="19" FontWeight="Bold" Foreground="{ThemeResource AvatarTextBrush}" />
+                            <TextBlock x:Name="LauncherSubtitleTextBlock" Text="Kartenshop-Auskunft · fragen per Klick" FontSize="11" Foreground="{ThemeResource AvatarMutedBrush}" TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+                        <Border Grid.Column="2" Width="30" Height="30" CornerRadius="15" VerticalAlignment="Center" Background="{ThemeResource AvatarAccentSoftBrush}">
+                            <FontIcon x:Name="LauncherChevronIcon" Glyph="&#xE70D;" FontSize="12" Foreground="{ThemeResource AvatarAccentBrush}" />
+                        </Border>
+                    </Grid>
+                </Button>
+            </Border>
 
             <Grid x:Name="AssistantPanel" Grid.Row="1" Visibility="Collapsed" Padding="14,0,14,14" RowSpacing="10">
                 <Grid.RowDefinitions>
@@ -80,38 +90,48 @@
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
-                <!-- Kopfzeile: Kopf, Name, Zusage, Schließer. Der Zusatz zum
-                     Lesezugriff bleibt stehen — er ist die Zusage, unter der dieses
-                     Panel überhaupt gebaut wurde, und keine Zierde. -->
-                <Grid ColumnSpacing="10">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <Border Style="{StaticResource KarlAvatarBorderStyle}" Width="38" Height="38" CornerRadius="19" VerticalAlignment="Center">
-                        <Image x:Name="KarlKopfPanelImage" Width="38" Height="38" AutomationProperties.AccessibilityView="Raw" />
-                    </Border>
-                    <StackPanel Grid.Column="1" Spacing="1" VerticalAlignment="Center">
-                        <TextBlock Text="K.A.R.L." FontSize="19" FontWeight="SemiBold" Foreground="{ThemeResource AvatarTextBrush}" />
-                        <TextBlock Text="Kartenshop-Auskunft für Recherche und Lagebericht · nur lesend"
-                                   TextWrapping="Wrap" FontSize="11" Foreground="{ThemeResource AvatarMutedBrush}" />
-                    </StackPanel>
-                    <Button x:Name="CloseAssistantButton"
-                            Grid.Column="2"
-                            TabIndex="1"
-                            Width="36"
-                            Height="36"
-                            CornerRadius="18"
-                            Style="{StaticResource QuietButtonStyle}"
-                            Padding="0"
-                            VerticalAlignment="Center"
-                            Click="CloseAssistantButton_Click"
-                            AutomationProperties.Name="Textpanel schließen"
-                            ToolTipService.ToolTip="Textpanel schließen">
-                        <FontIcon Glyph="&#xE711;" FontSize="14" />
-                    </Button>
-                </Grid>
+                <!-- **Die Kopfzeile ist ein farbiges Band, kein Textblock.** Bis
+                     zum 2026-08-18 stand hier nackter Text auf der Panelfläche;
+                     das Panel begann damit ohne erkennbaren Anfang. Das Band gibt
+                     ihm einen Kopf, trägt die Farbe des Hauses und hebt KARLs
+                     Gesicht heraus.
+
+                     Der Zusatz zum Lesezugriff bleibt darin stehen — er ist die
+                     Zusage, unter der dieses Panel überhaupt gebaut wurde, und
+                     keine Zierde. -->
+                <Border CornerRadius="16" Padding="12,10" Background="{ThemeResource AvatarHeaderBrush}">
+                    <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Border Width="44" Height="44" CornerRadius="22" VerticalAlignment="Center"
+                                Background="{ThemeResource AvatarAccentBrush}"
+                                BorderBrush="{ThemeResource AvatarAccentBrush}" BorderThickness="2">
+                            <Image x:Name="KarlKopfPanelImage" Width="44" Height="44" AutomationProperties.AccessibilityView="Raw" />
+                        </Border>
+                        <StackPanel Grid.Column="1" Spacing="1" VerticalAlignment="Center">
+                            <TextBlock Text="K.A.R.L." FontSize="20" FontWeight="Bold" Foreground="{ThemeResource AvatarTextBrush}" />
+                            <TextBlock Text="Kartenshop-Auskunft für Recherche und Lagebericht · nur lesend"
+                                       TextWrapping="Wrap" FontSize="11" Foreground="{ThemeResource AvatarMutedBrush}" />
+                        </StackPanel>
+                        <Button x:Name="CloseAssistantButton"
+                                Grid.Column="2"
+                                TabIndex="1"
+                                Width="34"
+                                Height="34"
+                                CornerRadius="17"
+                                Style="{StaticResource QuietButtonStyle}"
+                                Padding="0"
+                                VerticalAlignment="Top"
+                                Click="CloseAssistantButton_Click"
+                                AutomationProperties.Name="Textpanel schließen"
+                                ToolTipService.ToolTip="Textpanel schließen">
+                            <FontIcon Glyph="&#xE711;" FontSize="13" />
+                        </Button>
+                    </Grid>
+                </Border>
 
                 <Border Grid.Row="1" Background="{ThemeResource AvatarAssistantBrush}" BorderBrush="{ThemeResource AvatarStrokeBrush}" BorderThickness="1" CornerRadius="14">
                     <ScrollViewer x:Name="ConversationScrollViewer" Padding="12" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" AutomationProperties.Name="Unterhaltung mit K.A.R.L.">

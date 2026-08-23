@@ -12,6 +12,9 @@ export const ASSISTANT_TOOL_NAMES = [
   "assistant_statistics",
   "sales_overview",
   "traffic_overview",
+  "card_search",
+  "ebay_least_viewed",
+  "activity_digest",
 ] as const;
 
 export type AssistantToolName = (typeof ASSISTANT_TOOL_NAMES)[number];
@@ -53,6 +56,14 @@ export const ASSISTANT_TOOL_DEFINITIONS = [
   // Lesesync — und beide haben einen Messbeginn, vor dem es schlicht nichts
   // gibt. Das Werkzeug muss das sagen dürfen, statt Null zu melden.
   { name: "traffic_overview", description: "Seitenaufrufe des Shops und Aufrufe der eBay-Angebote", availability: "SOURCE_DEPENDENT" },
+  { name: "card_search", description: "Angebotene Karten nach Titel und Beschreibung durchsuchen, etwa nach Spieler, Verein oder Serie; braucht suche", availability: "READY" },
+  // **Getrennt von `ebay_most_viewed`, nicht als Richtungsfeld.** Der Betreiber
+  // meldete am 2026-08-18, dass "am meisten" und "am wenigsten" dieselbe Antwort
+  // gaben -- die Sortierung war fest verdrahtet. Ein Werkzeugname sagt dem Modell
+  // deutlicher, was gemeint ist, als ein Wahrheitswert im Schema, und die
+  // Feldliste bleibt so, wie ein Wächtertest sie festnagelt.
+  { name: "ebay_least_viewed", description: "Eigene eBay-Angebote mit den wenigsten Aufrufen, aufsteigend; zeigt auch Angebote ohne einen einzigen Aufruf", availability: "SOURCE_DEPENDENT" },
+  { name: "activity_digest", description: "Was in den letzten Stunden passiert ist: Bestellungen, Verkäufe, Preisvorschläge, Anfragen, neu eingestellte Karten; braucht stunden", availability: "SOURCE_DEPENDENT" },
 ] as const satisfies readonly {
   name: AssistantToolName;
   description: string;
@@ -101,6 +112,24 @@ export const ASSISTANT_SPEECH_PHRASES = [
 export type AssistantToolInput<K extends AssistantToolName = AssistantToolName> = {
   tool: K;
   limit: number;
+  /** Der Suchbegriff — **das erste Freitextfeld in diesem Schema.**
+   *
+   *  Bis zum 2026-08-18 gab es hier nur Zahlen und ein auf `JJJJ-MM-TT`
+   *  festgenageltes Datum, ausdrücklich damit kein Freitext hereinkommt. Für
+   *  „habe ich eine Karte von Lewandowski?" führt daran kein Weg vorbei: Der
+   *  Name *ist* die Frage.
+   *
+   *  Die Schranken stehen deshalb in {@link parseAssistantToolInput} und sind
+   *  nicht verhandelbar — Länge begrenzt, `%` und `_` entwertet, gebunden als
+   *  Parameter. Nur `card_search` liest das Feld. */
+  suche?: string;
+  /** Das Fenster des Ereignisüberblicks in **Stunden**.
+   *
+   *  **Nicht über `days` abbildbar**, und das ist der Grund für ein eigenes
+   *  Feld: `days` ist eine ganze Zahl ab 1, „die letzten drei Stunden" wären
+   *  ein Achtel davon. Nur `activity_digest` liest es; ohne Angabe gilt
+   *  {@link ACTIVITY_DIGEST_DEFAULT_HOURS}. */
+  stunden?: number;
   /** Zeitraum in Tagen — nur `sales_overview` liest ihn. Bleibt er weg, gilt
    *  `SALES_OVERVIEW_DEFAULT_DAYS`. */
   days?: number;
@@ -172,7 +201,118 @@ export type AssistantSaleItem = {
   currency: string;
 };
 
+/** Vorgabe und Grenzen des Ereignisüberblicks, in Stunden.
+ *
+ * 24 als Vorgabe, weil „was ist passiert?" ohne Zeitangabe den Tag meint. Die
+ * Obergrenze ist eine Woche: Darüber ist der Tagesbegriff die richtige Einheit,
+ * und dafür gibt es die Verkaufsübersicht.
+ */
+export const ACTIVITY_DIGEST_DEFAULT_HOURS = 24;
+export const ACTIVITY_DIGEST_MAX_HOURS = 168;
+
+/** Ein einzelner Vorgang im Ereignisüberblick.
+ *
+ * **`betragCents` ist nullbar und wird es bleiben.** Ein eBay-Verkauf ohne
+ * gemeldeten Betrag ist ein bekannter Fall; eine Null wäre dort eine erfundene
+ * Zahl. Dieselbe Linie wie überall hier.
+ */
+export type AssistantActivityEntry = {
+  art:
+    | "SHOP_BESTELLUNG"
+    | "EBAY_VERKAUF"
+    | "SHOP_PREISVORSCHLAG"
+    | "SHOP_ANFRAGE"
+    | "KARTE_EINGESTELLT"
+    | "EBAY_NACHRICHT"
+    | "VORSCHLAG_ANGENOMMEN"
+    | "VORSCHLAG_ABGELEHNT"
+    | "VORSCHLAG_ZURUECKGEZOGEN"
+    | "VORSCHLAG_ABGELAUFEN";
+  /** Worum es ging — Kartentitel, Bestellnummer oder Kennung. */
+  bezeichnung: string;
+  betragCents: number | null;
+  currency: string;
+  zeitpunkt: string | null;
+  /** Wohin der Vorgang führt, oder `null`.
+   *
+   * **Nur echte Ziele.** Shop-Karten führen auf ihre Detailseite, eBay-Vorgänge
+   * auf das Angebot. Ein Tiefenlink auf eine einzelne eBay-*Nachricht* steht
+   * hier nicht: Aus `ebay_message_id` lässt sich keine belastbare Adresse
+   * bilden, und eine erfundene wäre schlimmer als keine — sie führt ins Leere
+   * und sieht dabei aus wie eine Auskunft. Nachrichten verweisen deshalb auf den
+   * Artikel, um den es geht. */
+  url: string | null;
+};
+
 export type AssistantToolDataMap = {
+  /** Der Ereignisüberblick über ein Stundenfenster.
+   *
+   * **`leer` steht ausdrücklich dabei.** Ein Bericht ohne Einträge sieht sonst
+   * wie ein Fehler aus, und anders als bei den Aufrufzahlen ist die Aussage hier
+   * belastbar: Diese Tabellen sind vollständig, es gibt keinen Messbeginn,
+   * hinter dem sich etwas verstecken könnte. „Nichts passiert" ist hier also
+   * wirklich „nichts passiert" — und darf deshalb gesagt werden.
+   */
+  activity_digest: {
+    stunden: number;
+    seit: string;
+    eintraege: AssistantActivityEntry[];
+    /** Wie viele Vorgänge es insgesamt gab; `eintraege` kann gekürzt sein. */
+    gesamtAnzahl: number;
+    /** Wie viele Vorgänge je Art, häufigste zuerst.
+     *
+     * **Der Grund steht in einem Screenshot vom 2026-08-18.** „Was ist in den
+     * letzten 48 Stunden passiert?" ergab 168 Vorgänge, davon fast alles
+     * eBay-Nachrichten — und weil die Liste nach Zeit sortiert und gekürzt ist,
+     * bestand die ganze Antwort aus Nachrichten. Die Verkäufe, nach denen
+     * eigentlich gefragt war, fielen hinten heraus.
+     *
+     * Der Betreiber wollte „ein Update zu allem". Eine Zeitliste allein leistet
+     * das nicht, sobald eine Art die anderen zahlenmäßig erdrückt; die
+     * Zusammenfassung nennt jede Art, auch wenn ihr jüngster Vorgang nicht mehr
+     * in die Liste passt. */
+    zusammenfassung: Array<{ art: AssistantActivityEntry["art"]; anzahl: number }>;
+    leer: boolean;
+    /** Offene Käufer-Preisvorschläge bei eBay — **ein Zustand, kein Ereignis.**
+     *
+     * **Warum sie nicht im Zeitfenster stehen können.** `ebay_buyer_offers`
+     * trägt keinen Eingangszeitpunkt: Die Spalte `collectedAt` wird bei *jedem*
+     * Lesesync neu gesetzt (`set: { collectedAt: stamp }`), und Zeilen, die
+     * nicht mehr kommen, werden gelöscht. Als Eingangszeit gelesen würde damit
+     * alle 15 Minuten jeder offene Vorschlag als „neu eingegangen" gelten — eine
+     * erfundene Zeitangabe für eine echte Zahl.
+     *
+     * Deshalb steht die Zahl daneben und ausdrücklich ohne Zeitbezug. Der
+     * Betreiber hat am 2026-08-18 gefragt, eBay-Preisvorschläge in den Bericht
+     * aufzunehmen; das ist die ehrliche Fassung dieser Aufnahme. */
+    offeneEbayVorschlaege: number;
+  };
+  /** Treffer der Titelsuche über die **angebotenen** Karten.
+   *
+   * **Warum `nichtAngebotenAnzahl` dabeisteht und die Titel nicht.** Produktiv
+   * gemessen am 2026-08-18: „Lewandowski" trifft zwei Karten — eine aktiv im
+   * Angebot, eine mit beendetem Listing und Bestand 0. Die beendete zu
+   * verschweigen wäre irreführend („ich habe doch zwei"), sie mitaufzuzählen
+   * würde die Antwort mit Historie fluten. Gezählt statt genannt ist der
+   * Mittelweg, und er sagt die Wahrheit: *es gab* mehr Treffer, angeboten ist
+   * dieser eine.
+   */
+  card_search: {
+    suche: string;
+    angeboten: Array<{
+      productId: string;
+      title: string;
+      bereich: "KATALOG" | "VORVERKAUF";
+      priceAmountCents: number | null;
+      priceCurrency: string;
+      /** Verfügbare Menge, oder `null` für eine Vormerkung ohne Bestand. */
+      menge: number | null;
+    }>;
+    nichtAngebotenAnzahl: number;
+    /** Mehr angebotene Treffer als `limit`. Ohne diese Angabe sähe eine
+     *  gekürzte Liste aus wie eine vollständige. */
+    gekuerzt: boolean;
+  };
   latest_sale: {
     sale: null | {
       source: "SHOP" | "EBAY";
@@ -233,6 +373,23 @@ export type AssistantToolDataMap = {
     }>;
   };
   ebay_most_viewed: {
+    /** Das ausgewertete Zeitfenster als `YYYYMMDD`. eBay liefert keine
+     *  Momentaufnahme, sondern eine Summe — ohne das Fenster wäre die Zahl
+     *  nicht einzuordnen. */
+    rangeStart: string | null;
+    rangeEnd: string | null;
+    listings: Array<{
+      ebayItemId: string;
+      title: string | null;
+      listingUrl: string | null;
+      viewsTotal: number | null;
+      impressionsTotal: number | null;
+    }>;
+  };
+  /** Dieselbe Form wie `ebay_most_viewed`, andere Richtung. Die Datenform zu
+   *  teilen ist Absicht: Der Formatierer unterscheidet nur die Überschrift, und
+   *  zwei getrennte Typen liefen beim nächsten Feld auseinander. */
+  ebay_least_viewed: {
     /** Das ausgewertete Zeitfenster als `YYYYMMDD`. eBay liefert keine
      *  Momentaufnahme, sondern eine Summe — ohne das Fenster wäre die Zahl
      *  nicht einzuordnen. */
@@ -602,7 +759,7 @@ export function parseAssistantToolInput(value: unknown): AssistantToolInput {
   }
 
   const input = value as Record<string, unknown>;
-  const allowedFields = new Set(["tool", "limit", "days", "bis"]);
+  const allowedFields = new Set(["tool", "limit", "days", "bis", "suche", "stunden"]);
   const unexpected = Object.keys(input).filter((field) => !allowedFields.has(field));
   if (unexpected.length) {
     throw new AssistantRequestError(`Nicht unterstützte Felder: ${unexpected.join(", ")}.`);
@@ -635,12 +792,70 @@ export function parseAssistantToolInput(value: unknown): AssistantToolInput {
     throw new AssistantRequestError("bis muss ein Datum der Form JJJJ-MM-TT sein.");
   }
 
+  // Abgewiesen statt zurechtgebogen, aus demselben Grund wie bei `days`: Ein
+  // unsinniges Fenster ist ein Fehler des Aufrufers und soll als solcher
+  // zurückkommen, nicht stillschweigend als 24 Stunden durchgehen.
+  if (input.stunden !== undefined) {
+    const stunden = input.stunden;
+    if (typeof stunden !== "number" || !Number.isSafeInteger(stunden) || stunden < 1 || stunden > ACTIVITY_DIGEST_MAX_HOURS) {
+      throw new AssistantRequestError(`stunden muss eine ganze Zahl zwischen 1 und ${ACTIVITY_DIGEST_MAX_HOURS} sein.`);
+    }
+  }
+
+  const suche = input.suche === undefined ? undefined : normalisiereSuchbegriff(input.suche);
+
   return {
     tool: input.tool as AssistantToolName,
     limit,
     ...(input.days === undefined ? {} : { days: input.days as number }),
     ...(input.bis === undefined ? {} : { bis: input.bis as string }),
+    ...(suche === undefined ? {} : { suche }),
+    ...(input.stunden === undefined ? {} : { stunden: input.stunden as number }),
   };
+}
+
+/** Kürzeste und längste zulässige Suche.
+ *
+ * Unter zwei Zeichen findet eine Titelsuche über Hunderte Karten alles und
+ * damit nichts; über 60 Zeichen ist es kein Suchbegriff mehr, sondern ein Satz.
+ */
+export const SUCHE_MIN_LAENGE = 2;
+export const SUCHE_MAX_LAENGE = 60;
+
+/** Prüft und entschärft den Suchbegriff.
+ *
+ * **Die zwei Schranken, die wirklich zählen:**
+ *
+ * 1. **`%` und `_` werden entwertet.** Beide sind LIKE-Platzhalter. Eine Suche
+ *    nach „50%" träfe ungebremst jede Karte, und `_` jede mit beliebigem
+ *    Zeichen an der Stelle — das Ergebnis sähe aus wie eine Antwort und wäre
+ *    keine. Der Rückstrich davor macht sie zu Zeichen; das Werkzeug setzt
+ *    dazu `ESCAPE`.
+ * 2. **Keine Steuerzeichen, begrenzte Länge.** Der Begriff wird gebunden, nie
+ *    in SQL eingesetzt; die Grenze schützt nicht gegen Einschleusung, sondern
+ *    gegen sinnlose Abfragen.
+ *
+ * Abgewiesen wird, statt zurechtgebogen — aus demselben Grund wie bei `days`:
+ * Eine leere Suche wäre eine andere Frage als die gestellte.
+ */
+export function normalisiereSuchbegriff(value: unknown): string {
+  if (typeof value !== "string") {
+    throw new AssistantRequestError("suche muss Text enthalten.");
+  }
+  const sauber = value.replaceAll(/[\p{Cc}\p{Cf}]/gu, " ").replaceAll(/\s+/gu, " ").trim();
+  if (sauber.length < SUCHE_MIN_LAENGE) {
+    throw new AssistantRequestError(`suche braucht mindestens ${SUCHE_MIN_LAENGE} Zeichen.`);
+  }
+  if (sauber.length > SUCHE_MAX_LAENGE) {
+    throw new AssistantRequestError(`suche darf höchstens ${SUCHE_MAX_LAENGE} Zeichen lang sein.`);
+  }
+  return sauber;
+}
+
+/** Der Suchbegriff als LIKE-Muster, mit entwerteten Platzhaltern. */
+export function alsSuchmuster(suche: string): string {
+  const entwertet = suche.replaceAll("\\", "\\\\").replaceAll("%", "\\%").replaceAll("_", "\\_");
+  return `%${entwertet.toLowerCase()}%`;
 }
 
 export function parseAssistantQuestionInput(value: unknown): AssistantQuestionInput {

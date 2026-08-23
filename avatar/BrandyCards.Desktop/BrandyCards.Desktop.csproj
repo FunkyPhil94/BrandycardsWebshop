@@ -5,6 +5,11 @@
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
     <RootNamespace>BrandyCards_Desktop</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- Das Zeichen der Datei selbst. Ohne diese Zeile traegt KARL.exe im
+         Explorer das graue Standardsymbol von .NET; `AppWindow.SetIcon` faerbt
+         nur das Fenster, nicht die Datei. Gebaut wird es von
+         `scripts/karl-icon-bauen.py` aus dem Avatarkopf. -->
+    <ApplicationIcon>Assets\KarlIcon.ico</ApplicationIcon>
     <Platforms>x86;x64;ARM64</Platforms>
     <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">win-$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant())</RuntimeIdentifier>
     <PublishProfile Condition="Exists('Properties\PublishProfiles\win-$(Platform).pubxml')">win-$(Platform).pubxml</PublishProfile>
@@ -19,6 +24,8 @@
     <FrameworkReference Include="Microsoft.WindowsDesktop.App.WindowsForms" />
     <Content Include="Assets\spritesheet.png" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="Assets\karl-head.png" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets\KarlIcon.ico" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets\karl-logo.png" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="Assets\SplashScreen.scale-200.png" />
     <Content Include="Assets\LockScreenLogo.scale-200.png" />
     <Content Include="Assets\Square150x150Logo.scale-200.png" />

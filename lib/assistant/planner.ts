@@ -94,6 +94,26 @@ export function requestedDays(text: string): number | undefined {
   return undefined;
 }
 
+/** Das Fenster in **Stunden**, wenn die Frage eines nennt.
+ *
+ * **Warum das nicht in `requestedDays` passt:** Dort werden Wochen und Monate in
+ * Tage umgerechnet, weil ein Tag die kleinste Einheit ist, die `days` ausdrücken
+ * kann. Stunden gehen darin nicht auf — „die letzten drei Stunden" wären ein
+ * Achtel eines Tages. Der Betreiber hat am 2026-08-18 gemeldet, dass er genau
+ * das nicht fragen kann.
+ *
+ * „heute" ist absichtlich **nicht** dabei: Das wäre der Tag ab Mitternacht, kein
+ * rollendes Stundenfenster, und um 23 Uhr etwas ganz anderes als um 1 Uhr. Wer
+ * „heute" fragt, bekommt die Vorgabe von 24 Stunden — nah genug und ehrlich.
+ */
+export function requestedStunden(text: string): number | undefined {
+  const stunden = text.match(/\b(\d{1,3})\s*(stunden|stunde|std|h)\b/u);
+  if (stunden) return Number(stunden[1]);
+  if (/\b(?:der|die|einer)\s*letzten?\s*stunde\b/u.test(text)) return 1;
+  if (/\bletzte\s*stunde\b/u.test(text)) return 1;
+  return undefined;
+}
+
 const MONATE: Record<string, number> = {
   januar: 1, jan: 1, februar: 2, feb: 2, maerz: 3, marz: 3, mrz: 3, april: 4, apr: 4,
   mai: 5, juni: 6, jun: 6, juli: 7, jul: 7, august: 8, aug: 8, september: 9, sep: 9, sept: 9,
@@ -176,6 +196,56 @@ export function requestedRange(message: string, jetzt: Date): { days: number; bi
   return { days: tage, bis };
 }
 
+/** „Karte von X" — die eindeutige Form, die für sich steht. */
+const KARTENSUCHE_STARK = /\bkarten?\s+von\s+(.{2,60}?)\s*[?.!]*$/iu;
+
+/** Formen, die **nur mit** einem Kartenwort in der Frage zählen.
+ *
+ * „Hast du Lewandowski?" ist ohne weiteren Zusammenhang nicht von „Hast du
+ * Feierabend?" zu unterscheiden. Diese Muster verlangen deshalb, dass irgendwo
+ * „Karte" oder „Karten" steht; alles andere überlässt der Regelplaner dem
+ * Modell, das den Zusammenhang beurteilen kann.
+ */
+const KARTENSUCHE_LOSE = [
+  /\b(?:hast du|haben wir|habe ich|hab ich|gibt es|gibts)\s+(?:noch\s+)?(?:eine\s+|ein\s+|alle\s+|welche\s+)?(?:karten?\s+)?(?:von\s+|mit\s+)?(.{2,60}?)\s*[?.!]*$/iu,
+  /\b(?:suche|such|finde|find|zeig|zeige)\s+(?:mir\s+)?(?:die\s+|alle\s+|eine\s+)?(?:karten?\s+)?(?:von\s+|mit\s+)?(.{2,60}?)\s*[?.!]*$/iu,
+];
+
+/** Füllwörter am Ende, die nicht zum Namen gehören. */
+const SUCH_FUELLWOERTER = /\s+(?:im\s+(?:shop|angebot|katalog|sortiment|bestand|lager)|noch|bitte|denn|eigentlich|karten?)$/iu;
+
+/** Zieht den gesuchten Namen aus der Frage — oder gibt `undefined` zurück.
+ *
+ * **Der Anlass:** „habe ich eine karte von Lewandowski?" endete am 2026-08-18
+ * in einer Absage, weil es kein Werkzeug für die Frage gab. Jetzt gibt es eines,
+ * und der Name muss lokal aus dem Satz kommen — sonst kostet die häufigste
+ * Frage des Betreibers jedes Mal einen Modellaufruf.
+ *
+ * **Warum das gefahrlos ist, obwohl die Muster weit greifen:** Diese Funktion
+ * wird ausschließlich aufgerufen, wenn **kein anderes Werkzeug** gegriffen hat.
+ * „Zeig offene Preisvorschläge" fängt an wie eine Suche, wird aber längst von
+ * `open_shop_offers` beantwortet und erreicht diese Stelle nie. Die Reihenfolge
+ * ist die Absicherung — dieselbe Bauweise wie beim Modellplaner, der auch erst
+ * hinter den Regeln steht.
+ */
+export function kartensuche(message: string): string | undefined {
+  const roh = message.trim();
+  const hatKartenwort = /\bkarten?\b/iu.test(roh);
+
+  const treffer = KARTENSUCHE_STARK.exec(roh)
+    ?? (hatKartenwort ? KARTENSUCHE_LOSE.map((muster) => muster.exec(roh)).find(Boolean) : undefined);
+  if (!treffer) return undefined;
+
+  let begriff = treffer[1]!.trim();
+  // Mehrfach, weil sich Füllwörter stapeln: „von Lewandowski Karten im Shop".
+  let vorher = "";
+  while (begriff !== vorher) {
+    vorher = begriff;
+    begriff = begriff.replace(SUCH_FUELLWOERTER, "").replace(/[?.!,;:]+$/u, "").trim();
+  }
+  return begriff.length >= 2 ? begriff : undefined;
+}
+
 function uniqueInputs(inputs: AssistantToolInput[]): AssistantToolInput[] {
   const names = new Set<AssistantToolName>();
   return inputs.filter((input) => {
@@ -230,6 +300,30 @@ export class RuleBasedAssistantPlanner implements AssistantPlanner {
       add("ebay_buyer_offers");
     }
 
+    // **Der Ereignisüberblick.** Steht weit oben, weil „was ist in den letzten
+    // drei Stunden passiert" eine Frage nach *allem* ist und nicht nach einer
+    // einzelnen Tabelle. Ohne Stundenangabe gilt die Vorgabe von 24 Stunden —
+    // „was ist passiert?" meint den Tag.
+    const stunden = requestedStunden(text);
+    // **„was ging" und „was lief" standen hier und mussten wieder raus.** Ein
+    // bestehender Test benutzt „Was ging als allerletztes über den virtuellen
+    // Ladentisch?" als Beispiel für eine Frage, die der Regelplaner *nicht*
+    // zuordnen kann — und mit dem losen Stichwort landete sie im
+    // Ereignisüberblick statt beim letzten Verkauf. Vage Wendungen gehören nicht
+    // in diese Liste; für sie ist der Modellplaner da.
+    if (enthaelt([
+      "was ist passiert", "was war los", "passiert ist", "vorgefallen",
+      "update zu allem", "letzten stunden", "letzte stunde",
+    ]) || (stunden !== undefined && enthaelt(["passiert", "los", "update", "neues", "vorgange"]))) {
+      // **Nicht `limit`, sondern `DEFAULT_LIMIT`.** `requestedLimit` nimmt die
+      // erste Zahl im Satz — bei „was ist in den letzten 48 Stunden passiert"
+      // also die 48, gedeckelt auf 20. Die Stundenzahl würde damit zur
+      // Ergebnisanzahl, und ein Bericht über drei Stunden zeigte drei Zeilen.
+      // Genau dieselbe Verwechslung ist bei `days` schon dokumentiert; hier
+      // wurde sie am 2026-08-18 im Screenshot sichtbar.
+      tools.push({ tool: "activity_digest", limit: DEFAULT_LIMIT, ...(stunden === undefined ? {} : { stunden }) });
+    }
+
     if (enthaelt(["statistik", "kennzahl", "ubersicht", "shop status", "wie lauft der shop"])) {
       add("assistant_statistics");
     }
@@ -251,6 +345,16 @@ export class RuleBasedAssistantPlanner implements AssistantPlanner {
         ...(spanne === undefined ? {} : { bis: spanne.bis }),
       });
     }
+    // **Die Richtung entscheidet über das Werkzeug.** Bis zum 2026-08-18 liefen
+    // „am meisten" und „am wenigsten" auf dieselbe Abfrage mit fester Sortierung
+    // und gaben deshalb dieselbe Antwort — vom Betreiber gemeldet. Die
+    // Gegenrichtung wird jetzt zuerst geprüft: „am wenigsten angesehen" enthält
+    // „angesehen" und liefe sonst wieder in die Meistgesehen-Frage.
+    const fragtNachWenigsten = enthaelt([
+      "am wenigsten", "wenigsten", "wenigste", "kaum", "keine aufrufe", "null aufrufe",
+      "gar nicht angesehen", "nicht angesehen", "keiner angesehen", "niemand angesehen",
+      "keiner angeschaut", "niemand angeschaut", "schlechtesten", "unbeachtet", "ubersehen",
+    ]);
     if (enthaelt([
       "aufruf",
       "views",
@@ -263,7 +367,7 @@ export class RuleBasedAssistantPlanner implements AssistantPlanner {
       "impression",
       "klicks",
     ])) {
-      add("ebay_most_viewed");
+      add(fragtNachWenigsten ? "ebay_least_viewed" : "ebay_most_viewed");
     }
     if (text.includes("ebay") && enthaelt(["nachricht", "postfach", "message"])) {
       add("ebay_messages");
@@ -329,6 +433,13 @@ export class RuleBasedAssistantPlanner implements AssistantPlanner {
     }
 
     const selected = uniqueInputs(tools);
+    // **Die Kartensuche steht am Ende, und das ist ihre Absicherung.** Sie
+    // greift nur, wenn keine Fachfrage erkannt wurde; damit kann sie keine
+    // beantwortbare Frage an sich ziehen. Siehe {@link kartensuche}.
+    if (selected.length === 0) {
+      const suche = kartensuche(message);
+      if (suche) return { tools: [{ tool: "card_search", limit, suche }], reason: "READY" };
+    }
     return { tools: selected, reason: selected.length ? "READY" : "UNSUPPORTED" };
   }
 }
@@ -439,11 +550,26 @@ export class OpenAIResponsesAssistantPlanner implements AssistantPlanner {
                 pattern: "^\\d{4}-\\d{2}-\\d{2}$",
                 description: "Letzter Tag des Zeitraums als JJJJ-MM-TT, einschließlich; null, wenn der Zeitraum heute endet.",
               },
+              stunden: {
+                type: ["integer", "null"],
+                minimum: 1,
+                maximum: 168,
+                description: "Nur für activity_digest: das Fenster in Stunden. null bei allen anderen Funktionen; ohne Angabe gelten 24 Stunden.",
+              },
+              suche: {
+                // Das zweite Zeichenkettenfeld, und das erste ohne Form: Ein
+                // Kartentitel lässt sich nicht als Muster festlegen. Die
+                // Schranken stehen deshalb hinter dem Modell, in
+                // `normalisiereSuchbegriff` — Länge und entwertete
+                // LIKE-Platzhalter, unabhängig davon, was hier ankommt.
+                type: ["string", "null"],
+                description: "Nur für card_search: der gesuchte Name, etwa Spieler, Verein oder Serie. Ohne Zusätze wie „Karte von“. null bei allen anderen Funktionen.",
+              },
             },
             // `strict: true` verlangt, dass jede Eigenschaft in `required`
             // steht. Der Zeitraum ist deshalb Pflicht im Schema und bekommt
             // seine Vorgabe erst dahinter -- siehe `boundedOverviewDays`.
-            required: ["limit", "days", "bis"],
+            required: ["limit", "days", "bis", "suche", "stunden"],
             additionalProperties: false,
           },
         })),

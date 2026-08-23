@@ -1,4 +1,4 @@
-import { count, desc, eq, inArray, isNotNull, sql } from "drizzle-orm";
+import { asc, count, desc, eq, inArray, isNotNull, sql } from "drizzle-orm";
 import { getDb } from "../../../db";
 import { ebayBuyerOffers, ebayListingTraffic, ebayListings, ebayOutbox, syncRuns } from "../../../db/schema";
 import { readEbayReadSyncStates } from "../../ebay-read-sync";
@@ -19,13 +19,44 @@ const UNRESOLVED_OUTBOX_STATUSES = ["PENDING", "PROCESSING", "RETRY_WAIT", "FAIL
  * eine erfundene Null.
  */
 export async function getEbayMostViewed(input: AssistantToolInput): Promise<AssistantToolResult<"ebay_most_viewed">> {
+  return leseAufrufe("ebay_most_viewed", input);
+}
+
+/** Die Gegenfrage: welche Angebote kaum oder gar nicht angesehen wurden.
+ *
+ * **Der Fehler, der dazu geführt hat.** Der Betreiber meldete am 2026-08-18,
+ * dass „welche haben am meisten Aufrufe" und „welche am wenigsten" **dieselbe**
+ * Antwort geben. Der Grund stand hier: `orderBy(desc(viewsTotal), …)` war fest
+ * verdrahtet, es gab keine Richtung — also konnte die Gegenfrage nirgends
+ * hinlaufen als in dieselbe Abfrage.
+ *
+ * **Der interessante Teil dieser Antwort sind die Nullen.** Früher gemessen: 63
+ * von 277 Karten hatten in 30 Tagen keinen einzigen Aufruf. Genau die will diese
+ * Frage sehen; sie dürfen nicht wegfallen. Ein `viewsTotal > 0`-Filter wäre hier
+ * das Gegenteil einer Antwort.
+ */
+export async function getEbayLeastViewed(input: AssistantToolInput): Promise<AssistantToolResult<"ebay_least_viewed">> {
+  return leseAufrufe("ebay_least_viewed", input);
+}
+
+/** Eine Abfrage, zwei Richtungen.
+ *
+ * Getrennte Funktionen hätten die Verfügbarkeitsprüfung, den Join und die
+ * Feldliste verdoppelt — und beim nächsten Feld wäre eine der beiden Fassungen
+ * zurückgeblieben. Unterschiedlich ist genau eine Zeile.
+ */
+async function leseAufrufe<K extends "ebay_most_viewed" | "ebay_least_viewed">(
+  tool: K,
+  input: AssistantToolInput,
+): Promise<AssistantToolResult<K>> {
   const db = getDb();
   const states = await readEbayReadSyncStates(db);
   const availability = ebayReadAvailability(states.get("TRAFFIC"), "Aufrufzahlen");
   if (!availability.available) {
-    return unavailableAssistantResult("ebay_most_viewed", availability.code, availability.message, ["EBAY_READ_API"]);
+    return unavailableAssistantResult(tool, availability.code, availability.message, ["EBAY_READ_API"]);
   }
 
+  const wenigste = tool === "ebay_least_viewed";
   const rows = await db.select({
     ebayItemId: ebayListingTraffic.ebayItemId,
     rangeStart: ebayListingTraffic.rangeStart,
@@ -36,11 +67,16 @@ export async function getEbayMostViewed(input: AssistantToolInput): Promise<Assi
     listingUrl: ebayListings.listingUrl,
   }).from(ebayListingTraffic)
     .leftJoin(ebayListings, eq(ebayListings.ebayItemId, ebayListingTraffic.ebayItemId))
+    // `isNotNull` bleibt: „nicht gemeldet" ist keine niedrige Zahl, sondern eine
+    // fehlende. Eine Null dagegen ist eine Messung und gehört in die Antwort.
     .where(isNotNull(ebayListingTraffic.viewsTotal))
-    .orderBy(desc(ebayListingTraffic.viewsTotal), desc(ebayListingTraffic.ebayItemId))
+    .orderBy(
+      wenigste ? asc(ebayListingTraffic.viewsTotal) : desc(ebayListingTraffic.viewsTotal),
+      desc(ebayListingTraffic.ebayItemId),
+    )
     .limit(input.limit);
 
-  return availableAssistantResult("ebay_most_viewed", {
+  return availableAssistantResult(tool, {
     rangeStart: rows[0]?.rangeStart ?? null,
     rangeEnd: rows[0]?.rangeEnd ?? null,
     listings: rows.map((row) => ({

@@ -149,7 +149,8 @@ test("der Rahmen umschließt die Datenzeilen, ohne eine Zahl anzufassen", async 
   // Der mittlere Absatz ist unverändert das, was der Formatierer liefert.
   assert.match(absaetze[1], /BC-1001/u);
   assert.match(absaetze[1], /147,50/u);
-  assert.match(absaetze[1], /Quelle: Shop-Datenbank · Stand:/u);
+  assert.doesNotMatch(antwort.answer, /Quelle: /u, "die Herkunft steht im Feld, nicht mehr im Text");
+  assert.deepEqual(antwort.sources, ["SHOP_DB"]);
   // Einleitung und Kommentar stehen daneben und nennen **keine** Zahl -- sonst
   // stünde derselbe Wert zweimal in der Antwort und könnte sich widersprechen.
   assert.doesNotMatch(absaetze[0], /\d/u);
