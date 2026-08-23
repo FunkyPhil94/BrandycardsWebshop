@@ -10763,7 +10763,7 @@ zählt, dass die Unterscheidung an *beiden* Stellen steht.
 - 779 Tests grün.
 
 ## Auftrag 2026-08-20: Merkmale als Checkboxen statt als Set-Eintrag
-- Status: LÄUFT.
+- Status: ABGESCHLOSSEN. Deploy `d3e0ae6e`, Migration 0022 angewandt.
 - **Rücknahme des Entwurfs von vorhin.** „Numbered" stand als Eintrag im
   Set-Auswahlfeld. Der Betreiber will stattdessen eine Reihe Checkboxen unter
   der Filterleiste: Numbered, Autograph, **Graded** und **Relic**.
@@ -10779,3 +10779,23 @@ zählt, dass die Unterscheidung an *beiden* Stellen steht.
 - **Zahl an jeder Checkbox, und sie zählt ohne die Checkboxen selbst.**
   Dieselbe Regel wie bei den Auswahllisten: Wer eine Häkchen setzt, soll die
   anderen nicht verschwinden sehen.
+
+### Ergebnis, in Produktion durchgeklickt
+
+- Set-Feld: nur noch die zwei echten Sets, keine `optgroup` mehr.
+- Schalterreihe darunter: **Numbered 8, Autograph 0, Graded 0, Relic 0** — die
+  drei mit Null stehen da, sind aber nicht bedienbar.
+- Häkchen bei Numbered: Adresse `?nummeriert=1`, 8 Treffer, alle mit Auflage im
+  Titel; Set-Feld, Variantenfeld **und alle vier Schalter bleiben stehen**.
+- **Rücknahme statt Nachbesserung:** Die reservierten Set-Werte `*nummeriert`
+  und `*autogramm` sind wieder weg, samt `istMerkmal`. Ein Lesezeichen
+  `?set=*nummeriert` liefert nichts mehr — es gab ihn zwei Stunden lang.
+- **Beim Umbau eine Spekulation zurückgenommen:** Die Dateinamenserkennung
+  hatte ich um `psa`, `bgs`, `patch` und `jersey` erweitert, die der Betreiber
+  nie genannt hat. Ein Nachname, der zufällig so endet, wäre still falsch
+  eingeordnet worden. Jetzt nur `autograph`/`autogramm`/`auto`, `graded`,
+  `relic`.
+- 782 Tests grün, `tsc` und Lint sauber.
+- **Offen:** Die Tabellen führen die Spalten „Graded" und „Relic" jetzt, aber im
+  Bestand steht überall 0. Autogramm-, Graded- und Relic-Karten gibt es noch
+  keine; die drei Schalter werden bedienbar, sobald welche kommen.
