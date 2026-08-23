@@ -10707,9 +10707,8 @@ ablegen.
   die Massenanlage.
 
 ## Auftrag 2026-08-20: Filter „Numbered" und „Autograph"
-- Status: AUSGEROLLT (`04d32c9f`), Migration 0021 angewandt. **Die acht
-  Auflagen stehen noch nicht in der Datenbank** — Rückfrage beim Betreiber
-  läuft, ob sie direkt eingetragen werden oder über einen Import-Lauf kommen.
+- Status: ABGESCHLOSSEN. Die acht Auflagen sind auf Weisung des Betreibers
+  direkt in D1 eingetragen; „Numbered (8)" steht in der Auswahl.
 - **Merlin ist drin und das Set-Feld erschienen:** 263 Karten, Merlin 55,
   Flagship 208; die Variantenliste engt sich auf das gewählte Set ein (10 bzw.
   17) und die Setliste behält beide Einträge.
@@ -10745,3 +10744,20 @@ ablegen.
   die Gruppe im Auswahlfeld bleibt also aus. Richtig so — es gibt noch keine
   nummerierte Karte **in der Datenbank** und keine Autogrammkarte überhaupt.
 - 778 Tests grün, `tsc` und Lint sauber.
+
+### Nachtrag: ein Fehler, den erst der Klick zeigte
+
+Beim ersten Klick auf „Numbered" **verschwand das Variantenfeld**. Grund: Die
+Facettenabfrage engte mit `eq(products.series, serie)` ein — bei `*nummeriert`
+traf das nichts, die Variantenliste kam leer zurück, und das Feld erscheint nur
+ab zwei Einträgen. Die Hauptabfrage hatte die Fallunterscheidung, die
+Facettenabfrage nicht.
+
+Das ist die Sorte Fehler, die keine Prüfkette findet: Typen, Lint und 778 Tests
+waren grün, die API antwortete mit 200, und die Zahl in der Kachel stimmte. Nur
+ein Auswahlfeld war weg. **Behoben und durch einen Test festgehalten**, der
+zählt, dass die Unterscheidung an *beiden* Stellen steht.
+
+- Acht Auflagen geschrieben, führende Nullen erhalten (`01/99`, `044/399`).
+- Vorher geprüft: jeder betroffene Titel steht genau einmal in der Datenbank.
+- 779 Tests grün.

@@ -292,7 +292,12 @@ async function ladeFacetten(
       .leftJoin(inventory, eq(inventory.productId, products.id))
       .where(and(
         ...basis,
-        ...(serie ? [eq(products.series, serie)] : []),
+        // **Dieselbe Fallunterscheidung wie die Hauptabfrage.** Stünde hier nur
+        // `eq(products.series, serie)`, träfe ein Merkmalswert wie
+        // `*nummeriert` nichts — die Variantenliste käme leer zurück und das
+        // Auswahlfeld verschwände, sobald man ein Merkmal wählt. Genau so ist
+        // es am 2026-08-20 beim ersten Klick aufgefallen.
+        ...(serie ? [istMerkmal(serie) ? MERKMALE[serie].bedingung() : eq(products.series, serie)] : []),
         sql`${variantenAusdruck} <> ''`,
       ))
       .groupBy(variantenAusdruck)

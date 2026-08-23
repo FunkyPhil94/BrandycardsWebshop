@@ -121,3 +121,14 @@ test("Numbered und Autograph filtern über Spalten, nicht über den Titel", asyn
   // Autogrammkarte im Shop steht, soll der Eintrag gar nicht erst erscheinen.
   assert.match(route, /\.filter\(\(eintrag\) => eintrag\.anzahl > 0\)/u);
 });
+
+test("ein Merkmal engt die Variantenliste ein, statt sie zu leeren", async () => {
+  // **Erst beim Klicken aufgefallen.** Die Facettenabfrage engte mit
+  // `eq(products.series, serie)` ein — bei `*nummeriert` traf das nichts, die
+  // Variantenliste kam leer zurück und ihr Auswahlfeld verschwand. Die
+  // Fallunterscheidung muss an beiden Stellen dieselbe sein.
+  const route = await read("app/api/products/route.ts");
+  const treffer = route.match(/istMerkmal\(serie\) \? MERKMALE\[serie\]\.bedingung\(\)/gu) ?? [];
+  assert.equal(treffer.length, 2,
+    "die Unterscheidung fehlt in der Hauptabfrage oder in den Facetten");
+});
