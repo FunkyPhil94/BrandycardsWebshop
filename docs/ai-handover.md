@@ -10584,7 +10584,9 @@ wirklich durchklicken, nicht nur behaupten:
   Beide Male gemerged und die Kette erneut geprüft: **767 Tests grün**.
 
 ## Auftrag 2026-08-20: Vorverkauf nach Set und Variante filtern
-- Status: LÄUFT.
+- Status: AUSGEROLLT (`085105b6`), Migration 0020 angewandt. **Die Einordnung
+  der 208 Karten ist noch leer** — sie entsteht beim nächsten Lauf der
+  Massenanlage, den der Betreiber selbst anstößt.
 - **Anlass:** Als Nächstes kommt „Premier League Merlin" als zweites Set dazu.
   Vorher soll der Vorverkauf sich auf ein Set und darin auf eine Variante
   einschränken lassen.
@@ -10609,3 +10611,22 @@ wirklich durchklicken, nicht nur behaupten:
 - Betroffen: `db/schema.ts`, `drizzle/0020_*.sql`, `app/api/admin/products/route.ts`,
   `app/api/products/route.ts`, `lib/karten-import.ts`, `app/admin/import-panel.tsx`,
   `app/vorverkauf/page.tsx`, `app/globals.css`, `lib/i18n.ts`, Tests.
+
+### Ergebnis
+
+- Spalten `series`, `variant`, `parallel` an `products` (Migration 0020,
+  in Produktion angewandt). Die Tabelle führt jetzt eine Spalte **Set**.
+- `/api/products` nimmt `serie` und `variante`; `facetten=1` liefert für
+  `origin=MANUAL` die Auswahllisten mit Trefferzahlen.
+- **Die Auswahllisten zählen vor dem eigenen Filter.** Sonst hätte man nach der
+  Wahl einer Variante nur noch diese zur Auswahl und käme ohne Umweg über
+  „alle" nicht mehr heraus.
+- **Der Zweitimport des Betreibers war schon durch, als dieser Auftrag lief:**
+  208 Karten, Mengen 167 × 1, 32 × 2, 9 × 3 — genau die Verteilung der Tabelle.
+  Die 64 Neuanlagen und 29 Mengenkorrekturen sitzen.
+- **Das Set-Auswahlfeld erscheint erst ab zwei Sets** (`serien.length > 1`).
+  Solange nur Flagship im Vorverkauf steht, wäre es ein Filter mit einer
+  einzigen Wahl. Mit Merlin taucht es von allein auf — das ist kein Fehler,
+  sondern der Grund, warum die Filter jetzt schon gebaut wurden.
+- **Nicht geprüft:** die Filterleiste mit echten Daten. Sie erscheint erst,
+  wenn die Einordnung gefüllt ist, und dieser Lauf gehört dem Betreiber.
