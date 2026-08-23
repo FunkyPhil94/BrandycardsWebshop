@@ -309,3 +309,25 @@ test("eine Tabelle ohne die neuen Spalten löst keine Berichtigung aus", () => {
   });
   assert.equal(plan.posten[0].stand, "vorhanden");
 });
+
+test("Graded und Relic werden aus der Tabelle übernommen und lassen sich kombinieren", () => {
+  const plan = planBauen({
+    zeilen: [{ Titel: "Eine Karte", Bilddatei: "a.jpg", Autogramm: "ja", Graded: "ja", Relic: "ja" }],
+    bilder: [bild("a.jpg")],
+    bestand: [],
+  });
+  assert.equal(plan.posten[0].autogramm, true);
+  assert.equal(plan.posten[0].graded, true);
+  assert.equal(plan.posten[0].relic, true);
+});
+
+test("ein abweichendes Graded oder Relic führt zur Berichtigung", () => {
+  const plan = planBauen({
+    zeilen: [{ Titel: "Eine Karte", Bilddatei: "a.jpg", Relic: "ja" }],
+    bilder: [bild("a.jpg")],
+    bestand: [{ id: "a".repeat(32), titel: "Eine Karte", menge: 1, relic: false }],
+  });
+  assert.equal(plan.posten[0].stand, "aktualisieren");
+  assert.match(plan.posten[0].grund, /Relic/u);
+  assert.doesNotMatch(plan.posten[0].grund, /Graded/u, "was stimmt, darf nicht als Grund auftauchen");
+});

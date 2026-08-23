@@ -10761,3 +10761,21 @@ zählt, dass die Unterscheidung an *beiden* Stellen steht.
 - Acht Auflagen geschrieben, führende Nullen erhalten (`01/99`, `044/399`).
 - Vorher geprüft: jeder betroffene Titel steht genau einmal in der Datenbank.
 - 779 Tests grün.
+
+## Auftrag 2026-08-20: Merkmale als Checkboxen statt als Set-Eintrag
+- Status: LÄUFT.
+- **Rücknahme des Entwurfs von vorhin.** „Numbered" stand als Eintrag im
+  Set-Auswahlfeld. Der Betreiber will stattdessen eine Reihe Checkboxen unter
+  der Filterleiste: Numbered, Autograph, **Graded** und **Relic**.
+- **Das ist auch sachlich besser, nicht nur Geschmack:** In einem Auswahlfeld
+  schließen sich die Einträge aus — „nummeriert **und** mit Autogramm" war
+  nicht ausdrückbar. Checkboxen kombinieren sich.
+- `graded` und `relic` sind neu und brauchen Spalten (Migration 0022). Beide
+  als 0/1: Die Note einer Bewertung und die Art eines Relikts gehören in den
+  Titel, der Filter fragt nur „überhaupt bewertet" bzw. „überhaupt ein Relikt".
+- Die reservierten Werte `*nummeriert`/`*autogramm` im `serie`-Parameter
+  entfallen wieder. Ein alter Lesezeichen-Link `?set=*nummeriert` liefert
+  danach nichts — hingenommen, es gab ihn zwei Stunden lang.
+- **Zahl an jeder Checkbox, und sie zählt ohne die Checkboxen selbst.**
+  Dieselbe Regel wie bei den Auswahllisten: Wer eine Häkchen setzt, soll die
+  anderen nicht verschwinden sehen.

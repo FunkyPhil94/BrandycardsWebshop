@@ -56,6 +56,8 @@ export async function GET(request: Request) {
         parallele: products.parallel,
         nummerierung: products.numbering,
         autogramm: products.autograph,
+        graded: products.graded,
+        relic: products.relic,
       }).from(products)
         .leftJoin(inventory, eq(inventory.productId, products.id))
         .where(eq(products.origin, "MANUAL"));
@@ -195,6 +197,8 @@ async function createManualProductWithImages(request: Request, createdByUserId: 
     parallel: text(form.get("parallele"), MAX_EINORDNUNG),
     numbering: text(form.get("nummerierung"), MAX_EINORDNUNG),
     autograph: form.get("autogramm") === "ja",
+    graded: form.get("graded") === "ja",
+    relic: form.get("relic") === "ja",
   };
 
   const files = form.getAll("images").filter((value): value is File => value instanceof File && value.size > 0);
@@ -296,7 +300,7 @@ export async function PATCH(request: Request) {
       id?: unknown; title?: unknown; description?: unknown; status?: unknown;
       priceAmountCents?: unknown; quantity?: unknown;
       set?: unknown; variante?: unknown; parallele?: unknown;
-      nummerierung?: unknown; autogramm?: unknown;
+      nummerierung?: unknown; autogramm?: unknown; graded?: unknown; relic?: unknown;
     };
     const id = typeof body.id === "string" && /^[a-f0-9]{32}$/iu.test(body.id) ? body.id : null;
     if (!id) return NextResponse.json({ error: "Unbekannte Karte." }, { status: 400 });
@@ -327,11 +331,15 @@ export async function PATCH(request: Request) {
       if (!status) return NextResponse.json({ error: "Ungültiger Status." }, { status: 400 });
       if (status !== vorher.status) { werte.status = status; neueMarkierungen.add("status"); }
     }
-    if (body.autogramm !== undefined) {
-      if (typeof body.autogramm !== "boolean") {
-        return NextResponse.json({ error: "„autogramm“ muss wahr oder falsch sein." }, { status: 400 });
+    // Die Ja-Nein-Merkmale in einer Schleife: Ein fünftes kostet eine Zeile.
+    for (const [feld, spalte] of [["autogramm", "autograph"], ["graded", "graded"],
+                                  ["relic", "relic"]] as const) {
+      const roh = (body as Record<string, unknown>)[feld];
+      if (roh === undefined) continue;
+      if (typeof roh !== "boolean") {
+        return NextResponse.json({ error: `„${feld}“ muss wahr oder falsch sein.` }, { status: 400 });
       }
-      if (body.autogramm !== vorher.autograph) werte.autograph = body.autogramm;
+      if (roh !== vorher[spalte]) werte[spalte] = roh;
     }
 
     // Einordnung als Text: leerer Text löscht das Feld ausdrücklich,

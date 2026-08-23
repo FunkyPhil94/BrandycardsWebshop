@@ -115,6 +115,13 @@ export const products = sqliteTable("products", {
    *  stützt, irrt stumm. Siehe den Kopf von
    *  `drizzle/0021_product_numbering_autograph.sql`. */
   autograph: integer("autograph", { mode: "boolean" }).notNull().default(false),
+  /** Professionell bewertet (PSA, BGS …) und Relikt (Trikotstück, Ball …).
+   *
+   * Beide als Ja-Nein. Die Note und die Art des Relikts stehen im Titel, wo der
+   * Kunde sie liest — ein zweites Textfeld hier wäre eine ungepflegte Wahrheit
+   * neben ihm. Der Filter beantwortet nur, ob überhaupt. */
+  graded: integer("graded", { mode: "boolean" }).notNull().default(false),
+  relic: integer("relic", { mode: "boolean" }).notNull().default(false),
   createdByUserId: text("created_by_user_id").references(() => users.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at"),
   updatedAt: timestamp("updated_at"),

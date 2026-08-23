@@ -21,6 +21,16 @@ export const SPALTE_VARIANTE = "Variante";
 export const SPALTE_PARALLELE = "Parallele";
 export const SPALTE_NUMMERIERUNG = "Nummerierung";
 export const SPALTE_AUTOGRAMM = "Autogramm";
+export const SPALTE_GRADED = "Graded";
+export const SPALTE_RELIC = "Relic";
+
+/** Die Ja-Nein-Spalten der Tabelle, in einer Liste statt viermal ausgeschrieben.
+ *  Ein fünftes Merkmal kostet damit eine Zeile, nicht fünf Änderungen. */
+export const JA_NEIN_SPALTEN = [
+  { spalte: SPALTE_AUTOGRAMM, feld: "autogramm" },
+  { spalte: SPALTE_GRADED, feld: "graded" },
+  { spalte: SPALTE_RELIC, feld: "relic" },
+] as const;
 
 /** Was in der Spalte „Autogramm" als Ja gilt. Bewusst eng: Alles andere heißt
  *  Nein, auch ein Tippfehler — eine Karte fälschlich als Autogramm auszuweisen
@@ -64,6 +74,8 @@ export type Posten = {
   /** Auflage als Text, `27/95`. Leer heißt: nicht nummeriert. */
   nummerierung: string;
   autogramm: boolean;
+  graded: boolean;
+  relic: boolean;
   stand: PostenStand;
   grund: string;
   /** Nur bei `aktualisieren` gesetzt: die Karte, die zu ändern ist. */
@@ -77,6 +89,7 @@ export type Bestandskarte = {
   id: string; titel: string; menge: number;
   set?: string | null; variante?: string | null; parallele?: string | null;
   nummerierung?: string | null; autogramm?: boolean | null;
+  graded?: boolean | null; relic?: boolean | null;
 };
 
 export type PlanEingabe = {
@@ -140,11 +153,14 @@ export function planBauen({ zeilen, bilder, bestand }: PlanEingabe): Plan {
     const variante = (zeile[SPALTE_VARIANTE] ?? "").trim();
     const parallele = (zeile[SPALTE_PARALLELE] ?? "").trim();
     const nummerierung = (zeile[SPALTE_NUMMERIERUNG] ?? "").trim();
-    const autogramm = JA.has((zeile[SPALTE_AUTOGRAMM] ?? "").trim().toLowerCase());
+    const jaNein = Object.fromEntries(JA_NEIN_SPALTEN.map(({ spalte, feld }) =>
+      [feld, JA.has((zeile[spalte] ?? "").trim().toLowerCase())])) as Record<string, boolean>;
     const menge = zahl(zeile[SPALTE_MENGE]);
     const posten_: Posten = {
       zeile: index + 2, titel, bilddatei, menge: menge ?? 1, beschreibung,
-      set, variante, parallele, nummerierung, autogramm, stand: "bereit", grund: "",
+      set, variante, parallele, nummerierung,
+      autogramm: jaNein.autogramm!, graded: jaNein.graded!, relic: jaNein.relic!,
+      stand: "bereit", grund: "",
     };
 
     const fehler = (grund: string) => { posten_.stand = "fehler"; posten_.grund = grund; };
@@ -181,7 +197,10 @@ export function planBauen({ zeilen, bilder, bestand }: PlanEingabe): Plan {
         if ((schon.variante ?? "") !== variante) gruende.push("Variante");
         if ((schon.parallele ?? "") !== parallele) gruende.push("Parallele");
         if ((schon.nummerierung ?? "") !== nummerierung) gruende.push("Nummerierung");
-        if ((schon.autogramm ?? false) !== autogramm) gruende.push("Autogramm");
+        for (const { spalte, feld } of JA_NEIN_SPALTEN) {
+          const bisher = (schon as Record<string, unknown>)[feld] ?? false;
+          if (bisher !== jaNein[feld]) gruende.push(spalte);
+        }
         if (gruende.length === 0) {
           posten_.stand = "vorhanden";
           posten_.grund = "Steht schon im Shop — wird übersprungen.";

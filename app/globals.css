@@ -844,6 +844,20 @@ footer { background:var(--ink); color:#fff; padding:52px max(48px,calc((100vw - 
   .catalog-select select,.catalog-price input { flex:1; }
 }
 
+/* --- Merkmalschalter im Vorverkauf --- */
+/* Eigene Reihe unter der Filterleiste. Bewusst schmal und ruhig: Sie sind eine
+   Verfeinerung, keine zweite Hauptnavigation. */
+.vorverkauf-merkmale { display:flex; flex-wrap:wrap; gap:10px 22px; margin:-14px 0 26px; }
+.vorverkauf-merkmale .merkmal { align-items:center; color:#88837b; cursor:pointer; display:flex; font-size:10px; font-weight:700; gap:8px; letter-spacing:.08em; text-transform:uppercase; }
+.vorverkauf-merkmale input { accent-color:var(--red); cursor:pointer; height:15px; margin:0; width:15px; }
+.vorverkauf-merkmale b { color:var(--muted); font-family:'DM Mono',monospace; font-size:10px; font-weight:400; }
+/* Ein Schalter ohne Treffer bleibt sichtbar, aber gedaempft und unbedienbar —
+   die Null daneben sagt, warum. Ihn zu verstecken liesse die Reihe springen. */
+.vorverkauf-merkmale .merkmal.leer { cursor:default; opacity:.45; }
+.vorverkauf-merkmale .merkmal.leer input { cursor:default; }
+.vorverkauf-merkmale .merkmal:has(input:checked) { color:var(--ink); }
+@media (max-width:640px) { .vorverkauf-merkmale { gap:10px 16px; margin:-8px 0 20px; } }
+
 /* --- Suche und Filter im Vorverkauf --- */
 /* Die Leiste trägt jetzt bis zu vier Dinge: Suche, Set, Variante, Trefferzahl.
    Als reines `space-between` würde die Trefferzahl bei zwei Feldern nach rechts

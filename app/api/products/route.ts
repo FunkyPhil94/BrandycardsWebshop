@@ -86,35 +86,30 @@ function visibleInSql() {
  * `trim` fängt den Fall ohne Parallele ab, sonst hinge dort ein Leerzeichen. */
 const variantenAusdruck = sql<string>`trim(coalesce(${products.variant}, '') || ' ' || coalesce(${products.parallel}, ''))`;
 
-/** Merkmale quer zu den Sets: nummeriert und mit Autogramm.
+/** Merkmale einer Karte, quer zu Set und Variante.
  *
- * Sie stehen im selben Auswahlfeld wie die Sets, aber in eigener Gruppe — es
- * sind keine Serien, sondern Eigenschaften, die es in **jeder** Serie gibt.
- *
- * **Der Stern kann mit keinem echten Seriennamen kollidieren**, dieselbe
- * Vorgehensweise wie bei der Besucherzeile des Aufrufzählers. Ohne ihn müsste
- * man hoffen, dass nie ein Set „Numbered" heißt.
+ * **Eigene Schalter, kein Eintrag im Set-Auswahlfeld.** Bis zum 2026-08-20
+ * stand „Numbered" als reservierter Wert in der Set-Auswahl. Das war eng: In
+ * einem Auswahlfeld schließen sich die Einträge aus, „nummeriert **und** mit
+ * Autogramm" ließ sich gar nicht ausdrücken. Als vier unabhängige Schalter
+ * lassen sie sich beliebig kombinieren.
  *
  * **Warum eigene Spalten und kein Blick in den Titel:** `title GLOB
  * '*[0-9]/[0-9]*'` traf am 2026-08-20 zweihundertzwölf von zweihundert-
  * dreiundsechzig Karten, weil die Saison `26/27` aussieht wie eine Auflage.
- * Nummeriert sind acht. */
-export const MERKMALE = {
-  "*nummeriert": {
+ * Nummeriert sind acht. Ein Filter, der fast alles zeigt, sieht nicht kaputt
+ * aus — nur nutzlos.
+ */
+export const MERKMALE = [
+  {
+    param: "nummeriert",
     titel: "Numbered",
     bedingung: () => sql`${products.numbering} IS NOT NULL AND ${products.numbering} <> ''`,
   },
-  "*autogramm": {
-    titel: "Autograph",
-    bedingung: () => sql`${products.autograph} = 1`,
-  },
-} as const;
-
-type Merkmal = keyof typeof MERKMALE;
-
-function istMerkmal(wert: string): wert is Merkmal {
-  return Object.hasOwn(MERKMALE, wert);
-}
+  { param: "autogramm", titel: "Autograph", bedingung: () => sql`${products.autograph} = 1` },
+  { param: "graded", titel: "Graded", bedingung: () => sql`${products.graded} = 1` },
+  { param: "relic", titel: "Relic", bedingung: () => sql`${products.relic} = 1` },
+] as const;
 
 function categoryCondition(category: Category) {
   if (category === "prelisted") return and(eq(products.origin, "EBAY"), eq(products.kind, "PRELISTED"));
@@ -144,6 +139,7 @@ export async function GET(request: Request) {
     // Betreiber es so wollte; getrennt gespeichert bleibt sie trotzdem.
     const serie = (params.get("serie") ?? "").trim().slice(0, 120);
     const variante = (params.get("variante") ?? "").trim().slice(0, 240);
+    const gewaehlteMerkmale = MERKMALE.filter((merkmal) => params.get(merkmal.param) === "1");
     const minPrice = parsePriceCents(params.get("min"));
     const maxPrice = parsePriceCents(params.get("max"));
 
@@ -177,14 +173,18 @@ export async function GET(request: Request) {
       conditions.push(sql`${price} IS NOT NULL AND ${price} <= ${maxPrice}`);
     }
 
-    // **Die Auswahllisten dürfen nicht an ihrem eigenen Filter schrumpfen.**
-    // Wer „Nitro Boost" wählt und danach nur noch „Nitro Boost" zur Auswahl
-    // hat, kommt ohne Umweg über „alle" nicht mehr heraus. Deshalb bleibt hier
-    // festgehalten, was **vor** Set und Variante galt: Die Setliste zählt ohne
-    // beide, die Variantenliste nur mit dem Set.
+    // **Keine Auswahl darf an ihrem eigenen Filter schrumpfen.** Wer „Nitro
+    // Boost" wählt und danach nur noch „Nitro Boost" zur Auswahl hat, kommt
+    // ohne Umweg über „alle" nicht mehr heraus. Deshalb drei Zwischenstände:
+    // die Setliste zählt ohne Set, Variante und Merkmale; die Variantenliste
+    // mit Set, aber ohne Variante und Merkmale; die Zahlen an den Schaltern
+    // mit Set und Variante, aber ohne die Schalter.
     const ohneEinordnung = [...conditions];
-    if (serie) conditions.push(istMerkmal(serie) ? MERKMALE[serie].bedingung() : eq(products.series, serie));
+    if (serie) conditions.push(eq(products.series, serie));
+    const ohneVariante = [...conditions];
     if (variante) conditions.push(eq(variantenAusdruck, variante));
+    const ohneMerkmale = [...conditions];
+    for (const merkmal of gewaehlteMerkmale) conditions.push(merkmal.bedingung());
 
     const db = getDb();
     const where = and(...conditions);
@@ -245,7 +245,7 @@ export async function GET(request: Request) {
     // Nur auf Anfrage und nur für den Vorverkauf: Der Katalog braucht sie nicht,
     // und zwei zusätzliche Abfragen bei jedem Seitenaufruf wären dort umsonst.
     const facetten = params.get("facetten") === "1" && origin === "MANUAL"
-      ? await ladeFacetten(db, ohneEinordnung, serie)
+      ? await ladeFacetten(db, ohneEinordnung, ohneVariante, ohneMerkmale)
       : null;
 
     const headers = { "cache-control": byId ? "no-store" : CATALOGUE_CACHE_CONTROL };
@@ -273,7 +273,8 @@ export async function GET(request: Request) {
 async function ladeFacetten(
   db: ReturnType<typeof getDb>,
   basis: Parameters<typeof and>,
-  serie: string,
+  mitSet: Parameters<typeof and>,
+  mitVariante: Parameters<typeof and>,
 ) {
   // Dieselben Verbünde wie die Hauptabfrage: `visibleInSql()` in `basis` greift
   // auf `ebay_listings` und `inventory` zu. Ohne sie liefe die Bedingung ins
@@ -290,39 +291,33 @@ async function ladeFacetten(
       .from(products)
       .leftJoin(ebayListings, eq(ebayListings.productId, products.id))
       .leftJoin(inventory, eq(inventory.productId, products.id))
-      .where(and(
-        ...basis,
-        // **Dieselbe Fallunterscheidung wie die Hauptabfrage.** Stünde hier nur
-        // `eq(products.series, serie)`, träfe ein Merkmalswert wie
-        // `*nummeriert` nichts — die Variantenliste käme leer zurück und das
-        // Auswahlfeld verschwände, sobald man ein Merkmal wählt. Genau so ist
-        // es am 2026-08-20 beim ersten Klick aufgefallen.
-        ...(serie ? [istMerkmal(serie) ? MERKMALE[serie].bedingung() : eq(products.series, serie)] : []),
-        sql`${variantenAusdruck} <> ''`,
-      ))
+      .where(and(...mitSet, sql`${variantenAusdruck} <> ''`))
       .groupBy(variantenAusdruck)
       .orderBy(asc(variantenAusdruck)),
     // Eine Zeile mit einer Spalte je Merkmal statt einer Abfrage je Merkmal:
-    // Zwei weitere Rundgänge zur Datenbank für zwei Zahlen wären verschwendet.
-    db.select({
-      nummeriert: sql<number>`sum(case when ${products.numbering} IS NOT NULL AND ${products.numbering} <> '' then 1 else 0 end)`,
-      autogramm: sql<number>`sum(case when ${products.autograph} = 1 then 1 else 0 end)`,
-    }).from(products)
+    // vier weitere Rundgänge zur Datenbank für vier Zahlen wären verschwendet.
+    db.select(Object.fromEntries(MERKMALE.map((merkmal) =>
+      [merkmal.param, sql<number>`sum(case when ${merkmal.bedingung()} then 1 else 0 end)`],
+    )) as Record<string, ReturnType<typeof sql<number>>>)
+      .from(products)
       .leftJoin(ebayListings, eq(ebayListings.productId, products.id))
       .leftJoin(inventory, eq(inventory.productId, products.id))
-      .where(and(...basis)),
+      .where(and(...mitVariante)),
   ]);
 
-  const zahlen = merkmale[0];
+  const zahlen = merkmale[0] as Record<string, number> | undefined;
   return {
     serien: serien.map((zeile) => ({ name: zeile.name ?? "", anzahl: Number(zeile.anzahl) })),
     varianten: varianten.map((zeile) => ({ name: zeile.name, anzahl: Number(zeile.anzahl) })),
-    // Nur was Treffer hat: Ein Filter, der auf null führt, gehört nicht in die
-    // Auswahl. Solange keine Autogrammkarte im Shop steht, gibt es den Eintrag
-    // also gar nicht.
-    merkmale: [
-      { wert: "*nummeriert", name: MERKMALE["*nummeriert"].titel, anzahl: Number(zahlen?.nummeriert ?? 0) },
-      { wert: "*autogramm", name: MERKMALE["*autogramm"].titel, anzahl: Number(zahlen?.autogramm ?? 0) },
-    ].filter((eintrag) => eintrag.anzahl > 0),
+    // **Alle vier, auch die mit null Treffern.** Anders als bei den
+    // Auswahllisten ist hier eine feste Reihe gewollt: Vier Schalter, die je
+    // nach Bestand auftauchen und verschwinden, ließen die Leiste springen und
+    // die Frage offen, ob es die Sorte überhaupt gibt. Die Null steht dabei,
+    // und der Schalter ist dann nicht bedienbar.
+    merkmale: MERKMALE.map((merkmal) => ({
+      param: merkmal.param,
+      name: merkmal.titel,
+      anzahl: Number(zahlen?.[merkmal.param] ?? 0),
+    })),
   };
 }

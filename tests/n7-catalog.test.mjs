@@ -96,14 +96,16 @@ test("Vorverkaufskarten stehen im Vorverkauf, nicht im Katalog", async () => {
     "der Katalog darf keinen Filter auf etwas anbieten, das er nicht zeigt");
 });
 
-test("Numbered und Autograph filtern über Spalten, nicht über den Titel", async () => {
+test("die Merkmale filtern über Spalten, nicht über den Titel", async () => {
   // **Der Test, der die teure Abkürzung verbaut.** Am 2026-08-20 traf
   // `title GLOB '*[0-9]/[0-9]*'` 212 von 263 Karten, weil die Saison `26/27`
   // im Seriennamen aussieht wie eine Auflage. Nummeriert sind acht. Ein
   // Filter, der fast alles zeigt, sieht nicht kaputt aus — nur nutzlos.
   const route = await read("app/api/products/route.ts");
-  assert.match(route, /products\.numbering/u, "der Filter muss die Spalte lesen");
-  assert.match(route, /products\.autograph/u);
+  for (const spalte of ["numbering", "autograph", "graded", "relic"]) {
+    assert.match(route, new RegExp(`products\.${spalte}`, "u"), `${spalte} muss als Spalte gelesen werden`);
+  }
+
   // **Ohne Kommentare geprüft.** Der Kopf der Datei nennt `GLOB` als
   // abschreckendes Beispiel; eine Prüfung über den rohen Text schlüge daran an
   // und wäre nur so lange grün, wie niemand die Begründung aufschreibt.
@@ -112,23 +114,37 @@ test("Numbered und Autograph filtern über Spalten, nicht über den Titel", asyn
     .replace(/^\s*\/\/.*$/gmu, "");
   assert.doesNotMatch(ohneKommentare, /GLOB/u,
     "kein Textmuster auf dem Titel — die Saison sieht aus wie eine Auflage");
-
-  // Die reservierten Werte dürfen mit keinem echten Seriennamen kollidieren.
-  assert.match(route, /"\*nummeriert"/u);
-  assert.match(route, /"\*autogramm"/u);
-
-  // Ein Merkmal ohne Treffer gehört nicht in die Auswahl: Solange keine
-  // Autogrammkarte im Shop steht, soll der Eintrag gar nicht erst erscheinen.
-  assert.match(route, /\.filter\(\(eintrag\) => eintrag\.anzahl > 0\)/u);
 });
 
-test("ein Merkmal engt die Variantenliste ein, statt sie zu leeren", async () => {
-  // **Erst beim Klicken aufgefallen.** Die Facettenabfrage engte mit
-  // `eq(products.series, serie)` ein — bei `*nummeriert` traf das nichts, die
-  // Variantenliste kam leer zurück und ihr Auswahlfeld verschwand. Die
-  // Fallunterscheidung muss an beiden Stellen dieselbe sein.
+test("die Merkmale sind eigene Schalter, kein Eintrag im Set-Feld", async () => {
+  // **Rücknahme eines Entwurfs vom selben Tag.** „Numbered" stand kurz als
+  // reservierter Wert `*nummeriert` in der Set-Auswahl. Das war eng: In einem
+  // Auswahlfeld schließen sich die Einträge aus, „nummeriert **und** mit
+  // Autogramm" ließ sich gar nicht ausdrücken.
+  const [route, presale] = await Promise.all([
+    read("app/api/products/route.ts"),
+    read("app/vorverkauf/page.tsx"),
+  ]);
+  assert.doesNotMatch(route, /\*nummeriert|istMerkmal/u,
+    "die reservierten Set-Werte sind entfallen");
+  assert.doesNotMatch(presale, /optgroup/u,
+    "die Merkmale gehören nicht mehr ins Set-Auswahlfeld");
+  assert.match(presale, /type="checkbox"/u, "es braucht Schalter");
+
+  // Kombinierbar heißt: jedes Merkmal ein eigener Parameter, alle mit UND
+  // verknüpft. Ein gemeinsamer Parameter wäre wieder eine Entweder-oder-Wahl.
+  assert.match(route, /for \(const merkmal of gewaehlteMerkmale\) conditions\.push\(merkmal\.bedingung\(\)\)/u);
+});
+
+test("die Zahlen an den Schaltern zählen ohne die Schalter", async () => {
+  // Sonst zeigte ein gesetztes Häkchen bei allen anderen eine Null, und man
+  // käme aus der Auswahl nur über „alles zurücksetzen" wieder heraus.
   const route = await read("app/api/products/route.ts");
-  const treffer = route.match(/istMerkmal\(serie\) \? MERKMALE\[serie\]\.bedingung\(\)/gu) ?? [];
-  assert.equal(treffer.length, 2,
-    "die Unterscheidung fehlt in der Hauptabfrage oder in den Facetten");
+  assert.match(route, /const ohneMerkmale = \[\.\.\.conditions\];/u);
+  assert.match(route, /\.where\(and\(\.\.\.mitVariante\)\)/u,
+    "die Merkmalzahlen müssen über den Stand ohne Merkmale laufen");
+
+  // Alle vier stehen immer da, auch mit null Treffern — eine feste Reihe.
+  assert.doesNotMatch(route, /merkmale:[\s\S]{0,400}?filter\(\(eintrag\) => eintrag\.anzahl > 0\)/u,
+    "die Schalterreihe darf nicht je nach Bestand springen");
 });

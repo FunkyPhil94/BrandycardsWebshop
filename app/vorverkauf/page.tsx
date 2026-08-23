@@ -18,9 +18,9 @@ type Product = {
 };
 
 type Facette = { name: string; anzahl: number };
-/** Merkmal quer zu den Sets. `wert` ist der reservierte Filterwert, `name` die
- *  Beschriftung — beides getrennt, weil der Wert nie übersetzt werden darf. */
-type Merkmal = { wert: string; name: string; anzahl: number };
+/** Merkmal quer zu Set und Variante. `param` ist der Name in der Adresse,
+ *  `name` die Beschriftung — getrennt, weil der Parameter nie übersetzt wird. */
+type Merkmal = { param: string; name: string; anzahl: number };
 
 type Antwort = {
   products?: Product[];
@@ -60,6 +60,10 @@ export default function VorverkaufPage() {
   const [suche, setSuche] = useState("");
   const [serie, setSerie] = useState("");
   const [variante, setVariante] = useState("");
+  /** Die angehakten Merkmale, als Menge ihrer Parameternamen. Eine Menge statt
+   *  vier Zustände: Die Zahl der Schalter kommt aus der API, nicht aus dem Code
+   *  hier — ein fünfter braucht dann keine Änderung an dieser Seite. */
+  const [merkmale, setMerkmale] = useState<Set<string>>(new Set());
   const [facetten, setFacetten] = useState<{ serien: Facette[]; varianten: Facette[]; merkmale: Merkmal[] }>(
     { serien: [], varianten: [], merkmale: [] });
   const [seite, setSeite] = useState(1);
@@ -75,6 +79,7 @@ export default function VorverkaufPage() {
       setSuche(params.get("q") ?? "");
       setSerie(params.get("set") ?? "");
       setVariante(params.get("variante") ?? "");
+      setMerkmale(new Set([...params.entries()].filter(([, wert]) => wert === "1").map(([name]) => name)));
       const gewuenscht = Number(params.get("seite"));
       setSeite(Number.isInteger(gewuenscht) && gewuenscht > 0 ? gewuenscht : 1);
       setBereit(true);
@@ -92,6 +97,7 @@ export default function VorverkaufPage() {
       if (suche.trim()) params.set("q", suche.trim());
       if (serie) params.set("serie", serie);
       if (variante) params.set("variante", variante);
+      for (const merkmal of merkmale) params.set(merkmal, "1");
       setStatus("loading");
       fetch(`/api/products?${params}`, { signal: controller.signal })
         .then((response) => (response.ok ? response.json() : Promise.reject(new Error("failed"))))
@@ -111,7 +117,7 @@ export default function VorverkaufPage() {
         });
     }, 180);
     return () => { window.clearTimeout(timer); controller.abort(); };
-  }, [bereit, seite, serie, suche, variante]);
+  }, [bereit, merkmale, seite, serie, suche, variante]);
 
   // Ohne neuen Verlaufseintrag je Tastendruck — sonst führt der Zurück-Knopf
   // durch jeden einzelnen Buchstaben.
@@ -121,22 +127,35 @@ export default function VorverkaufPage() {
     if (suche.trim()) params.set("q", suche.trim()); else params.delete("q");
     if (serie) params.set("set", serie); else params.delete("set");
     if (variante) params.set("variante", variante); else params.delete("variante");
+    for (const eintrag of facetten.merkmale) {
+      if (merkmale.has(eintrag.param)) params.set(eintrag.param, "1"); else params.delete(eintrag.param);
+    }
     if (seite <= 1) params.delete("seite"); else params.set("seite", String(seite));
     const rest = params.toString();
     window.history.replaceState(null, "", `${window.location.pathname}${rest ? `?${rest}` : ""}${window.location.hash}`);
-  }, [bereit, seite, serie, suche, variante]);
+  }, [bereit, facetten.merkmale, merkmale, seite, serie, suche, variante]);
 
   function zuSeite(ziel: number) {
     setSeite(Math.max(1, ziel));
     document.getElementById("vorverkauf")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
-  const gesucht = suche.trim().length > 0 || serie !== "" || variante !== "";
+  const gesucht = suche.trim().length > 0 || serie !== "" || variante !== "" || merkmale.size > 0;
 
   function alleZeigen() {
     setSuche("");
     setSerie("");
     setVariante("");
+    setMerkmale(new Set());
+    setSeite(1);
+  }
+
+  function merkmalUmschalten(param: string) {
+    setMerkmale((alt) => {
+      const neu = new Set(alt);
+      if (neu.has(param)) neu.delete(param); else neu.add(param);
+      return neu;
+    });
     setSeite(1);
   }
 
@@ -164,8 +183,7 @@ export default function VorverkaufPage() {
               setzt die Variante zurück** — „Nitro Boost" aus dem einen Set gibt
               es im anderen womöglich gar nicht, und die Auswahl stünde dann auf
               einem Wert, zu dem es keine Karte gibt. */}
-          {(facetten.serien.length > 1 || facetten.merkmale.length > 0)
-            && <label className="catalog-select" htmlFor="vorverkauf-set">
+          {facetten.serien.length > 1 && <label className="catalog-select" htmlFor="vorverkauf-set">
             <span>{t("Set")}</span>
             <select id="vorverkauf-set" value={serie}
               onChange={(ereignis) => { setSerie(ereignis.target.value); setVariante(""); setSeite(1); }}>
@@ -173,14 +191,6 @@ export default function VorverkaufPage() {
               {facetten.serien.map((eintrag) => <option key={eintrag.name} value={eintrag.name}>
                 {eintrag.name} ({eintrag.anzahl})
               </option>)}
-              {/* Eigene Gruppe: „Numbered" und „Autograph" sind keine Sets,
-                  sondern Eigenschaften quer dazu. In einer Liste mit den Sets
-                  ohne Trennung sähen sie aus wie zwei weitere Serien. */}
-              {facetten.merkmale.length > 0 && <optgroup label={t("Merkmal")}>
-                {facetten.merkmale.map((eintrag) => <option key={eintrag.wert} value={eintrag.wert}>
-                  {eintrag.name} ({eintrag.anzahl})
-                </option>)}
-              </optgroup>}
             </select>
           </label>}
 
@@ -201,6 +211,28 @@ export default function VorverkaufPage() {
               : t("{{count}} Karten im Vorverkauf", { count: seitenInfo.total })}
           </p>}
         </div>
+
+        {/* Eigene Reihe unter der Leiste, nicht im Set-Feld. **Als Schalter
+            lassen sie sich kombinieren** — „nummeriert und mit Autogramm" war
+            als Eintrag in einem Auswahlfeld gar nicht ausdrückbar.
+            Alle vier stehen immer da, auch mit null Treffern: Schalter, die je
+            nach Bestand kommen und gehen, ließen die Reihe springen und die
+            Frage offen, ob es die Sorte überhaupt gibt. */}
+        {facetten.merkmale.length > 0 && <div className="vorverkauf-merkmale">
+          {facetten.merkmale.map((eintrag) => <label
+            key={eintrag.param}
+            className={eintrag.anzahl === 0 ? "merkmal leer" : "merkmal"}
+          >
+            <input
+              type="checkbox"
+              checked={merkmale.has(eintrag.param)}
+              disabled={eintrag.anzahl === 0 && !merkmale.has(eintrag.param)}
+              onChange={() => merkmalUmschalten(eintrag.param)}
+            />
+            <span>{eintrag.name}</span>
+            <b>{eintrag.anzahl}</b>
+          </label>)}
+        </div>}
 
         {status === "loading" && <p className="empty-state">{t("Lade …")}</p>}
         {status === "error" && <p className="empty-state">{t("Die Karten konnten gerade nicht geladen werden. Bitte lade die Seite neu.")}</p>}
