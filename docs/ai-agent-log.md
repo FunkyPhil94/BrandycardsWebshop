@@ -4022,3 +4022,87 @@ entscheiden: `johnson_blue_pink` konnte Brennan Johnson (#114) oder Ben Johnson
 (#278) sein. **Da half nur das Kartenbild** — Brennan Johnson, Crystal Palace.
 Alle sieben stehen mit Begründung in der Spalte „Hinweis", damit die Entscheidung
 nachprüfbar bleibt und nicht in einem Skript verschwindet.
+
+## Nach Sportart filtern (2026-09-13)
+
+Der Laden heißt „Fußball-Sammelkarten", und das war jahrelang die ganze
+Wahrheit. Am 2026-09-13 ist sie es nicht mehr: Unter 907 Karten liegen 109
+American Football, 89 Non-Sport — Marvel, Fantastic Four, Disney — und 50 WWE.
+Ohne Filter stehen sie ununterscheidbar im selben Raster.
+
+**Der naheliegende Weg war versperrt, und zwar messbar.** eBay führt ein
+Kategoriefeld; `ebay_listings.category_id` hätte die Auskunft direkt geliefert.
+Es ist bei **allen 641** Listings `NULL` — die Schnittstelle bringt es nicht
+mit. Damit steht die Sportart nur im Titel, so wie Auflage, Autogramm,
+Bewertung und Relikt auch, und es galt dieselbe Bauart: ableiten beim Import in
+eine eigene Spalte, filtern als Spaltenabfrage.
+
+### Die Falle heißt „Football"
+
+Ein `LIKE '%Football%'` wäre der erste Griff gewesen und wäre falsch gewesen.
+Das Wort steht in NFL-Titeln genauso wie in Fußballtiteln: `2025 Futera
+INCREDIBLE Football Senegal`, `Topps Total Football 25/26 Real Madrid`, `Topps
+UCC Finest 25/26 … Prized Footballers`, `Topps Merlin Premier League 2026
+Fulham … Fantasy Football`. Sechzig Fußballkarten wären in die falsche
+Sportart gewandert — **stumm**, denn eine Karte unter der falschen Auswahl
+meldet sich nicht, sie steht nur woanders.
+
+Erkannt wird American Football deshalb über die 32 **vollen** NFL-Teamnamen.
+Kurzformen gehen nicht, und auch das ist am Bestand gemessen, nicht befürchtet:
+
+- `Rams` steckt in `Ramsey` — `Topps Premier League Flagship 26/27 Newcastle
+  United Jacob Ramsey …` wäre American Football geworden.
+- `NBA` steckt in `BeckeNBAuer` — ohne Wortgrenze hätte der Bestand vier
+  Basketballkarten, die alle Franz Beckenbauer zeigen.
+- `Giants`, `Panthers`, `Cardinals`, `Jets` gibt es in anderen Ligen ebenfalls.
+  Mit Stadt davor sind alle 32 eindeutig, und der Bestand schreibt sie durchweg
+  so.
+
+Non-Sport wird **vor** allen Sportarten geprüft. Sonst hinge „Black Panther"
+eines Tages an „Carolina Panthers".
+
+### Fußball ist die Rückfalllinie — als Annahme, nicht als Messung
+
+Das ist die eine Stelle, an der dieser Entwurf etwas behauptet. Alles, was
+keine benannte Ausnahme trifft, gilt als Fußball. Die Gegenrichtung — Fußball
+positiv erkennen — hieße, jeden Verein, jede Nationalmannschaft und jede
+Setreihe der Welt aufzulisten, und **jede Lücke darin wäre eine Karte unter
+keiner einzigen Sportart**. Ein stiller Fehltreffer ist hier das kleinere Übel
+als ein stiller Ausfall: Wer unter „Fußball" eine fremde Karte findet, sieht
+den Fehler; wer eine Karte nirgends findet, sucht nicht weiter.
+
+Der Preis ist beziffert, nicht behauptet. Von 907 Titeln ordnet die Ableitung
+**genau einen** falsch ein: `2024 Leaf Electrum Football Carson Beck Prospects
+Autograph 1/2` — College Football ohne Ligabezug im Titel. Ein Test hält diesen
+Fall fest, damit die Grenze nicht in Vergessenheit gerät.
+
+Dafür steht `sport` jetzt in `HANDFELDER`, und das ist die zweite Entscheidung,
+die eine Begründung braucht: Die Liste soll bewusst kurz bleiben. `sport`
+gehört trotzdem hinein, weil es das **einzige Feld ist, das der Import rät**.
+Titel, Beschreibung und Status kommen von eBay so, wie sie sind. Ohne Handfeld
+schriebe der Sync jede Berichtigung im Drei-Minuten-Takt wieder weg. Abdriften
+kann das Feld nicht — die Sportart einer Karte ändert sich nicht.
+
+### Was in der Oberfläche daraus wurde
+
+Ein Auswahlfeld, kein Schalter. Die vier Merkmale sind Ja-Nein und beliebig
+kombinierbar; eine Karte hat dagegen **eine** Sportart, und Auswahlfelder
+drücken genau das aus. Aus demselben Grund zeigt die Liste nur Sportarten, die
+es wirklich gibt: „Baseball (0)" verspräche ein Sortiment, das der Laden nicht
+führt. Bei den Merkmalen ist die feste Reihe richtig — vier Schalter, die
+auftauchen und verschwinden, ließen die Leiste springen —, bei einer
+Auswahlliste ist sie es nicht.
+
+**Sichtbar erst ab zwei Sportarten.** Ein Feld, das nur „Fußball" anbietet,
+beantwortet keine Frage; es behauptet, es gäbe eine Wahl.
+
+Die Sportart steht in der Filterkette **vor** Set und Variante, weil sie die
+gröbste Einteilung ist. Damit zählt sie nach derselben Regel wie die anderen:
+jede Liste ohne ihren eigenen Filter und ohne die feineren darunter. Wer
+American Football wählt, sieht die Merkmalszahlen der drei NFL-Karten — und in
+der Sportartliste weiterhin alle vier Sportarten mit ihren vollen Zahlen, sonst
+käme er ohne Umweg über „alle" nicht mehr heraus.
+
+In der Adresse steht der rohe Wert (`?sport=AMERICAN_FOOTBALL`), nicht die
+Beschriftung. Ein übersetzter Parameter wäre ein geteilter Link, der nach einem
+Sprachwechsel ins Leere liefe; gegengeprüft mit umgeschalteter Sprache.

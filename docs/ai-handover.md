@@ -10878,7 +10878,7 @@ zählt, dass die Unterscheidung an *beiden* Stellen steht.
   für künftige Karten.
 
 ## Auftrag 2026-09-13: Nach Sportart filtern
-- Status: LÄUFT.
+- Status: CODE FERTIG, **AUSROLLEN OFFEN** — siehe „Was noch aussteht“.
 - **Anlass:** Der Nutzer will den Bestand nach Sportart einschränken können.
   Der Shop heißt „Fußball-Sammelkarten", aber im Bestand liegen am 2026-09-13
   nachweislich vier Sorten: 907 Karten, davon 109 American Football (NFL),
@@ -10900,3 +10900,49 @@ zählt, dass die Unterscheidung an *beiden* Stellen steht.
   `app/api/products/route.ts`, `app/api/admin/products/route.ts`,
   `app/admin/import-panel.tsx`, `app/karten/page.tsx`,
   `app/vorverkauf/page.tsx`, `app/i18n.tsx`, Tests.
+
+### Ergebnis
+
+- **Gemessen statt geraten.** Der Ableiter lief gegen alle 907 Titel des
+  Bestands, bevor irgendetwas verdrahtet wurde: 109 American Football, 89
+  Non-Sport, 50 WWE, 659 Fußball. **Kein Fehltreffer** in den drei benannten
+  Sorten — alle 54 verschiedenen NFL-Titel, alle 49 Non-Sport-Titel und alle 25
+  WWE-Titel einzeln gegengelesen, nicht bloß gezählt.
+- **Zwei Fallen sind beim Messen aufgeflogen, nicht beim Nachdenken:**
+  `Ramsey` enthält `Rams` (eine Premier-League-Karte wäre American Football
+  geworden), und `Beckenbauer` enthält `NBA` (vier Basketballkarten, die alle
+  Franz Beckenbauer zeigen). Beides erledigen volle Teamnamen und Wortgrenzen.
+- **Disney war nicht vorgesehen.** Beim ersten vollständigen Durchlauf tauchten
+  neben Marvel und Fantastic Four 26 `Topps Disney Neon`-Karten auf, die keine
+  Suche vorher erfasst hatte. Sie stehen jetzt in der Non-Sport-Liste.
+- **Ein Wächtertest hat mich erwischt** — zu Recht: `tests/manual-cards.test.mjs`
+  prüft die Liste der Handfelder auf Gleichheit und trägt den Hinweis, sie nur
+  bewusst zu erweitern. `sport` kam mit ausgeschriebener Begründung dazu.
+- 818 Tests grün (vorher 799), `npx tsc --noEmit` und `npm run lint` sauber.
+- **Örtlich durchgeklickt, nicht nur gebaut.** Lokale D1 mit allen 26
+  Migrationen aufgesetzt und mit echten Titeln aus dem Bestand befüllt: Katalog
+  und Vorverkauf zeigen das Auswahlfeld, „American Football" liefert genau die
+  NFL-Karten, die Merkmalszahlen schrumpfen mit, die Sportartliste bleibt
+  vollständig. Adresse trägt `?sport=AMERICAN_FOOTBALL`, überlebt den
+  Sprachwechsel, Beschriftung wechselt auf „American football". Mobil
+  (375 px) bricht die Leiste nicht. Testzeilen danach wieder entfernt.
+- `?sport=Handball` filtert nicht, statt den Katalog auf null zu schrumpfen.
+
+### Was noch aussteht — **nicht erledigt, bewusst offen**
+
+1. **Migration `drizzle/0023_product_sport.sql` läuft noch nicht in Produktion.**
+   `npx wrangler d1 execute … --remote --file drizzle/0023_product_sport.sql`
+   wurde von der Rechteprüfung der Sitzung blockiert. **Sie muss vor dem Deploy
+   laufen** — sonst fragt der Worker eine Spalte ab, die es nicht gibt, und der
+   Katalog fällt komplett aus.
+2. **Deploy steht aus.** Erst nach Punkt 1.
+3. **Nach dem Deploy gegenprüfen**, dass der eBay-Sync die Spalte füllt: Die
+   263 Vorverkaufskarten sind durch `DEFAULT 'FUSSBALL'` sofort richtig, die
+   eBay-Karten schreibt der nächste Lauf. Erwartung an den aktiven Bestand:
+   `SELECT sport, count(*) FROM products GROUP BY sport` liefert
+   AMERICAN_FOOTBALL 109, NON_SPORT 89, WRESTLING 50, Rest FUSSBALL.
+   Bleibt alles auf FUSSBALL, hat der Sync nicht geschrieben.
+4. **Eine Karte ist bekannt falsch eingeordnet** und wartet auf die
+   Handkorrektur im Adminbereich: `2024 Leaf Electrum Football Carson Beck
+   Prospects Autograph 1/2` steht als Fußball, ist College Football. Sie ist
+   derzeit inaktiv, also nicht im Katalog sichtbar.
