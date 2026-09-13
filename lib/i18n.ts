@@ -121,6 +121,18 @@ export const ENGLISH: Record<string, string> = {
   "Merkmal": "Feature",
   "Variante": "Variant",
   "Alle Varianten": "All variants",
+  // Die Sportarten. Die Werte selbst (`AMERICAN_FOOTBALL`) werden nie
+  // übersetzt — sie stehen in der Adresse und in der Datenbank. Übersetzt wird
+  // allein die Beschriftung, die `lib/karten-sportart.ts` dazu liefert.
+  "Sportart": "Sport",
+  "Alle Sportarten": "All sports",
+  "Fußball": "Soccer",
+  "American Football": "American football",
+  "Basketball": "Basketball",
+  "Baseball": "Baseball",
+  "Eishockey": "Ice hockey",
+  "Wrestling": "Wrestling",
+  "Non-Sport": "Non-sport",
   "Alle Karten zeigen": "Show all cards",
   "Keine Karte passt zu dieser Auswahl.": "No card matches this selection.",
   "{{count}} Treffer": "{{count}} matches",

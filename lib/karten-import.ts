@@ -14,6 +14,7 @@ import type { TabellenZeile } from "./xlsx-lesen";
 // Endung ausgeschrieben: Die Tests führen diese Datei direkt mit Node aus,
 // und dessen Auflösung findet `./karten-merkmale` ohne sie nicht.
 import { auflageAusTitel, merkmaleAusTitel } from "./karten-merkmale.ts";
+import { RUECKFALL, SPORTARTEN, type Sportart } from "./karten-sportart.ts";
 
 export const SPALTE_TITEL = "Titel";
 export const SPALTE_BILD = "Bilddatei";
@@ -26,6 +27,7 @@ export const SPALTE_NUMMERIERUNG = "Nummerierung";
 export const SPALTE_AUTOGRAMM = "Autogramm";
 export const SPALTE_GRADED = "Graded";
 export const SPALTE_RELIC = "Relic";
+export const SPALTE_SPORTART = "Sportart";
 
 /** Die Ja-Nein-Spalten der Tabelle, in einer Liste statt dreimal ausgeschrieben.
  *  Ein viertes Merkmal kostet damit eine Zeile, nicht vier Änderungen.
@@ -39,6 +41,30 @@ export const JA_NEIN_SPALTEN = [
   { spalte: SPALTE_GRADED, feld: "graded", ausTitel: "graded" },
   { spalte: SPALTE_RELIC, feld: "relic", ausTitel: "relic" },
 ] as const;
+
+/** Die Sportart aus der Tabelle — oder, bei leerer Zelle, die aus dem Titel.
+ *
+ * Erkannt wird sowohl der interne Wert (`AMERICAN_FOOTBALL`) als auch der
+ * Anzeigename (`American Football`), Groß- und Kleinschreibung egal. Der
+ * Betreiber pflegt die Tabelle in Excel und schreibt dort, was er in der
+ * Oberfläche liest — ihn zum Tippen von Großbuchstaben mit Unterstrich zu
+ * zwingen, wäre eine Falle ohne Gegenwert.
+ *
+ * **Eine unbekannte Sportart ist ein Fehler, kein stiller Rückfall.** Wer
+ * „Handball" in die Spalte schreibt, meint etwas; die Zeile als Fußball
+ * durchzuwinken, versteckte den Tippfehler ebenso wie die fehlende Sportart.
+ * Deshalb gibt diese Funktion `null` zurück, und `planBauen` macht daraus eine
+ * benannte Fehlermeldung. Leer bleibt leer und damit erlaubt — das ist
+ * Schweigen, und beim Schweigen entscheidet der Titel.
+ */
+export function sportartAusZelle(zelle: string | undefined, ausDemTitel: Sportart): Sportart | null {
+  const wert = (zelle ?? "").trim();
+  if (wert === "") return ausDemTitel;
+  const gesucht = wert.toLocaleLowerCase("de-DE");
+  const treffer = SPORTARTEN.find((eintrag) =>
+    eintrag.wert.toLowerCase() === gesucht || eintrag.name.toLocaleLowerCase("de-DE") === gesucht);
+  return treffer?.wert ?? null;
+}
 
 /** Was in einer Ja-Nein-Spalte als Ja gilt. Bewusst eng — eine Karte
  *  fälschlich als Autogramm auszuweisen wäre schlimmer, als eine zu übersehen. */
@@ -101,6 +127,8 @@ export type Posten = {
   autogramm: boolean;
   graded: boolean;
   relic: boolean;
+  /** Die Sportart. Leere Zelle heißt: die aus dem Titel. */
+  sportart: Sportart;
   stand: PostenStand;
   grund: string;
   /** Nur bei `aktualisieren` gesetzt: die Karte, die zu ändern ist. */
@@ -115,6 +143,7 @@ export type Bestandskarte = {
   set?: string | null; variante?: string | null; parallele?: string | null;
   nummerierung?: string | null; autogramm?: boolean | null;
   graded?: boolean | null; relic?: boolean | null;
+  sportart?: string | null;
 };
 
 export type PlanEingabe = {
@@ -183,11 +212,16 @@ export function planBauen({ zeilen, bilder, bestand }: PlanEingabe): Plan {
     const ausTitel = merkmaleAusTitel(titel);
     const merkmale = Object.fromEntries(JA_NEIN_SPALTEN.map((eintrag) =>
       [eintrag.feld, jaNein(zeile[eintrag.spalte], ausTitel[eintrag.ausTitel])])) as Record<string, boolean>;
+    // `null` heißt: In der Spalte steht etwas, das keine bekannte Sportart ist.
+    // Der Posten trägt solange den Rückfall, damit er ein vollständiges Objekt
+    // bleibt — die Prüfung unten macht daraus einen Fehler, bevor er zählt.
+    const sportart = sportartAusZelle(zeile[SPALTE_SPORTART], ausTitel.sport);
     const menge = zahl(zeile[SPALTE_MENGE]);
     const posten_: Posten = {
       zeile: index + 2, titel, bilddatei, menge: menge ?? 1, beschreibung,
       set, variante, parallele, nummerierung,
       autogramm: merkmale.autogramm!, graded: merkmale.graded!, relic: merkmale.relic!,
+      sportart: sportart ?? RUECKFALL,
       stand: "bereit", grund: "",
     };
 
@@ -210,6 +244,9 @@ export function planBauen({ zeilen, bilder, bestand }: PlanEingabe): Plan {
     else if ([set, variante, parallele, nummerierung].some((wert) => wert.length > MAX_EINORDNUNG)) {
       fehler(`Set, Variante, Parallele und Nummerierung dürfen höchstens ${MAX_EINORDNUNG} Zeichen haben.`);
     }
+    else if (sportart === null) {
+      fehler(`„${(zeile[SPALTE_SPORTART] ?? "").trim()}“ ist keine bekannte Sportart. Erlaubt sind: ${SPORTARTEN.map((eintrag) => eintrag.name).join(", ")} — oder leer lassen, dann entscheidet der Titel.`);
+    }
     // Der Bestandsabgleich kommt **zuletzt**: Eine fehlerhafte Zeile bleibt ein
     // Fehler, auch wenn zufällig eine Karte gleichen Titels schon dasteht.
     else {
@@ -229,6 +266,7 @@ export function planBauen({ zeilen, bilder, bestand }: PlanEingabe): Plan {
           const bisher = (schon as Record<string, unknown>)[feld] ?? false;
           if (bisher !== merkmale[feld]) gruende.push(spalte);
         }
+        if ((schon.sportart ?? RUECKFALL) !== posten_.sportart) gruende.push(SPALTE_SPORTART);
         if (gruende.length === 0) {
           posten_.stand = "vorhanden";
           posten_.grund = "Steht schon im Shop — wird übersprungen.";

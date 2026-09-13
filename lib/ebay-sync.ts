@@ -151,7 +151,7 @@ async function runEbaySyncInternal() {
       // Wert, `stehtSchonSo` meldete ewig einen Unterschied, und jeder Lauf
       // schriebe jedes Produkt neu. Im Drei-Minuten-Takt.
       numbering: products.numbering, autograph: products.autograph,
-      graded: products.graded, relic: products.relic,
+      graded: products.graded, relic: products.relic, sport: products.sport,
     }).from(products);
     const productsById = new Map(productRows.map((row) => [row.id, row]));
 
@@ -235,8 +235,9 @@ async function runEbaySyncInternal() {
         // Bleibt die Liste leer, entfällt der Batch vollständig — und damit
         // der ganze Schreibvorgang für dieses Listing.
         const statements: BatchItem<"sqlite">[] = [];
-        // Auflage, Autogramm, Bewertung und Relikt kommen bei eBay-Karten aus
-        // dem Titel — es gibt nichts anderes. Abgeleitet **hier**, damit der
+        // Auflage, Autogramm, Bewertung, Relikt und Sportart kommen bei
+        // eBay-Karten aus dem Titel — es gibt nichts anderes; das
+        // Kategoriefeld der Schnittstelle kommt leer an. Abgeleitet **hier**, damit der
         // Filter überall eine Spaltenabfrage bleibt und die Regel dort steht,
         // wo ein Test sie erreicht: `lib/karten-merkmale.ts`.
         //

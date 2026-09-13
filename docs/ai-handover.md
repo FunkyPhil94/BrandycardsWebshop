@@ -10876,3 +10876,27 @@ zählt, dass die Unterscheidung an *beiden* Stellen steht.
 - **Wirkung auf den Bestand: keine.** Kein Vorverkaufstitel enthält eine der
   Vokabeln, und die acht Auflagen stehen schon in der Spalte. Das Netz hängt
   für künftige Karten.
+
+## Auftrag 2026-09-13: Nach Sportart filtern
+- Status: LÄUFT.
+- **Anlass:** Der Nutzer will den Bestand nach Sportart einschränken können.
+  Der Shop heißt „Fußball-Sammelkarten", aber im Bestand liegen am 2026-09-13
+  nachweislich vier Sorten: 907 Karten, davon 109 American Football (NFL),
+  89 Non-Sport (Marvel, Fantastic Four, Disney), 50 WWE-Wrestling,
+  659 Fußball.
+- **Kein Feld bei eBay.** `ebay_listings.category_id` ist bei allen 641
+  Listings `NULL`. Die Auskunft steht nur im Titel — also dieselbe Bauart wie
+  bei den vier Merkmalen: ableiten beim Import, in eine eigene Spalte
+  schreiben, filtern als Spaltenabfrage.
+- **Die Falle heißt „Football".** Das Wort steht in NFL-Titeln *und* in
+  Fußballtiteln (`Futera INCREDIBLE Football Senegal`, `Topps Total Football`,
+  `Prized Footballers`). Als Signal unbrauchbar. Erkannt wird American Football
+  über die 32 **vollen** NFL-Teamnamen — „New York Giants", nicht „Giants":
+  Kurzformen kollidieren mit anderen Ligen (SF Giants) und mit Spielernamen
+  (`Ramsey` → `Rams`, `Beckenbauer` → `NBA`).
+- Betroffen: `lib/karten-sportart.ts` (neu), `lib/karten-merkmale.ts`,
+  `lib/karten-import.ts`, `lib/ebay-sync.ts`, `lib/manual-overrides.ts`,
+  `db/schema.ts`, `drizzle/0023_product_sport.sql` (neu),
+  `app/api/products/route.ts`, `app/api/admin/products/route.ts`,
+  `app/admin/import-panel.tsx`, `app/karten/page.tsx`,
+  `app/vorverkauf/page.tsx`, `app/i18n.tsx`, Tests.

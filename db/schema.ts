@@ -122,6 +122,15 @@ export const products = sqliteTable("products", {
    * neben ihm. Der Filter beantwortet nur, ob überhaupt. */
   graded: integer("graded", { mode: "boolean" }).notNull().default(false),
   relic: integer("relic", { mode: "boolean" }).notNull().default(false),
+  /** Die Sportart, `FUSSBALL` bis `NON_SPORT`. Die erlaubten Werte stehen in
+   *  `lib/karten-sportart.ts`; hier steht bewusst **keine** CHECK-Bedingung,
+   *  weil SQLite sie per `ALTER TABLE` nicht nachtragen kann und der Umweg auf
+   *  D1 verbaut ist (siehe `drizzle/0023_product_sport.sql`).
+   *
+   *  `NOT NULL DEFAULT 'FUSSBALL'` ist dieselbe Rückfalllinie, die auch der
+   *  Ableiter benutzt: Der Laden handelt mit Fußballkarten, alles andere ist
+   *  die benennbare Ausnahme. */
+  sport: text("sport").notNull().default("FUSSBALL"),
   createdByUserId: text("created_by_user_id").references(() => users.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at"),
   updatedAt: timestamp("updated_at"),

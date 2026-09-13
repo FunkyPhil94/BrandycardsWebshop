@@ -93,12 +93,20 @@ test("die Wortgrenzen halten Teiltreffer heraus", () => {
 });
 
 test("merkmaleAusTitel liefert die Form, die products erwartet", () => {
+  // **Die Sportart reist hier mit, obwohl sie kein Merkmal ist.** Dieser
+  // Rückgabewert ist die eine Stelle, an der Sync und Massenanlage abholen —
+  // hinge sie daneben, müsste jeder neue Aufrufer daran denken, und einer
+  // vergäße es. Ein `deepEqual` hält fest, dass sie dabei ist.
   assert.deepEqual(
     merkmaleAusTitel("Panini Impeccable 22/23 Manchester City Jack Grealish Relic Jersey 05/10"),
-    { numbering: "05/10", autograph: false, graded: false, relic: true },
+    { numbering: "05/10", autograph: false, graded: false, relic: true, sport: "FUSSBALL" },
   );
   assert.deepEqual(
     merkmaleAusTitel("Topps Merlin UCC 24/25 FC Barcelona Lamine Yamal Base"),
-    { numbering: null, autograph: false, graded: false, relic: false },
+    { numbering: null, autograph: false, graded: false, relic: false, sport: "FUSSBALL" },
+  );
+  assert.deepEqual(
+    merkmaleAusTitel("Topps Chrome Football 2025 Las Vegas Raiders Ashton Jeanty Rookie Relics 44/50"),
+    { numbering: "44/50", autograph: false, graded: false, relic: true, sport: "AMERICAN_FOOTBALL" },
   );
 });

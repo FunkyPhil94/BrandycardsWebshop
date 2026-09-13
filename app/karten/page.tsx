@@ -23,6 +23,12 @@ type Product = {
 
 type CatalogCategory = "" | "fixed" | "prelisted";
 
+/** Wert und Beschriftung getrennt: In der Datenbank und in der Adresse steht
+ *  `AMERICAN_FOOTBALL`, in der Auswahl „American Football". Ein übersetzter
+ *  Adressparameter wäre ein geteilter Link, der in einer anderen Sprache ins
+ *  Leere liefe. */
+type Sportfacette = { wert: string; name: string; anzahl: number };
+
 type CatalogResponse = {
   products?: Product[];
   page?: number;
@@ -30,7 +36,7 @@ type CatalogResponse = {
   totalPages?: number;
   first?: number;
   last?: number;
-  facetten?: { merkmale: { param: string; name: string; anzahl: number }[] };
+  facetten?: { sportarten: Sportfacette[]; merkmale: { param: string; name: string; anzahl: number }[] };
 };
 
 /** Die Zeile unter dem Ausweis — oder nichts.
@@ -60,6 +66,10 @@ export default function KartenPage() {
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<CatalogCategory>("");
+  /** Die gewählte Sportart, leer heißt alle. Die Liste kommt aus der API —
+   *  welche Sportarten der Bestand führt, weiß diese Datei nicht. */
+  const [sport, setSport] = useState("");
+  const [sportListe, setSportListe] = useState<Sportfacette[]>([]);
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
   const [selected, setSelected] = useState<Product | null>(null);
@@ -81,6 +91,7 @@ export default function KartenPage() {
       const urlCategory = params.get("category");
       setQuery(params.get("q") ?? "");
       setCategory(urlCategory === "fixed" || urlCategory === "prelisted" ? urlCategory : "");
+      setSport(params.get("sport") ?? "");
       setMinPrice(params.get("min") ?? "");
       setMaxPrice(params.get("max") ?? "");
       setPageSize(toPageSize(params.get("pro")));
@@ -99,6 +110,7 @@ export default function KartenPage() {
       const params = new URLSearchParams({ pro: String(pageSize), seite: String(page) });
       if (query.trim()) params.set("q", query.trim());
       if (category) params.set("category", category);
+      if (sport) params.set("sport", sport);
       if (minPrice.trim()) params.set("min", minPrice.trim());
       if (maxPrice.trim()) params.set("max", maxPrice.trim());
       for (const merkmal of merkmale) params.set(merkmal, "1");
@@ -109,7 +121,10 @@ export default function KartenPage() {
         .then((data: CatalogResponse) => {
           setCatalog(data.products ?? []);
           setPageInfo({ total: data.total ?? 0, totalPages: data.totalPages ?? 1, first: data.first ?? 0, last: data.last ?? 0 });
-          if (data.facetten) setMerkmalListe(data.facetten.merkmale);
+          if (data.facetten) {
+            setSportListe(data.facetten.sportarten ?? []);
+            setMerkmalListe(data.facetten.merkmale);
+          }
           if (data.page && data.page !== page) setPage(data.page);
           setStatus("ready");
         })
@@ -119,7 +134,7 @@ export default function KartenPage() {
         });
     }, 180);
     return () => { window.clearTimeout(timer); controller.abort(); };
-  }, [category, initialized, maxPrice, merkmale, minPrice, page, pageSize, query]);
+  }, [category, initialized, maxPrice, merkmale, minPrice, page, pageSize, query, sport]);
 
   // Filter and page state stay shareable without adding a browser-history entry
   // for every keypress or page click.
@@ -128,6 +143,7 @@ export default function KartenPage() {
     const params = new URLSearchParams(window.location.search);
     if (query.trim()) params.set("q", query.trim()); else params.delete("q");
     if (category) params.set("category", category); else params.delete("category");
+    if (sport) params.set("sport", sport); else params.delete("sport");
     if (minPrice.trim()) params.set("min", minPrice.trim()); else params.delete("min");
     if (maxPrice.trim()) params.set("max", maxPrice.trim()); else params.delete("max");
     if (pageSize === DEFAULT_PAGE_SIZE) params.delete("pro"); else params.set("pro", String(pageSize));
@@ -137,7 +153,7 @@ export default function KartenPage() {
     }
     const next = params.toString();
     window.history.replaceState(null, "", `${window.location.pathname}${next ? `?${next}` : ""}${window.location.hash}`);
-  }, [category, initialized, maxPrice, merkmalListe, merkmale, minPrice, page, pageSize, query]);
+  }, [category, initialized, maxPrice, merkmalListe, merkmale, minPrice, page, pageSize, query, sport]);
 
   function merkmalUmschalten(param: string) {
     setMerkmale((alt) => {
@@ -185,6 +201,20 @@ export default function KartenPage() {
           <span aria-hidden="true">⌕</span>
           <input id="search" value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }} placeholder={t("Spieler, Set oder Kartennummer")} aria-label={t("Karten durchsuchen")} />
         </label>
+        {/* **Erst ab zwei Sportarten sichtbar.** Ein Auswahlfeld, das nur
+            „Fußball" anbietet, beantwortet keine Frage — es behauptet nur, es
+            gäbe eine Wahl. Der Laden hieß jahrelang zu Recht „Fußballkarten";
+            das Feld erscheint an dem Tag, an dem das nicht mehr die ganze
+            Wahrheit ist. */}
+        {sportListe.length > 1 && <label className="catalog-select" htmlFor="catalog-sport">
+          <span>{t("Sportart")}</span>
+          <select id="catalog-sport" value={sport} onChange={(event) => { setSport(event.target.value); setPage(1); }}>
+            <option value="">{t("Alle Sportarten")}</option>
+            {sportListe.map((eintrag) => <option key={eintrag.wert} value={eintrag.wert}>
+              {t(eintrag.name)} ({eintrag.anzahl})
+            </option>)}
+          </select>
+        </label>}
         <label className="catalog-select" htmlFor="catalog-category">
           <span>{t("Kategorie")}</span>
           <select id="catalog-category" value={category} onChange={(event) => { setCategory(event.target.value as CatalogCategory); setPage(1); }}>

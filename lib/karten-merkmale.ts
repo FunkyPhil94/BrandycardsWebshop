@@ -14,6 +14,10 @@
  * Die Wortlisten stammen vom Betreiber (2026-08-20), nicht aus einer Vermutung.
  */
 
+// Endung ausgeschrieben: Die Tests führen diese Datei direkt mit Node aus, und
+// dessen Auflösung findet `./karten-sportart` ohne sie nicht.
+import { sportartAusTitel } from "./karten-sportart.ts";
+
 /** Ein Zahlenpaar wie `24/25`, `049/150`. Der Blick nach vorn und zurück
  *  verhindert, dass `2017/2018` als `017/201` gelesen wird. */
 const PAAR = /(?<![\d/])(\d{1,4})\s*\/\s*(\d{1,4})(?![\d/])/gu;
@@ -77,12 +81,21 @@ export function istBewertet(titel: string): boolean {
   return BEWERTUNG.test(titel);
 }
 
-/** Alle vier auf einmal, in der Form, die `products` erwartet. */
+/** Alles, was sich aus dem Titel ableiten lässt, in der Form, die `products`
+ *  erwartet.
+ *
+ * **Die Sportart kommt aus `karten-sportart.ts`, nicht von hier.** Sie ist kein
+ * Ja-Nein-Merkmal, sondern eine Einordnung in genau einen von sieben Werten,
+ * und ihre Wortlisten sind lang genug, um eine eigene Datei zu verdienen. Sie
+ * reist trotzdem in diesem Rückgabewert mit, weil er die eine Stelle ist, an
+ * der Sync **und** Massenanlage abholen — hinge sie daneben, müsste jeder neue
+ * Aufrufer daran denken, und einer würde es vergessen. */
 export function merkmaleAusTitel(titel: string) {
   return {
     numbering: auflageAusTitel(titel),
     autograph: hatAutogramm(titel),
     graded: istBewertet(titel),
     relic: hatRelikt(titel),
+    sport: sportartAusTitel(titel),
   };
 }

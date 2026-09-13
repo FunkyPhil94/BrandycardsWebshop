@@ -1,0 +1,45 @@
+-- Die Sportart als eigene Spalte an `products`.
+--
+-- Anlass: Der Bestand ist nicht mehr nur Fußball. Am 2026-09-13 liegen unter
+-- 907 Karten 109 American Football (NFL), 89 Non-Sport (Marvel, Fantastic
+-- Four, Disney) und 50 WWE. Ohne Filter stehen sie ununterscheidbar im selben
+-- Raster.
+--
+-- **Warum nicht aus `ebay_listings.category_id`.** Das Feld gäbe die Auskunft
+-- direkt her — es ist aber bei **allen 641** Listings `NULL`; die
+-- Schnittstelle liefert es nicht mit. Bliebe der Blick in den Titel zur
+-- Laufzeit, und der wäre aus demselben Grund falsch wie bei der Auflage
+-- (Migration 0021): Das Wort `Football` steht in NFL-Titeln genauso wie in
+-- Fußballtiteln („Topps Total Football 25/26 Real Madrid", „Prized
+-- Footballers"). Ein SQL-`LIKE '%Football%'` verschöbe 60 Fußballkarten in die
+-- falsche Sportart, und zwar stumm.
+--
+-- Abgeleitet wird deshalb beim Import, in `lib/karten-sportart.ts`, wo ein
+-- Test die Regel erreicht. Erkannt wird American Football über die 32 **vollen**
+-- NFL-Teamnamen; Kurzformen kollidieren mit Spielernamen (`Ramsey` → `Rams`,
+-- `Beckenbauer` → `NBA`).
+--
+-- **`NOT NULL DEFAULT 'FUSSBALL'` ist kein Platzhalter, sondern genau die
+-- Rückfalllinie des Ableiters.** Der Laden handelt mit Fußballkarten; was keine
+-- der benannten Ausnahmen trifft, ist Fußball. Damit sind die 263
+-- Vorverkaufskarten — allesamt Premier League — sofort richtig eingeordnet,
+-- ohne Nachlauf. Die eBay-Karten schreibt der nächste Sync-Lauf richtig: Die
+-- abgeleiteten Werte weichen ab, `stehtSchonSo` meldet den Unterschied, und
+-- jede betroffene Karte wird einmalig geschrieben. Dieselbe Mechanik hat schon
+-- die vier Merkmale aus Migration 0021/0022 nachgefüllt.
+--
+-- **Keine CHECK-Bedingung.** SQLite kann sie per `ALTER TABLE` nicht
+-- nachtragen, und der Umweg über eine neue Tabelle ist auf D1 verbaut — die
+-- Begründung samt der verworfenen Versuche steht im Kopf von
+-- `drizzle/0006_manual_cards_and_oauth_claims.sql`. Die erlaubten Werte stehen
+-- stattdessen in `SPORTARTEN` und werden von der Anwendung geprüft; ein
+-- unbekannter Wert aus der Datenbank fällt in der Anzeige auf seinen rohen
+-- Namen zurück, statt zu verschwinden.
+--
+-- Kein Index: Der Katalog zählt gut 900 Zeilen und wird ohnehin über
+-- `products.status` und die Verbünde eingegrenzt. Ein Index auf sieben
+-- verschiedene Werte macht hier nichts messbar schneller.
+--
+-- Von Hand geschrieben, weil `drizzle/meta/_journal.json` bei 0002 endet
+-- (siehe CLAUDE.md).
+ALTER TABLE products ADD COLUMN sport TEXT NOT NULL DEFAULT 'FUSSBALL';

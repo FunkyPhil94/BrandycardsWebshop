@@ -11,8 +11,17 @@
  *
  * Bewusst kurz. Jedes Feld hier ist eines, das der Import **nicht mehr**
  * korrigieren kann — wer zu viele freigibt, baut sich einen Katalog, der
- * langsam von der Wirklichkeit bei eBay abdriftet, ohne dass es auffällt. */
-export const HANDFELDER = ["title", "description", "status"] as const;
+ * langsam von der Wirklichkeit bei eBay abdriftet, ohne dass es auffällt.
+ *
+ * **`sport` steht hier, weil es das einzige Feld ist, das der Import *rät*.**
+ * Titel, Beschreibung und Status kommen von eBay so, wie sie sind; die
+ * Sportart leitet `lib/karten-sportart.ts` aus dem Titel ab, und eine
+ * Ableitung kann danebengreifen — am 2026-09-13 bei genau einer von 907
+ * Karten. Ohne Handkorrektur bliebe die falsch eingeordnet, und jeder
+ * Sync-Lauf im Drei-Minuten-Takt schriebe die Berichtigung wieder weg. Ein
+ * Abdriften ist hier nicht zu befürchten: Die Sportart einer Karte ändert
+ * sich nicht. */
+export const HANDFELDER = ["title", "description", "status", "sport"] as const;
 export type Handfeld = (typeof HANDFELDER)[number];
 
 export function istHandfeld(wert: unknown): wert is Handfeld {

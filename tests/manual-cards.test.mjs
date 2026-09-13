@@ -124,7 +124,14 @@ test("übernommen wird nur, was gefahrlos wechseln kann", () => {
 test("die Liste der Handfelder bleibt klein", () => {
   // Jedes Feld hier kann der Import nicht mehr korrigieren. Wer sie erweitert,
   // soll das bewusst tun und diesen Test mit anfassen.
-  assert.deepEqual([...HANDFELDER], ["title", "description", "status"]);
+  //
+  // `sport` kam am 2026-09-13 dazu, und aus einem anderen Grund als die drei
+  // davor: Titel, Beschreibung und Status kommen von eBay so, wie sie sind —
+  // die Sportart *rät* `lib/karten-sportart.ts` aus dem Titel, und bei einer
+  // von 907 Karten daneben. Ohne Handfeld schriebe der Sync jede Berichtigung
+  // im Drei-Minuten-Takt wieder weg. Abdriften kann dieses Feld nicht: Die
+  // Sportart einer Karte ändert sich nicht.
+  assert.deepEqual([...HANDFELDER], ["title", "description", "status", "sport"]);
 });
 
 test("der Sync übernimmt statt zu duplizieren", async () => {

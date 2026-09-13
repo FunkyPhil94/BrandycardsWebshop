@@ -380,3 +380,89 @@ test("die Saison im Titel wird nicht zur Auflage", () => {
   });
   assert.equal(plan.posten[0].nummerierung, "");
 });
+
+// --- Die Sportart ------------------------------------------------------------
+
+test("eine leere Sportartspalte lässt den Titel entscheiden", () => {
+  const plan = planBauen({
+    zeilen: [
+      zeile("Topps Premier League Flagship 26/27 Arsenal London Bukayo Saka Base", "a.jpg"),
+      zeile("Topps Chrome Football 2025 Miami Dolphins Quinn Ewers RC", "b.jpg"),
+    ],
+    bilder: [bild("a.jpg"), bild("b.jpg")],
+    bestand: [],
+  });
+  assert.equal(plan.posten[0].sportart, "FUSSBALL");
+  assert.equal(plan.posten[1].sportart, "AMERICAN_FOOTBALL");
+});
+
+test("die Spalte schlägt den Titel — Wert wie Anzeigename", () => {
+  // Der Betreiber pflegt die Tabelle in Excel und schreibt dort, was er in der
+  // Oberfläche liest. Ihn zum Tippen von Großbuchstaben mit Unterstrich zu
+  // zwingen, wäre eine Falle ohne Gegenwert.
+  const plan = planBauen({
+    zeilen: [
+      zeile("Eine Karte ohne Hinweis im Titel", "a.jpg", { Sportart: "AMERICAN_FOOTBALL" }),
+      zeile("Noch eine Karte ohne Hinweis", "b.jpg", { Sportart: "American Football" }),
+      zeile("Und noch eine ohne Hinweis", "c.jpg", { Sportart: "  wrestling  " }),
+    ],
+    bilder: [bild("a.jpg"), bild("b.jpg"), bild("c.jpg")],
+    bestand: [],
+  });
+  assert.equal(plan.posten[0].sportart, "AMERICAN_FOOTBALL");
+  assert.equal(plan.posten[1].sportart, "AMERICAN_FOOTBALL");
+  assert.equal(plan.posten[2].sportart, "WRESTLING");
+});
+
+test("eine unbekannte Sportart ist ein Fehler, kein stiller Rückfall", () => {
+  // **Anders als bei den Ja-Nein-Spalten.** Dort ist alles, was nicht Ja oder
+  // Nein heißt, dasselbe wie leer. Hier nicht: Wer „Handball" schreibt, meint
+  // etwas, und die Zeile als Fußball durchzuwinken versteckte den Tippfehler
+  // genauso wie die fehlende Sportart.
+  const plan = planBauen({
+    zeilen: [zeile("Eine Karte", "a.jpg", { Sportart: "Handball" })],
+    bilder: [bild("a.jpg")],
+    bestand: [],
+  });
+  assert.equal(plan.posten[0].stand, "fehler");
+  assert.match(plan.posten[0].grund, /Handball/u);
+  assert.match(plan.posten[0].grund, /leer lassen/u);
+});
+
+test("eine abweichende Sportart im Bestand wird berichtigt", () => {
+  // Ohne diesen Vergleich liefe die Zeile beim zweiten Durchgang als
+  // „vorhanden" durch, und die falsche Sportart bliebe stehen — die Karte wäre
+  // sichtbar, aber unter der falschen Auswahl.
+  const plan = planBauen({
+    zeilen: [zeile("Topps Chrome Football 2025 Miami Dolphins Quinn Ewers RC", "a.jpg")],
+    bilder: [bild("a.jpg")],
+    bestand: [{ id: "x", titel: "Topps Chrome Football 2025 Miami Dolphins Quinn Ewers RC", menge: 1, sportart: "FUSSBALL" }],
+  });
+  assert.equal(plan.posten[0].stand, "aktualisieren");
+  assert.match(plan.posten[0].grund, /Sportart/u);
+});
+
+test("eine übereinstimmende Sportart löst keine Berichtigung aus", () => {
+  // Sonst meldete jeder Durchgang jede Karte als zu ändern — und der Betreiber
+  // schriebe 263 Karten neu, um nichts zu bewirken.
+  const titel = "Topps Premier League Flagship 26/27 Arsenal London Bukayo Saka Base";
+  const plan = planBauen({
+    zeilen: [zeile(titel, "a.jpg")],
+    bilder: [bild("a.jpg")],
+    bestand: [{ id: "x", titel, menge: 1, sportart: "FUSSBALL" }],
+  });
+  assert.equal(plan.posten[0].stand, "vorhanden");
+});
+
+test("eine Bestandskarte ohne Sportart gilt als Fußball", () => {
+  // Die Spalte hat `DEFAULT 'FUSSBALL'`; eine Zeile ohne Wert gibt es in der
+  // Datenbank nicht. Käme sie doch — aus einem älteren Abzug —, darf sie keine
+  // Scheinberichtigung auslösen.
+  const titel = "Topps Premier League Flagship 26/27 Arsenal London Bukayo Saka Base";
+  const plan = planBauen({
+    zeilen: [zeile(titel, "a.jpg")],
+    bilder: [bild("a.jpg")],
+    bestand: [{ id: "x", titel, menge: 1 }],
+  });
+  assert.equal(plan.posten[0].stand, "vorhanden");
+});

@@ -124,7 +124,7 @@ export function ImportPanel() {
                 id: posten.produktId, quantity: posten.menge,
                 set: posten.set, variante: posten.variante, parallele: posten.parallele,
                 nummerierung: posten.nummerierung, autogramm: posten.autogramm,
-                graded: posten.graded, relic: posten.relic,
+                graded: posten.graded, relic: posten.relic, sportart: posten.sportart,
               }),
             })
           : await (async () => {
@@ -139,6 +139,10 @@ export function ImportPanel() {
               if (posten.autogramm) rumpf.set("autogramm", "ja");
               if (posten.graded) rumpf.set("graded", "ja");
               if (posten.relic) rumpf.set("relic", "ja");
+              // Immer mitschicken, auch beim Rückfall: Der Posten trägt bereits
+              // die entschiedene Sportart, und die Vorgabe der Spalte hier
+              // ein zweites Mal zu treffen, wäre eine zweite Wahrheit.
+              rumpf.set("sportart", posten.sportart);
               rumpf.append("images", datei!);
               return adminFetch("/api/admin/products", { method: "POST", body: rumpf });
             })();
@@ -184,6 +188,9 @@ export function ImportPanel() {
       <strong> Menge</strong>, <strong>Beschreibung</strong>, <strong>Set</strong>, <strong>Variante</strong> und
       <strong> Parallele</strong> sind freiwillig — ohne Menge wird ein Stück angelegt, und ohne Set und Variante
       lässt sich die Karte im Vorverkauf später nicht filtern.
+      <strong> Sportart</strong> ist ebenfalls freiwillig: Bleibt die Spalte leer, wird sie aus dem Titel
+      abgeleitet — steht dort etwas Unbekanntes, meldet die Zeile es als Fehler, statt still auf Fußball
+      zurückzufallen.
       Alle übrigen Spalten werden gelesen, aber nicht verwendet — sie dürfen als Kontrollspalten stehen bleiben.
       Angelegt wird als Vorverkaufskarte ohne Festpreis, genau wie über das Einzelformular.
     </p>

@@ -4,6 +4,7 @@ import { getAssetBucket, getDb } from "../../../../db";
 import { ebayListings, inventory, productAssets, products, reservations } from "../../../../db/schema";
 import { recordAdminAudit } from "../../../../lib/admin-audit";
 import { requireAdmin } from "../../../../lib/admin-access";
+import { istSportart } from "../../../../lib/karten-sportart";
 import { HANDFELDER, handfelder, type Handfeld } from "../../../../lib/manual-overrides";
 
 const PAGE_SIZE = 30;
@@ -58,6 +59,7 @@ export async function GET(request: Request) {
         autogramm: products.autograph,
         graded: products.graded,
         relic: products.relic,
+        sportart: products.sport,
       }).from(products)
         .leftJoin(inventory, eq(inventory.productId, products.id))
         .where(eq(products.origin, "MANUAL"));
@@ -199,6 +201,11 @@ async function createManualProductWithImages(request: Request, createdByUserId: 
     autograph: form.get("autogramm") === "ja",
     graded: form.get("graded") === "ja",
     relic: form.get("relic") === "ja",
+    // Die Massenanlage schickt die Sportart immer mit — sie hat sie entweder
+    // aus der Tabelle oder aus dem Titel. Das Einzelformular schickt sie
+    // nicht; dort greift die Vorgabe der Spalte, und das ist derselbe Wert,
+    // auf den auch der Ableiter zurückfällt.
+    ...(istSportart(form.get("sportart")) ? { sport: form.get("sportart") as string } : {}),
   };
 
   const files = form.getAll("images").filter((value): value is File => value instanceof File && value.size > 0);
@@ -301,6 +308,7 @@ export async function PATCH(request: Request) {
       priceAmountCents?: unknown; quantity?: unknown;
       set?: unknown; variante?: unknown; parallele?: unknown;
       nummerierung?: unknown; autogramm?: unknown; graded?: unknown; relic?: unknown;
+      sportart?: unknown;
     };
     const id = typeof body.id === "string" && /^[a-f0-9]{32}$/iu.test(body.id) ? body.id : null;
     if (!id) return NextResponse.json({ error: "Unbekannte Karte." }, { status: 400 });
@@ -331,6 +339,17 @@ export async function PATCH(request: Request) {
       if (!status) return NextResponse.json({ error: "Ungültiger Status." }, { status: 400 });
       if (status !== vorher.status) { werte.status = status; neueMarkierungen.add("status"); }
     }
+    // **Die Sportart ist ein Handfeld**, anders als Set, Variante und die vier
+    // Merkmale: Bei eBay-Karten *rät* der Import sie aus dem Titel, und eine
+    // Berichtigung, die der nächste Lauf drei Minuten später wieder wegschreibt,
+    // wäre keine. `neueMarkierungen` sorgt dafür, dass sie stehen bleibt.
+    if (body.sportart !== undefined) {
+      if (!istSportart(body.sportart)) {
+        return NextResponse.json({ error: "Unbekannte Sportart." }, { status: 400 });
+      }
+      if (body.sportart !== vorher.sport) { werte.sport = body.sportart; neueMarkierungen.add("sport"); }
+    }
+
     // Die Ja-Nein-Merkmale in einer Schleife: Ein fünftes kostet eine Zeile.
     for (const [feld, spalte] of [["autogramm", "autograph"], ["graded", "graded"],
                                   ["relic", "relic"]] as const) {

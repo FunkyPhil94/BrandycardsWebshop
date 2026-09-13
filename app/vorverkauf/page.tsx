@@ -18,6 +18,11 @@ type Product = {
 };
 
 type Facette = { name: string; anzahl: number };
+/** Die Sportart trennt Wert und Beschriftung: In der Datenbank steht
+ *  `AMERICAN_FOOTBALL`, in der Adresse ebenso, in der Auswahl „American
+ *  Football". Ein übersetzter Adressparameter wäre ein geteilter Link, der bei
+ *  einer anderen Sprache nicht mehr funktioniert. */
+type Sportfacette = { wert: string; name: string; anzahl: number };
 /** Merkmal quer zu Set und Variante. `param` ist der Name in der Adresse,
  *  `name` die Beschriftung — getrennt, weil der Parameter nie übersetzt wird. */
 type Merkmal = { param: string; name: string; anzahl: number };
@@ -27,7 +32,7 @@ type Antwort = {
   total?: number;
   totalPages?: number;
   page?: number;
-  facetten?: { serien: Facette[]; varianten: Facette[]; merkmale: Merkmal[] };
+  facetten?: { sportarten: Sportfacette[]; serien: Facette[]; varianten: Facette[]; merkmale: Merkmal[] };
 };
 
 /** Wie viele Karten auf eine Seite gehen.
@@ -58,14 +63,15 @@ export default function VorverkaufPage() {
   const [cards, setCards] = useState<Product[]>([]);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const [suche, setSuche] = useState("");
+  const [sport, setSport] = useState("");
   const [serie, setSerie] = useState("");
   const [variante, setVariante] = useState("");
   /** Die angehakten Merkmale, als Menge ihrer Parameternamen. Eine Menge statt
    *  vier Zustände: Die Zahl der Schalter kommt aus der API, nicht aus dem Code
    *  hier — ein fünfter braucht dann keine Änderung an dieser Seite. */
   const [merkmale, setMerkmale] = useState<Set<string>>(new Set());
-  const [facetten, setFacetten] = useState<{ serien: Facette[]; varianten: Facette[]; merkmale: Merkmal[] }>(
-    { serien: [], varianten: [], merkmale: [] });
+  const [facetten, setFacetten] = useState<{ sportarten: Sportfacette[]; serien: Facette[]; varianten: Facette[]; merkmale: Merkmal[] }>(
+    { sportarten: [], serien: [], varianten: [], merkmale: [] });
   const [seite, setSeite] = useState(1);
   const [seitenInfo, setSeitenInfo] = useState({ total: 0, totalPages: 1 });
   const [bereit, setBereit] = useState(false);
@@ -77,6 +83,7 @@ export default function VorverkaufPage() {
     const timer = window.setTimeout(() => {
       const params = new URLSearchParams(window.location.search);
       setSuche(params.get("q") ?? "");
+      setSport(params.get("sport") ?? "");
       setSerie(params.get("set") ?? "");
       setVariante(params.get("variante") ?? "");
       setMerkmale(new Set([...params.entries()].filter(([, wert]) => wert === "1").map(([name]) => name)));
@@ -95,6 +102,7 @@ export default function VorverkaufPage() {
     const timer = window.setTimeout(() => {
       const params = new URLSearchParams({ origin: "MANUAL", pro: String(PRO_SEITE), seite: String(seite), facetten: "1" });
       if (suche.trim()) params.set("q", suche.trim());
+      if (sport) params.set("sport", sport);
       if (serie) params.set("serie", serie);
       if (variante) params.set("variante", variante);
       for (const merkmal of merkmale) params.set(merkmal, "1");
@@ -117,7 +125,7 @@ export default function VorverkaufPage() {
         });
     }, 180);
     return () => { window.clearTimeout(timer); controller.abort(); };
-  }, [bereit, merkmale, seite, serie, suche, variante]);
+  }, [bereit, merkmale, seite, serie, sport, suche, variante]);
 
   // Ohne neuen Verlaufseintrag je Tastendruck — sonst führt der Zurück-Knopf
   // durch jeden einzelnen Buchstaben.
@@ -125,6 +133,7 @@ export default function VorverkaufPage() {
     if (!bereit) return;
     const params = new URLSearchParams(window.location.search);
     if (suche.trim()) params.set("q", suche.trim()); else params.delete("q");
+    if (sport) params.set("sport", sport); else params.delete("sport");
     if (serie) params.set("set", serie); else params.delete("set");
     if (variante) params.set("variante", variante); else params.delete("variante");
     for (const eintrag of facetten.merkmale) {
@@ -133,17 +142,18 @@ export default function VorverkaufPage() {
     if (seite <= 1) params.delete("seite"); else params.set("seite", String(seite));
     const rest = params.toString();
     window.history.replaceState(null, "", `${window.location.pathname}${rest ? `?${rest}` : ""}${window.location.hash}`);
-  }, [bereit, facetten.merkmale, merkmale, seite, serie, suche, variante]);
+  }, [bereit, facetten.merkmale, merkmale, seite, serie, sport, suche, variante]);
 
   function zuSeite(ziel: number) {
     setSeite(Math.max(1, ziel));
     document.getElementById("vorverkauf")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
-  const gesucht = suche.trim().length > 0 || serie !== "" || variante !== "" || merkmale.size > 0;
+  const gesucht = suche.trim().length > 0 || sport !== "" || serie !== "" || variante !== "" || merkmale.size > 0;
 
   function alleZeigen() {
     setSuche("");
+    setSport("");
     setSerie("");
     setVariante("");
     setMerkmale(new Set());
@@ -179,6 +189,25 @@ export default function VorverkaufPage() {
               aria-label={t("Vorverkauf durchsuchen")}
             />
           </label>
+          {/* Die Sportart zuerst — sie ist die gröbste Einteilung, und ein
+              Wechsel setzt Set und Variante zurück: Ein Set aus der einen
+              Sportart gibt es in der anderen nicht, und die Auswahl stünde
+              sonst auf einem Wert ohne Karten dahinter.
+
+              **Erst ab zwei Sportarten sichtbar.** Ein Auswahlfeld, das nur
+              „Fußball" anbietet, beantwortet keine Frage — es behauptet nur,
+              es gäbe eine Wahl. */}
+          {facetten.sportarten.length > 1 && <label className="catalog-select" htmlFor="vorverkauf-sport">
+            <span>{t("Sportart")}</span>
+            <select id="vorverkauf-sport" value={sport}
+              onChange={(ereignis) => { setSport(ereignis.target.value); setSerie(""); setVariante(""); setSeite(1); }}>
+              <option value="">{t("Alle Sportarten")}</option>
+              {facetten.sportarten.map((eintrag) => <option key={eintrag.wert} value={eintrag.wert}>
+                {t(eintrag.name)} ({eintrag.anzahl})
+              </option>)}
+            </select>
+          </label>}
+
           {/* Set und Variante als zwei Auswahlfelder. **Ein Wechsel des Sets
               setzt die Variante zurück** — „Nitro Boost" aus dem einen Set gibt
               es im anderen womöglich gar nicht, und die Auswahl stünde dann auf

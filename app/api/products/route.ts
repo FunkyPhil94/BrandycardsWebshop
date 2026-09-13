@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { getDb } from "../../../db";
 import { ebayListings, inventory, productAssets, products } from "../../../db/schema";
 import { istImKatalogSichtbar, verfuegbareMenge } from "../../../lib/catalog-availability";
+import { istSportart, sportartName } from "../../../lib/karten-sportart";
 import { clampPage, pageCount, toPageSize } from "../../../lib/pagination";
 
 /** The catalogue changes when the eBay sync runs, not between two page views.
@@ -139,6 +140,11 @@ export async function GET(request: Request) {
     // Betreiber es so wollte; getrennt gespeichert bleibt sie trotzdem.
     const serie = (params.get("serie") ?? "").trim().slice(0, 120);
     const variante = (params.get("variante") ?? "").trim().slice(0, 240);
+    // Die Sportart. **Ein unbekannter Wert filtert nicht, statt nichts zu
+    // zeigen:** Ein `?sport=Handball` aus einem alten Lesezeichen soll den
+    // Katalog nicht auf null Karten schrumpfen lassen, ohne dass erkennbar
+    // wäre, warum.
+    const sport = istSportart(params.get("sport")) ? params.get("sport")! : null;
     const gewaehlteMerkmale = MERKMALE.filter((merkmal) => params.get(merkmal.param) === "1");
     const minPrice = parsePriceCents(params.get("min"));
     const maxPrice = parsePriceCents(params.get("max"));
@@ -179,6 +185,13 @@ export async function GET(request: Request) {
     // die Setliste zählt ohne Set, Variante und Merkmale; die Variantenliste
     // mit Set, aber ohne Variante und Merkmale; die Zahlen an den Schaltern
     // mit Set und Variante, aber ohne die Schalter.
+    // **Die Sportart steht vor der Einordnung, nicht daneben.** Sie ist die
+    // gröbste Einteilung des Bestands; Sets, Varianten und Merkmale sollen
+    // innerhalb der gewählten Sportart zählen. Umgekehrt zählt die
+    // Sportartliste selbst ohne sie — sonst bliebe nach einer Wahl nur noch
+    // diese eine Sportart zur Auswahl, und man käme ohne Umweg nicht heraus.
+    const ohneSportart = [...conditions];
+    if (sport) conditions.push(eq(products.sport, sport));
     const ohneEinordnung = [...conditions];
     if (serie) conditions.push(eq(products.series, serie));
     const ohneVariante = [...conditions];
@@ -248,7 +261,7 @@ export async function GET(request: Request) {
     // keine gepflegte Einordnung —, und die Oberfläche blendet leere Listen
     // ohnehin aus.
     const facetten = params.get("facetten") === "1"
-      ? await ladeFacetten(db, ohneEinordnung, ohneVariante, ohneMerkmale)
+      ? await ladeFacetten(db, ohneSportart, ohneEinordnung, ohneVariante, ohneMerkmale)
       : null;
 
     const headers = { "cache-control": byId ? "no-store" : CATALOGUE_CACHE_CONTROL };
@@ -268,13 +281,19 @@ export async function GET(request: Request) {
   }
 }
 
-/** Die Auswahllisten für den Vorverkauf: Sets und, im gewählten Set, Varianten.
+/** Die Auswahllisten: Sportarten, Sets und, im gewählten Set, Varianten.
  *
- * Beide zählen mit, wie viele Karten dahinterstehen — eine Auswahl, die zu
+ * Alle zählen mit, wie viele Karten dahinterstehen — eine Auswahl, die zu
  * null Treffern führt, soll gar nicht erst angeboten werden.
+ *
+ * **Jede Liste zählt ohne ihren eigenen Filter und ohne die feineren
+ * darunter**, sonst schrumpfte sie auf die getroffene Wahl zusammen und man
+ * käme ohne Umweg über „alle" nicht mehr heraus. Die Reihenfolge von grob nach
+ * fein: Sportart, Set, Variante, Merkmale.
  */
 async function ladeFacetten(
   db: ReturnType<typeof getDb>,
+  ohneSportart: Parameters<typeof and>,
   basis: Parameters<typeof and>,
   mitSet: Parameters<typeof and>,
   mitVariante: Parameters<typeof and>,
@@ -282,7 +301,19 @@ async function ladeFacetten(
   // Dieselben Verbünde wie die Hauptabfrage: `visibleInSql()` in `basis` greift
   // auf `ebay_listings` und `inventory` zu. Ohne sie liefe die Bedingung ins
   // Leere und die Zahlen stimmten nicht mit der Liste überein.
-  const [serien, varianten, merkmale] = await Promise.all([
+  const [sportarten, serien, varianten, merkmale] = await Promise.all([
+    // **Nur die Sportarten, die es wirklich gibt.** Anders als bei den vier
+    // Merkmalen ist hier keine feste Reihe gewollt: Eine Auswahl mit
+    // „Baseball (0)" und „Eishockey (0)" verspricht ein Sortiment, das der
+    // Laden nicht führt. Die Merkmale sind vier Schalter, die springen würden;
+    // eine Auswahlliste springt nicht.
+    db.select({ name: products.sport, anzahl: sql<number>`count(*)` })
+      .from(products)
+      .leftJoin(ebayListings, eq(ebayListings.productId, products.id))
+      .leftJoin(inventory, eq(inventory.productId, products.id))
+      .where(and(...ohneSportart))
+      .groupBy(products.sport)
+      .orderBy(desc(sql`count(*)`), asc(products.sport)),
     db.select({ name: products.series, anzahl: sql<number>`count(*)` })
       .from(products)
       .leftJoin(ebayListings, eq(ebayListings.productId, products.id))
@@ -310,6 +341,13 @@ async function ladeFacetten(
 
   const zahlen = merkmale[0] as Record<string, number> | undefined;
   return {
+    // Der Anzeigename kommt aus der Anwendung, nicht aus der Datenbank: In der
+    // Spalte steht `AMERICAN_FOOTBALL`, in der Auswahl soll „American Football"
+    // stehen. Ein Wert, den `SPORTARTEN` nicht kennt, behält seinen rohen
+    // Namen — sichtbar und zuordenbar ist besser als unsichtbar.
+    sportarten: sportarten
+      .filter((zeile) => zeile.name)
+      .map((zeile) => ({ wert: zeile.name, name: sportartName(zeile.name), anzahl: Number(zeile.anzahl) })),
     serien: serien.map((zeile) => ({ name: zeile.name ?? "", anzahl: Number(zeile.anzahl) })),
     varianten: varianten.map((zeile) => ({ name: zeile.name, anzahl: Number(zeile.anzahl) })),
     // **Alle vier, auch die mit null Treffern.** Anders als bei den
