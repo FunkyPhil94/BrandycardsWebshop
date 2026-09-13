@@ -10878,7 +10878,11 @@ zählt, dass die Unterscheidung an *beiden* Stellen steht.
   für künftige Karten.
 
 ## Auftrag 2026-09-13: Nach Sportart filtern
-- Status: CODE FERTIG, **AUSROLLEN OFFEN** — siehe „Was noch aussteht“.
+- Status: **AUSROLLEN LÄUFT** (Code fertig, 818 Tests grün). Der Nutzer hat Migration
+  und Deploy am 2026-09-13 ausdrücklich freigegeben, nachdem die Rechteprüfung
+  sie zunächst blockiert hatte. Reihenfolge zwingend: **erst** Migration 0023,
+  **dann** Deploy — der Worker liest `products.sport`, ein Deploy davor legt den
+  Katalog lahm.
 - **Anlass:** Der Nutzer will den Bestand nach Sportart einschränken können.
   Der Shop heißt „Fußball-Sammelkarten", aber im Bestand liegen am 2026-09-13
   nachweislich vier Sorten: 907 Karten, davon 109 American Football (NFL),
