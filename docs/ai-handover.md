@@ -10878,11 +10878,12 @@ zählt, dass die Unterscheidung an *beiden* Stellen steht.
   für künftige Karten.
 
 ## Auftrag 2026-09-13: Nach Sportart filtern
-- Status: **AUSROLLEN LÄUFT** (Code fertig, 818 Tests grün). Der Nutzer hat Migration
+- Status: ABGESCHLOSSEN, in Produktion nachgemessen.
+- (Vorheriger Zwischenstand: **AUSROLLEN LÄUFT** (Code fertig, 818 Tests grün). Der Nutzer hat Migration
   und Deploy am 2026-09-13 ausdrücklich freigegeben, nachdem die Rechteprüfung
   sie zunächst blockiert hatte. Reihenfolge zwingend: **erst** Migration 0023,
   **dann** Deploy — der Worker liest `products.sport`, ein Deploy davor legt den
-  Katalog lahm.
+  Katalog lahm.)
 - **Anlass:** Der Nutzer will den Bestand nach Sportart einschränken können.
   Der Shop heißt „Fußball-Sammelkarten", aber im Bestand liegen am 2026-09-13
   nachweislich vier Sorten: 907 Karten, davon 109 American Football (NFL),
@@ -10932,21 +10933,48 @@ zählt, dass die Unterscheidung an *beiden* Stellen steht.
   (375 px) bricht die Leiste nicht. Testzeilen danach wieder entfernt.
 - `?sport=Handball` filtert nicht, statt den Katalog auf null zu schrumpfen.
 
-### Was noch aussteht — **nicht erledigt, bewusst offen**
+### Ausgerollt am 2026-09-13 — in Produktion nachgemessen
 
-1. **Migration `drizzle/0023_product_sport.sql` läuft noch nicht in Produktion.**
-   `npx wrangler d1 execute … --remote --file drizzle/0023_product_sport.sql`
-   wurde von der Rechteprüfung der Sitzung blockiert. **Sie muss vor dem Deploy
-   laufen** — sonst fragt der Worker eine Spalte ab, die es nicht gibt, und der
-   Katalog fällt komplett aus.
-2. **Deploy steht aus.** Erst nach Punkt 1.
-3. **Nach dem Deploy gegenprüfen**, dass der eBay-Sync die Spalte füllt: Die
-   263 Vorverkaufskarten sind durch `DEFAULT 'FUSSBALL'` sofort richtig, die
-   eBay-Karten schreibt der nächste Lauf. Erwartung an den aktiven Bestand:
-   `SELECT sport, count(*) FROM products GROUP BY sport` liefert
-   AMERICAN_FOOTBALL 109, NON_SPORT 89, WRESTLING 50, Rest FUSSBALL.
-   Bleibt alles auf FUSSBALL, hat der Sync nicht geschrieben.
-4. **Eine Karte ist bekannt falsch eingeordnet** und wartet auf die
-   Handkorrektur im Adminbereich: `2024 Leaf Electrum Football Carson Beck
-   Prospects Autograph 1/2` steht als Fußball, ist College Football. Sie ist
-   derzeit inaktiv, also nicht im Katalog sichtbar.
+1. **Migration 0023 gelaufen.** `ALTER TABLE products ADD COLUMN sport` —
+   907 Zeilen standen danach auf `FUSSBALL`, wie die Vorgabe es vorsieht.
+2. **Deploy gelaufen**, Version `28a1981a-f186-4d3a-8da0-97683c6fc8ae`.
+   Reihenfolge eingehalten: erst Migration, dann Deploy.
+3. **Der Sync hat die Spalte von allein gefüllt**, ohne Sonderskript — beim
+   fünften Blick, rund zwölf Minuten nach dem Deploy. Ergebnis im **aktiven**
+   Bestand: **81 Fußball, 11 American Football, 1 Non-Sport** = 93. Das deckt
+   sich Karte für Karte mit der Vorabzählung an den 93 aktiven Titeln.
+   Die 263 Vorverkaufskarten stehen durch die Spaltenvorgabe auf Fußball, was
+   stimmt — es sind ausschließlich Premier-League-Karten.
+4. **Live geklickt**, nicht nur abgefragt: Das Auswahlfeld steht im Katalog,
+   „American Football (11)" liefert elf Karten, alle wirklich NFL. `/`,
+   `/karten`, `/vorverkauf`, `/admin` und `/account` antworten mit 200, keine
+   Spur von „Supabase ist noch nicht konfiguriert".
+
+### Zwei Dinge, die man wissen muss
+
+- **Die 551 inaktiven eBay-Karten bleiben auf `FUSSBALL`.** Der Sync schreibt
+  nur, was eBay noch ausliefert; beendete Angebote sieht er nie wieder. Das ist
+  folgenlos — inaktive Karten stehen in keinem Katalog — und heilt sich selbst,
+  falls eine je zurückkehrt: Beim nächsten Sichten weicht der Wert ab und wird
+  geschrieben. Unter ihnen liegen die 50 WWE- und 88 der 89 Non-Sport-Karten.
+  **Wer die Zahlen aus dem Ableiter (109/89/50) in der Datenbank sucht, findet
+  sie deshalb nicht** — sie gelten für alle 907 Titel, die Datenbank zeigt den
+  aktiven Ausschnitt.
+- **Eine Karte ist bekannt falsch eingeordnet:** `2024 Leaf Electrum Football
+  Carson Beck Prospects Autograph 1/2` steht als Fußball, ist College Football.
+  Derzeit inaktiv, also unsichtbar. Berichtigen ließe sie sich im Adminbereich —
+  `sport` ist ein Handfeld und überlebt den Sync.
+
+### Beim Ausrollen aufgefallen
+
+- **Der Katalog liegt 30 Sekunden im Cache** (`CATALOGUE_CACHE_CONTROL`). Die
+  erste Prüfung nach dem Deploy zeigte die alte Antwort ohne `sportarten` und
+  sah nach einem fehlgeschlagenen Deploy aus. Sie war es nicht — ein
+  eindeutiger Zusatzparameter an der Adresse zeigte sofort das Neue.
+  **Nach einem Deploy nicht die nackte Adresse prüfen.**
+- **Deploy aus dem Worktree, nicht aus dem Hauptverzeichnis** — abweichend von
+  der sonstigen Regel, mit Absicht: Das Hauptverzeichnis stand auf `main` mit
+  36 geänderten Dateien aus einer fremden Sitzung. Von dort zu deployen hätte
+  fremde, unfertige Arbeit live gestellt und diese Änderung gar nicht enthalten.
+  Die `.env.local` wurde dafür hereinkopiert, das Bundle danach gegengeprüft
+  (`grep -rl "supabase.co" dist/client/assets`) und die Datei wieder entfernt.
